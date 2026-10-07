@@ -1,0 +1,10 @@
+{
+  "name": "bunbu",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck"
+  },
+  "packageManager": "pnpm@11.15.1"
+}

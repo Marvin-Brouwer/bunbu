@@ -1,0 +1,25 @@
+{
+  "name": "@bunbu/data",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "rolldown -c",
+    "dev": "rolldown -c --watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "rolldown": "^1.2.12",
+    "rolldown-plugin-dts": "^0.28.6",
+    "typescript": "^7.0.2"
+  }
+}
