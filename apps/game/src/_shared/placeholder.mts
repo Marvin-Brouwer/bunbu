@@ -11,6 +11,14 @@ export type PlaceholderLinkOptions =
 	| { readonly label: string; readonly href: Path }
 	| { readonly label: string; readonly action: () => void; readonly disabled?: boolean }
 
+/** Goes back one step in the history, to wherever the player came from. */
+export const back: PlaceholderLinkOptions = {
+	label: 'Back',
+	action: () => {
+		history.back()
+	},
+}
+
 export type PlaceholderOptions = {
 	readonly title: string
 	readonly note: string

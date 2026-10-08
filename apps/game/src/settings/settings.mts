@@ -1,6 +1,5 @@
 import { component } from '@rooted/components'
-import { href } from '@rooted/router'
-import { Placeholder } from '../_shared/placeholder.mts'
+import { back, Placeholder } from '../_shared/placeholder.mts'
 
 export const Settings = component({
 	name: 'settings',
@@ -9,7 +8,7 @@ export const Settings = component({
 			create(Placeholder, {
 				title: 'Settings',
 				note: 'Difficulty, haptics and volume go here.',
-				links: [{ label: 'Back', href: href.path('/') }],
+				links: [back],
 			})
 		)
 	},
