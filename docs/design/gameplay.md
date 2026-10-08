@@ -47,7 +47,7 @@ The ninja figures in the swipe zone are only a legend for the marks. The real ni
 
 Each ninja carries one option. A **slash** means "this option is picked", a **block** means "not picked". The answer is correct when every slash lands on a correct option and every block on an incorrect one. The same rule covers `yes-no` and `solutions`.
 
-- **Correct:** picked ninjas are slain, the others are blocked, knocked back and flee. The points pop up, split into the base and the speed bonus, for example `+100 correct · +64 speed` when 64% of `ambushSeconds` was left (see [score](#score)).
+- **Correct:** picked ninjas are slain, the others are blocked, knocked back and flee. `+100` pops up (see [score](#score)).
 - **Wrong:** a ninja lands the hit and all of them vanish. The lost chunk flashes and drops off the life bar, with a red edge flash and a haptic buzz (haptics can be turned off in the settings). No answer is shown and nothing needs tapping: after about 1 s the run resumes. The miss is saved for the review at the end.
 - **Unanswered:** time ran out. The front ninja slices through the scroll, then all of them hit, which still counts as one hit. Costs the same as a wrong answer. Half-swiped answers do not count. Saved for the review as "unanswered".
 
@@ -90,14 +90,14 @@ life = (best score still possible − pass) / (1 − pass)
 
 ## Score
 
-No rank ladder, no honour, no streaks. What counts is how many you got right and how fast.
+No rank ladder, no honour, no streaks. What counts is how many you got right, then how fast.
 
 ```text
-per correct question = 100 + 100 × (time left / ambushSeconds)   → 100 to 200
+per correct question = 100
 wrong or unanswered  = 0
 ```
 
-A 20-question quiz maxes out at 4,000.
+There is no per-question speed bonus: with hundreds of questions it would reward rushing every one of them. Speed only breaks ties: with equal scores, the shorter total run time wins the high score. A 20-question quiz maxes out at 2,000.
 
 - The high score is kept **per quiz** (`id` + `version`).
 - Only a passed run sets a high score. A fallen run shows its score but does not count.

@@ -50,7 +50,7 @@ All variants: the scroll on top, the swipe zone with the mark legend at the bott
 
 ### 5 Outcome
 
-- **5A Correct:** `+100 correct · +64 speed`. The scroll rolls up, slow motion snaps back. Picked ninjas slain, the others blocked and fleeing.
+- **5A Correct:** `+100`. The scroll rolls up, slow motion snaps back. Picked ninjas slain, the others blocked and fleeing.
 - **5B Wrong:** score `+0`, the lost chunk of the life bar flashes and drops off, red edge flash, haptic buzz (can be turned off in settings). A ninja lands the hit, all vanish. About 1 s, then the run resumes.
 - **5C Unanswered:** time ran out. The front ninja slices through the scroll, then all hit (one hit). The halves of the scroll fall away and the run resumes.
 
@@ -64,7 +64,7 @@ All variants: the scroll on top, the swipe zone with the mark legend at the bott
 
 - 勝 · `QUIZ PASSED · NEW HIGH SCORE` · score, with the previous best (`was 2,210`).
 - `17 / 20 correct (85%) · 4:05`.
-- Breakdown: **Correct** (`17 × 100`), **Speed** (bonus for time left), **Distance** (stage cleared).
+- Breakdown: **Correct** (`17 × 100`), **Time** (tiebreak for the high score), **Distance** (stage cleared).
 - **Mistakes** scroll: each miss with ✗ your pick, ✓ the right answer, the explanation and references.
 - **Next stage**, **Practise mistakes**, **Menu**.
 
