@@ -134,7 +134,7 @@ Flows take the game mode's stores as an argument rather than importing them, so 
 
 ## The game loop
 
-One `requestAnimationFrame` loop drives everything. The app shell starts it once; a route plugs its game mode into it with `play(mode, signal)`, which unplugs again when the route unmounts. Without a mode (on a menu) the loop only draws. Each frame, in a fixed order:
+One `requestAnimationFrame` loop drives everything. The `Application` starts it once; a route plugs its game mode into it with `play(mode, signal)`, which unplugs again when the route unmounts. Without a mode (on a menu) the loop only draws. Each frame, in a fixed order:
 
 1. **Time.** Take the real frame delta, clamp it (a tab coming back from the background must not jump the run forward by minutes), and multiply it by the run's speed scale. That is how slow motion during an ambush works.
 2. **Update.** Call the time-based actions: `run.tick(dt)`, `ambush.tick(dt)`, `ninjas.advance(dt)`. Timeouts (the ambush running out) are decided here, by the stores, through flows.
@@ -173,22 +173,27 @@ Stores and flows are plain TypeScript, so they are tested without a browser: cre
 
 ## Folder layout
 
+The game follows Rooted's [vertical slices](https://github.com/Marvin-Brouwer/rooted/blob/main/docs/guide/application-model.md): one folder per feature, holding its routes, screens, styles, state and rules.
+
 ```text
 apps/game/src/
-	application.mts   the router, mounted inside the shell
-	state/            createStore, the stores shared by modes (quiz, ambush), settings, selection
-		run/          the run's stores and createRunGame
-		practice/     dojo practice: createPracticeGame
-		study/        dojo study: createStudyGame
-	flows/run/        functions that span the run's stores
-	loop.mts          the game loop: time, update, render; play() plugs a mode in
-	render/           viewport, stage (show() puts a view on the canvas), one folder per mode's world
-	ui/               Rooted components, one folder per screen
-		shell/        the canvas and the routed screen on top of it
-		<screen>/     _routes.mts registers the screen's routes; the screen lazy-loads
-	fixtures/         dev-only run states per screen, through `/fight/?fixture=<name>`
+	application.mts   the Application: the canvas, the loop and the router
+	_canvas/          the game loop (play() plugs a mode in), the viewport, show() for a world
+	_shared/          what several slices use
+		state/        createStore, quiz, ambush, selection
+		fixtures/     the fixture quiz
+	title/            the title menu (the router's home) and not-found
+	fight/            /fight/: quiz select, then the run
+		state/        the run's stores and createRunGame
+		flows/        functions that span the run's stores
+		world.mts     the run's 3D world (reads state only)
+		fixtures.mts  dev-only run states, through `/fight/?fixture=<name>`
+	dojo/             /dojo/, /dojo/study/, /dojo/practice/
+		state/        createPracticeGame, createStudyGame
+	settings/         /settings/
+		state/        the settings store
 ```
 
-Every `_routes.mts` is collected into the generated `_routes.g.mts` at build time, so adding a screen never touches `application.mts`.
+Every `_routes.mts` is collected into the generated `_routes.g.mts` at build time, so adding a slice never touches `application.mts`.
 
-`render/` and `ui/` may import from `state/`. `state/` and `flows/` never import from `render/` or `ui/`. eslint enforces that, and keeps browser globals out of them.
+A slice's `state/` and `flows/` only import from other `state/` and `flows/` folders: never a component, the canvas, three.js or the DOM. eslint enforces that.

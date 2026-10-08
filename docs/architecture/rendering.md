@@ -39,7 +39,7 @@ From back to front:
 
 All layers are siblings in one fixed, full-viewport container, stacked with `z-index`. The canvas fills the container and resizes with it.
 
-The app shell (`ui/shell/`) owns the container, the canvas and the renderer, and mounts once. The router renders the current screen over the canvas, so moving between screens never creates a new WebGL context. A screen puts its world on the canvas with `show(view, signal)` and the view is disposed when the screen unmounts; on a screen without a view the canvas is clear and the backdrop shows. The run's screen holds the HUD, scroll, swipe and overlay layers.
+The `Application` component (`application.mts`) owns the container, the canvas and the renderer, and mounts once. The router renders the current screen over the canvas, so moving between screens never creates a new WebGL context. A screen puts its world on the canvas with `show(view, signal)` and the view is disposed when the screen unmounts; on a screen without a view the canvas is clear and the backdrop shows. The run's screen holds the HUD, scroll, swipe and overlay layers.
 
 The ninjas creeping in "behind the scroll" during an ambush needs nothing special: they are in the 3D world, the scroll is DOM above the canvas, so they are always under it. Where the scroll is transparent (its torn edges, gaps around it) you see them coming.
 

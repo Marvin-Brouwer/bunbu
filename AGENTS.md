@@ -14,48 +14,59 @@ Notes for anyone, human or agent, picking up a task here.
 | One canvas, DOM on top | [docs/architecture/rendering.md](docs/architecture/rendering.md) |
 | Stores, flows and the game loop | [docs/architecture/state.md](docs/architecture/state.md) |
 | Who builds what, in which order | [docs/plan.md](docs/plan.md) |
+| Rooted: components, routing, slices | [Rooted guide](https://github.com/Marvin-Brouwer/rooted/blob/main/docs/guide/readme.md) and its [recipe-book example](https://github.com/Marvin-Brouwer/rooted/tree/main/examples/recipe-book) |
 
 The design docs are the source of truth. When a decision changes the rules, change the design doc
 in the same pull request. Where the docs disagree, gameplay.md wins.
 
 ## Layout
 
+The game is built in **vertical slices**, as Rooted's
+[application model](https://github.com/Marvin-Brouwer/rooted/blob/main/docs/guide/application-model.md)
+describes: one folder per feature that owns its routes, screens, styles, state and rules. There is
+no top-level `components/`, `state/` or `ui/` tree.
+
 ```text
 apps/game/src/
-  application.mts  the router; routes come from every ui/**/_routes.mts
-  state/      createStore, shared stores (quiz, ambush), settings, selection
-    run/      the run's stores, created per run by createRunGame
-    practice/ dojo practice's game state
-    study/    dojo study's game state
-  flows/run/  functions that span the run's stores
-  loop.mts    the game loop: time, update, render; play() plugs a game mode in
-  render/     viewport, stage (show() puts a view on the canvas), run/ world
-  ui/         Rooted components, one folder per screen with its _routes.mts
-    shell/    the one canvas and the routed screen on top of it
-  fixtures/   dev-only run states, through /fight/?fixture=<name>
+  application.mts  the Application: the canvas, the game loop and the router
+  _canvas/         the game loop (play() plugs a mode in), the viewport, show() for a world
+  _shared/         what several slices use: state (quiz, ambush, selection), the fixture quiz
+  title/           the title menu (the router's home) and not-found
+  fight/           /fight/: quiz select, then the run; state/, flows/, world, fixtures
+  dojo/            /dojo/: study and practice, each with its own game state
+  settings/        /settings/ and the settings store
 apps/game/test/quizzes/   sample quizzes every track develops against
 packages/data/            @bunbu/data: reading, validating and sharing quizzes
 schema/                   the JSON Schema per format version
 ```
 
+The slice policy:
+
+- A feature is one folder. Deleting the feature deletes the folder; changing it touches only that
+  folder. Its routes go in its own `_routes.mts`; `application.mts` never changes for a new slice.
+- Code goes in the slice that uses it. Only when a second slice needs it does it move to
+  `_shared/`. A slice may import another slice's routes (for links) and its state, never its
+  components.
+- Inside a slice, structure is free. A slice's game rules go in `state/` and `flows/` subfolders.
+
 Rules the linter enforces:
 
-- `state/` and `flows/` are plain TypeScript. They never import `three`, never import `@rooted/*`,
-  never import from `render/` or `ui/`, and never touch the DOM.
+- A slice's `state/` and `flows/` are plain TypeScript. They only import from other `state/` and
+  `flows/` folders, never `three` or `@rooted/*`, and never touch the DOM.
 
 Conventions the linter can't check:
 
-- A game mode's state is created by its route on mount and dropped on unmount. Only `settings`
-  and `selection` are app-wide singletons. Flows take the game (`RunGame`) as an argument.
+- A game mode's state is created when the mode starts and dropped when it ends or its route
+  unmounts. Only `settings` and `selection` are app-wide. Flows take the game (`RunGame`) as an
+  argument.
 - Change a store through its actions. Fixtures and tests start a store from a state by passing it
   to the factory (`createRunGame({ life: … })`), not by writing to it.
-- A new screen adds a `_routes.mts` next to it; `application.mts` does not change.
 
 ## Folder ownership
 
 Each track in [docs/plan.md](docs/plan.md#tracks) owns its folders. Change another track's folder
 through a small pull request its owner reviews. `package.json`, `pnpm-lock.yaml`,
-`loop.mts` and `ui/fight/run.mts` are shared, so keep changes there to a line or two, and add
+`_canvas/loop.mts` and `fight/run.mts` are shared, so keep changes there to a line or two, and add
 dependencies in a pull request of their own.
 
 ## Before you push
@@ -80,7 +91,7 @@ pnpm dev  # then open /fight/?fixture=ambush-multiple
 
 Fixtures put the stores into a named state without playing a run, so a screen can be built and
 screenshotted on its own. `/fight/?fixture=` with an unknown name logs the list. They are dev-only; add
-the ones your track needs in `apps/game/src/fixtures/`.
+the ones your track needs in `apps/game/src/fight/fixtures.mts`.
 
 ## Conventions
 
@@ -91,12 +102,14 @@ the ones your track needs in `apps/game/src/fixtures/`.
 - Small pull requests, one track each, squash merged to `main`.
 - Quiz files are untrusted input: sanitise what you render.
 - Write component trees as if you were writing HTML. `append(` gets its own line with its child
-  on the next, and the properties passed to `create` and `element` go one per line:
+  on the next, and the properties passed to `create` and `element` go one per line, each with a trailing comma, as
+  in the Rooted guide:
 
   ```ts
   append(
-  	create(Shell, {
-  		router: Router
+  	create(RunScreen, {
+  		game,
+  		leave: showSelect,
   	})
   )
   ```

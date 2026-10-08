@@ -55,8 +55,9 @@ export default defineConfig(
 		},
 	},
 	{
-		// The import boundary from docs/architecture/state.md#folder-layout.
-		files: ['apps/game/src/state/**', 'apps/game/src/flows/**'],
+		// The import boundary from docs/architecture/state.md#folder-layout: a slice's `state/` and
+		// `flows/` are plain TypeScript, so the rules can be tested without a browser.
+		files: ['apps/game/src/**/state/**', 'apps/game/src/**/flows/**'],
 		ignores: ['**/*.test.mts'],
 		languageOptions: { globals: {} },
 		rules: {
@@ -65,7 +66,11 @@ export default defineConfig(
 				patterns: [
 					{ group: ['three', 'three/*'], message: 'state/ and flows/ must not use three.js. Rendering reads the stores instead.' },
 					{ group: ['@rooted/*'], message: 'state/ and flows/ must not use Rooted. UI components read the stores instead.' },
-					{ group: ['**/render', '**/render/**', '**/ui', '**/ui/**'], message: 'state/ and flows/ may not import from render/ or ui/.' },
+					{
+						// Anything relative, except a sibling module or a module in a state/ or flows/ folder.
+						regex: String.raw`^(?:\.\./(?!(?:.*/)?(?:state|flows)/[^/]+\.mts$)|\./(?![^/]+\.mts$))`,
+						message: 'state/ and flows/ may only import from other state/ and flows/ folders, not from components, the canvas or styles.',
+					},
 				],
 			}],
 		},
