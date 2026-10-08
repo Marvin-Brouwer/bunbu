@@ -86,18 +86,33 @@ The browser's `SpeechSynthesis` API has no reliable support for phonetic markup 
 
 The pronunciation dictionary maps a written term to the text that should be spoken instead. The app applies it only to the text it sends to the speech engine. What is displayed is never changed.
 
+### Built-in dictionaries
+
+`@bunbu/data` ships dictionaries for generic terms, so quizzes don't have to repeat them:
+
+- `technologies.json`: common technologies and formats, such as `TCP`, `UUID`, `JSON` and `UTP`.
+- `languages.json`: programming and query languages, such as `SQL`, `NoSQL` and `C#`.
+- `brands.json`: product and brand names, such as `Redis`, `nginx` and `Kubernetes`.
+
+They hold only generic terms. Vendor- or course-specific ones, like `RBAC` or `AKS`, belong in the quiz. The dictionaries are language-agnostic and apply to every quiz. A quiz in another language overrides the entries it needs.
+
+### Quiz entries
+
+A quiz's `pronunciations` add terms, and override built-in ones:
+
 ```yaml
 pronunciations:
-  SQL: sequel
-  nginx: engine x
-  kubectl: cube control
-  CSS: C S S
-  GIF: jif
+  AKS: A K S        # course-specific term
+  KEDA: kee dah
+  SQL: S Q L        # overrides the built-in "sequel"
+  CSS: CSS          # maps a term to itself: reads it as written, silencing the built-in entry
 ```
 
-Rules:
+`resolvePronunciations(quiz)` gives the dictionary to use: the built-in entries, overridden by the quiz's own.
 
-- Matches are whole-word and case-sensitive, so `SQL` does not match `sql_mode`.
+### Rules
+
+- Matches are case-sensitive and whole-word: a term matches only where it isn't directly next to a letter or digit. So `SQL` does not match `MySQLi`, and `C#` matches in "C# and F#".
 - Longer keys are matched before shorter ones, so `HTTP/2` is replaced before `HTTP`.
 - Code blocks are not read out by default. Inline code is read, after replacement.
 - The voice is chosen from the document's `language`.
@@ -437,6 +452,8 @@ How a file is made:
 A `.bunbu` file is typically 6–8 times smaller than the YAML it came from.
 
 Packing and compression settings are frozen per format version. A change gets a new version, and `uncompress` keeps reading the older ones.
+
+Entries in `pronunciations` that equal the built-in ones are left out of the file, and restored when it is read. Each format version uses a frozen snapshot of the built-in dictionaries, so an old file always gets back exactly the entries it was made with.
 
 A `.bunbu` file keeps the quiz's content, not its YAML: comments and formatting are lost. Keep the YAML as the source to edit, and treat `.bunbu` as an export. Shared files are untrusted input, so `uncompress` validates the result against the schema and limits how large a quiz may claim to be.
 

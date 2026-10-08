@@ -1,3 +1,6 @@
 packages:
   - "apps/*"
   - "packages/*"
+allowBuilds:
+  # tsx -> esbuild: its install script only verifies the platform binary, which pnpm installs anyway.
+  esbuild: false

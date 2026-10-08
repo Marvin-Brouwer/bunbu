@@ -1,5 +1,5 @@
 {
-  "name": "bunbu",
+  "name": "@bunbu/monorepo",
   "private": true,
   "type": "module",
   "scripts": {

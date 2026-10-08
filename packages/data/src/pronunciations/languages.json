@@ -1,0 +1,10 @@
+{
+  ".NET": "dot net",
+  "C#": "C sharp",
+  "C++": "C plus plus",
+  "F#": "F sharp",
+  "GraphQL": "graph Q L",
+  "NoSQL": "no-sequel",
+  "PHP": "P H P",
+  "SQL": "sequel"
+}

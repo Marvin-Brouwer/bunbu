@@ -11,6 +11,7 @@ import {
   type BunbuData,
   type BunbuShareErrorReason,
 } from "../src";
+import builtInV1 from "../pronunciations/v1.g.json" with { type: "json" };
 import { generateLargeQuiz } from "./fixtures/generate-large-quiz";
 
 const designDoc = readFileSync(new URL("../../../docs/design/data-format.md", import.meta.url), "utf8");
@@ -23,6 +24,11 @@ language: en
 passingScore: 70
 questions:
 ${docQuestions.join("").replace(/^(?=.)/gm, "  ")}`;
+
+/** What uncompress returns for a quiz: the same, with the v1 built-in pronunciations added. */
+function restored(data: BunbuData): BunbuData {
+  return { ...data, pronunciations: { ...builtInV1, ...data.pronunciations } };
+}
 
 async function docExamples(): Promise<BunbuData> {
   const data = await validate(docYaml);
@@ -72,20 +78,20 @@ const smallQuiz: BunbuData = {
 describe("compress / uncompress", () => {
   it("round-trips every question example from the design doc", async () => {
     const data = await docExamples();
-    expect(await uncompress(await compress(data))).toEqual(data);
+    expect(await uncompress(await compress(data))).toEqual(restored(data));
   });
 
   it("round-trips optional fields, unicode, repeated strings and a fractional score", async () => {
-    const restored = await uncompress(await compress(smallQuiz));
-    expect(restored).toEqual(smallQuiz);
-    expect(Object.keys(restored.pronunciations!)).toEqual(["__proto__", "SQL"]);
-    expect(Object.getPrototypeOf(restored.pronunciations)).toBe(Object.prototype);
-    expect("scoring" in restored.questions[1]!).toBe(false);
+    const result = await uncompress(await compress(smallQuiz));
+    expect(result).toEqual(restored(smallQuiz));
+    expect(Object.hasOwn(result.pronunciations!, "__proto__")).toBe(true);
+    expect(Object.getPrototypeOf(result.pronunciations)).toBe(Object.prototype);
+    expect("scoring" in result.questions[1]!).toBe(false);
   });
 
   it("round-trips a large generated quiz", { timeout: 60_000 }, async () => {
     const data = generateLargeQuiz(250, 1);
-    expect(await uncompress(await compress(data))).toEqual(data);
+    expect(await uncompress(await compress(data))).toEqual(restored(data));
   });
 
   it("writes a .bunbu file that starts with its signature and version", async () => {
@@ -108,7 +114,7 @@ describe("compress / uncompress", () => {
     const bytes = await compress(data);
     const buffer = bytes.slice().buffer;
     for (const input of [new File([buffer], `quiz${fileExtension}`, { type: mimeType }), new Blob([buffer]), buffer, bytes]) {
-      expect(await uncompress(input)).toEqual(data);
+      expect(await uncompress(input)).toEqual(restored(data));
     }
   });
 
@@ -160,7 +166,7 @@ describe("compress / uncompress", () => {
       const result = await uncompress(flip(position)).catch((caught: unknown) => caught);
       // A flipped length field can also claim more bytes than the file has: "incomplete".
       if (result instanceof BunbuShareError) expect(["corrupt", "incomplete"]).toContain(result.reason);
-      else expect(result).toEqual(data);
+      else expect(result).toEqual(restored(data));
     }
     // Byte 11 is in the CRC; the others are in the LZMA body.
     for (const position of [11, 30, Math.floor(file.length / 2)]) await expectShareError(flip(position), "corrupt");
