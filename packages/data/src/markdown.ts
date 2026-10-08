@@ -7,7 +7,8 @@ const fencedCode = /^ {0,3}(`{3,}|~{3,})[^\n]*\n[\s\S]*?^ {0,3}\1[ \t]*$/gm;
 const inlineCode = /(`+)[\s\S]*?\1/g;
 const atxHeading = /^ {0,3}#{1,6}(?:[ \t]|$)/m;
 const setextHeading = /^ {0,3}\S[^\n]*\n {0,3}(?:=+|-{2,})[ \t]*$/m;
-const htmlTag = /<\/?[a-zA-Z][\w-]*(?:\s[^<>]*)?\/?>/;
+// `\<` is an escaped, literal "<", not the start of a tag.
+const htmlTag = /(?<!\\)<\/?[a-zA-Z][\w-]*(?:\s[^<>]*)?\/?>/;
 
 /** Whether the value is Markdown the app can render: no headings and no raw HTML. */
 export function isGfmMarkdown(value: string): boolean {

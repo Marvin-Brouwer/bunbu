@@ -14,6 +14,8 @@ describe("isGfmMarkdown", () => {
     ["image", "![Box model](https://example.com/box.svg)"],
     ["autolink", "<https://example.com>"],
     ["hash inside a sentence", "Use C# or F#"],
+    ["escaped angle brackets", "kubectl logs \\<pod> --previous"],
+    ["escaped heading marker", "\\# not a heading"],
   ])("accepts %s", (_, value) => {
     expect(isGfmMarkdown(value)).toBe(true);
   });
