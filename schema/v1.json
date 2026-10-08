@@ -152,8 +152,7 @@
           "items": { "$ref": "#/$defs/option" },
           "contains": { "$ref": "#/$defs/correctOption" },
           "minContains": 1
-        },
-        "scoring": { "enum": ["partial", "all"], "default": "all" }
+        }
       }
     },
     "order": {

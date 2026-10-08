@@ -56,7 +56,6 @@ export interface SingleQuestion extends QuestionBase {
 export interface MultipleQuestion extends QuestionBase {
   type: "multiple";
   options: Option[];
-  scoring?: "partial" | "all";
 }
 
 export interface OrderQuestion extends QuestionBase {

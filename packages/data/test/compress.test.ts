@@ -69,7 +69,6 @@ const smallQuiz: BunbuData = {
     {
       type: "multiple",
       query: "Pick" as never,
-      scoring: "all",
       options: Array.from({ length: 10 }, (_, index) => ({ answer: `o${index}` as never, correct: index % 3 === 0 })),
     },
   ],
@@ -86,7 +85,6 @@ describe("compress / uncompress", () => {
     expect(result).toEqual(restored(smallQuiz));
     expect(Object.hasOwn(result.pronunciations!, "__proto__")).toBe(true);
     expect(Object.getPrototypeOf(result.pronunciations)).toBe(Object.prototype);
-    expect("scoring" in result.questions[1]!).toBe(false);
   });
 
   it("round-trips a large generated quiz", { timeout: 60_000 }, async () => {

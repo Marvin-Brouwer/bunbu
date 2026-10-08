@@ -65,7 +65,7 @@ pronunciations: {}        # optional, see Pronunciations
 questions: []             # required, at least one question
 ```
 
-`passingScore` is the percentage of points needed to pass. Each question is worth one point, and each proposed solution in a `solutions` question also counts as one point. A question with `scoring: partial` can earn part of its point.
+`passingScore` is the percentage of points needed to pass. A question is either right or wrong, and worth one point when right. The proposed solutions in a `solutions` question are each answered and counted as one point.
 
 ## Markdown
 
@@ -242,7 +242,6 @@ One or more options are correct. The app tells the user how many to choose.
     - correct: false
       answer: >-
         `DELETE`
-  scoring: partial      # partial | all (default: all)
   explanation: |-
     | Method   | Safe | Idempotent |
     | -------- | ---- | ---------- |
