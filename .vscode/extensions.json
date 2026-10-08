@@ -2,6 +2,8 @@
   "recommendations": [
     // Opens .bunbu files, see settings.json.
     "ms-vscode.hexeditor",
+    // Shows the size of the open file in the status bar, e.g. to compare .yaml and .bunbu.
+    "mkxml.vscode-filesize",
     // Schema validation and autocomplete for quiz YAML files.
     "redhat.vscode-yaml"
   ]

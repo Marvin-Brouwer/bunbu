@@ -1,6 +1,9 @@
 {
   // .bunbu files are binary (see docs/design/data-format.md, "Sharing").
+  // In the hex editor, Ctrl+A shows the file size in bytes in the status bar.
   "workbench.editorAssociations": {
     "*.bunbu": "hexEditor.hexedit"
-  }
+  },
+  // Exact byte counts for text files such as quiz YAML (mkxml.vscode-filesize).
+  "filesize.showRawInBytes": true
 }
