@@ -27,13 +27,13 @@ A general-purpose, file-based format for quizzes and practice tests.
 YAML is widely supported, easy to edit by hand, allows comments and multi-line strings without escaping, and can be validated with JSON Schema.
 If we later share quizzes through a URL, YAML is also more compact to URL-encode than the equivalent JSON.
 
-The schema is published from this repository and referenced through a raw GitHub URL in the first line of the file. The format version is part of that URL:
+The schema lives in the top-level `schema/` folder of this repository, with one file per format version (`schema/v1.json`, `schema/v2.json`, …). Quiz files reference it in their first line. The format version is the file name:
 
 ```yaml
-# yaml-language-server: $schema=https://raw.githubusercontent.com/Marvin-Brouwer/bunbu/main/tbd/v1/bunbu.schema.json
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Marvin-Brouwer/bunbu/main/schema/v1.json
 ```
 
-> Use a `raw.githubusercontent.com` URL. A `github.com/.../blob/...` URL returns an HTML page, not the schema.
+> **Later:** the `schema/` folder will be copied to GitHub Pages as part of the site deploy, and the Pages URL will replace the raw GitHub URL. Decide this before quiz files are published, because the URL ends up in every file.
 
 ## Versioning
 
@@ -41,13 +41,13 @@ There are two independent versions:
 
 | Where                    | Meaning                     | Who changes it                              |
 | ------------------------ | --------------------------- | ------------------------------------------- |
-| `v<n>` in the schema URL | Version of this data format | Bunbu, only for breaking changes.           |
+| `v<n>.json` in the URL   | Version of this data format | Bunbu, only for breaking changes.           |
 | `version` field          | Version of the quiz content | The quiz author, whenever questions change. |
 
 The schema line is required. The app reads the format version from it before parsing, and rejects files without it or with an unknown version.
 
 - Non-breaking additions, such as a new optional field or a new question type, are added to the existing schema and keep the same URL.
-- Breaking changes publish a new schema under `v<n+1>/`. Older schemas stay online so existing files keep validating.
+- Breaking changes add a new `schema/v<n+1>.json`. Older schema files are never removed, so existing quiz files keep validating.
 - `version` is a free string (for example `1`, `2026-10`, `1.4.0`). The app may use it to invalidate stored progress when the content changes.
 
 ## Document structure
@@ -429,7 +429,7 @@ query: |-
 ## Full example
 
 ```yaml
-# yaml-language-server: $schema=https://raw.githubusercontent.com/Marvin-Brouwer/bunbu/main/tbd/v1/bunbu.schema.json
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Marvin-Brouwer/bunbu/main/schema/v1.json
 
 id: example
 title: Example quiz
@@ -487,7 +487,3 @@ questions:
         answer: >-
           JSON
 ```
-
-## Open questions
-
-- **Schema location.** Decide the final path that replaces `tbd/` before publishing `v1`.
