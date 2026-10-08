@@ -7,7 +7,7 @@ A general-purpose, file-based format for quizzes and practice tests.
 - **Authorable by hand.** A quiz is a single text file that can be written in any editor, reviewed in a pull request and diffed.
 - **Validated while typing.** Editors get autocomplete and errors from a published JSON Schema.
 - **Rich text.** Questions, options and explanations support Markdown, including code blocks.
-- **Several question types** with one consistent way of declaring options and answers.
+- **Several question types** with one consistent way of declaring options and which ones are correct.
 - **Scenario questions.** One scenario can be tested against several proposed solutions.
 - **Versioned.** The format version and the content version are tracked separately.
 - **Speakable.** A pronunciation dictionary helps the browser Speech API read domain terms aloud correctly.
@@ -114,32 +114,30 @@ Questions have no id. They are identified by their position in `questions`. Prog
 | `explanation` | no       | Markdown shown after answering. Explain why the answer is correct and why the alternatives are not. |
 | `source`      | no       | Where the question comes from (origin and attribution), in Markdown, such as a link or a credit.    |
 | `references`  | no       | List of `text: url` entries where the answer can be verified. Plain text, not Markdown.             |
-| `shuffle`     | no       | Whether the app may shuffle options. Defaults to `true` where order has no meaning.                 |
 
-### Options and answers
+### Options
 
-Options are a **map from a key to Markdown text**. Answers always refer to **keys, never positions**.
-Keys stay valid when the app shuffles options or when an author reorders them, so answers cannot silently point to the wrong option.
+Options are a **list**. Each option says itself whether it is correct, so there are no keys or positions to keep in sync, and the app can shuffle options freely.
 
-Keys are short identifiers (`a`, `b`, `c` or descriptive ones such as `head`, `options`). They are not shown to the user, and the app assigns its own display labels (A, B, C…) after shuffling.
-
-An option can also be an object with its own `explanation`, for example to say why a wrong option is wrong. The app shows it after answering, next to that option, in addition to the question's `explanation`. Plain strings and objects can be mixed in one question.
+| Field         | Required | Description                                                           |
+| ------------- | -------- | --------------------------------------------------------------------- |
+| `answer`      | yes      | The option text, in Markdown.                                         |
+| `correct`     | yes      | `true` or `false`.                                                    |
+| `explanation` | no       | Markdown shown next to this option after answering.                   |
 
 ```yaml
 options:
-  alt: >-
-    `alt`
-  title:
-    text: >-
+  - correct: true
+    answer: >-
+      `alt`
+  - correct: false
+    answer: >-
       `title`
     explanation: >-
       Shown as a tooltip, but not reliably read by screen readers.
-  caption:
-    text: >-
-      `caption`
-    explanation: >-
-      Only valid on `<table>`, not on images.
 ```
+
+The app always shuffles options. Avoid options that depend on their position, such as *"All of the above"*.
 
 ### Question types
 
@@ -172,7 +170,7 @@ A statement that is either correct or not.
 
 #### `single`
 
-One correct option.
+Exactly one option is correct.
 
 ````yaml
 - type: single
@@ -185,15 +183,22 @@ One correct option.
 
     Which attribute should be added so it is described properly?
   options:
-    alt: >-
-      `alt`
-    title: >-
-      `title`
-    aria: >-
-      `aria-label` on the parent element
-    caption: >-
-      `caption`
-  answer: alt
+    - correct: true
+      answer: >-
+        `alt`
+    - correct: false
+      answer: >-
+        `title`
+      explanation: >-
+        Shown as a tooltip, but not reliably read by screen readers.
+    - correct: false
+      answer: >-
+        `aria-label` on the parent element
+    - correct: false
+      answer: >-
+        `caption`
+      explanation: >-
+        Only valid on `<table>`, not on images.
   explanation: >-
     `alt` is the text alternative for an image. Use an **empty** `alt=""`
     for purely decorative images, so screen readers skip them.
@@ -201,7 +206,7 @@ One correct option.
 
 #### `multiple`
 
-Several correct options. The number of options to pick is the length of `answer`, and the app tells the user how many to choose.
+One or more options are correct. The app tells the user how many to choose.
 
 ```yaml
 - type: multiple
@@ -209,15 +214,18 @@ Several correct options. The number of options to pick is the length of `answer`
     Which HTTP methods are defined as **safe**, meaning they are not expected
     to change any state on the server?
   options:
-    get: >-
-      `GET`
-    head: >-
-      `HEAD`
-    post: >-
-      `POST`
-    delete: >-
-      `DELETE`
-  answer: [get, head]
+    - correct: true
+      answer: >-
+        `GET`
+    - correct: true
+      answer: >-
+        `HEAD`
+    - correct: false
+      answer: >-
+        `POST`
+    - correct: false
+      answer: >-
+        `DELETE`
   scoring: partial      # partial | all (default: all)
   explanation: |-
     | Method   | Safe | Idempotent |
@@ -230,7 +238,7 @@ Several correct options. The number of options to pick is the length of `answer`
 
 #### `order`
 
-Put options in the correct sequence. If `answer` lists fewer keys than there are options, the remaining options are distractors, and the user must both pick the right subset and order it.
+Put the correct options in sequence. The correct options are written **in the correct order**. Options with `correct: false` are distractors: the user must leave them out, and their position in the list does not matter.
 
 ```yaml
 - type: order
@@ -238,15 +246,18 @@ Put options in the correct sequence. If `answer` lists fewer keys than there are
     Several rules set the `color` of the same element.
     Order them from **lowest** to **highest** precedence.
   options:
-    ua: >-
-      User-agent stylesheet
-    author: >-
-      Author stylesheet
-    inline: >-
-      Inline `style` attribute
-    important: >-
-      Author `!important` declaration
-  answer: [ua, author, inline, important]
+    - correct: true
+      answer: >-
+        User-agent stylesheet
+    - correct: true
+      answer: >-
+        Author stylesheet
+    - correct: true
+      answer: >-
+        Inline `style` attribute
+    - correct: true
+      answer: >-
+        Author `!important` declaration
 ```
 
 ```yaml
@@ -260,92 +271,93 @@ Put options in the correct sequence. If `answer` lists fewer keys than there are
 
     Which **three** commands do this, in order?
   options:
-    switch: >-
-      `git switch -c feature`
-    commit: >-
-      `git commit -am "Add feature"`
-    push: >-
-      `git push -u origin feature`
-    rebase: >-
-      `git rebase main`
-    stash: >-
-      `git stash`
-  answer: [switch, commit, push]
+    - correct: true
+      answer: >-
+        `git switch -c feature`
+    - correct: true
+      answer: >-
+        `git commit -am "Add feature"`
+    - correct: true
+      answer: >-
+        `git push -u origin feature`
+    - correct: false
+      answer: >-
+        `git rebase main`
+    - correct: false
+      answer: >-
+        `git stash`
+      explanation: >-
+        `git switch -c` keeps uncommitted changes, so stashing is not needed.
   explanation: >-
-    `git switch -c` keeps uncommitted changes when creating the branch, so
-    `git stash` is not needed. `-u` sets the upstream for later pushes.
+    `-u` sets the upstream, so later pushes need no arguments.
 ```
 
-Ordering questions are never shuffled into the correct order. The app guarantees that the initial order differs from `answer`.
+The app shuffles the options, and guarantees that the starting order differs from the correct order.
 
 #### `match`
 
-Pair each row with an option. By default all rows share one option pool, and an option may be used for more than one row.
+Pair each row with an option. Each row is a list item with its `text` and the `answer` it matches. All row answers together form one shared pool of options, and the same answer may appear in several rows. `distractors` adds options that match no row.
 
 ```yaml
 - type: match
   query: >-
     Match each status code to its meaning.
   rows:
-    s200: >-
-      `200`
-    s301: >-
-      `301`
-    s404: >-
-      `404`
-    s503: >-
-      `503`
-  options:
-    ok: >-
-      Success
-    moved: >-
-      Permanent redirect
-    missing: >-
-      Resource not found
-    unavailable: >-
-      Service temporarily unavailable
-    forbidden: >-
+    - text: >-
+        `200`
+      answer: >-
+        Success
+    - text: >-
+        `301`
+      answer: >-
+        Permanent redirect
+    - text: >-
+        `404`
+      answer: >-
+        Resource not found
+    - text: >-
+        `503`
+      answer: >-
+        Service temporarily unavailable
+  distractors:
+    - >-
       Access denied
-  answer:
-    s200: ok
-    s301: moved
-    s404: missing
-    s503: unavailable
 ```
 
-When each row needs its own choices (a grid of drop-downs), give the row an object with its own `options`:
+When each row needs its own choices (a grid of drop-downs), give the row `options` instead of `answer`. These work like the options of a `single` question.
 
 ```yaml
 - type: match
   query: >-
     Choose the best tool for each requirement.
   rows:
-    one-axis:
-      text: >-
+    - text: >-
         Distribute items along a single row
       options:
-        flex: >-
-          `display: flex`
-        grid: >-
-          `display: grid`
-        float: >-
-          `float: left`
-    two-axis:
-      text: >-
+        - correct: true
+          answer: >-
+            `display: flex`
+        - correct: false
+          answer: >-
+            `display: grid`
+        - correct: false
+          answer: >-
+            `float: left`
+    - text: >-
         Align items in rows and columns at the same time
       options:
-        flex: >-
-          `display: flex`
-        grid: >-
-          `display: grid`
-        table: >-
-          `<table>` markup
-  answer:
-    one-axis: flex
-    two-axis: grid
+        - correct: false
+          answer: >-
+            `display: flex`
+        - correct: true
+          answer: >-
+            `display: grid`
+        - correct: false
+          answer: >-
+            `<table>` markup
 ```
 
-`unique: true` on a `match` question requires every option to be used at most once.
+The app shuffles both the rows and the options.
 
 #### `solutions`
 
@@ -366,22 +378,22 @@ The app asks about the solutions one at a time, in random order. An answer is fi
   query: >-
     Does this solution meet the goal?
   options:
-    build-env:
-      text: >-
+    - correct: false
+      answer: >-
         Inject the key at build time as an environment variable.
       explanation: >-
         Build-time variables are embedded in the shipped JavaScript bundle.
-    proxy: >-
-      Call the API through your own backend, which adds the key.
-    obfuscate:
-      text: >-
+    - correct: true
+      answer: >-
+        Call the API through your own backend, which adds the key.
+    - correct: false
+      answer: >-
         Store the key in the code, base64-encoded.
       explanation: >-
         Encoding is not encryption. Anyone can decode it from the bundle.
-  answer: [proxy]        # the solutions that meet the goal
 ```
 
-`options` and `answer` work as in `multiple`: the options are the proposed solutions, and `answer` lists the ones that meet the goal. `shuffle` does not apply, because the order is always random.
+Here `correct: true` means the solution meets the goal.
 
 ## Media
 
@@ -436,15 +448,18 @@ questions:
     query: >-
       Which of these is a query language?
     options:
-      a: >-
-        HTML
-      b: >-
-        SQL
-      c: >-
-        CSS
-      d: >-
-        SVG
-    answer: b
+      - correct: false
+        answer: >-
+          HTML
+      - correct: true
+        answer: >-
+          SQL
+      - correct: false
+        answer: >-
+          CSS
+      - correct: false
+        answer: >-
+          SVG
     explanation: >-
       **SQL** is used to query relational databases.
       The others describe documents or presentation.
@@ -455,15 +470,18 @@ questions:
     query: >-
       Which of these are markup languages?
     options:
-      a: >-
-        HTML
-      b: >-
-        SQL
-      c: >-
-        SVG
-      d: >-
-        JSON
-    answer: [a, c]
+      - correct: true
+        answer: >-
+          HTML
+      - correct: false
+        answer: >-
+          SQL
+      - correct: true
+        answer: >-
+          SVG
+      - correct: false
+        answer: >-
+          JSON
 ```
 
 ## Open questions
