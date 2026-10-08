@@ -16,6 +16,9 @@ importers:
       ajv-formats:
         specifier: ^3.0.1
         version: 3.0.1(ajv@8.20.0)
+      lzma-web:
+        specifier: ^4.0.0
+        version: 4.0.0
       yaml:
         specifier: ^2.9.1
         version: 2.9.1
@@ -23,6 +26,9 @@ importers:
       '@types/node':
         specifier: ^26.6.4
         version: 26.6.4
+      fflate:
+        specifier: ^0.8.3
+        version: 0.8.3
       rolldown:
         specifier: ^1.2.12
         version: 1.2.12
@@ -35,6 +41,9 @@ importers:
       vitest:
         specifier: ^5.0.3
         version: 5.0.3(@types/node@26.6.4)(vite@8.3.3(@types/node@26.6.4)(yaml@2.9.1))
+      zstdify:
+        specifier: ^1.4.0
+        version: 1.4.0
 
 packages:
 
@@ -512,6 +521,9 @@ packages:
       picomatch:
         optional: true
 
+  fflate@0.8.3:
+    resolution: {integrity: sha512-tbZNuJrLwGUp3zshBtdy4W+ORxZuIh8a5ilyIEQDC5rY1f3U20JMry0Ll3WBzU58EZKsEuJFXhb5gwv8CsPvgA==}
+
   fsevents@2.3.3:
     resolution: {integrity: sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw==}
     engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
@@ -597,6 +609,10 @@ packages:
   lightningcss@1.33.0:
     resolution: {integrity: sha512-WkUDrojuJs0xkgGf2udWxa3yGBRxPtxUkB79i6aCZLRgc7PM8fZe9TosfPDcvEpQZbuFASnHYmRLBLUbmLOIIA==}
     engines: {node: '>= 12.0.0'}
+
+  lzma-web@4.0.0:
+    resolution: {integrity: sha512-a+vREf8P4Xp4+I8MMTJ+mWJgxHydjwdo0mTcgDaMMTIf6L6xrzWql7U3se4XwsYG16RIua4rKecDIgLeOfynJg==}
+    engines: {node: '>=18'}
 
   magic-string@1.4.3:
     resolution: {integrity: sha512-z12OxmaPGE0F4xlpGdjuAUckipLpQlTAuAmyGhNoD7ODpYUzvDfvtxUbjM/jwznyP178oju/KDdyi220wNJ0RQ==}
@@ -788,6 +804,10 @@ packages:
 
   yuku-parser@0.10.2:
     resolution: {integrity: sha512-CgaU0/PPjCAIEZ3WQroosOxTY3eeKldAN3h+vk8pMNz4+jl1CZzBR4pW+K/rRPF112VooCL5FdjJoiMNjDrL2A==}
+
+  zstdify@1.4.0:
+    resolution: {integrity: sha512-Ap0KAKZ2JJ4QwG7Wj4E4ZE8tMcooe90X988cSkB29yAdU9kbp8/VLqFVqyoeY0g80dRK3tswG4lPPDzZVVuBwQ==}
+    engines: {node: '>=24.0.0'}
 
 snapshots:
 
@@ -1042,6 +1062,8 @@ snapshots:
     optionalDependencies:
       picomatch: 4.0.7
 
+  fflate@0.8.3: {}
+
   fsevents@2.3.3:
     optional: true
 
@@ -1099,6 +1121,8 @@ snapshots:
       lightningcss-linux-x64-musl: 1.33.0
       lightningcss-win32-arm64-msvc: 1.33.0
       lightningcss-win32-x64-msvc: 1.33.0
+
+  lzma-web@4.0.0: {}
 
   magic-string@1.4.3:
     dependencies:
@@ -1272,3 +1296,5 @@ snapshots:
       '@yuku-parser/binding-linux-x64-musl': 0.10.2
       '@yuku-parser/binding-win32-arm64': 0.10.2
       '@yuku-parser/binding-win32-x64': 0.10.2
+
+  zstdify@1.4.0: {}

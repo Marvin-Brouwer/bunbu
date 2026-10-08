@@ -17,7 +17,6 @@ A general-purpose, file-based format for quizzes and practice tests.
 
 - Free-text answers. They cannot be graded reliably, so every question type has a fixed set of options.
 - Translations. A quiz is written in one language, set by `language`.
-- Sharing a quiz inside a URL, for now. This is planned for later with aggressive compression, so the format should stay compact and avoid redundancy.
 - Storing user progress, scores or attempt history. That belongs in the app, not in the quiz file.
 - Defining test modes, such as question counts or time limits. The app decides these.
 - Defining how the app looks or how navigation behaves.
@@ -25,7 +24,6 @@ A general-purpose, file-based format for quizzes and practice tests.
 ## Format choice: YAML + JSON Schema
 
 YAML is widely supported, easy to edit by hand, allows comments and multi-line strings without escaping, and can be validated with JSON Schema.
-If we later share quizzes through a URL, YAML is also more compact to URL-encode than the equivalent JSON.
 
 The schema lives in the top-level `schema/` folder of this repository, with one file per format version (`schema/v1.json`, `schema/v2.json`, …). Quiz files reference it in their first line. The format version is the file name:
 
@@ -425,6 +423,20 @@ query: |-
 - Use `|-` for text that contains an embedded image, so the base64 data stays on one line.
 - Base64 makes an image about a third larger, so keep embedded images small: prefer SVG for diagrams, and WebP or compressed PNG for screenshots.
 - Allowed types are `image/png`, `image/jpeg`, `image/webp`, `image/gif` and `image/svg+xml`. The app renders SVG as an image, never inline, so scripts in it do not run.
+
+## Sharing
+
+A quiz can be shared inside a link. `compress` in `@bunbu/data` turns a validated quiz into a URL-safe string, and `uncompress` turns it back. The string goes in the link's fragment (`#…`), so it is never sent to a server.
+
+1. **Pack.** The quiz is encoded in a schema-aware binary form: no keys, YAML syntax, indentation or comments. Repeated strings are stored once.
+2. **Compress.** The packed bytes are compressed with LZMA. On large quizzes this gives links about 15% shorter than deflate, which was the best of the browser-ready options measured.
+3. **Encode.** The result is base64url (`A-Z a-z 0-9 - _`). These characters survive chat apps and link detectors.
+
+The first character is the share-format version (`A` for v1). Packing and compression settings are frozen per version. A change gets a new letter, and old links keep working.
+
+Sharing keeps the quiz's content, not its file: comments and formatting are lost. Links are untrusted input, so `uncompress` validates the result against the schema and limits how large a quiz may claim to be.
+
+Very large quizzes still give long links. Browsers accept them, but chat apps and email clients may cut them off. Embedded `data:` images make this worse, which is another reason to prefer `https:` image URLs.
 
 ## Full example
 

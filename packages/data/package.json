@@ -16,18 +16,22 @@
     "build": "rolldown -c",
     "dev": "rolldown -c --watch",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run test/",
+    "bench": "vitest run bench/"
   },
   "devDependencies": {
     "@types/node": "^26.6.4",
+    "fflate": "^0.8.3",
     "rolldown": "^1.2.12",
     "rolldown-plugin-dts": "^0.28.6",
     "typescript": "^7.0.2",
-    "vitest": "^5.0.3"
+    "vitest": "^5.0.3",
+    "zstdify": "^1.4.0"
   },
   "dependencies": {
     "ajv": "^8.20.0",
     "ajv-formats": "^3.0.1",
+    "lzma-web": "^4.0.0",
     "yaml": "^2.9.1"
   }
 }

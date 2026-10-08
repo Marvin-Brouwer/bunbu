@@ -55,9 +55,11 @@ export async function validate(fileBlob: string): Promise<BunbuData | BunbuValid
   const issues: ValidationIssue[] = [];
 
   const reference = readSchemaReference(fileBlob);
-  const validator = typeof reference === "string" ? undefined : getValidator(reference.version);
+  const schemaVersion = typeof reference === "string" ? undefined : reference.version;
   if (typeof reference === "string") issues.push({ path: "", message: reference, line: 1 });
-  else if (!validator) issues.push({ path: "", message: `Unknown schema version v${reference.version}`, line: 1 });
+  else if (!getValidator(reference.version)) {
+    issues.push({ path: "", message: `Unknown schema version v${reference.version}`, line: 1 });
+  }
 
   const lineCounter = new LineCounter();
   const document = parseDocument(fileBlob, { lineCounter });
@@ -65,26 +67,32 @@ export async function validate(fileBlob: string): Promise<BunbuData | BunbuValid
     issues.push({ path: "", message: error.message.split("\n")[0]!, line: error.linePos?.[0].line });
   }
 
-  if (issues.length > 0 || !validator) return new BunbuValidationError(issues);
+  if (issues.length > 0 || schemaVersion === undefined) return new BunbuValidationError(issues);
 
   const data: unknown = document.toJS();
-  if (!validator(data)) {
-    return new BunbuValidationError(toIssues(validator.errors ?? [], document, lineCounter));
-  }
+  const schemaIssues = checkData(data, schemaVersion, (pointer) => findLine(document, lineCounter, pointer));
+  if (schemaIssues.length > 0) return new BunbuValidationError(schemaIssues);
 
   const quiz = data as BunbuData;
   return { ...quiz, version: String(quiz.version) };
 }
 
-function toIssues(errors: ErrorObject[], document: Document, lineCounter: LineCounter): ValidationIssue[] {
+/** Checks parsed quiz data against a schema version. Returns no issues when the data is valid. */
+export function checkData(
+  data: unknown,
+  schemaVersion: number,
+  lineOf?: (pointer: string) => number | undefined,
+): ValidationIssue[] {
+  const validator = getValidator(schemaVersion);
+  if (!validator) return [{ path: "", message: `Unknown schema version v${schemaVersion}` }];
+  if (validator(data)) return [];
+
   const seen = new Set<string>();
   const issues: ValidationIssue[] = [];
-  for (const error of errors) {
-    const issue: ValidationIssue = {
-      path: error.instancePath,
-      message: describe(error),
-      line: findLine(document, lineCounter, error.instancePath),
-    };
+  for (const error of validator.errors ?? []) {
+    const issue: ValidationIssue = { path: error.instancePath, message: describe(error) };
+    const line = lineOf?.(error.instancePath);
+    if (line !== undefined) issue.line = line;
     const key = `${issue.path} ${issue.message}`;
     if (seen.has(key)) continue;
     seen.add(key);
