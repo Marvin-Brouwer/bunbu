@@ -90,7 +90,7 @@ function generator(random: Random) {
       const option: Option = { answer: answer() as Option["answer"], correct: index < correct };
       if (chance(0.3)) option.explanation = paragraph(1) as Option["explanation"];
       return option;
-    }).sort(() => random() - 0.5);
+    }).toSorted(() => random() - 0.5);
 
   const question = (): Question => {
     const base = { query: query() as Question["query"] };

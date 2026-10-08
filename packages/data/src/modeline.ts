@@ -1,4 +1,5 @@
-const modeline = /^﻿?#\s*yaml-language-server:\s*\$schema=(\S+)/;
+// \uFEFF is the byte-order mark some editors write before the first line.
+const modeline = /^\uFEFF?#\s*yaml-language-server:\s*\$schema=(\S+)/;
 const versionedSchema = /\/v(\d+)\.json$/;
 
 export type SchemaReference = { url: string; version: number };

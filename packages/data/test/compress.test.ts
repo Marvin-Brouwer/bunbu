@@ -137,7 +137,7 @@ describe("compress / uncompress", () => {
     ["an older text share code", encode("AqbIAH8HvRcNjxvWk7hc8tV"), "unknown-format"],
     ["a signature without the NUL byte", Uint8Array.from([...encode("BUNBU"), 1, 1, 1, 0, 0, 0, 0, 0]), "unknown-format"],
     ["a newer format version", Uint8Array.from([...encode("BUNBU"), 0, 2, 1, 1, 0, 0, 0, 0, 0]), "unknown-format"],
-    ["garbage after the signature", Uint8Array.from([...encode("BUNBU"), 0, 1, ...new Array(20).fill(0)]), "corrupt"],
+    ["garbage after the signature", Uint8Array.from([...encode("BUNBU"), 0, 1, ...Array.from<number>({ length: 20 }).fill(0)]), "corrupt"],
     ["a size claim far beyond the limit", Uint8Array.from([...encode("BUNBU"), 0, 1, 0xff, 0xff, 0xff, 0x7f, 1, 0, 0, 0, 0, 0]), "corrupt"],
   ] as const)("rejects %s", async (_, input, reason) => {
     await expectShareError(input, reason);

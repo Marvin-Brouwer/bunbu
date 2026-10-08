@@ -3,9 +3,18 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "postinstall": "pnpm --filter @bunbu/data build",
+    "dev": "pnpm --filter @bunbu/game dev",
     "build": "pnpm -r build",
+    "lint": "oxlint",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test"
   },
-  "packageManager": "pnpm@11.15.1"
+  "packageManager": "pnpm@11.15.1",
+  "devDependencies": {
+    "globals": "^17.13.0",
+    "oxlint": "^1.87.0",
+    "oxlint-tsgolint": "^7.0.2003",
+    "typescript": "~6.0.3"
+  }
 }

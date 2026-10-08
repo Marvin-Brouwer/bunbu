@@ -1,0 +1,38 @@
+/*
+ * The run's layers over the canvas, back to front (docs/architecture/rendering.md#layers):
+ * HUD, scroll, swipe zone, overlays. Each is a track of its own.
+ */
+
+.run,
+.layer {
+	position: absolute;
+	inset: 0;
+}
+
+/* Layers pass pointer events through; what the player can touch turns them back on. */
+.layer {
+	pointer-events: none;
+	display: grid;
+}
+
+.layer > * {
+	pointer-events: auto;
+}
+
+.hud {
+	align-content: start;
+}
+
+.scroll {
+	align-content: start;
+	padding: 3.5rem 0.75rem 0;
+}
+
+.swipe {
+	align-content: end;
+}
+
+.overlays {
+	align-content: center;
+	justify-content: center;
+}

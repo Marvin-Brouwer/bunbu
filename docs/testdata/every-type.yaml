@@ -1,0 +1,172 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Marvin-Brouwer/bunbu/main/schema/v1.json
+
+# A sample quiz for development: one question of every type, so a screen can be built against
+# real content. See docs/design/data-format.md.
+
+id: every-type
+title: Every question type
+version: '1'
+language: en
+description: >-
+  Development sample: one question of every type in the data format.
+passingScore: 70
+
+pronunciations:
+  GFM: G F M
+
+questions:
+  - type: yes-no
+    query: |-
+      A client sends this request twice because the first response timed out:
+
+      ```http
+      PUT /users/42 HTTP/1.1
+      Content-Type: application/json
+
+      { "name": "Ada", "role": "admin" }
+      ```
+
+      Is the result on the server the same as sending it **once**?
+    answer: yes
+    explanation: |-
+      `PUT` is *idempotent*: it replaces the resource with the given state, so repeating it
+      leaves the resource in the same state.
+    references:
+      - RFC 9110, section 9.2.2: https://www.rfc-editor.org/rfc/rfc9110#section-9.2.2
+
+  - type: single
+    query: |-
+      A screen reader announces this image only as *"image"*:
+
+      ```html
+      <img src="chart.png">
+      ```
+
+      Which attribute should be added so it is described properly?
+    options:
+      - correct: true
+        answer: >-
+          `alt`
+      - correct: false
+        answer: >-
+          `title`
+        explanation: >-
+          Shown as a tooltip, but not reliably read by screen readers.
+      - correct: false
+        answer: >-
+          `aria-label` on the parent element
+      - correct: false
+        answer: >-
+          `caption`
+        explanation: >-
+          Only valid on `<table>`, not on images.
+
+  - type: multiple
+    query: >-
+      Which HTTP methods are defined as **safe**, meaning they are not expected to change any
+      state on the server?
+    options:
+      - correct: true
+        answer: >-
+          `GET`
+      - correct: true
+        answer: >-
+          `HEAD`
+      - correct: false
+        answer: >-
+          `POST`
+      - correct: false
+        answer: >-
+          `DELETE`
+
+  - type: order
+    query: >-
+      Several rules set the `color` of the same element. Order them from **lowest** to
+      **highest** precedence.
+    options:
+      - correct: true
+        answer: >-
+          User-agent stylesheet
+      - correct: true
+        answer: >-
+          Author stylesheet
+      - correct: true
+        answer: >-
+          Inline `style` attribute
+      - correct: true
+        answer: >-
+          Author `!important` declaration
+
+  - type: match
+    query: >-
+      Match each status code to its meaning.
+    rows:
+      - text: >-
+          `200`
+        answer: >-
+          Success
+      - text: >-
+          `301`
+        answer: >-
+          Permanent redirect
+      - text: >-
+          `404`
+        answer: >-
+          Resource not found
+    distractors:
+      - >-
+        Access denied
+
+  - type: match
+    query: >-
+      Choose the best tool for each requirement.
+    rows:
+      - text: >-
+          Distribute items along a single row
+        options:
+          - correct: true
+            answer: >-
+              `display: flex`
+          - correct: false
+            answer: >-
+              `display: grid`
+          - correct: false
+            answer: >-
+              `float: left`
+      - text: >-
+          Align items in rows and columns at the same time
+        options:
+          - correct: false
+            answer: >-
+              `display: flex`
+          - correct: true
+            answer: >-
+              `display: grid`
+          - correct: false
+            answer: >-
+              `<table>` markup
+
+  - type: solutions
+    scenario: |-
+      A single-page app calls a third-party weather API. Every request needs a secret key in the
+      `X-Api-Key` header.
+
+      Requirements:
+
+      - The key must **never** be visible to end users, including in dev tools.
+      - The key can be rotated without rebuilding the frontend.
+    query: >-
+      Does this solution meet the goal?
+    options:
+      - correct: false
+        answer: >-
+          Inject the key at build time as an environment variable.
+        explanation: >-
+          Build-time variables are embedded in the shipped JavaScript bundle.
+      - correct: true
+        answer: >-
+          Call the API through a backend endpoint that adds the header and reads the key from a
+          secret store.
+      - correct: false
+        answer: >-
+          Store the key in `localStorage` after the first request.
