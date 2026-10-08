@@ -32,7 +32,7 @@ apps/game/src/
   render/     viewport, stage (show() puts a view on the canvas), run/ world
   ui/         Rooted components, one folder per screen with its _routes.mts
     shell/    the one canvas and the routed screen on top of it
-  fixtures/   dev-only run states, through /run/?fixture=<name>
+  fixtures/   dev-only run states, through /fight/?fixture=<name>
 apps/game/test/quizzes/   sample quizzes every track develops against
 packages/data/            @bunbu/data: reading, validating and sharing quizzes
 schema/                   the JSON Schema per format version
@@ -55,7 +55,7 @@ Conventions the linter can't check:
 
 Each track in [docs/plan.md](docs/plan.md#tracks) owns its folders. Change another track's folder
 through a small pull request its owner reviews. `package.json`, `pnpm-lock.yaml`,
-`loop.mts` and `ui/run/run.mts` are shared, so keep changes there to a line or two, and add
+`loop.mts` and `ui/fight/run.mts` are shared, so keep changes there to a line or two, and add
 dependencies in a pull request of their own.
 
 ## Before you push
@@ -75,11 +75,11 @@ request. No `eslint-disable` without a comment saying why.
 
 ```sh
 pnpm dev                                  # the game
-pnpm dev  # then open /run/?fixture=ambush-multiple
+pnpm dev  # then open /fight/?fixture=ambush-multiple
 ```
 
 Fixtures put the stores into a named state without playing a run, so a screen can be built and
-screenshotted on its own. `/run/?fixture=` with an unknown name logs the list. They are dev-only; add
+screenshotted on its own. `/fight/?fixture=` with an unknown name logs the list. They are dev-only; add
 the ones your track needs in `apps/game/src/fixtures/`.
 
 ## Conventions

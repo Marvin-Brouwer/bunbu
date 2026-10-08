@@ -2,7 +2,7 @@
  * Dev-only fixtures: a run's state for one screen, so the UI and 3D tracks can build and
  * screenshot it without playing a run.
  *
- * Open `/run/?fixture=ambush-multiple`, `/run/?fixture=fallen`, and so on. An unknown name logs
+ * Open `/fight/?fixture=ambush-multiple`, `/fight/?fixture=fallen`, and so on. An unknown name logs
  * the list. A fixture is the starting state of every store, handed to `createRunGame`.
  */
 

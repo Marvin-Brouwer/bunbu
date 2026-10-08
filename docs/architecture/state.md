@@ -52,7 +52,7 @@ App-wide:
 
 `settings` is the only store that is persisted (local storage), together with the high scores. The rest starts fresh with every run.
 
-Pause, the results and the fallen screen are phases of the run, not routes: they are overlays on a run that is still mounted, and leaving the run drops its state.
+Choosing a quiz and running it share one route, `/fight/`: the select screen starts the run in its place, so a run can't be opened from a URL without a quiz. The run's stores are created when the player starts and dropped when they leave the run or the route. Pause, the results and the fallen screen are phases of the run, shown as overlays on it.
 
 ## A store
 
@@ -186,7 +186,7 @@ apps/game/src/
 	ui/               Rooted components, one folder per screen
 		shell/        the canvas and the routed screen on top of it
 		<screen>/     _routes.mts registers the screen's routes; the screen lazy-loads
-	fixtures/         dev-only run states per screen, through `/run/?fixture=<name>`
+	fixtures/         dev-only run states per screen, through `/fight/?fixture=<name>`
 ```
 
 Every `_routes.mts` is collected into the generated `_routes.g.mts` at build time, so adding a screen never touches `application.mts`.

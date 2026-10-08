@@ -5,8 +5,7 @@
 
 import { href } from '@rooted/router'
 import { DojoRoute } from '../dojo/_routes.mts'
-import { RunRoute } from '../run/_routes.mts'
-import { SelectRoute } from '../select/_routes.mts'
+import { FightRoute } from '../fight/_routes.mts'
 import { SettingsRoute } from '../settings/_routes.mts'
 import { placeholder } from '../placeholder.mts'
 
@@ -14,8 +13,7 @@ export const Title = placeholder('bunbu-title', {
 	title: '文武 · Bunbu',
 	note: 'Shogun Scholar',
 	links: [
-		{ label: 'Run', href: href.for(RunRoute) },
-		{ label: 'Quiz and stage', href: href.for(SelectRoute) },
+		{ label: 'Fight', href: href.for(FightRoute) },
 		{ label: 'Dojo', href: href.for(DojoRoute) },
 		{ label: 'Settings', href: href.for(SettingsRoute) },
 	],
