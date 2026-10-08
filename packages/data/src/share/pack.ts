@@ -210,7 +210,6 @@ export function unpack(bytes: Uint8Array): BunbuData {
 function writeQuestion(writer: Writer, question: Question): void {
   let specific = 0;
   if (question.type === "yes-no") specific = question.answer === "yes" ? 1 : 0;
-  if (question.type === "multiple") specific = question.scoring === undefined ? 0 : question.scoring === "partial" ? 1 : 2;
   if (question.type === "match") specific = question.distractors === undefined ? 0 : 1;
   writer.byte(
     questionTypes.indexOf(question.type) |
@@ -282,13 +281,9 @@ function readQuestion(reader: Reader): Question {
       question = { type, query, scenario: reader.string<Markdown>(), options: readOptions(reader) };
       break;
     case "single":
+    case "multiple":
     case "order":
       question = { type, query, options: readOptions(reader) };
-      break;
-    case "multiple":
-      question = { type, query, options: readOptions(reader) };
-      if (specific === 1) question.scoring = "partial";
-      if (specific === 2) question.scoring = "all";
       break;
     case "match": {
       const count = reader.count();

@@ -107,7 +107,7 @@ function generator(random: Random) {
       case 1:
         return extras({ type: "single", ...base, options: options(4, 1) });
       case 2:
-        return extras({ type: "multiple", ...base, options: options(5, 2), ...(chance(0.5) ? { scoring: "partial" as const } : {}) });
+        return extras({ type: "multiple", ...base, options: options(5, 2) });
       case 3:
         return extras({ type: "order", ...base, options: options(4, 4).map((option) => ({ ...option, correct: true })) });
       case 4: {
