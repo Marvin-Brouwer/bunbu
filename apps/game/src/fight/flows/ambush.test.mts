@@ -1,19 +1,19 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { marks } from '../../_shared/state/ambush.mts'
 import { createRunGame, type RunGame } from '../state/game.mts'
-import { fixtureQuiz } from '../../_shared/fixtures/quiz.mts'
+import { fixtureQuiz } from '../../_temp/quiz.mts'
 import { commitAmbush, missShare } from './ambush.mts'
 import { startRun, tickRun } from './run.mts'
 
 let game: RunGame
 
 function openSingle() {
-	game.run.beginAmbush()
-	game.ninjas.clear()
-	game.ninjas.spawn([{ id: 0, wave: 0, options: [0] }, { id: 1, wave: 0, options: [1] }])
-	game.ambush.open({
+	game.run.value.beginAmbush()
+	game.ninjas.value.clear()
+	game.ninjas.value.spawn([{ id: 0, wave: 0, options: [0] }, { id: 1, wave: 0, options: [1] }])
+	game.ambush.value.start({
 		kind: 'single',
-		at: game.quiz.current() ?? { question: 0, part: 0 },
+		at: game.quiz.value.current() ?? { question: 0, part: 0 },
 		query: 'Which attribute?',
 		options: [
 			{ answer: '`alt`', correct: true, mark: marks[0]!, ninja: 0, pick: 0 },
@@ -26,7 +26,7 @@ function openSingle() {
 
 function answer(mark: number) {
 	openSingle()
-	game.ambush.pick(marks[mark]!)
+	game.ambush.value.pick(marks[mark]!)
 	commitAmbush(game)
 }
 
@@ -54,7 +54,7 @@ describe('commitAmbush', () => {
 		expect(game.score.value).toMatchObject({ points: 0, correct: 0, answered: 1 })
 		expect(game.life.value.value).toBeCloseTo(1 - missShare(game))
 		expect(game.shogun.value.pose).toBe('hurt')
-		expect(game.quiz.misses()).toHaveLength(1)
+		expect(game.quiz.value.misses()).toHaveLength(1)
 	})
 
 	it('falls when the pass mark is out of reach', () => {
@@ -62,7 +62,7 @@ describe('commitAmbush', () => {
 		answer(1)
 		answer(1)
 
-		expect(game.life.empty()).toBe(true)
+		expect(game.life.value.empty()).toBe(true)
 		expect(game.run.value.phase).toBe('fallen')
 		expect(game.shogun.value.pose).toBe('fallen')
 	})

@@ -9,8 +9,8 @@
  */
 
 import type { BunbuData, Question } from '@bunbu/data'
-import { createStore } from '@rooted/store'
-import { type Readable, refuse, snapshot } from './store.mts'
+import { createStore, type Store } from '@rooted/store'
+import { refuse, snapshot } from './store.mts'
 
 /** One ambush: a question, plus which solution or row of it is being asked. */
 export type QuestionRef = {
@@ -40,7 +40,7 @@ export type QuizState = {
 	readonly records: readonly AnswerRecord[]
 }
 
-export type Quiz = Readable<QuizState> & {
+export type QuizActions = {
 	/** Loads a quiz. `order` defaults to the questions in file order; the app shuffles it. */
 	load: (data: BunbuData, order?: readonly number[]) => void
 	/** The ambush that is up next, or `undefined` when the quiz is done. */
@@ -54,6 +54,9 @@ export type Quiz = Readable<QuizState> & {
 	/** Starts the same quiz over, in the same order. */
 	reset: () => void
 }
+
+/** The store, with its actions on its state. Change it through those, not `update`. */
+export type Quiz = Store<QuizState & QuizActions>
 
 export const noQuiz: QuizState = { quiz: undefined, order: [], refs: [], answered: 0, records: [] }
 
@@ -79,43 +82,42 @@ export function loaded(data: BunbuData, order?: readonly number[]): QuizState {
 }
 
 export function createQuiz(initial: QuizState = noQuiz): Quiz {
-	const store = createStore(initial)
+	// The quiz as `BunbuData`, not as the store's `ReadonlyState` of it; see snapshot().
+	const state = (): QuizState => snapshot<QuizState & QuizActions>(store)
 
-	return {
-		get value() {
-			return snapshot(store)
-		},
-		on: store.on.bind(store),
+	const store: Quiz = createStore<QuizState & QuizActions>({
+		...initial,
 
 		load(data, order) {
 			store.update(() => loaded(data, order))
 		},
 
 		current() {
-			const { refs, answered } = snapshot(store)
+			const { refs, answered } = state()
 			return refs[answered]
 		},
 
 		question(at) {
-			return snapshot(store).quiz?.questions[at.question]
+			return state().quiz?.questions[at.question]
 		},
 
 		record(answer) {
-			const state = snapshot(store)
-			if (state.answered >= state.refs.length) {
+			const { answered, refs, records } = state()
+			if (answered >= refs.length) {
 				refuse('quiz.record', 'every question has been answered')
 				return
 			}
-			store.update(() => ({ answered: state.answered + 1, records: [...state.records, answer] }))
+			store.update(() => ({ answered: answered + 1, records: [...records, answer] }))
 		},
 
 		misses() {
-			return snapshot(store).records.filter((record) => record.outcome !== 'correct')
+			return state().records.filter((record) => record.outcome !== 'correct')
 		},
 
 		reset() {
-			const { quiz, order } = snapshot(store)
+			const { quiz, order } = state()
 			store.update(() => quiz === undefined ? noQuiz : loaded(quiz, order))
 		},
-	}
+	})
+	return store
 }

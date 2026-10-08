@@ -8,8 +8,7 @@
  */
 
 import { createQuiz, noQuiz, type Quiz, type QuizState } from '../../_shared/state/quiz.mts'
-import { createStore } from '@rooted/store'
-import { type Readable, snapshot } from '../../_shared/state/store.mts'
+import { createStore, type Store } from '@rooted/store'
 
 export type ReadingState = {
 	/** Index into the quiz's `order` of the card on screen. */
@@ -21,7 +20,7 @@ export type ReadingState = {
 	readonly word: { readonly start: number; readonly end: number } | undefined
 }
 
-export type Reading = Readable<ReadingState> & {
+export type ReadingActions = {
 	play: () => void
 	pause: () => void
 	/** Back to the first card. */
@@ -33,23 +32,23 @@ export type Reading = Readable<ReadingState> & {
 	speak: (word: ReadingState['word']) => void
 }
 
+/** The store, with its actions on its state. Change it through those, not `update`. */
+export type Reading = Store<ReadingState & ReadingActions>
+
 export const notReading: ReadingState = { card: 0, playing: false, rate: 1, word: undefined }
 
 export function createReading(initial: ReadingState = notReading): Reading {
-	const store = createStore(initial)
 	const change = (next: Partial<ReadingState>) => { store.update(() => next) }
-	return {
-		get value() {
-			return snapshot(store)
-		},
-		on: store.on.bind(store),
+	const store: Reading = createStore<ReadingState & ReadingActions>({
+		...initial,
 		play: () => { change({ playing: true }) },
 		pause: () => { change({ playing: false }) },
 		restart: () => { change({ card: 0, word: undefined }) },
-		next: (cards) => { change({ card: cards === 0 ? 0 : (snapshot(store).card + 1) % cards, word: undefined }) },
+		next: (cards) => { change({ card: cards === 0 ? 0 : (store.value.card + 1) % cards, word: undefined }) },
 		setRate: (rate) => { change({ rate: Math.min(2, Math.max(0.5, rate)) }) },
 		speak: (word) => { change({ word }) },
-	}
+	})
+	return store
 }
 
 export type StudyGame = {

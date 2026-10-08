@@ -18,31 +18,31 @@ export function missShare(game: RunGame): number {
 
 /** Commits the open ambush and spreads the result over the run's stores. */
 export function commitAmbush(game: RunGame): void {
-	const result = game.ambush.commit()
+	const result = game.ambush.value.commit()
 	if (result === undefined) return
 
-	game.quiz.record({ at: result.at, outcome: result.outcome, picked: result.picked })
+	game.quiz.value.record({ at: result.at, outcome: result.outcome, picked: result.picked })
 
 	if (result.outcome === 'correct') {
-		game.score.addCorrect()
-		for (const ninja of result.slain) game.ninjas.slay(ninja)
-		for (const ninja of result.blocked) game.ninjas.block(ninja)
+		game.score.value.addCorrect()
+		for (const ninja of result.slain) game.ninjas.value.slay(ninja)
+		for (const ninja of result.blocked) game.ninjas.value.block(ninja)
 		const [first] = result.slain
-		if (first === undefined) game.shogun.block(result.blocked[0] ?? 0)
-		else game.shogun.strike(first)
+		if (first === undefined) game.shogun.value.block(result.blocked[0] ?? 0)
+		else game.shogun.value.strike(first)
 	} else {
-		game.score.addMiss()
-		game.life.hit(missShare(game))
-		game.shogun.hurt()
-		for (const ninja of game.ninjas.value.active) game.ninjas.strike(ninja.id)
+		game.score.value.addMiss()
+		game.life.value.hit(missShare(game))
+		game.shogun.value.hurt()
+		for (const ninja of game.ninjas.value.active) game.ninjas.value.strike(ninja.id)
 	}
 
 	const { answered, refs } = game.quiz.value
-	if (game.life.empty() || answered >= refs.length) {
+	if (game.life.value.empty() || answered >= refs.length) {
 		endRun(game)
 		return
 	}
 	// The samurai keeps the pose he struck, blocked or was hit in: the run track adds the pause
 	// before the run resumes (about 1 s after a hit) and puts him back to running.
-	game.run.endAmbush()
+	game.run.value.endAmbush()
 }

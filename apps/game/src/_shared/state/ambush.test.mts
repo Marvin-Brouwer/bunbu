@@ -5,7 +5,7 @@
  */
 
 import { beforeEach, describe, expect, it } from 'vitest'
-import { fixtureQuiz } from '../fixtures/quiz.mts'
+import { fixtureQuiz } from '../../_temp/quiz.mts'
 import { createAmbush, marks, type Ambush, type AmbushOption } from './ambush.mts'
 import { createQuiz, refsOf, type Quiz } from './quiz.mts'
 
@@ -23,7 +23,7 @@ let ambush: Ambush
 beforeEach(() => {
 	quiz = createQuiz()
 	ambush = createAmbush()
-	quiz.load(fixtureQuiz)
+	quiz.value.load(fixtureQuiz)
 })
 
 describe('quiz', () => {
@@ -33,16 +33,16 @@ describe('quiz', () => {
 	})
 
 	it('keeps misses for the review', () => {
-		quiz.record({ at: { question: 0, part: 0 }, outcome: 'correct', picked: [0] })
-		quiz.record({ at: { question: 1, part: 0 }, outcome: 'unanswered', picked: [] })
+		quiz.value.record({ at: { question: 0, part: 0 }, outcome: 'correct', picked: [0] })
+		quiz.value.record({ at: { question: 1, part: 0 }, outcome: 'unanswered', picked: [] })
 		expect(quiz.value.answered).toBe(2)
-		expect(quiz.misses()).toHaveLength(1)
+		expect(quiz.value.misses()).toHaveLength(1)
 	})
 })
 
 describe('ambush', () => {
 	const open = () => {
-		ambush.open({
+		ambush.value.start({
 			kind: 'multiple',
 			at: { question: 2, part: 0 },
 			query: 'Which HTTP methods are safe?',
@@ -58,38 +58,38 @@ describe('ambush', () => {
 
 	it('numbers picks in swipe order and renumbers when one is taken back', () => {
 		open()
-		ambush.pick(marks[0]!)
-		ambush.pick(marks[1]!)
+		ambush.value.pick(marks[0]!)
+		ambush.value.pick(marks[1]!)
 		expect(ambush.value.options.map((item) => item.pick)).toEqual([1, 2, 0])
 
-		ambush.pick(marks[0]!)
+		ambush.value.pick(marks[0]!)
 		expect(ambush.value.options.map((item) => item.pick)).toEqual([0, 1, 0])
 	})
 
 	it('is correct when every slash is on a correct option and every block on a wrong one', () => {
 		open()
-		ambush.pick(marks[0]!)
-		ambush.pick(marks[1]!)
-		expect(ambush.commit()?.outcome).toBe('correct')
+		ambush.value.pick(marks[0]!)
+		ambush.value.pick(marks[1]!)
+		expect(ambush.value.commit()?.outcome).toBe('correct')
 	})
 
 	it('is wrong when a slash lands on an incorrect option', () => {
 		open()
-		ambush.pick(marks[0]!)
-		ambush.pick(marks[2]!)
-		expect(ambush.commit()?.outcome).toBe('wrong')
+		ambush.value.pick(marks[0]!)
+		ambush.value.pick(marks[2]!)
+		expect(ambush.value.commit()?.outcome).toBe('wrong')
 	})
 
 	it('is unanswered when the time runs out, and a half-swiped answer does not count', () => {
 		open()
-		ambush.pick(marks[0]!)
-		ambush.tick(10)
-		expect(ambush.unanswered()).toBe(true)
-		expect(ambush.commit()?.outcome).toBe('unanswered')
+		ambush.value.pick(marks[0]!)
+		ambush.value.tick(10)
+		expect(ambush.value.unanswered()).toBe(true)
+		expect(ambush.value.commit()?.outcome).toBe('unanswered')
 	})
 
 	it('has no time limit when seconds is 0', () => {
-		ambush.open({
+		ambush.value.start({
 			kind: 'single',
 			at: { question: 1, part: 0 },
 			query: 'Which attribute?',
@@ -97,13 +97,13 @@ describe('ambush', () => {
 			choose: 1,
 			seconds: 0,
 		})
-		ambush.tick(60)
-		expect(ambush.unanswered()).toBe(false)
+		ambush.value.tick(60)
+		expect(ambush.value.unanswered()).toBe(false)
 	})
 
 	it('ignores a pick when no ambush is open', () => {
-		ambush.pick(marks[0]!)
+		ambush.value.pick(marks[0]!)
 		expect(ambush.value.open).toBe(false)
-		expect(ambush.commit()).toBeUndefined()
+		expect(ambush.value.commit()).toBeUndefined()
 	})
 })

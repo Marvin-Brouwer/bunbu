@@ -18,7 +18,7 @@ import {
 	type PerspectiveCamera,
 } from 'three'
 import type { RunGame } from './state/game.mts'
-import type { View } from '../_canvas/stage.mts'
+import type { View } from '../canvas/stage.mts'
 
 /** How long one floor tile is, in metres. The floor scrolls within one tile and repeats. */
 const tileLength = 4

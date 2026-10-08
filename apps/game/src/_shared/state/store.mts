@@ -1,18 +1,12 @@
 /**
- * The game's stores are [`@rooted/store`](https://github.com/Marvin-Brouwer/rooted/blob/main/docs/guide/state.md)
- * stores, wrapped so a store module hands out reading and its own actions, never `update`.
+ * The game's stores are plain [`@rooted/store`](https://github.com/Marvin-Brouwer/rooted/blob/main/docs/guide/state.md)
+ * stores with their actions on their state, so `game.life.value.hit(share)` is how a flow changes
+ * one. Nothing outside a store's own module calls `update`.
  *
  * See [state.md](../../../../../docs/architecture/state.md).
  */
 
 import type { StateObject, Store } from '@rooted/store'
-
-/** What a store module hands out: a frozen snapshot and change events, never writing. */
-export type Readable<TState extends StateObject> = {
-	/** The current state, frozen. Actions replace it; never mutate it. */
-	readonly value: TState
-	readonly on: Store<TState>['on']
-}
 
 /**
  * The store's frozen snapshot, typed as the state it holds.

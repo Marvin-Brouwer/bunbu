@@ -4,8 +4,7 @@
  */
 
 import type { BunbuData } from '@bunbu/data'
-import { createStore } from '@rooted/store'
-import { snapshot } from './store.mts'
+import { createStore, type Store } from '@rooted/store'
 
 export const stages = ['rice-fields', 'bamboo-forest', 'mountain-temple', 'castle-town', 'edo-castle'] as const
 
@@ -19,23 +18,28 @@ export type SelectionState = {
 
 const initial: SelectionState = { quiz: undefined, stage: 'rice-fields' }
 
-const selectionStore = createStore(initial)
-
-export const selection = {
-	get value() {
-		return snapshot(selectionStore)
-	},
-	on: selectionStore.on.bind(selectionStore),
-
-	chooseQuiz(quiz: BunbuData): void {
-		selectionStore.update(() => ({ quiz }))
-	},
-
-	chooseStage(stage: Stage): void {
-		selectionStore.update(() => ({ stage }))
-	},
-
-	reset(): void {
-		selectionStore.update(() => initial)
-	},
+export type SelectionActions = {
+	chooseQuiz: (quiz: BunbuData) => void
+	chooseStage: (stage: Stage) => void
+	reset: () => void
 }
+
+/**
+ * App-wide: the choice outlives the select screen. Change it through its actions, not `update`.
+ * Read the quiz with `snapshot(selection).quiz` to get it back as `BunbuData`.
+ */
+export const selection: Store<SelectionState & SelectionActions> = createStore<SelectionState & SelectionActions>({
+	...initial,
+
+	chooseQuiz: (quiz) => {
+		selection.update(() => ({ quiz }))
+	},
+
+	chooseStage: (stage) => {
+		selection.update(() => ({ stage }))
+	},
+
+	reset: () => {
+		selection.update(() => initial)
+	},
+})

@@ -13,9 +13,9 @@ describe('a store module', () => {
 		const listener = vi.fn()
 		life.on('change', controller.signal, listener)
 
-		life.hit(0.25)
+		life.value.hit(0.25)
 		controller.abort()
-		life.hit(0.25)
+		life.value.hit(0.25)
 
 		expect(listener).toHaveBeenCalledOnce()
 		expect(life.value.value).toBe(0.5)

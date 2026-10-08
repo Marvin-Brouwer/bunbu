@@ -29,8 +29,9 @@ no top-level `components/`, `state/` or `ui/` tree.
 ```text
 apps/game/src/
   application.mts  the Application: the canvas, the game loop and the router
-  _canvas/         the game loop (play() plugs a mode in), the viewport, show() for a world
-  _shared/         what several slices use: state (quiz, ambush, selection), the fixture quiz
+  canvas/          the game loop (play() plugs a mode in), the viewport, show() for a world
+  _shared/         what several slices use: state (quiz, ambush, selection), Placeholder
+  _temp/           stand-ins until the real thing lands: the fixture quiz
   title/           the title menu (the router's home) and not-found
   fight/           /fight/: quiz select, then the run; state/, flows/, world, fixtures
   dojo/            /dojo/: study and practice, each with its own game state
@@ -48,13 +49,16 @@ The slice policy:
   `_shared/`. A slice may import another slice's routes (for links) and its state, never its
   components.
 - Inside a slice, structure is free. A slice's game rules go in `state/` and `flows/` subfolders.
+- Only `_shared/`, `_temp/` and `_routes.mts` get a leading underscore; feature folders don't.
+- Rooted is a component framework: a reusable piece of UI is a component used with `create`,
+  not a function that builds one.
 
 Rules the linter enforces:
 
 - A slice's `state/` and `flows/` are plain TypeScript. They only import from other `state/` and
   `flows/` folders and `@rooted/store`, never `three` or the rest of `@rooted/*`, and never touch
   the DOM. Stores are [`@rooted/store`](https://github.com/Marvin-Brouwer/rooted/blob/main/docs/guide/state.md)
-  stores behind a module that hands out `value`, `on` and its actions, never `update`.
+  stores with their actions on their state: call `game.life.value.hit(share)`, never `update`.
 
 Conventions the linter can't check:
 
@@ -68,7 +72,7 @@ Conventions the linter can't check:
 
 Each track in [docs/plan.md](docs/plan.md#tracks) owns its folders. Change another track's folder
 through a small pull request its owner reviews. `package.json`, `pnpm-lock.yaml`,
-`_canvas/loop.mts` and `fight/run.mts` are shared, so keep changes there to a line or two, and add
+`canvas/loop.mts` and `fight/run.mts` are shared, so keep changes there to a line or two, and add
 dependencies in a pull request of their own.
 
 ## Before you push

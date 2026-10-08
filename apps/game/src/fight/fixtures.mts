@@ -14,7 +14,7 @@ import type { Ninja } from './state/ninjas.mts'
 import { runConfig } from './state/run.mts'
 import { pointsPerCorrect } from './state/score.mts'
 import { metresPerAmbush } from './flows/run.mts'
-import { fixtureQuiz, manyOptions } from '../_shared/fixtures/quiz.mts'
+import { fixtureQuiz, manyOptions } from '../_temp/quiz.mts'
 
 type Options = readonly { answer: string; correct: boolean }[]
 

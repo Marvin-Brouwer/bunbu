@@ -6,8 +6,7 @@
  * ([time limit](../../../../../docs/design/gameplay.md#time-limit)). The values are defaults to tune.
  */
 
-import { createStore } from '@rooted/store'
-import { snapshot } from '../../_shared/state/store.mts'
+import { createStore, type Store } from '@rooted/store'
 
 export type Difficulty = 'novice' | 'adept' | 'master'
 
@@ -28,32 +27,34 @@ export const timeScales: Readonly<Record<Difficulty, number | undefined>> = {
 
 const initial: SettingsState = { difficulty: 'adept', haptics: true, volume: 0.8 }
 
-const settingsStore = createStore(initial)
-
-export const settings = {
-	get value() {
-		return snapshot(settingsStore)
-	},
-	on: settingsStore.on.bind(settingsStore),
-
+export type SettingsActions = {
 	/** The `timeScale` of the chosen difficulty, or `undefined` when there is no time limit. */
-	timeScale(): number | undefined {
-		return timeScales[snapshot(settingsStore).difficulty]
-	},
-
-	setDifficulty(difficulty: Difficulty): void {
-		settingsStore.update(() => ({ difficulty }))
-	},
-
-	setHaptics(haptics: boolean): void {
-		settingsStore.update(() => ({ haptics }))
-	},
-
-	setVolume(volume: number): void {
-		settingsStore.update(() => ({ volume: Math.min(1, Math.max(0, volume)) }))
-	},
-
-	reset(): void {
-		settingsStore.update(() => initial)
-	},
+	timeScale: () => number | undefined
+	setDifficulty: (difficulty: Difficulty) => void
+	setHaptics: (haptics: boolean) => void
+	setVolume: (volume: number) => void
+	reset: () => void
 }
+
+/** App-wide: the settings outlive every screen. Change them through their actions, not `update`. */
+export const settings: Store<SettingsState & SettingsActions> = createStore<SettingsState & SettingsActions>({
+	...initial,
+
+	timeScale: () => timeScales[settings.value.difficulty],
+
+	setDifficulty: (difficulty) => {
+		settings.update(() => ({ difficulty }))
+	},
+
+	setHaptics: (haptics) => {
+		settings.update(() => ({ haptics }))
+	},
+
+	setVolume: (volume) => {
+		settings.update(() => ({ volume: Math.min(1, Math.max(0, volume)) }))
+	},
+
+	reset: () => {
+		settings.update(() => initial)
+	},
+})

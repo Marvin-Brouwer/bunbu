@@ -8,6 +8,7 @@
 
 import { component, environment } from '@rooted/components'
 import { selection } from '../_shared/state/selection.mts'
+import { snapshot } from '../_shared/state/store.mts'
 import { fixtureFromUrl } from './fixtures.mts'
 import { startRun } from './flows/run.mts'
 import { RunScreen } from './run.mts'
@@ -35,7 +36,7 @@ export const Fight = component({
 		}
 
 		function start() {
-			const { quiz } = selection.value
+			const { quiz } = snapshot(selection)
 			if (quiz === undefined) return
 			const game = createRunGame()
 			startRun(game, quiz)

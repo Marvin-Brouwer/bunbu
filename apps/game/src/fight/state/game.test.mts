@@ -23,52 +23,52 @@ beforeEach(() => {
 
 describe('run', () => {
 	it('runs through intro into running', () => {
-		run.start(600)
-		run.tick(runConfig.introSeconds)
+		run.value.start(600)
+		run.value.tick(runConfig.introSeconds)
 		expect(run.value.phase).toBe('running')
 	})
 
 	it('covers ground at a constant pace while running', () => {
-		run.start(600)
-		run.tick(runConfig.introSeconds)
-		run.tick(1)
+		run.value.start(600)
+		run.value.tick(runConfig.introSeconds)
+		run.value.tick(1)
 		expect(run.value.distance).toBeCloseTo(runConfig.pace)
 	})
 
 	it('slows the world down during an ambush and does not cover ground', () => {
-		run.start(600)
-		run.tick(runConfig.introSeconds)
-		run.beginAmbush()
+		run.value.start(600)
+		run.value.tick(runConfig.introSeconds)
+		run.value.beginAmbush()
 		const { distance } = run.value
-		run.tick(1)
+		run.value.tick(1)
 		expect(run.value.worldScale).toBe(runConfig.ambushWorldScale)
 		expect(run.value.distance).toBe(distance)
 	})
 
 	it('counts the run down from 3 when resuming, then returns to the phase it paused in', () => {
-		run.start(600)
-		run.tick(runConfig.introSeconds)
-		run.pause()
-		run.tick(5)
+		run.value.start(600)
+		run.value.tick(runConfig.introSeconds)
+		run.value.pause()
+		run.value.tick(5)
 		expect(run.value.elapsed).toBeCloseTo(runConfig.introSeconds)
 
-		run.resume()
+		run.value.resume()
 		expect(run.value.countdown).toBe(runConfig.countdownSeconds)
-		run.tick(runConfig.countdownSeconds)
+		run.value.tick(runConfig.countdownSeconds)
 		expect(run.value.phase).toBe('running')
 	})
 
 	it('refuses to resume a run that is not paused', () => {
-		run.start(600)
-		run.resume()
+		run.value.start(600)
+		run.value.resume()
 		expect(run.value.phase).toBe('intro')
 	})
 })
 
 describe('score', () => {
 	it('scores a flat 100 per correct answer and nothing for a miss', () => {
-		score.addCorrect()
-		score.addMiss()
+		score.value.addCorrect()
+		score.value.addMiss()
 		expect(score.value).toMatchObject({ points: pointsPerCorrect, correct: 1, answered: 2 })
 	})
 
@@ -85,12 +85,12 @@ describe('life', () => {
 		const share = shareOfOnePoint(20, 70)
 		expect(share).toBeCloseTo(1 / 6)
 
-		for (let miss = 0; miss < 5; miss++) life.hit(share)
-		expect(life.empty()).toBe(false)
+		for (let miss = 0; miss < 5; miss++) life.value.hit(share)
+		expect(life.value.empty()).toBe(false)
 
-		life.hit(share)
+		life.value.hit(share)
 		expect(life.value.value).toBe(0)
-		expect(life.empty()).toBe(true)
+		expect(life.value.empty()).toBe(true)
 	})
 })
 
@@ -98,8 +98,8 @@ describe('run game', () => {
 	it('gives every run its own state', () => {
 		const first = createRunGame()
 		const second = createRunGame()
-		first.score.addCorrect()
-		first.life.hit(0.5)
+		first.score.value.addCorrect()
+		first.life.value.hit(0.5)
 
 		expect(second.score.value.points).toBe(0)
 		expect(second.life.value.value).toBe(1)

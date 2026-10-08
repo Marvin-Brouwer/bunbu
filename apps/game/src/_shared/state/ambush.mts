@@ -8,8 +8,8 @@
  * fixes the shapes and does the obvious thing.
  */
 
-import { createStore } from '@rooted/store'
-import { type Readable, refuse, snapshot } from './store.mts'
+import { createStore, type Store } from '@rooted/store'
+import { refuse } from './store.mts'
 import type { Outcome, QuestionRef } from './quiz.mts'
 
 /** The eight swipe directions ([more than 3 options](../../../../../docs/design/gameplay.md#more-than-3-options)). */
@@ -62,8 +62,9 @@ export type AmbushResult = {
 	readonly blocked: readonly number[]
 }
 
-export type Ambush = Readable<AmbushState> & {
-	open: (opening: AmbushOpening) => void
+export type AmbushActions = {
+	/** Opens an ambush on a question. */
+	start: (opening: AmbushOpening) => void
 	/** Picks the option on `mark`, or unpicks it when it was already picked. */
 	pick: (mark: Mark) => void
 	/** Counts down the time left. */
@@ -79,6 +80,9 @@ export type Ambush = Readable<AmbushState> & {
 	close: () => void
 }
 
+/** The store, with its actions on its state. Change it through those, not `update`. */
+export type Ambush = Store<AmbushState & AmbushActions>
+
 export const noAmbush: AmbushState = {
 	open: false,
 	kind: 'single',
@@ -91,20 +95,16 @@ export const noAmbush: AmbushState = {
 }
 
 export function createAmbush(initial: AmbushState = noAmbush): Ambush {
-	const store = createStore(initial)
 
-	return {
-		get value() {
-			return snapshot(store)
-		},
-		on: store.on.bind(store),
+	const store: Ambush = createStore<AmbushState & AmbushActions>({
+		...initial,
 
-		open(opening) {
+		start(opening) {
 			store.update(() => ({ ...opening, open: true, secondsLeft: opening.seconds }))
 		},
 
 		pick(mark) {
-			const state = snapshot(store)
+			const state = store.value
 			if (!state.open) {
 				refuse('ambush.pick', 'no ambush is open')
 				return
@@ -126,18 +126,18 @@ export function createAmbush(initial: AmbushState = noAmbush): Ambush {
 		},
 
 		tick(dt) {
-			const state = snapshot(store)
+			const state = store.value
 			if (!state.open || state.seconds === 0) return
 			store.update(() => ({ secondsLeft: Math.max(0, state.secondsLeft - dt) }))
 		},
 
 		unanswered() {
-			const state = snapshot(store)
+			const state = store.value
 			return state.open && state.seconds > 0 && state.secondsLeft === 0
 		},
 
 		commit() {
-			const state = snapshot(store)
+			const state = store.value
 			if (!state.open) {
 				refuse('ambush.commit', 'no ambush is open')
 				return undefined
@@ -166,5 +166,6 @@ export function createAmbush(initial: AmbushState = noAmbush): Ambush {
 		close() {
 			store.update(() => noAmbush)
 		},
-	}
+	})
+	return store
 }

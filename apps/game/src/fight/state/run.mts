@@ -7,8 +7,8 @@
  * Finished and fallen are phases of the run, not routes: the results show over the run's world.
  */
 
-import { createStore } from '@rooted/store'
-import { type Readable, refuse, snapshot } from '../../_shared/state/store.mts'
+import { createStore, type Store } from '@rooted/store'
+import { refuse } from '../../_shared/state/store.mts'
 
 export type RunPhase = 'idle' | 'intro' | 'running' | 'ambush' | 'paused' | 'finished' | 'fallen'
 
@@ -27,7 +27,7 @@ export type RunState = {
 	readonly resumeTo: RunPhase
 }
 
-export type Run = Readable<RunState> & {
+export type RunActions = {
 	start: (stageLength: number) => void
 	/** Advances run time and distance. `dt` is already scaled by `worldScale`; see [loop.mts](../../loop.mts). */
 	tick: (dt: number) => void
@@ -40,6 +40,9 @@ export type Run = Readable<RunState> & {
 	fall: () => void
 	reset: () => void
 }
+
+/** The store, with its actions on its state. Change it through those, not `update`. */
+export type Run = Store<RunState & RunActions>
 
 /** Defaults to tune in playtests ([to tune](../../../../../docs/design/gameplay.md#to-tune)). */
 export const runConfig = {
@@ -63,27 +66,23 @@ export const notRunning: RunState = {
 const over = (phase: RunPhase) => phase === 'paused' || phase === 'finished' || phase === 'fallen'
 
 export function createRun(initial: RunState = notRunning): Run {
-	const store = createStore(initial)
 
 	const expect = (action: string, phase: RunPhase): boolean => {
-		const current = snapshot(store).phase
+		const current = store.value.phase
 		if (current === phase) return true
 		refuse(action, `phase is ${current}`)
 		return false
 	}
 
-	return {
-		get value() {
-			return snapshot(store)
-		},
-		on: store.on.bind(store),
+	const store: Run = createStore<RunState & RunActions>({
+		...initial,
 
 		start(stageLength) {
 			store.update(() => ({ ...notRunning, phase: 'intro', stageLength }))
 		},
 
 		tick(dt) {
-			const state = snapshot(store)
+			const state = store.value
 			if (over(state.phase)) return
 
 			if (state.countdown > 0) {
@@ -111,14 +110,14 @@ export function createRun(initial: RunState = notRunning): Run {
 		},
 
 		pause() {
-			const state = snapshot(store)
+			const state = store.value
 			if (over(state.phase)) return
 			store.update(() => ({ phase: 'paused', resumeTo: state.phase, countdown: 0 }))
 		},
 
 		resume() {
 			if (!expect('run.resume', 'paused')) return
-			const state = snapshot(store)
+			const state = store.value
 			store.update(() => ({ phase: state.resumeTo, countdown: runConfig.countdownSeconds }))
 		},
 
@@ -133,5 +132,6 @@ export function createRun(initial: RunState = notRunning): Run {
 		reset() {
 			store.update(() => notRunning)
 		},
-	}
+	})
+	return store
 }

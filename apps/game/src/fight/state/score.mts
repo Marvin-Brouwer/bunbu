@@ -3,8 +3,7 @@
  * ([score](../../../../../docs/design/gameplay.md#score)). There is no per-question time bonus.
  */
 
-import { createStore } from '@rooted/store'
-import { type Readable, snapshot } from '../../_shared/state/store.mts'
+import { createStore, type Store } from '@rooted/store'
 
 /** Points for a correct answer. Wrong and unanswered score nothing. */
 export const pointsPerCorrect = 100
@@ -26,12 +25,15 @@ export type ScoreState = {
 	readonly best: HighScore | undefined
 }
 
-export type Score = Readable<ScoreState> & {
+export type ScoreActions = {
 	addCorrect: () => void
 	addMiss: () => void
 	/** Starts a run, keeping the high score to beat. */
 	reset: (best?: HighScore) => void
 }
+
+/** The store, with its actions on its state. Change it through those, not `update`. */
+export type Score = Store<ScoreState & ScoreActions>
 
 export const noScore: ScoreState = { points: 0, correct: 0, answered: 0, best: undefined }
 
@@ -43,16 +45,12 @@ export function beats(score: HighScore, best: HighScore | undefined): boolean {
 }
 
 export function createScore(initial: ScoreState = noScore): Score {
-	const store = createStore(initial)
 
-	return {
-		get value() {
-			return snapshot(store)
-		},
-		on: store.on.bind(store),
+	const store: Score = createStore<ScoreState & ScoreActions>({
+		...initial,
 
 		addCorrect() {
-			const state = snapshot(store)
+			const state = store.value
 			store.update(() => ({
 points: state.points + pointsPerCorrect,
 				correct: state.correct + 1,
@@ -61,12 +59,13 @@ points: state.points + pointsPerCorrect,
 		},
 
 		addMiss() {
-			const state = snapshot(store)
+			const state = store.value
 			store.update(() => ({ answered: state.answered + 1 }))
 		},
 
 		reset(best) {
-			store.update(() => ({ ...noScore, best: best ?? snapshot(store).best }))
+			store.update(() => ({ ...noScore, best: best ?? store.value.best }))
 		},
-	}
+	})
+	return store
 }

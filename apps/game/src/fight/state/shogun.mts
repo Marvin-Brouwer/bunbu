@@ -4,8 +4,7 @@
  * ([what the renderer may keep](../../../../../docs/architecture/state.md#what-the-renderer-may-keep)).
  */
 
-import { createStore } from '@rooted/store'
-import { type Readable, snapshot } from '../../_shared/state/store.mts'
+import { createStore, type Store } from '@rooted/store'
 
 export type Pose = 'idle' | 'run' | 'strike' | 'block' | 'hurt' | 'fallen'
 
@@ -17,7 +16,7 @@ export type ShogunState = {
 	readonly sequence: number
 }
 
-export type Shogun = Readable<ShogunState> & {
+export type ShogunActions = {
 	idle: () => void
 	run: () => void
 	strike: (ninja: number) => void
@@ -27,20 +26,19 @@ export type Shogun = Readable<ShogunState> & {
 	reset: () => void
 }
 
+/** The store, with its actions on its state. Change it through those, not `update`. */
+export type Shogun = Store<ShogunState & ShogunActions>
+
 export const standing: ShogunState = { pose: 'idle', target: undefined, sequence: 0 }
 
 export function createShogun(initial: ShogunState = standing): Shogun {
-	const store = createStore(initial)
 
 	const pose = (next: Pose, target?: number) => {
-		store.update(() => ({ pose: next, target, sequence: snapshot(store).sequence + 1 }))
+		store.update(() => ({ pose: next, target, sequence: store.value.sequence + 1 }))
 	}
 
-	return {
-		get value() {
-			return snapshot(store)
-		},
-		on: store.on.bind(store),
+	const store: Shogun = createStore<ShogunState & ShogunActions>({
+		...initial,
 
 		idle: () => { pose('idle') },
 		run: () => { pose('run') },
@@ -49,5 +47,6 @@ export function createShogun(initial: ShogunState = standing): Shogun {
 		hurt: () => { pose('hurt') },
 		fall: () => { pose('fallen') },
 		reset: () => { store.update(() => standing) },
-	}
+	})
+	return store
 }

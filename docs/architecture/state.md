@@ -58,43 +58,41 @@ Choosing a quiz and running it share one route, `/fight/`: the select screen sta
 
 A store is a [`@rooted/store`](https://github.com/Marvin-Brouwer/rooted/blob/main/docs/guide/state.md) store inside a plain TypeScript module with no dependency on three.js or the DOM. `value` is a frozen snapshot, `update` merges what the setter returns, and `on('change', signal, …)` fires when the state really changed.
 
-Each store is a factory, so a game mode creates its own and a test or fixture can start it from any state. The module hands out the snapshot, `on` and its actions, never `update`:
+Each store is a factory, so a game mode creates its own and a test or fixture can start it from any state. The actions live on the state itself: `@rooted/store` keeps functions by reference when it snapshots, so `game.life.value.hit(share)` is how a flow changes the life bar. Nothing outside the store's own module calls `update`.
 
 ```ts
-import { createStore } from '@rooted/store'
-import { snapshot, type Readable } from '../../_shared/state/store.mts'
+import { createStore, type Store } from '@rooted/store'
 
 type LifeState = { readonly value: number }
 
-export type Life = Readable<LifeState> & {
+type LifeActions = {
 	hit: (share: number) => void
 	reset: () => void
 }
 
-export function createLife(initial: LifeState = { value: 1 }): Life {
-	const store = createStore(initial)
+export type Life = Store<LifeState & LifeActions>
 
-	return {
-		get value() {
-			return snapshot(store)
-		},
-		on: store.on.bind(store),
+export function createLife(initial: LifeState = { value: 1 }): Life {
+	const store: Life = createStore<LifeState & LifeActions>({
+		...initial,
 
 		hit(share) {
-			store.update(() => ({ value: Math.max(0, snapshot(store).value - share) }))
+			store.update(() => ({ value: Math.max(0, store.value.value - share) }))
 		},
 		reset() {
 			store.update(() => initial)
 		},
-	}
+	})
+	return store
 }
 ```
 
-`snapshot()` types the frozen snapshot as the state itself: `@rooted/store`'s `ReadonlyState` turns a branded string such as `Markdown` into an object type, which would make a quiz read from a store stop being a `BunbuData`.
+One workaround: `@rooted/store`'s `ReadonlyState` turns a branded string such as `Markdown` into an object type, so a quiz read back from a store is no longer a `BunbuData`. `snapshot()` in `_shared/state/store.mts` reads the quiz and the selection back as their own types.
 
 Rules:
 
 - **State is immutable.** An action returns the fields that change from `update` and never mutates the live state, and readers only see the frozen snapshot.
+- **Actions are on the state.** A component or flow calls `store.value.action()`, never `update`.
 - **Actions are synchronous** and do one thing. No promises inside stores: loading a quiz happens outside, and the result goes in through `quiz.load()`.
 - **Invalid transitions are refused.** `ambush.pick()` while no ambush is open does nothing (and logs in dev builds). The phase is the guard, not the caller.
 - **Stores don't import each other.** A store that needs to know about another is a sign the logic belongs in a flow (below).
@@ -104,19 +102,20 @@ Rules:
 One player action often touches several stores. Answering a question changes the ambush, the score or the life bar, the shogun and the ninjas. That orchestration goes in **flows**: plain functions that read stores and call their actions, in one place.
 
 ```ts
-export function commitAmbush({ ambush, quiz, score, life, shogun, run }: RunGame) {
-  const result = ambush.commit();
-  if (!result) return;
+export function commitAmbush(game: RunGame) {
+	const { ambush, quiz, score, life, shogun, run } = game
+	const result = ambush.value.commit()
+	if (!result) return
 
-  quiz.record(result.answer);
-  if (result.correct) {
-    score.addCorrect();
-    for (const id of result.slain) shogun.strike(id);
-  } else {
-    life.hit(result.share);
-    shogun.hurt();
-  }
-  if (life.empty()) run.fall();
+	quiz.value.record(result)
+	if (result.outcome === 'correct') {
+		score.value.addCorrect()
+		for (const id of result.slain) shogun.value.strike(id)
+	} else {
+		life.value.hit(missShare(game))
+		shogun.value.hurt()
+	}
+	if (life.value.empty()) run.value.fall()
 }
 ```
 
@@ -127,7 +126,7 @@ Flows take the game mode's stores as an argument rather than importing them, so 
 One `requestAnimationFrame` loop drives everything. The `Application` starts it once; a route plugs its game mode into it with `play(mode, signal)`, which unplugs again when the route unmounts. Without a mode (on a menu) the loop only draws. Each frame, in a fixed order:
 
 1. **Time.** Take the real frame delta, clamp it (a tab coming back from the background must not jump the run forward by minutes), and multiply it by the run's speed scale. That is how slow motion during an ambush works.
-2. **Update.** Call the time-based actions: `run.tick(dt)`, `ambush.tick(dt)`, `ninjas.advance(dt)`. Timeouts (the ambush running out) are decided here, by the stores, through flows.
+2. **Update.** Call the time-based actions: `run.value.tick(dt)`, `ambush.value.tick(dt)`, `ninjas.value.advance(dt)`. Timeouts (the ambush running out) are decided here, by the stores, through flows.
 3. **Render.** The renderer reads every store it needs through `value` and updates the scene: the shogun's position and animation clip, which ninjas exist and where they are, the camera. Then `renderer.render(scene, camera)`.
 
 While paused, step 2 is skipped. The loop stops entirely when the page is hidden (`visibilitychange`) and restarts when it is visible again.
@@ -175,10 +174,10 @@ The game follows Rooted's [vertical slices](https://github.com/Marvin-Brouwer/ro
 ```text
 apps/game/src/
 	application.mts   the Application: the canvas, the loop and the router
-	_canvas/          the game loop (play() plugs a mode in), the viewport, show() for a world
+	canvas/           the game loop (play() plugs a mode in), the viewport, show() for a world
 	_shared/          what several slices use
-		state/        Readable and snapshot(), quiz, ambush, selection
-		fixtures/     the fixture quiz
+		state/        quiz, ambush, selection, snapshot()
+	_temp/            the fixture quiz, until quizzes load for real
 	title/            the title menu (the router's home) and not-found
 	fight/            /fight/: quiz select, then the run
 		state/        the run's stores and createRunGame

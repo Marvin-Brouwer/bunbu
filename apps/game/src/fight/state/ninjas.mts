@@ -4,8 +4,8 @@
  * and 2 behind, each carrying one or more options.
  */
 
-import { createStore } from '@rooted/store'
-import { type Readable, refuse, snapshot } from '../../_shared/state/store.mts'
+import { createStore, type Store } from '@rooted/store'
+import { refuse } from '../../_shared/state/store.mts'
 
 export type NinjaPose = 'approach' | 'strike' | 'slain' | 'blocked' | 'fleeing'
 
@@ -29,7 +29,7 @@ export type NinjasState = {
 	readonly active: readonly Ninja[]
 }
 
-export type Ninjas = Readable<NinjasState> & {
+export type NinjasActions = {
 	spawn: (wave: readonly NinjaSpawn[]) => void
 	/** Moves every approaching ninja to `approach`, which the ambush derives from the time left. */
 	advance: (approach: number) => void
@@ -40,13 +40,15 @@ export type Ninjas = Readable<NinjasState> & {
 	clear: () => void
 }
 
+/** The store, with its actions on its state. Change it through those, not `update`. */
+export type Ninjas = Store<NinjasState & NinjasActions>
+
 export const noNinjas: NinjasState = { active: [] }
 
 export function createNinjas(initial: NinjasState = noNinjas): Ninjas {
-	const store = createStore(initial)
 
 	const pose = (id: number, next: NinjaPose) => {
-		const { active } = snapshot(store)
+		const { active } = store.value
 		if (!active.some((ninja) => ninja.id === id)) {
 			refuse('ninjas', `no ninja ${id}`)
 			return
@@ -56,21 +58,18 @@ export function createNinjas(initial: NinjasState = noNinjas): Ninjas {
 		}))
 	}
 
-	return {
-		get value() {
-			return snapshot(store)
-		},
-		on: store.on.bind(store),
+	const store: Ninjas = createStore<NinjasState & NinjasActions>({
+		...initial,
 
 		spawn(wave) {
 			const spawned = wave.map((ninja) => ({ ...ninja, approach: 0, pose: 'approach' as const, sequence: 0 }))
-			store.update(() => ({ active: [...snapshot(store).active, ...spawned] }))
+			store.update(() => ({ active: [...store.value.active, ...spawned] }))
 		},
 
 		advance(approach) {
 			const next = Math.min(1, Math.max(0, approach))
 			store.update(() => ({
-				active: snapshot(store).active.map((ninja) => (ninja.pose === 'approach' ? { ...ninja, approach: next } : ninja)),
+				active: store.value.active.map((ninja) => (ninja.pose === 'approach' ? { ...ninja, approach: next } : ninja)),
 			}))
 		},
 
@@ -79,5 +78,6 @@ export function createNinjas(initial: NinjasState = noNinjas): Ninjas {
 		block: (id) => { pose(id, 'blocked') },
 		flee: (id) => { pose(id, 'fleeing') },
 		clear: () => { store.update(() => noNinjas) },
-	}
+	})
+	return store
 }

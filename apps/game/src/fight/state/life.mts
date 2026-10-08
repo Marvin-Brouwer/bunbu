@@ -6,8 +6,7 @@
  * whole share, however many ninjas or errors were involved.
  */
 
-import { createStore } from '@rooted/store'
-import { type Readable, snapshot } from '../../_shared/state/store.mts'
+import { createStore, type Store } from '@rooted/store'
 
 export type LifeState = {
 	/** `1` at the start, `0` when the pass mark is out of reach. */
@@ -18,12 +17,15 @@ export type LifeState = {
 	readonly hits: number
 }
 
-export type Life = Readable<LifeState> & {
+export type LifeActions = {
 	hit: (share: number) => void
 	/** Whether the pass mark is out of reach, which means the samurai falls. */
 	empty: () => boolean
 	reset: () => void
 }
+
+/** The store, with its actions on its state. Change it through those, not `update`. */
+export type Life = Store<LifeState & LifeActions>
 
 export const fullLife: LifeState = { value: 1, lastLoss: 0, hits: 0 }
 
@@ -40,27 +42,24 @@ export function shareOfOnePoint(points: number, passingScore: number): number {
 }
 
 export function createLife(initial: LifeState = fullLife): Life {
-	const store = createStore(initial)
 
-	return {
-		get value() {
-			return snapshot(store)
-		},
-		on: store.on.bind(store),
+	const store: Life = createStore<LifeState & LifeActions>({
+		...initial,
 
 		hit(share) {
-			const state = snapshot(store)
+			const state = store.value
 			const left = state.value - share
 			// Shares are fractions such as 1/6, so the last miss lands a rounding error away from zero.
 			store.update(() => ({ value: left < rounding ? 0 : left, lastLoss: share, hits: state.hits + 1 }))
 		},
 
 		empty() {
-			return snapshot(store).value === 0
+			return store.value.value === 0
 		},
 
 		reset() {
 			store.update(() => fullLife)
 		},
-	}
+	})
+	return store
 }

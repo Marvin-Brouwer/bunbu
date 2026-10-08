@@ -9,16 +9,11 @@
 
 import { component } from '@rooted/components'
 import { tickRun } from './flows/run.mts'
-import { play } from '../_canvas/loop.mts'
+import { play } from '../canvas/loop.mts'
 import { createRunWorld } from './world.mts'
-import { show } from '../_canvas/stage.mts'
+import { show } from '../canvas/stage.mts'
 import type { RunGame } from './state/game.mts'
 import styles from './run.css'
-
-/** The run's layers over the canvas, back to front. */
-export const runLayers = ['hud', 'scroll', 'swipe', 'overlays'] as const
-
-export type RunLayer = (typeof runLayers)[number]
 
 export type RunScreenOptions = {
 	readonly game: RunGame
@@ -37,26 +32,45 @@ export const RunScreen = component<RunScreenOptions>({
 			update: (dt) => { tickRun(game, dt) },
 			paused: () => game.run.value.phase === 'paused',
 			worldScale: () => game.run.value.worldScale,
-			pause: () => { game.run.pause() },
+			pause: () => { game.run.value.pause() },
 		}, signal)
 
-		const layer = (name: RunLayer) => {
-			const container = element('div', {
-				classes: [
-					styles.layer,
-					styles[name],
-				],
-			})
-			container.dataset.layer = name
-			return container
-		}
-
+		// The run's layers over the canvas, back to front. The tracks mount here, one line each,
+		// handing their component `game` (and the overlays `leave`).
 		append(
 			element('div', {
 				classes: styles.run,
-				children: runLayers.map(layer),
+				children: [
+					element('div', {
+						'data-layer': 'hud',
+						classes: [
+							styles.layer,
+							styles.hud,
+						],
+					}),
+					element('div', {
+						'data-layer': 'scroll',
+						classes: [
+							styles.layer,
+							styles.scroll,
+						],
+					}),
+					element('div', {
+						'data-layer': 'swipe',
+						classes: [
+							styles.layer,
+							styles.swipe,
+						],
+					}),
+					element('div', {
+						'data-layer': 'overlays',
+						classes: [
+							styles.layer,
+							styles.overlays,
+						],
+					}),
+				],
 			})
 		)
-		// The tracks mount here, one line each, handing their component `game` (and the overlays `leave`).
 	},
 })
