@@ -32,6 +32,8 @@ One screen, no Draw or Submit button: **the swipe is the answer**.
 
 The ninja figures in the swipe zone are only a legend for the marks. The real ninjas creep in, in 3D, behind the scroll (see [time limit](#time-limit)).
 
+<img src="screens/4a-single.png" alt="Single-answer ambush" width="195"> <img src="screens/4c-multiple.png" alt="Multiple-answer ambush" width="195">
+
 ### Per question type
 
 | Type        | Ninjas                      | Input                                                                                   |
@@ -56,6 +58,8 @@ Each ninja carries one option. A **slash** means "this option is picked", a **bl
 - Up to **5 ninjas**: 3 in front, 2 behind. One scroll, one answer, then they strike in 2 waves (front, then back; the back row is drawn faded).
 - One swipe direction per option, **8 directions** in total: ← ↖ ↑ ↗ → ↘ ↓ ↙. So a question has **at most 8 options**; questions with more are not allowed.
 - With **6 or more options**, the options are shuffled and then bundled at random onto the 5 ninjas (7 options = 1, 2, 2, 1, 1). Every option keeps its own swipe. A bundled ninja is only handled right if all its options are.
+
+<img src="screens/4d-many-options.png" alt="7 options bundled onto 5 ninjas" width="195">
 
 ## Time limit
 
@@ -87,6 +91,8 @@ life = (best score still possible − pass) / (1 − pass)
 - Points as in the data format: each question is 1 point, each `solutions` entry is 1 point.
 - Each miss takes its question's share for good. Any error in a question costs the whole share, however many ninjas or errors were involved. Example: 20 points with a 70% pass mark leaves a margin of 6 points, so one miss takes a sixth of the bar.
 - An empty bar means the quiz can no longer be passed: the samurai falls ([screen 8](screens.md#8-fallen)).
+
+<img src="screens/5b-wrong.png" alt="Wrong answer: life bar drops" width="195"> <img src="screens/8-fallen.png" alt="Fallen" width="195">
 
 ## Score
 

@@ -13,6 +13,8 @@ Hands-free revision.
 - Pronunciation uses the quiz's `pronunciations` and the built-in dictionaries (see [data format](data-format.md#pronunciations)).
 - Controls: **Pause** and **Restart** (reshuffle and start again from card 1), plus voice and speed. There is no previous/next.
 
+<img src="screens/d2-study.png" alt="Study" width="195">
+
 ## Practice
 
 The ambush without the risk.
@@ -23,6 +25,8 @@ The ambush without the risk.
 - A miss shows the right answer and the explanation; the speaker button reads them aloud. The dummy swings back. **Continue** moves on.
 - No life bar, no death and no timer.
 - A running right vs wrong percentage is shown, so you can see how you're doing. It is not a score and isn't stored.
+
+<img src="screens/d3-practice-start.png" alt="Practice start" width="195"> <img src="screens/d4-practice.png" alt="Practice ambush" width="195"> <img src="screens/d5-practice-miss.png" alt="Practice miss" width="195">
 
 ## Practise mistakes
 
