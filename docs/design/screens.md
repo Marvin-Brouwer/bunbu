@@ -31,12 +31,12 @@ Wireframe source: the project's design canvas (`design/wireframes/*.dc.html` and
 1. **Quiz:** cards with title, `version`, pass mark and best score (`v3 · pass 70% · best 2,480`, or `new`), plus **Load .yaml**.
 2. **Stage:** Rice fields, Bamboo forest, Mountain temple, Castle town, Edo castle. Each shows its best distance and whether it was cleared.
 
-A Novice / Adept / Master selector and **Start run**.
+A Novice / Adept / Master selector (sets `timeScale`, see [time limit](gameplay.md#time-limit)) and **Start run**.
 
 ### 3 Running
 
 - 3D samurai, always centred, auto-running toward a torii. No input until an ambush.
-- HUD: **score** with best to beat, **life bar** (full = 100%, empty = the pass mark).
+- HUD: **score** with best to beat, **life bar** (full = 100%, empty = the pass mark), and a **pause** button.
 - Progress bar: stage name and distance (`860 / 1,500 m`). Ticks mark ambushes, a block marks the boss.
 
 ### 4 Ambush
@@ -51,8 +51,8 @@ All variants: the scroll on top, the swipe zone with the mark legend at the bott
 ### 5 Outcome
 
 - **5A Correct:** `+100 correct · +64 speed`. The scroll rolls up, slow motion snaps back. Picked ninjas slain, the others blocked and fleeing.
-- **5B Wrong:** score `+0`, the lost chunk of the life bar flashes and drops off, red edge flash, haptic buzz. A ninja lands the hit, all vanish. About 1 s, then the run resumes.
-- **5C Timeout:** "too slow". The front ninja slices through the scroll, then all hit (one hit). The halves of the scroll fall away and the run resumes.
+- **5B Wrong:** score `+0`, the lost chunk of the life bar flashes and drops off, red edge flash, haptic buzz (can be turned off in settings). A ninja lands the hit, all vanish. About 1 s, then the run resumes.
+- **5C Unanswered:** time ran out. The front ninja slices through the scroll, then all hit (one hit). The halves of the scroll fall away and the run resumes.
 
 ### 6 Pause
 
@@ -92,6 +92,7 @@ See [dojo.md](dojo.md) for the rules.
 ### D2 Study
 
 - Progress (`12 / 40`), `▶ playing · shuffled loop`.
+- The word being spoken is highlighted: grey background and underline.
 - Card: category, type, query, and **Correct answer**. `multiple` lists all correct options, `order` the right sequence, `solutions` each solution with yes/no.
 - **Pause**, **Restart**, **Voice** (`System (en-US)`), **Speed** (`− 1.5× +`).
 
@@ -103,16 +104,15 @@ See [dojo.md](dojo.md) for the rules.
 
 ### D4 Practice ambush
 
-Like 4A, with `PRACTICE · SINGLE · 8 / 40`. Read aloud on open, no timer, no life bar, the dummies don't move.
+Like 4A, with `PRACTICE · SINGLE · 8 / 40` and the running right vs wrong percentage. A speaker button reads the card aloud. No timer, no life bar, the dummies don't move.
 
 ### D5 Practice miss
 
 - `PRACTICE · MISSED`. The options show ✓ correct and ✗ your pick, followed by the explanation.
 - The dummy swings back: thwack.
-- Read aloud: "The answer is alt", then the explanation. No life lost.
+- Speaker button reads "The answer is alt", then the explanation. No life lost.
 - **Continue**.
 
-## Open questions
+## Notes
 
-- **Novice / Adept / Master** on screen 2 is drawn but not defined. It may map to `timeScale`.
-- Portrait is a default that has not been explicitly confirmed (landscape was rejected).
+- **Novice / Adept / Master** on screen 2 maps to `timeScale` (exact values to tune in playtests).

@@ -4,12 +4,18 @@ How a run plays out: the auto-runner, the ambush that asks each question, the li
 
 ## Platform
 
-- **Mobile only**, phone portrait (wireframes are drawn at 390×844). Landscape was rejected. Do not design for desktop.
-- Web tech: WebGL with GLB models.
+- **Mobile first**, phone portrait (wireframes are drawn at 390×844). Landscape was rejected as the target layout.
+- Don't hard-constrain the orientation, and don't build anything that blocks desktop for now. That is for later.
+
+## Tech
+
+- The website is built with [Rooted](https://www.npmjs.com/package/@rooted/components) (`@rooted/components`).
+- 3D elements use three.js with GLB models.
+- Use web-based controls (Rooted components over the canvas) wherever possible, rather than drawing UI inside the 3D canvas. The canvas is for the world: the samurai, the ninjas, the stage.
 
 ## Core loop
 
-The samurai always runs down the centre of the path. There are no lanes and no input while running.
+The samurai always runs down the centre of the path. There are no lanes and no gameplay input while running. The only control is a pause button, which leads to the [pause menu](screens.md#6-pause) (resume, restart, settings, quit).
 
 Each question in the quiz triggers an **ambush**: ninjas attack, a papyrus scroll shows the question, and the player answers with a swipe. A right answer slays (or blocks) the ninjas, a wrong one gets the samurai hit. After the ambush the run resumes.
 
@@ -32,7 +38,7 @@ The ninja figures in the swipe zone are only a legend for the marks. The real ni
 | ----------- | --------------------------- | --------------------------------------------------------------------------------------- |
 | `yes-no`    | 1                           | One swipe: ↑ yes (slash), ↓ no (block).                                                 |
 | `single`    | one per option              | One swipe toward the chosen option's mark.                                              |
-| `multiple`  | one per option              | Swipe, lift, swipe again. A pause of 0.8 s after lifting strikes. Swiping a marked mark again unmarks it. |
+| `multiple`  | one per option              | Swipe toward each mark to pick it. Lifting between swipes is optional: ← lift → and one continuous ← → stroke both pick two marks. A pause of 0.8 s after lifting strikes. Swiping a marked mark again unmarks it. |
 | `order`     | one per item                | As `multiple`; the marks get numbers 1, 2, 3 … in swipe order.                          |
 | `solutions` | 1 per proposed solution     | One ambush per solution, answered like `yes-no` ("2 of 3" on the scroll).               |
 | `match`     | one per option              | One `single`-style ambush per row.                                                      |
@@ -41,9 +47,9 @@ The ninja figures in the swipe zone are only a legend for the marks. The real ni
 
 Each ninja carries one option. A **slash** means "this option is picked", a **block** means "not picked". The answer is correct when every slash lands on a correct option and every block on an incorrect one. The same rule covers `yes-no` and `solutions`.
 
-- **Correct:** picked ninjas are slain, the others are blocked, knocked back and flee. The score pops up (`+100 correct · +64 speed`).
-- **Wrong:** a ninja lands the hit and all of them vanish. The lost chunk flashes and drops off the life bar, with a red edge flash and a haptic buzz. No answer is shown and nothing needs tapping: after about 1 s the run resumes. The miss is saved for the review at the end.
-- **Too slow:** the front ninja slices through the scroll, then all of them hit, which still counts as one hit. Costs the same as a wrong answer. Half-swiped answers do not count. Saved for the review as "too slow".
+- **Correct:** picked ninjas are slain, the others are blocked, knocked back and flee. The points pop up, split into the base and the speed bonus, for example `+100 correct · +64 speed` when 64% of `ambushSeconds` was left (see [score](#score)).
+- **Wrong:** a ninja lands the hit and all of them vanish. The lost chunk flashes and drops off the life bar, with a red edge flash and a haptic buzz (haptics can be turned off in the settings). No answer is shown and nothing needs tapping: after about 1 s the run resumes. The miss is saved for the review at the end.
+- **Unanswered:** time ran out. The front ninja slices through the scroll, then all of them hit, which still counts as one hit. Costs the same as a wrong answer. Half-swiped answers do not count. Saved for the review as "unanswered".
 
 ### More than 3 options
 
@@ -88,7 +94,7 @@ No rank ladder, no honour, no streaks. What counts is how many you got right and
 
 ```text
 per correct question = 100 + 100 × (time left / ambushSeconds)   → 100 to 200
-wrong or too slow    = 0
+wrong or unanswered  = 0
 ```
 
 A 20-question quiz maxes out at 4,000.
@@ -109,4 +115,4 @@ There is no speaker button in the main game. Reading aloud is a learning aid and
 
 - **More than 8 options:** there are no swipe directions left.
 - **`scoring: partial`:** the data format lets a question earn part of its point, but the life bar takes a question's whole share on any error. Decide whether partial scoring affects the life bar, the score, or neither.
-- **Defaults not yet confirmed:** the timer numbers, `timeScale` values, the 0.8 s commit pause, and "only a passed run sets a high score".
+- **Defaults still to tune in playtests:** the timer numbers, `timeScale` values and the 0.8 s commit pause.
