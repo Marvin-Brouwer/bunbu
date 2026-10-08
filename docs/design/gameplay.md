@@ -54,7 +54,7 @@ Each ninja carries one option. A **slash** means "this option is picked", a **bl
 ### More than 3 options
 
 - Up to **5 ninjas**: 3 in front, 2 behind. One scroll, one answer, then they strike in 2 waves (front, then back; the back row is drawn faded).
-- One swipe direction per option, **8 directions** in total: ← ↖ ↑ ↗ → ↘ ↓ ↙.
+- One swipe direction per option, **8 directions** in total: ← ↖ ↑ ↗ → ↘ ↓ ↙. So a question has **at most 8 options**; questions with more are not allowed.
 - With **6 or more options**, the options are shuffled and then bundled at random onto the 5 ninjas (7 options = 1, 2, 2, 1, 1). Every option keeps its own swipe. A bundled ninja is only handled right if all its options are.
 
 ## Time limit
@@ -113,6 +113,5 @@ There is no speaker button in the main game. Reading aloud is a learning aid and
 
 ## Open questions
 
-- **More than 8 options:** there are no swipe directions left.
 - **`scoring: partial`:** the data format lets a question earn part of its point, but the life bar takes a question's whole share on any error. Decide whether partial scoring affects the life bar, the score, or neither.
 - **Defaults still to tune in playtests:** the timer numbers, `timeScale` values and the 0.8 s commit pause.
