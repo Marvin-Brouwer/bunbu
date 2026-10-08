@@ -1,9 +1,10 @@
 /**
- * The world: for now a grey floor that scrolls toward the camera and a cube standing in for the
- * samurai. The 3D track replaces the placeholders; the point of this module is that rendering is
- * read-only ([rendering is read-only](../../../../docs/architecture/rendering.md#rendering-is-read-only)).
+ * The run's world: for now a grey floor that scrolls toward the camera, a cube standing in for the
+ * samurai and boxes for the ninjas. The 3D track replaces the placeholders; the point of this
+ * module is that rendering is read-only
+ * ([rendering is read-only](../../../../../docs/architecture/rendering.md#rendering-is-read-only)).
  *
- * It reads the stores every frame and never calls an action.
+ * It reads the run's stores every frame and never calls an action.
  */
 
 import {
@@ -16,21 +17,13 @@ import {
 	Scene,
 	type PerspectiveCamera,
 } from 'three'
-import { ninjas } from '../state/ninjas.mts'
-import { run } from '../state/run.mts'
-import { shogun } from '../state/shogun.mts'
+import type { RunGame } from '../../state/run/game.mts'
+import type { View } from '../stage.mts'
 
 /** How long one floor tile is, in metres. The floor scrolls within one tile and repeats. */
 const tileLength = 4
 
-export type World = {
-	readonly scene: Scene
-	/** Reads the stores and makes the scene match. Called once per frame. */
-	update(dt: number): void
-	dispose(): void
-}
-
-export function createWorld(camera: PerspectiveCamera): World {
+export function createRunWorld(game: RunGame, camera: PerspectiveCamera): View {
 	const scene = new Scene()
 
 	scene.add(new AmbientLight(0xffffff, 1.4))
@@ -46,7 +39,9 @@ export function createWorld(camera: PerspectiveCamera): World {
 	samurai.position.set(0, 0.8, 0)
 	scene.add(samurai)
 
-	const ninjaMesh = () => new Mesh(new BoxGeometry(0.5, 1.5, 0.5), new MeshStandardMaterial({ color: 0x3a3a46 }))
+	// One geometry and material for every ninja: uploaded to the GPU once and shared.
+	const ninjaGeometry = new BoxGeometry(0.5, 1.5, 0.5)
+	const ninjaMaterial = new MeshStandardMaterial({ color: 0x3a3a46 })
 	// Ninja id to its mesh: visual state derived from the store, never fed back.
 	const meshes = new Map<number, Mesh>()
 
@@ -58,20 +53,20 @@ export function createWorld(camera: PerspectiveCamera): World {
 	return {
 		scene,
 
-		update(dt) {
-			const { distance, phase, worldScale } = run.get()
+		draw(dt) {
+			const { distance, phase, worldScale } = game.run.get()
 			// The path scrolls toward the camera; the samurai stays centred.
 			floor.position.z = -(distance % tileLength)
 
 			bob += dt * worldScale * (phase === 'running' || phase === 'intro' ? 8 : 0)
 			samurai.position.y = 0.8 + Math.abs(Math.sin(bob)) * 0.08
-			samurai.rotation.z = shogun.get().pose === 'fallen' ? Math.PI / 2.5 : 0
+			samurai.rotation.z = game.shogun.get().pose === 'fallen' ? Math.PI / 2.5 : 0
 
-			const active = ninjas.get().active
+			const active = game.ninjas.get().active
 			for (const ninja of active) {
 				let mesh = meshes.get(ninja.id)
 				if (mesh === undefined) {
-					mesh = ninjaMesh()
+					mesh = new Mesh(ninjaGeometry, ninjaMaterial)
 					meshes.set(ninja.id, mesh)
 					scene.add(mesh)
 				}
@@ -87,6 +82,13 @@ export function createWorld(camera: PerspectiveCamera): World {
 		},
 
 		dispose() {
+			// Routes come and go, so free what this world uploaded to the GPU.
+			for (const mesh of [floor, samurai]) {
+				mesh.geometry.dispose()
+				mesh.material.dispose()
+			}
+			ninjaGeometry.dispose()
+			ninjaMaterial.dispose()
 			scene.clear()
 			meshes.clear()
 		},

@@ -7,12 +7,15 @@
  */
 
 import { beforeEach, describe, expect, it } from 'vitest'
-import { ambush, marks, type AmbushOption } from './ambush.mts'
-import { life, shareOfOnePoint } from './life.mts'
-import { quiz, refsOf } from './quiz.mts'
-import { run, runConfig } from './run.mts'
-import { beats, pointsPerCorrect, score } from './score.mts'
+import { createAmbush, marks, type Ambush, type AmbushOption } from './ambush.mts'
+import { createQuiz, refsOf, type Quiz } from './quiz.mts'
+import { createLife, shareOfOnePoint, type Life } from './run/life.mts'
+import { createRun, runConfig, type Run } from './run/run.mts'
+import { beats, createScore, pointsPerCorrect, type Score } from './run/score.mts'
 import { settings, timeScales } from './settings.mts'
+import { createPracticeGame } from './practice/game.mts'
+import { createRunGame } from './run/game.mts'
+import { createStudyGame } from './study/game.mts'
 import { fixtureQuiz } from '../fixtures/quiz.mts'
 
 const option = (answer: string, correct: boolean, index: number): AmbushOption => ({
@@ -23,12 +26,20 @@ const option = (answer: string, correct: boolean, index: number): AmbushOption =
 	pick: 0,
 })
 
+// Every test gets its own stores: a game mode creates them per run, so tests do the same.
+let run: Run
+let quiz: Quiz
+let ambush: Ambush
+let score: Score
+let life: Life
+
 beforeEach(() => {
-	run.reset()
-	score.reset()
-	life.reset()
+	run = createRun()
+	quiz = createQuiz()
+	ambush = createAmbush()
+	score = createScore()
+	life = createLife()
 	settings.reset()
-	ambush.close()
 	quiz.load(fixtureQuiz)
 })
 
@@ -193,5 +204,38 @@ describe('settings', () => {
 		expect(settings.timeScale()).toBeUndefined()
 		settings.setDifficulty('master')
 		expect(settings.timeScale()).toBe(timeScales.master)
+	})
+})
+
+describe('game modes', () => {
+	it('gives every run its own state', () => {
+		const first = createRunGame()
+		const second = createRunGame()
+		first.score.addCorrect()
+		first.life.hit(0.5)
+
+		expect(second.score.get().points).toBe(0)
+		expect(second.life.get().value).toBe(1)
+	})
+
+	it('starts a run from a given state, for fixtures and tests', () => {
+		const game = createRunGame({ life: { value: 0.25, lastLoss: 0.25, hits: 3 } })
+		expect(game.life.get().value).toBe(0.25)
+		expect(game.score.get().points).toBe(0)
+	})
+
+	it('keeps practice apart from the run: no life, no score, only a tally', () => {
+		const practice = createPracticeGame()
+		practice.tally.right()
+		practice.tally.wrong()
+		expect(practice.tally.get()).toEqual({ right: 1, wrong: 1, missed: true })
+		expect(Object.keys(practice)).not.toContain('life')
+	})
+
+	it('loops study cards back to the first', () => {
+		const study = createStudyGame()
+		study.reading.next(2)
+		study.reading.next(2)
+		expect(study.reading.get().card).toBe(0)
 	})
 })

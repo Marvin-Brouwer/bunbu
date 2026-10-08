@@ -1,12 +1,12 @@
 /**
- * The player's settings. Persisting them in local storage is the run track's job; this store is
- * plain state with defaults.
+ * The player's settings. App-wide, so one store for every route and game mode. Persisting them in
+ * local storage is the run track's job; this store is plain state with defaults.
  *
  * Difficulty is the ambush time limit: Novice has none, Adept gets half again as long as Master
  * ([time limit](../../../../docs/design/gameplay.md#time-limit)). The values are defaults to tune.
  */
 
-import { createStore, type Store } from './store.mts'
+import { createStore } from './store.mts'
 
 export type Difficulty = 'novice' | 'adept' | 'master'
 
@@ -27,7 +27,7 @@ export const timeScales: Readonly<Record<Difficulty, number | undefined>> = {
 
 const initial: SettingsState = { difficulty: 'adept', haptics: true, volume: 0.8 }
 
-export const settingsStore: Store<SettingsState> = createStore(initial)
+const settingsStore = createStore(initial)
 
 export const settings = {
 	get: settingsStore.get,

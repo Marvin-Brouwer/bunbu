@@ -4,7 +4,9 @@ How the game keeps its state, who may change it, and how the screen follows it. 
 
 ## The idea
 
-- The game state lives in **several small stores**, one per concern: the run, the score, the life bar, the shogun, the ninjas, the current ambush, the settings.
+- The game state lives in **several small stores**, one per concern: the run, the score, the life bar, the shogun, the ninjas, the current ambush.
+- Each **game mode** (the run, dojo practice, dojo study) has its own set of stores. Its route creates them when it mounts and drops them when it unmounts, so nothing carries over from one run to the next or into the dojo.
+- Only **settings** and the **selection** (the chosen quiz and stage) are app-wide. Moving between screens is routing ([@rooted/router](https://www.npmjs.com/package/@rooted/router)), not state.
 - Each store owns its state and exposes **functions that change it** (actions). Nothing else writes to a store.
 - Most stores are small **state machines**: they have a phase, and their actions only allow the transitions that make sense from that phase.
 - The **canvas only renders**. On every frame of the game loop it reads the stores and makes the scene match. It holds no rules, no timers and no score, and it never calls an action.
@@ -25,6 +27,8 @@ State flows one way. That makes the game testable without a browser, and a frame
 
 A first cut. Split or merge as the code asks for it, but keep each one about one thing.
 
+The run's stores:
+
 | Store      | Holds                                                                                                                 | Example actions                                                    |
 | ---------- | --------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
 | `run`      | Phase (`intro`, `running`, `ambush`, `paused`, `finished`, `fallen`), run time, world speed scale (slow-mo), distance | `start()`, `pause()`, `resume()`, `finish()`, `fall()`, `tick(dt)` |
@@ -34,9 +38,21 @@ A first cut. Split or merge as the code asks for it, but keep each one about one
 | `life`     | Life as a fraction of the error margin (see [life bar](../design/gameplay.md#life-bar))                               | `hit(share)`, `reset()`                                            |
 | `shogun`   | Pose (`run`, `strike`, `block`, `hurt`, `fallen`), the target of a strike, when it started                            | `strike(ninjaId)`, `block(ninjaId)`, `hurt()`                      |
 | `ninjas`   | Active ninjas: id, carried options, mark, position along the approach, pose                                           | `spawn(wave)`, `advance(dt)`, `slay(id)`, `clear()`                |
-| `settings` | Difficulty (`timeScale`), haptics on/off, volume                                                                      | `setDifficulty(level)`, `setHaptics(on)`                           |
+
+`createRunGame()` creates all of these together as one `RunGame`. Each store is a factory (`createLife(initial)`), so a test or a fixture can start it from any state.
+
+The dojo reuses `quiz` and `ambush`. Practice adds a `tally` (right, wrong, missed) and has no life bar or score; study adds `reading` (card, playing, speech rate, spoken word).
+
+App-wide:
+
+| Store       | Holds                                              | Example actions                          |
+| ----------- | -------------------------------------------------- | ---------------------------------------- |
+| `settings`  | Difficulty (`timeScale`), haptics on/off, volume   | `setDifficulty(level)`, `setHaptics(on)` |
+| `selection` | The quiz and stage chosen on the select screen     | `chooseQuiz(quiz)`, `chooseStage(stage)` |
 
 `settings` is the only store that is persisted (local storage), together with the high scores. The rest starts fresh with every run.
+
+Pause, the results and the fallen screen are phases of the run, not routes: they are overlays on a run that is still mounted, and leaving the run drops its state.
 
 ## A store
 
@@ -98,7 +114,7 @@ Rules:
 One player action often touches several stores. Answering a question changes the ambush, the score or the life bar, the shogun and the ninjas. That orchestration goes in **flows**: plain functions that read stores and call their actions, in one place.
 
 ```ts
-export function commitAmbush() {
+export function commitAmbush({ ambush, quiz, score, life, shogun, run }: RunGame) {
   const result = ambush.commit();
   if (!result) return;
 
@@ -114,11 +130,11 @@ export function commitAmbush() {
 }
 ```
 
-Flows are the only place where the game's rules meet. They stay free of three.js and the DOM, so they can be unit-tested with the stores.
+Flows take the game mode's stores as an argument rather than importing them, so they work on whichever run is mounted. They are the only place where the game's rules meet. They stay free of three.js and the DOM, so they can be unit-tested with the stores.
 
 ## The game loop
 
-One `requestAnimationFrame` loop drives everything, in a fixed order each frame:
+One `requestAnimationFrame` loop drives everything. The app shell starts it once; a route plugs its game mode into it with `play(mode, signal)`, which unplugs again when the route unmounts. Without a mode (on a menu) the loop only draws. Each frame, in a fixed order:
 
 1. **Time.** Take the real frame delta, clamp it (a tab coming back from the background must not jump the run forward by minutes), and multiply it by the run's speed scale. That is how slow motion during an ambush works.
 2. **Update.** Call the time-based actions: `run.tick(dt)`, `ambush.tick(dt)`, `ninjas.advance(dt)`. Timeouts (the ambush running out) are decided here, by the stores, through flows.
@@ -159,12 +175,20 @@ Stores and flows are plain TypeScript, so they are tested without a browser: cre
 
 ```text
 apps/game/src/
-	state/      one module per store, plus createStore
-	flows/      functions that span stores
-	loop.mts    the game loop: time, update, render
-	render/     three.js scene, renderer, asset loading (reads state only)
-	ui/         Rooted components: HUD, scroll, swipe zone, menus
-	fixtures/   dev-only store states per screen, through `?fixture=<name>`
+	application.mts   the router, mounted inside the shell
+	state/            createStore, the stores shared by modes (quiz, ambush), settings, selection
+		run/          the run's stores and createRunGame
+		practice/     dojo practice: createPracticeGame
+		study/        dojo study: createStudyGame
+	flows/run/        functions that span the run's stores
+	loop.mts          the game loop: time, update, render; play() plugs a mode in
+	render/           viewport, stage (show() puts a view on the canvas), one folder per mode's world
+	ui/               Rooted components, one folder per screen
+		shell/        the canvas and the routed screen on top of it
+		<screen>/     _routes.mts registers the screen's routes; the screen lazy-loads
+	fixtures/         dev-only run states per screen, through `/run/?fixture=<name>`
 ```
 
-`render/` and `ui/` may import from `state/`. `state/` and `flows/` never import from `render/` or `ui/`. An eslint import rule can enforce that.
+Every `_routes.mts` is collected into the generated `_routes.g.mts` at build time, so adding a screen never touches `application.mts`.
+
+`render/` and `ui/` may import from `state/`. `state/` and `flows/` never import from `render/` or `ui/`. eslint enforces that, and keeps browser globals out of them.

@@ -1,5 +1,6 @@
 /**
- * The loaded quiz, the order its questions are asked in, and what the player answered.
+ * The quiz being played: the order its questions are asked in, and what the player answered.
+ * Shared by every game mode that asks questions, so each mode creates its own.
  *
  * A question can take several ambushes: one per `solutions` entry and one per `match` row
  * ([per question type](../../../../docs/design/gameplay.md#per-question-type)). A single ambush is
@@ -8,7 +9,7 @@
  */
 
 import type { BunbuData, Question } from '@bunbu/data'
-import { createStore, refuse, type Store } from './store.mts'
+import { createStore, refuse, type Readable } from './store.mts'
 
 /** One ambush: a question, plus which solution or row of it is being asked. */
 export type QuestionRef = {
@@ -31,16 +32,29 @@ export type QuizState = {
 	readonly quiz: BunbuData | undefined
 	/** Question indices in the order they are asked. */
 	readonly order: readonly number[]
-	/** How many ambushes have been answered. */
-	readonly answered: number
 	/** Every ambush of this quiz, in the order they are asked. */
 	readonly refs: readonly QuestionRef[]
+	/** How many ambushes have been answered. */
+	readonly answered: number
 	readonly records: readonly AnswerRecord[]
 }
 
-const initial: QuizState = { quiz: undefined, order: [], answered: 0, refs: [], records: [] }
+export type Quiz = Readable<QuizState> & {
+	/** Loads a quiz. `order` defaults to the questions in file order; the app shuffles it. */
+	load: (data: BunbuData, order?: readonly number[]) => void
+	/** The ambush that is up next, or `undefined` when the quiz is done. */
+	current: () => QuestionRef | undefined
+	/** The question a ref points at. */
+	question: (at: QuestionRef) => Question | undefined
+	/** Records an answer and moves on to the next ambush. */
+	record: (answer: AnswerRecord) => void
+	/** The answers that were wrong or unanswered, for the review and for practice. */
+	misses: () => readonly AnswerRecord[]
+	/** Starts the same quiz over, in the same order. */
+	reset: () => void
+}
 
-export const quizStore: Store<QuizState> = createStore(initial)
+export const noQuiz: QuizState = { quiz: undefined, order: [], refs: [], answered: 0, records: [] }
 
 /** How many ambushes a question takes: one per solution, one per row, otherwise one. */
 export function partsOf(question: Question): number {
@@ -57,44 +71,48 @@ export function refsOf(quiz: BunbuData, order: readonly number[]): QuestionRef[]
 	})
 }
 
-export const quiz = {
-	get: quizStore.get,
-	subscribe: quizStore.subscribe,
+/** A loaded quiz, ready to be asked in `order`. */
+export function loaded(data: BunbuData, order?: readonly number[]): QuizState {
+	const asked = order ?? data.questions.map((_, index) => index)
+	return { ...noQuiz, quiz: data, order: asked, refs: refsOf(data, asked) }
+}
 
-	/** Loads a quiz. `order` defaults to the questions in file order; the app shuffles it. */
-	load(data: BunbuData, order?: readonly number[]): void {
-		const asked = order ?? data.questions.map((_, index) => index)
-		quizStore.set({ quiz: data, order: asked, answered: 0, refs: refsOf(data, asked), records: [] })
-	},
+export function createQuiz(initial: QuizState = noQuiz): Quiz {
+	const store = createStore(initial)
 
-	/** The ambush that is up next, or `undefined` when the quiz is done. */
-	current(): QuestionRef | undefined {
-		const { refs, answered } = quizStore.get()
-		return refs[answered]
-	},
+	return {
+		get: store.get,
+		subscribe: store.subscribe,
 
-	/** The question a ref points at. */
-	question(at: QuestionRef): Question | undefined {
-		return quizStore.get().quiz?.questions[at.question]
-	},
+		load(data, order) {
+			store.set(loaded(data, order))
+		},
 
-	/** Records an answer and moves on to the next ambush. */
-	record(answer: AnswerRecord): void {
-		const state = quizStore.get()
-		if (state.answered >= state.refs.length) {
-			refuse('quiz.record', 'every question has been answered')
-			return
-		}
-		quizStore.set({ ...state, answered: state.answered + 1, records: [...state.records, answer] })
-	},
+		current() {
+			const { refs, answered } = store.get()
+			return refs[answered]
+		},
 
-	/** The answers that were wrong or unanswered, for the review and for practice. */
-	misses(): readonly AnswerRecord[] {
-		return quizStore.get().records.filter((record) => record.outcome !== 'correct')
-	},
+		question(at) {
+			return store.get().quiz?.questions[at.question]
+		},
 
-	reset(): void {
-		const { quiz: data, order } = quizStore.get()
-		quizStore.set(data === undefined ? initial : { ...initial, quiz: data, order, refs: refsOf(data, order) })
-	},
+		record(answer) {
+			const state = store.get()
+			if (state.answered >= state.refs.length) {
+				refuse('quiz.record', 'every question has been answered')
+				return
+			}
+			store.set({ ...state, answered: state.answered + 1, records: [...state.records, answer] })
+		},
+
+		misses() {
+			return store.get().records.filter((record) => record.outcome !== 'correct')
+		},
+
+		reset() {
+			const { quiz, order } = store.get()
+			store.set(quiz === undefined ? noQuiz : loaded(quiz, order))
+		},
+	}
 }

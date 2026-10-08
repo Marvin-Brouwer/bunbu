@@ -1,0 +1,36 @@
+/**
+ * A stand-in screen: a title, a line about what goes here, and links to the screens it leads to.
+ * Enough to walk the whole app before the menu and dojo tracks build the real screens.
+ */
+
+import { component, type Component } from '@rooted/components'
+import { Link, type Path } from '@rooted/router'
+import styles from './placeholder.css'
+
+export type PlaceholderLink = { readonly label: string; readonly href: Path | string }
+
+export type PlaceholderOptions = {
+	readonly title: string
+	readonly note: string
+	readonly links: readonly PlaceholderLink[]
+}
+
+export function placeholder(name: string, options: PlaceholderOptions): Component {
+	return component({
+		name,
+		styles,
+		onMount({ append, create, element }) {
+			append(element('section', {
+				classes: styles.screen,
+				children: [
+					element('h1', { classes: styles.title, textContent: options.title }),
+					element('p', { classes: styles.note, textContent: options.note }),
+					element('nav', {
+						classes: styles.links,
+						children: options.links.map(({ label, href }) => create(Link, { href, children: label })),
+					}),
+				],
+			}))
+		},
+	})
+}

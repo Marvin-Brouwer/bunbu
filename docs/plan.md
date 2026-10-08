@@ -29,8 +29,9 @@ Everything else waits for this, so keep it small: shapes and plumbing, no rules.
 - **Dependencies.** Add `three` and `@types/three` to `apps/game`, and `vitest` for game tests.
 - **Folders.** Create `apps/game/src/{state,flows,render,ui}` and `loop.mts` as in [state.md](architecture/state.md#folder-layout).
 - **`createStore`** in `state/store.mts`, with tests.
-- **Contracts.** One module per store (`run`, `quiz`, `ambush`, `score`, `life`, `shogun`, `ninjas`, `settings`, plus `screen` for which screen is showing) with its **state type and action signatures**, and a stub body that just does the obvious thing. This is the most important part of the foundation: tracks D, E, G and H build against these types before A and B fill them in. Changing a contract after this is a small PR of its own that every track rebases on.
-- **Fixtures.** A dev-only way to put the stores into a named state, for example `?fixture=ambush-multiple`, `?fixture=fallen`. One fixture file per screen state in `apps/game/src/fixtures/`. UI and render tracks use these to build and screenshot their work without playing a run.
+- **Contracts.** One module per store with its **state type and action signatures**, and a stub body that just does the obvious thing. Each game mode has its own state, created when its route mounts: the run (`run`, `quiz`, `ambush`, `score`, `life`, `shogun`, `ninjas`), practice (`quiz`, `ambush`, `tally`) and study (`quiz`, `reading`). Only `settings` and `selection` are app-wide. This is the most important part of the foundation: tracks D, E, G and H build against these types before A and B fill them in. Changing a contract after this is a small PR of its own that every track rebases on.
+- **Routing.** `@rooted/router` for app navigation: each screen folder has its own `_routes.mts`, collected into one route manifest at build time.
+- **Fixtures.** A dev-only way to start a run from a named state, for example `/run/?fixture=ambush-multiple`, `/run/?fixture=fallen`, in `apps/game/src/fixtures/`. UI and render tracks use these to build and screenshot their work without playing a run.
 - **Sample quizzes.** A few YAML quizzes in `apps/game/test/quizzes/` that cover every question type, 2 to 8 options, long code blocks and an image. Valid against `@bunbu/data`.
 - **Shell.** The layer container from [rendering.md](architecture/rendering.md#layers): full-viewport container, canvas with a `ResizeObserver`, one empty slot per layer, and the game loop with clamped delta, pause and `visibilitychange`. Rendering a grey floor and a cube is enough.
 - **Agent notes.** An `AGENTS.md` (or `CLAUDE.md`) at the root that points agents at `docs/`, the folder ownership below, and "run `pnpm lint` and `pnpm test` before you push".
@@ -47,7 +48,7 @@ Every track:
 
 ### A. Rules: ambush and questions
 
-Owns `state/ambush.mts`, `state/quiz.mts`, `state/ninjas.mts`, `flows/ambush*.mts`.
+Owns `state/ambush.mts`, `state/quiz.mts`, `state/run/ninjas.mts`, `flows/run/ambush*.mts`.
 
 The heart of the game, all plain TypeScript and unit tests, no screen needed.
 
@@ -61,7 +62,7 @@ The heart of the game, all plain TypeScript and unit tests, no screen needed.
 
 ### B. Rules: run, score, life, persistence
 
-Owns `state/run.mts`, `state/score.mts`, `state/life.mts`, `state/settings.mts`, `state/screen.mts`, `flows/run*.mts`, `storage/`.
+Owns `state/run/` (except `ninjas.mts`), `state/settings.mts`, `state/selection.mts`, `flows/run/run*.mts`, `storage/`.
 
 - Run phases (`intro`, `running`, `ambush`, `paused`, `finished`, `fallen`), run time, slow-motion scale, distance, when the next ambush triggers.
 - Life bar: `(best still possible − pass) / (1 − pass)`, each miss takes its question's full share, empty bar means fallen ([life bar](design/gameplay.md#life-bar)).
@@ -125,16 +126,16 @@ A good track for someone who'd rather not write TypeScript.
 
 ### G. Menus and results
 
-Owns `ui/screens/` (all screens except the dojo ones) and `flows/screens*.mts`.
+Owns `ui/title/`, `ui/select/`, `ui/settings/`, `ui/run/` (the run screen and its overlays: pause, results, fallen) and `ui/shell/`.
 
 - Title / menu (1), quiz and stage select (2) with quiz cards, **Load .yaml** and `.bunbu` through `validate` and `uncompress` from `@bunbu/data`, showing their errors to the user. Novice / Adept / Master.
 - Pause (6), settings (difficulty, haptics, volume).
 - Finished (7) and fallen (8), with the mistakes review scroll: your pick, the right answer, explanations, references.
-- Navigation between screens through the `screen` store. Rooted has no router set up yet, so a store-driven switch is fine for now.
+- Navigation between screens with `@rooted/router`: `Link` and `navigate`, one `_routes.mts` per screen folder. Pause, results and fallen are phases of the run shown over its world, not routes.
 
 ### H. Dojo
 
-Owns `ui/dojo/`, `flows/dojo*.mts`, `speech/`.
+Owns `ui/dojo/`, `state/practice/`, `state/study/`, `flows/dojo*.mts`, `speech/`.
 
 - Speech: a small wrapper around `speechSynthesis`, voice per quiz `language`, speed, pronunciations through `resolvePronunciations`, word boundary events for highlighting. Test on iOS and Android early; boundary events and voice lists differ a lot.
 - Study (D2): shuffled loop, "the answer is …" per type, the spoken word highlighted with grey background and underline, pause and restart.
@@ -173,7 +174,7 @@ With three people the second and third person start on their tracks against the 
 
 - **Small PRs, one track each.** Prefer several PRs per track over one big one. Squash merge to `main`.
 - **Contracts change first.** If a track needs a store to look different, that is its own small PR to the store's owner, merged before the code that uses it.
-- **Shared files are hot spots.** `package.json`, `pnpm-lock.yaml`, `application.mts` and `loop.mts` will conflict. Add dependencies in a separate tiny PR, and keep registration in `application.mts` to one line per track.
+- **Shared files are hot spots.** `package.json`, `pnpm-lock.yaml`, `loop.mts` and `ui/run/run.mts` will conflict. Add dependencies in a separate tiny PR, and keep what a track mounts in the run screen to one line. Routes need no shared file: a screen's own `_routes.mts` registers it.
 - **Lint, typecheck and tests green** before a PR, locally and in CI. No `eslint-disable` without a comment saying why.
 - **Docs stay the source of truth.** When a decision changes the rules, update the design doc in the same PR.
 - **Agents get a brief per task.** Point the agent at this file, its track, the design section it implements, and the folders it may touch.

@@ -1,9 +1,9 @@
 /**
  * The score: a flat 100 per correct answer, and the run time as the tiebreak
- * ([score](../../../../docs/design/gameplay.md#score)). There is no per-question time bonus.
+ * ([score](../../../../../docs/design/gameplay.md#score)). There is no per-question time bonus.
  */
 
-import { createStore, type Store } from './store.mts'
+import { createStore, type Readable } from '../store.mts'
 
 /** Points for a correct answer. Wrong and unanswered score nothing. */
 export const pointsPerCorrect = 100
@@ -25,9 +25,14 @@ export type ScoreState = {
 	readonly best: HighScore | undefined
 }
 
-const initial: ScoreState = { points: 0, correct: 0, answered: 0, best: undefined }
+export type Score = Readable<ScoreState> & {
+	addCorrect: () => void
+	addMiss: () => void
+	/** Starts a run, keeping the high score to beat. */
+	reset: (best?: HighScore) => void
+}
 
-export const scoreStore: Store<ScoreState> = createStore(initial)
+export const noScore: ScoreState = { points: 0, correct: 0, answered: 0, best: undefined }
 
 /** Whether `score` beats `best`: more points, or the same points in less time. */
 export function beats(score: HighScore, best: HighScore | undefined): boolean {
@@ -36,27 +41,30 @@ export function beats(score: HighScore, best: HighScore | undefined): boolean {
 	return score.seconds < best.seconds
 }
 
-export const score = {
-	get: scoreStore.get,
-	subscribe: scoreStore.subscribe,
+export function createScore(initial: ScoreState = noScore): Score {
+	const store = createStore(initial)
 
-	addCorrect(): void {
-		const state = scoreStore.get()
-		scoreStore.set({
-			...state,
-			points: state.points + pointsPerCorrect,
-			correct: state.correct + 1,
-			answered: state.answered + 1,
-		})
-	},
+	return {
+		get: store.get,
+		subscribe: store.subscribe,
 
-	addMiss(): void {
-		const state = scoreStore.get()
-		scoreStore.set({ ...state, answered: state.answered + 1 })
-	},
+		addCorrect() {
+			const state = store.get()
+			store.set({
+				...state,
+				points: state.points + pointsPerCorrect,
+				correct: state.correct + 1,
+				answered: state.answered + 1,
+			})
+		},
 
-	/** Starts a run, keeping the high score to beat. */
-	reset(best?: HighScore): void {
-		scoreStore.set({ ...initial, best: best ?? scoreStore.get().best })
-	},
+		addMiss() {
+			const state = store.get()
+			store.set({ ...state, answered: state.answered + 1 })
+		},
+
+		reset(best) {
+			store.set({ ...noScore, best: best ?? store.get().best })
+		},
+	}
 }

@@ -17,7 +17,7 @@ const browserGlobals = Object.keys(globals.browser)
 	}))
 
 export default defineConfig(
-	globalIgnores(['**/dist/', '**/node_modules/', '**/*.g.json', 'packages/data/bench/']),
+	globalIgnores(['**/dist/', '**/node_modules/', '**/*.g.json', '**/*.g.mts', 'packages/data/bench/']),
 	eslint.configs.recommended,
 	tseslint.configs.strictTypeChecked,
 	tseslint.configs.stylisticTypeChecked,
@@ -66,26 +66,8 @@ export default defineConfig(
 					{ group: ['three', 'three/*'], message: 'state/ and flows/ must not use three.js. Rendering reads the stores instead.' },
 					{ group: ['@rooted/*'], message: 'state/ and flows/ must not use Rooted. UI components read the stores instead.' },
 					{ group: ['**/render', '**/render/**', '**/ui', '**/ui/**'], message: 'state/ and flows/ may not import from render/ or ui/.' },
-					storeWriterRestriction(),
 				],
 			}],
 		},
 	},
-	{
-		// Only tests and fixtures may write a store's state directly. Everyone else goes through its actions.
-		files: ['apps/game/src/**'],
-		ignores: ['apps/game/src/state/**', 'apps/game/src/flows/**', 'apps/game/src/fixtures/**', '**/*.test.mts'],
-		rules: {
-			'no-restricted-imports': ['error', { patterns: [storeWriterRestriction()] }],
-		},
-	},
 )
-
-function storeWriterRestriction() {
-	return {
-		group: ['**/state/*'],
-		// `lifeStore`, `runStore`, … but not `createStore`.
-		importNamePattern: '^(?!create)\\w+Store$',
-		message: 'The raw store is for tests and fixtures. Use the store\'s actions instead.',
-	}
-}

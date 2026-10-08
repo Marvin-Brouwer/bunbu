@@ -2,47 +2,49 @@
  * The one `requestAnimationFrame` loop: time, update, render, in that order every frame
  * ([the game loop](../../../docs/architecture/state.md#the-game-loop)).
  *
- * The delta is clamped, so a tab that comes back from the background cannot jump the run forward
- * by minutes, and it is multiplied by the run's `worldScale`, which is how slow motion works.
- * While paused the update step is skipped; while the page is hidden the loop stops entirely.
+ * The shell starts it once for the whole app. The game mode that is playing plugs into it with
+ * `play()`; the canvas draws whatever a route put on the stage. The delta is clamped, so a tab
+ * that comes back from the background cannot jump a run forward by minutes, and multiplied by the
+ * mode's world scale, which is how slow motion works. While the mode is paused its update is
+ * skipped; while the page is hidden the loop stops entirely and the mode is asked to pause.
  */
 
-import { ambush } from './state/ambush.mts'
-import { ninjas } from './state/ninjas.mts'
-import { run, runConfig } from './state/run.mts'
+import { drawFrame } from './render/stage.mts'
 
-export type Loop = {
-	/** Reads the stores and draws a frame. */
-	render: (dt: number) => void
-	/** Time-based actions, before the frame is drawn. Defaults to ticking the stores. */
-	update?: (dt: number) => void
+/** A delta longer than this is clamped. */
+export const maximumDelta = 0.1
+
+/** A game mode the loop drives: the run, or dojo practice. */
+export type Mode = {
+	/** Time-based actions. Skipped while `paused()`. */
+	update: (dt: number) => void
+	paused: () => boolean
+	/** `1` normally, lower for slow motion. */
+	worldScale: () => number
+	/** Called when the page goes to the background ([pause](../../../docs/design/screens.md#6-pause)). */
+	pause: () => void
 }
 
-/** Ticks the stores that go by time. The ambush and run tracks fill in the rules behind these. */
-export function update(dt: number): void {
-	run.tick(dt)
-	const open = ambush.get()
-	if (open.open) {
-		ambush.tick(dt)
-		if (open.seconds > 0) ninjas.advance(1 - ambush.get().secondsLeft / open.seconds)
-	}
+let mode: Mode | undefined
+
+/** Drives `next` every frame until `signal` aborts, usually the route component's own signal. */
+export function play(next: Mode, signal: AbortSignal): void {
+	mode = next
+	signal.addEventListener('abort', () => {
+		if (mode === next) mode = undefined
+	}, { once: true })
 }
 
-/**
- * Starts the loop and keeps it running until `signal` aborts. Auto-pauses the run when the page
- * goes to the background ([pause](../../../docs/design/screens.md#6-pause)).
- */
-export function startLoop(loop: Loop, signal: AbortSignal): void {
-	const step = loop.update ?? update
+/** Starts the loop for the lifetime of the app. */
+export function startLoop(signal: AbortSignal): void {
 	let frame = 0
 	let last = performance.now()
 
 	const tick = (now: number) => {
-		const delta = Math.min((now - last) / 1000, runConfig.maximumDelta)
+		const delta = Math.min((now - last) / 1000, maximumDelta)
 		last = now
-		const { phase, worldScale } = run.get()
-		if (phase !== 'paused') step(delta * worldScale)
-		loop.render(delta)
+		if (mode !== undefined && !mode.paused()) mode.update(delta * mode.worldScale())
+		drawFrame(delta)
 		frame = requestAnimationFrame(tick)
 	}
 
@@ -58,7 +60,7 @@ export function startLoop(loop: Loop, signal: AbortSignal): void {
 
 	document.addEventListener('visibilitychange', () => {
 		if (document.hidden) {
-			run.pause()
+			mode?.pause()
 			stop()
 		} else if (frame === 0) {
 			start()

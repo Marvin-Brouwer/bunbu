@@ -22,12 +22,17 @@ in the same pull request. Where the docs disagree, gameplay.md wins.
 
 ```text
 apps/game/src/
-  state/      one module per store, plus createStore
-  flows/      functions that span stores
-  loop.mts    the game loop: time, update, render
-  render/     three.js scene and renderer (reads state only)
-  ui/         Rooted components: layers, HUD, scroll, swipe zone, menus
-  fixtures/   dev-only states for a screen, through ?fixture=<name>
+  application.mts  the router; routes come from every ui/**/_routes.mts
+  state/      createStore, shared stores (quiz, ambush), settings, selection
+    run/      the run's stores, created per run by createRunGame
+    practice/ dojo practice's game state
+    study/    dojo study's game state
+  flows/run/  functions that span the run's stores
+  loop.mts    the game loop: time, update, render; play() plugs a game mode in
+  render/     viewport, stage (show() puts a view on the canvas), run/ world
+  ui/         Rooted components, one folder per screen with its _routes.mts
+    shell/    the one canvas and the routed screen on top of it
+  fixtures/   dev-only run states, through /run/?fixture=<name>
 apps/game/test/quizzes/   sample quizzes every track develops against
 packages/data/            @bunbu/data: reading, validating and sharing quizzes
 schema/                   the JSON Schema per format version
@@ -37,14 +42,20 @@ Rules the linter enforces:
 
 - `state/` and `flows/` are plain TypeScript. They never import `three`, never import `@rooted/*`,
   never import from `render/` or `ui/`, and never touch the DOM.
-- A store's `…Store` export is its writer. Only its own module, tests and fixtures import it;
-  everything else goes through the store's actions.
+
+Conventions the linter can't check:
+
+- A game mode's state is created by its route on mount and dropped on unmount. Only `settings`
+  and `selection` are app-wide singletons. Flows take the game (`RunGame`) as an argument.
+- Change a store through its actions. Fixtures and tests start a store from a state by passing it
+  to the factory (`createRunGame({ life: … })`), not by writing to it.
+- A new screen adds a `_routes.mts` next to it; `application.mts` does not change.
 
 ## Folder ownership
 
 Each track in [docs/plan.md](docs/plan.md#tracks) owns its folders. Change another track's folder
 through a small pull request its owner reviews. `package.json`, `pnpm-lock.yaml`,
-`application.mts` and `loop.mts` are shared, so keep changes there to a line or two, and add
+`loop.mts` and `ui/run/run.mts` are shared, so keep changes there to a line or two, and add
 dependencies in a pull request of their own.
 
 ## Before you push
@@ -64,11 +75,11 @@ request. No `eslint-disable` without a comment saying why.
 
 ```sh
 pnpm dev                                  # the game
-pnpm dev  # then open ?fixture=ambush-multiple
+pnpm dev  # then open /run/?fixture=ambush-multiple
 ```
 
 Fixtures put the stores into a named state without playing a run, so a screen can be built and
-screenshotted on its own. `?fixture=` with an unknown name logs the list. They are dev-only; add
+screenshotted on its own. `/run/?fixture=` with an unknown name logs the list. They are dev-only; add
 the ones your track needs in `apps/game/src/fixtures/`.
 
 ## Conventions
