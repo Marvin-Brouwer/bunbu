@@ -426,17 +426,19 @@ query: |-
 
 ## Sharing
 
-A quiz can be shared inside a link. `compress` in `@bunbu/data` turns a validated quiz into a URL-safe string, and `uncompress` turns it back. The string goes in the link's fragment (`#…`), so it is never sent to a server.
+A quiz is shared as a **`.bunbu` file**: `compress` in `@bunbu/data` turns a validated quiz into the file's bytes, and `uncompress` reads a `.bunbu` file back into a quiz. Chat apps and email clients deliver attachments unchanged, so this works at any size without a server. The media type is `application/vnd.bunbu`.
+
+How a file is made:
 
 1. **Pack.** The quiz is encoded in a schema-aware binary form: no keys, YAML syntax, indentation or comments. Repeated strings are stored once.
-2. **Compress.** The packed bytes are compressed with LZMA. On large quizzes this gives links about 15% shorter than deflate, which was the best of the browser-ready options measured.
-3. **Encode.** The result is base64url (`A-Z a-z 0-9 - _`). These characters survive chat apps and link detectors.
+2. **Compress.** The packed bytes are compressed with LZMA. On large quizzes this gives files about 15% smaller than deflate, which was the best of the browser-ready options measured.
+3. **Seal.** The file starts with `BUNBU`, a zero byte (so editors and other tools treat the file as binary, not text) and a format version byte, followed by the sizes and a CRC-32 checksum. A file that was cut off is reported as *incomplete*, and a damaged one as *corrupt*, instead of decoding into something subtly different.
 
-The first character is the share-format version (`A` for v1). Packing and compression settings are frozen per version. A change gets a new letter, and old links keep working.
+A `.bunbu` file is typically 6–8 times smaller than the YAML it came from.
 
-Sharing keeps the quiz's content, not its file: comments and formatting are lost. Links are untrusted input, so `uncompress` validates the result against the schema and limits how large a quiz may claim to be.
+Packing and compression settings are frozen per format version. A change gets a new version, and `uncompress` keeps reading the older ones.
 
-Very large quizzes still give long links. Browsers accept them, but chat apps and email clients may cut them off. Embedded `data:` images make this worse, which is another reason to prefer `https:` image URLs.
+A `.bunbu` file keeps the quiz's content, not its YAML: comments and formatting are lost. Keep the YAML as the source to edit, and treat `.bunbu` as an export. Shared files are untrusted input, so `uncompress` validates the result against the schema and limits how large a quiz may claim to be.
 
 ## Full example
 

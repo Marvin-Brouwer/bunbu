@@ -1,0 +1,8 @@
+{
+  "recommendations": [
+    // Opens .bunbu files, see settings.json.
+    "ms-vscode.hexeditor",
+    // Schema validation and autocomplete for quiz YAML files.
+    "redhat.vscode-yaml"
+  ]
+}

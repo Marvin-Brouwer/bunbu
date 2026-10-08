@@ -1,5 +1,6 @@
 import type { BunbuData, MatchRow, Option, Question, QuestionType, Reference } from "../types";
 import type { Markdown } from "../markdown";
+import { BunbuShareError } from "./errors";
 
 /*
  * Schema-aware binary packing of a validated quiz (share format v1).
@@ -143,7 +144,7 @@ class Reader {
 }
 
 function corrupt(): Error {
-  return new Error("Corrupt share data");
+  return new BunbuShareError("corrupt");
 }
 
 export function pack(data: BunbuData): Uint8Array {

@@ -1,6 +1,16 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { BunbuValidationError, compress, uncompress, validate, type BunbuData } from "../src";
+import {
+  BunbuShareError,
+  BunbuValidationError,
+  compress,
+  fileExtension,
+  mimeType,
+  uncompress,
+  validate,
+  type BunbuData,
+  type BunbuShareErrorReason,
+} from "../src";
 import { generateLargeQuiz } from "./fixtures/generate-large-quiz";
 
 const designDoc = readFileSync(new URL("../../../docs/design/data-format.md", import.meta.url), "utf8");
@@ -78,15 +88,28 @@ describe("compress / uncompress", () => {
     expect(await uncompress(await compress(data))).toEqual(data);
   });
 
-  it("produces a URL-safe string with the share version first", async () => {
-    const shared = await compress(await docExamples());
-    expect(shared).toMatch(/^A[A-Za-z0-9_-]+$/);
+  it("writes a .bunbu file that starts with its signature and version", async () => {
+    const file = await compress(await docExamples());
+    expect(new TextDecoder().decode(file.subarray(0, 5))).toBe("BUNBU");
+    expect(file[5]).toBe(0);
+    expect(file[6]).toBe(1);
+    expect(fileExtension).toBe(".bunbu");
+    expect(mimeType).toBe("application/vnd.bunbu");
   });
 
-  it("keeps share links small", { timeout: 60_000 }, async () => {
-    // Regression guards, a few percent above the sizes measured when share v1 was introduced.
-    expect((await compress(await docExamples())).length).toBeLessThan(2400);
-    expect((await compress(generateLargeQuiz(250, 1))).length).toBeLessThan(36_500);
+  it("keeps files small", { timeout: 60_000 }, async () => {
+    // Regression guards, a few percent above the sizes measured when the format was introduced.
+    expect((await compress(await docExamples())).length).toBeLessThan(1800);
+    expect((await compress(generateLargeQuiz(250, 1))).length).toBeLessThan(27_500);
+  });
+
+  it("reads a File, a Blob, an ArrayBuffer or bytes", async () => {
+    const data = await docExamples();
+    const bytes = await compress(data);
+    const buffer = bytes.slice().buffer;
+    for (const input of [new File([buffer], `quiz${fileExtension}`, { type: mimeType }), new Blob([buffer]), buffer, bytes]) {
+      expect(await uncompress(input)).toEqual(data);
+    }
   });
 
   it("rejects invalid data", async () => {
@@ -96,20 +119,51 @@ describe("compress / uncompress", () => {
     await expect(compress(invalid)).rejects.toBeInstanceOf(BunbuValidationError);
   });
 
+  async function expectShareError(input: Uint8Array, reason: BunbuShareErrorReason): Promise<void> {
+    const error = await uncompress(input).catch((caught: unknown) => caught);
+    expect(error).toBeInstanceOf(BunbuShareError);
+    expect((error as BunbuShareError).reason).toBe(reason);
+  }
+
+  const encode = (text: string) => new TextEncoder().encode(text);
+
   it.each([
-    ["an empty string", ""],
-    ["an unknown share version", "Zabc"],
-    ["characters outside base64url", "A$$$$"],
-    ["garbage", "AAAAAAAAAAAAAAAAAAAA"],
-    ["a size claim far beyond the limit", "A_____AAAAAAAAAAAAAA"],
-  ])("rejects %s", async (_, input) => {
-    await expect(uncompress(input)).rejects.toThrow();
+    ["an empty file", new Uint8Array(), "unknown-format"],
+    ["a text file", encode("id: quiz\ntitle: Not compressed\n"), "unknown-format"],
+    ["an older text share code", encode("AqbIAH8HvRcNjxvWk7hc8tV"), "unknown-format"],
+    ["a signature without the NUL byte", Uint8Array.from([...encode("BUNBU"), 1, 1, 1, 0, 0, 0, 0, 0]), "unknown-format"],
+    ["a newer format version", Uint8Array.from([...encode("BUNBU"), 0, 2, 1, 1, 0, 0, 0, 0, 0]), "unknown-format"],
+    ["garbage after the signature", Uint8Array.from([...encode("BUNBU"), 0, 1, ...new Array(20).fill(0)]), "corrupt"],
+    ["a size claim far beyond the limit", Uint8Array.from([...encode("BUNBU"), 0, 1, 0xff, 0xff, 0xff, 0x7f, 1, 0, 0, 0, 0, 0]), "corrupt"],
+  ] as const)("rejects %s", async (_, input, reason) => {
+    await expectShareError(input, reason);
   });
 
-  it("rejects truncated and altered data", async () => {
-    const shared = await compress(await docExamples());
-    await expect(uncompress(shared.slice(0, -10))).rejects.toThrow();
-    const altered = shared.slice(0, 40) + (shared[40] === "B" ? "C" : "B") + shared.slice(41);
-    await expect(uncompress(altered)).rejects.toThrow();
+  it("reports cut-off files as incomplete", async () => {
+    const file = await compress(await docExamples());
+    for (const length of [3, 7, 9, 14, Math.floor(file.length / 2), file.length - 1]) {
+      await expectShareError(file.subarray(0, length), "incomplete");
+    }
+  });
+
+  it("reports altered files as corrupt, or decodes them to the identical quiz", { timeout: 60_000 }, async () => {
+    // The last few bytes hold LZMA's final range-coder bits, where several endings decode to the
+    // same output; anything else that changes must be reported, never decode to different data.
+    const data = await docExamples();
+    const file = await compress(data);
+    const flip = (position: number) => {
+      const altered = file.slice();
+      altered[position]! ^= 0x01;
+      return altered;
+    };
+    for (let position = 7; position < file.length; position += 11) {
+      const result = await uncompress(flip(position)).catch((caught: unknown) => caught);
+      // A flipped length field can also claim more bytes than the file has: "incomplete".
+      if (result instanceof BunbuShareError) expect(["corrupt", "incomplete"]).toContain(result.reason);
+      else expect(result).toEqual(data);
+    }
+    // Byte 11 is in the CRC; the others are in the LZMA body.
+    for (const position of [11, 30, Math.floor(file.length / 2)]) await expectShareError(flip(position), "corrupt");
+    await expectShareError(Uint8Array.from([...file, 0, 0]), "corrupt");
   });
 });

@@ -9,8 +9,8 @@ import { pack } from "../src/share/pack";
 import { generateLargeQuiz, toYamlFile } from "../test/fixtures/generate-large-quiz";
 
 /*
- * Compares codecs for share links. Run with `pnpm bench` (not part of `pnpm test`).
- * Prints the share link length per codec, and how long each codec takes on the ~100 kB quiz.
+ * Compares codecs for .bunbu files. Run with `pnpm bench` (not part of `pnpm test`).
+ * Prints the compressed size per codec, and how long each codec takes on the ~100 kB quiz.
  * Brotli and zstd from node:zlib are reference points only: they have no light browser build.
  */
 
@@ -35,7 +35,6 @@ const corpus = {
 };
 
 const encoder = new TextEncoder();
-const base64urlLength = (bytes: number): number => Math.ceil((bytes * 4) / 3);
 
 async function nativeDeflate(input: Uint8Array): Promise<Uint8Array> {
   const stream = new Blob([input]).stream().pipeThrough(new CompressionStream("deflate-raw"));
@@ -59,12 +58,12 @@ it("compares codecs", { timeout: 600_000 }, async () => {
     for (const [input, bytes] of Object.entries(inputs)) {
       const row: Record<string, number> = { "input bytes": bytes.length };
       for (const [codec, compress] of Object.entries(codecs)) {
-        row[codec] = base64urlLength((await compress(bytes)).length);
+        row[codec] = (await compress(bytes)).length;
       }
       sizes[`${name} / ${input}`] = row;
     }
   }
-  console.log("Share link length (base64url characters):");
+  console.log("Compressed size (bytes):");
   console.table(sizes);
 
   const packed = pack(corpus["large (~100 kB)"]);

@@ -1,0 +1,6 @@
+{
+  // .bunbu files are binary (see docs/design/data-format.md, "Sharing").
+  "workbench.editorAssociations": {
+    "*.bunbu": "hexEditor.hexedit"
+  }
+}
