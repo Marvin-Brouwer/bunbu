@@ -1,0 +1,57 @@
+/*
+ * The layer container from rendering.md#layers: one fixed, full-viewport container with the
+ * canvas and one slot per layer stacked on top of it.
+ *
+ * Portrait is the target, but nothing here breaks in landscape or on desktop
+ * (docs/design/gameplay.md#platform).
+ */
+
+.container {
+	position: fixed;
+	inset: 0;
+	overflow: hidden;
+	background: #1b1a18;
+	touch-action: manipulation;
+}
+
+.canvas,
+.layer {
+	position: absolute;
+	inset: 0;
+}
+
+.canvas {
+	display: block;
+	width: 100%;
+	height: 100%;
+	/* The world is drawn, never touched: every gesture belongs to a DOM layer above it. */
+	pointer-events: none;
+}
+
+/* Layers pass pointer events through; what the player can touch turns them back on. */
+.layer {
+	pointer-events: none;
+	display: grid;
+}
+
+.layer > * {
+	pointer-events: auto;
+}
+
+.hud {
+	align-content: start;
+}
+
+.scroll {
+	align-content: start;
+	padding: 3.5rem 0.75rem 0;
+}
+
+.swipe {
+	align-content: end;
+}
+
+.overlays {
+	align-content: center;
+	justify-content: center;
+}

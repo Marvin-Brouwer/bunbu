@@ -1,0 +1,177 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Marvin-Brouwer/bunbu/main/schema/v1.json
+
+# A sample quiz for development: 2 to 8 options, a long code block and an image, so the scroll and
+# the ninja bundling can be built against real content.
+# See docs/design/gameplay.md#more-than-3-options.
+
+id: option-counts
+title: Option counts
+version: '1'
+language: en
+description: >-
+  Development sample: questions with 2, 3, 5, 6 and 8 options, a long code block and an image.
+passingScore: 60
+
+questions:
+  # 2 options.
+  - type: single
+    query: >-
+      Which value of `box-sizing` makes `width` include the padding and the border?
+    options:
+      - correct: true
+        answer: >-
+          `border-box`
+      - correct: false
+        answer: >-
+          `content-box`
+
+  # 3 options, plus a long code block the scroll has to scroll.
+  - type: single
+    query: |-
+      This component re-renders on every keystroke of the whole form:
+
+      ```ts
+      type Field = { name: string; label: string; value: string }
+
+      export function Form({ fields }: { fields: Field[] }) {
+        const [values, setValues] = useState(() =>
+          Object.fromEntries(fields.map((field) => [field.name, field.value])),
+        )
+
+        const change = (name: string, value: string) =>
+          setValues((previous) => ({ ...previous, [name]: value }))
+
+        return (
+          <form>
+            {fields.map((field) => (
+              <label key={field.name}>
+                {field.label}
+                <input
+                  value={values[field.name]}
+                  onChange={(event) => change(field.name, event.target.value)}
+                />
+              </label>
+            ))}
+            <Summary values={values} />
+          </form>
+        )
+      }
+      ```
+
+      Which change stops a keystroke in one field from re-rendering every other field?
+    options:
+      - correct: true
+        answer: >-
+          Give each field its own component that holds its own value.
+      - correct: false
+        answer: >-
+          Wrap `change` in `useCallback`.
+        explanation: >-
+          The state still lives in the parent, so the parent still re-renders.
+      - correct: false
+        answer: >-
+          Memoise `Summary` with `React.memo`.
+        explanation: >-
+          `Summary` depends on every value, so it has to re-render anyway.
+
+  # 5 options: the most ninjas there can be, 3 in front and 2 behind.
+  - type: multiple
+    query: >-
+      Which of these are **idempotent** HTTP methods?
+    options:
+      - correct: true
+        answer: >-
+          `GET`
+      - correct: true
+        answer: >-
+          `PUT`
+      - correct: true
+        answer: >-
+          `DELETE`
+      - correct: false
+        answer: >-
+          `POST`
+      - correct: false
+        answer: >-
+          `PATCH`
+        explanation: >-
+          A patch can describe a relative change, such as "add one", which is not idempotent.
+
+  # 6 options: bundled onto 5 ninjas, and an image on the scroll.
+  - type: multiple
+    query: |-
+      The layout below is built with CSS grid:
+
+      ![A three-column grid with a full-width header and footer](https://raw.githubusercontent.com/Marvin-Brouwer/bunbu/main/docs/design/screens/3-running.png)
+
+      Which properties belong on the **grid container**?
+    options:
+      - correct: true
+        answer: >-
+          `grid-template-columns`
+      - correct: true
+        answer: >-
+          `gap`
+      - correct: true
+        answer: >-
+          `grid-template-areas`
+      - correct: false
+        answer: >-
+          `grid-column`
+      - correct: false
+        answer: >-
+          `grid-area`
+      - correct: false
+        answer: >-
+          `align-self`
+
+  # 8 options: one per swipe direction, the most a question may have.
+  - type: multiple
+    query: >-
+      Which of these are **HTTP response status codes** in the 4xx range?
+    options:
+      - correct: true
+        answer: >-
+          `400 Bad Request`
+      - correct: true
+        answer: >-
+          `404 Not Found`
+      - correct: true
+        answer: >-
+          `409 Conflict`
+      - correct: true
+        answer: >-
+          `429 Too Many Requests`
+      - correct: false
+        answer: >-
+          `301 Moved Permanently`
+      - correct: false
+        answer: >-
+          `304 Not Modified`
+      - correct: false
+        answer: >-
+          `502 Bad Gateway`
+      - correct: false
+        answer: >-
+          `503 Service Unavailable`
+
+  # An order question with distractors to leave out.
+  - type: order
+    query: >-
+      You are on `main` with uncommitted changes. Put the commands in the order that puts them on
+      a new branch, commits them and pushes it.
+    options:
+      - correct: true
+        answer: >-
+          `git switch -c feature`
+      - correct: true
+        answer: >-
+          `git commit -am "Add feature"`
+      - correct: true
+        answer: >-
+          `git push -u origin feature`
+      - correct: false
+        answer: >-
+          `git stash`
+        explanation: >-
+          `git switch -c` keeps uncommitted changes, so stashing is not needed.

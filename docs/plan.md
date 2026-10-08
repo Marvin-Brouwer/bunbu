@@ -65,7 +65,7 @@ Owns `state/run.mts`, `state/score.mts`, `state/life.mts`, `state/settings.mts`,
 
 - Run phases (`intro`, `running`, `ambush`, `paused`, `finished`, `fallen`), run time, slow-motion scale, distance, when the next ambush triggers.
 - Life bar: `(best still possible − pass) / (1 − pass)`, each miss takes its question's full share, empty bar means fallen ([life bar](design/gameplay.md#life-bar)).
-- Score: 100 per correct, total run time, high score per quiz `id` + `version`, only passed runs count, equal score is won by the shorter time ([score](design/gameplay.md#score)). Note: [state.md](architecture/state.md#stores) still has `addCorrect(timeLeftRatio)` and a "time bonus"; the gameplay doc dropped that, so update state.md when this lands.
+- Score: 100 per correct, total run time, high score per quiz `id` + `version`, only passed runs count, equal score is won by the shorter time ([score](design/gameplay.md#score)). The store contracts and [state.md](architecture/state.md#stores) follow this: `addCorrect()` has no time bonus.
 - Pause, resume with 3-2-1, auto-pause on `visibilitychange`.
 - Persistence in local storage: settings, high scores, last run's misses (for "practise mistakes"), loaded quizzes. Version the stored shape.
 

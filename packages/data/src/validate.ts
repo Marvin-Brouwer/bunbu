@@ -51,6 +51,8 @@ function getValidator(version: number): ValidateFunction | undefined {
  * Parses and validates a quiz file against the schema version named in its first line.
  * Never rejects for invalid input: returns a {@link BunbuValidationError} instead.
  */
+// `async` is part of the published API: a future schema version may load its validator on demand.
+// eslint-disable-next-line @typescript-eslint/require-await
 export async function validate(fileBlob: string): Promise<BunbuData | BunbuValidationError> {
   const issues: ValidationIssue[] = [];
 
@@ -74,6 +76,8 @@ export async function validate(fileBlob: string): Promise<BunbuData | BunbuValid
   if (schemaIssues.length > 0) return new BunbuValidationError(schemaIssues);
 
   const quiz = data as BunbuData;
+  // The schema types `version` as a string, but YAML parses an unquoted `version: 3` as a number.
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-conversion
   return { ...quiz, version: String(quiz.version) };
 }
 
@@ -109,7 +113,7 @@ function describe(error: ErrorObject): string {
         : (error.message ?? "has an invalid format");
     case "additionalProperties":
     case "unevaluatedProperties": {
-      const property = error.params.additionalProperty ?? error.params.unevaluatedProperty;
+      const property = (error.params.additionalProperty ?? error.params.unevaluatedProperty) as string;
       return `must not have property '${property}'`;
     }
     case "contains":

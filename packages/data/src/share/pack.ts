@@ -49,7 +49,10 @@ class Writer {
 
   string(value: string): void {
     const index = this.strings.get(value);
-    if (index !== undefined) return this.varint(index + 1);
+    if (index !== undefined) {
+      this.varint(index + 1);
+      return;
+    }
     if (value.includes("\0")) throw new Error("Strings cannot contain a NUL character");
     this.strings.set(value, this.text.length);
     this.text.push(value);
@@ -114,6 +117,8 @@ class Reader {
     return value;
   }
 
+  // The type parameter is a deliberate cast: the format does not distinguish Markdown from plain strings.
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
   string<T extends string = string>(): T {
     const reference = this.varint();
     if (reference > 0) {
@@ -159,6 +164,8 @@ export function pack(data: BunbuData): Uint8Array {
   );
   writer.string(data.id);
   writer.string(data.title);
+  // The schema types `version` as a string, but YAML parses an unquoted `version: 3` as a number.
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-conversion
   writer.string(String(data.version));
   writer.string(data.language);
   if (scoreIsInteger) writer.varint(data.passingScore);
@@ -166,7 +173,7 @@ export function pack(data: BunbuData): Uint8Array {
   if (data.description !== undefined) writer.string(data.description);
   if (data.authors !== undefined) {
     writer.varint(data.authors.length);
-    data.authors.forEach((author) => writer.string(author));
+    for (const author of data.authors) writer.string(author);
   }
   if (data.license !== undefined) writer.string(data.license);
   if (data.pronunciations !== undefined) {
@@ -178,7 +185,7 @@ export function pack(data: BunbuData): Uint8Array {
     }
   }
   writer.varint(data.questions.length);
-  data.questions.forEach((question) => writeQuestion(writer, question));
+  for (const question of data.questions) writeQuestion(writer, question);
   return writer.finish();
 }
 
@@ -242,7 +249,7 @@ function writeQuestion(writer: Writer, question: Question): void {
       }
       if (question.distractors !== undefined) {
         writer.varint(question.distractors.length);
-        question.distractors.forEach((distractor) => writer.string(distractor));
+        for (const distractor of question.distractors) writer.string(distractor);
       }
       break;
   }

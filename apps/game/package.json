@@ -9,18 +9,22 @@
     "build": "vite build -- --minify",
     "build:dev": "vite build --mode development -- --no-mangle --no-pwa",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
     "@bunbu/data": "workspace:*",
-    "@rooted/components": "1.0.0-alpha.25"
+    "@rooted/components": "1.0.0-alpha.25",
+    "three": "^0.186.1"
   },
   "devDependencies": {
     "@rooted-adapters/github-pages": "1.0.0-alpha.28",
     "@rooted/adapter": "1.0.0-alpha.28",
     "@rooted/application": "1.0.0-alpha.42",
+    "@types/three": "^0.186.0",
     "typescript": "^7.0.2",
     "vite": "^8.3.3",
-    "vite-plugin-pwa": "^2.0.0"
+    "vite-plugin-pwa": "^2.0.0",
+    "vitest": "^5.0.3"
   }
 }

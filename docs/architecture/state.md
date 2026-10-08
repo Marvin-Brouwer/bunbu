@@ -30,7 +30,7 @@ A first cut. Split or merge as the code asks for it, but keep each one about one
 | `run`      | Phase (`intro`, `running`, `ambush`, `paused`, `finished`, `fallen`), run time, world speed scale (slow-mo), distance | `start()`, `pause()`, `resume()`, `finish()`, `fall()`, `tick(dt)` |
 | `quiz`     | The loaded quiz, question order, current index, answers given                                                         | `load(quiz)`, `next()`, `record(answer)`                           |
 | `ambush`   | Current question, options with their marks, picks so far, time left                                                   | `open(question)`, `pick(mark)`, `commit()`, `tick(dt)`             |
-| `score`    | Points, correct count, time bonus, high score for this quiz                                                           | `addCorrect(timeLeftRatio)`, `reset()`                             |
+| `score`    | Points, correct count, answered count, high score for this quiz                                                       | `addCorrect()`, `addMiss()`, `reset()`                             |
 | `life`     | Life as a fraction of the error margin (see [life bar](../design/gameplay.md#life-bar))                               | `hit(share)`, `reset()`                                            |
 | `shogun`   | Pose (`run`, `strike`, `block`, `hurt`, `fallen`), the target of a strike, when it started                            | `strike(ninjaId)`, `block(ninjaId)`, `hurt()`                      |
 | `ninjas`   | Active ninjas: id, carried options, mark, position along the approach, pose                                           | `spawn(wave)`, `advance(dt)`, `slay(id)`, `clear()`                |
@@ -104,7 +104,7 @@ export function commitAmbush() {
 
   quiz.record(result.answer);
   if (result.correct) {
-    score.addCorrect(result.timeLeftRatio);
+    score.addCorrect();
     for (const id of result.slain) shogun.strike(id);
   } else {
     life.hit(result.share);
@@ -164,6 +164,7 @@ apps/game/src/
 	loop.mts    the game loop: time, update, render
 	render/     three.js scene, renderer, asset loading (reads state only)
 	ui/         Rooted components: HUD, scroll, swipe zone, menus
+	fixtures/   dev-only store states per screen, through `?fixture=<name>`
 ```
 
 `render/` and `ui/` may import from `state/`. `state/` and `flows/` never import from `render/` or `ui/`. An eslint import rule can enforce that.

@@ -20,7 +20,8 @@ export const pronunciationDictionaries: Readonly<Record<string, Readonly<Record<
   brands,
 };
 
-const defaults: Record<string, string> = Object.assign({}, ...Object.values(pronunciationDictionaries));
+const defaults: Record<string, string> = Object.values(pronunciationDictionaries)
+  .reduce<Record<string, string>>((merged, dictionary) => Object.assign(merged, dictionary), {});
 
 /** All built-in pronunciations, merged. */
 export function defaultPronunciations(): Record<string, string> {

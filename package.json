@@ -3,9 +3,19 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "postinstall": "pnpm --filter @bunbu/data build",
+    "dev": "pnpm --filter @bunbu/game dev",
     "build": "pnpm -r build",
+    "lint": "eslint .",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test"
   },
-  "packageManager": "pnpm@11.15.1"
+  "packageManager": "pnpm@11.15.1",
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.12.0",
+    "globals": "^17.13.0",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.71.1"
+  }
 }
