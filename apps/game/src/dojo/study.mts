@@ -20,7 +20,7 @@ export const Study = component({
 	name: 'study',
 	onMount({ append, create }) {
 		const game = createStudyGame()
-		const { quiz } = selection.get()
+		const { quiz } = selection.value
 		if (quiz !== undefined) game.quiz.load(quiz)
 
 		append(

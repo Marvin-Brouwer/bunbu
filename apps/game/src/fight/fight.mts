@@ -35,7 +35,7 @@ export const Fight = component({
 		}
 
 		function start() {
-			const { quiz } = selection.get()
+			const { quiz } = selection.value
 			if (quiz === undefined) return
 			const game = createRunGame()
 			startRun(game, quiz)

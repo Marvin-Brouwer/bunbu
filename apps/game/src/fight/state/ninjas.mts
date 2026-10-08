@@ -4,7 +4,8 @@
  * and 2 behind, each carrying one or more options.
  */
 
-import { createStore, refuse, type Readable } from '../../_shared/state/store.mts'
+import { createStore } from '@rooted/store'
+import { type Readable, refuse, snapshot } from '../../_shared/state/store.mts'
 
 export type NinjaPose = 'approach' | 'strike' | 'slain' | 'blocked' | 'fleeing'
 
@@ -45,36 +46,38 @@ export function createNinjas(initial: NinjasState = noNinjas): Ninjas {
 	const store = createStore(initial)
 
 	const pose = (id: number, next: NinjaPose) => {
-		const { active } = store.get()
+		const { active } = snapshot(store)
 		if (!active.some((ninja) => ninja.id === id)) {
 			refuse('ninjas', `no ninja ${id}`)
 			return
 		}
-		store.set({
+		store.update(() => ({
 			active: active.map((ninja) => (ninja.id === id ? { ...ninja, pose: next, sequence: ninja.sequence + 1 } : ninja)),
-		})
+		}))
 	}
 
 	return {
-		get: store.get,
-		subscribe: store.subscribe,
+		get value() {
+			return snapshot(store)
+		},
+		on: store.on.bind(store),
 
 		spawn(wave) {
 			const spawned = wave.map((ninja) => ({ ...ninja, approach: 0, pose: 'approach' as const, sequence: 0 }))
-			store.set({ active: [...store.get().active, ...spawned] })
+			store.update(() => ({ active: [...snapshot(store).active, ...spawned] }))
 		},
 
 		advance(approach) {
 			const next = Math.min(1, Math.max(0, approach))
-			store.set({
-				active: store.get().active.map((ninja) => (ninja.pose === 'approach' ? { ...ninja, approach: next } : ninja)),
-			})
+			store.update(() => ({
+				active: snapshot(store).active.map((ninja) => (ninja.pose === 'approach' ? { ...ninja, approach: next } : ninja)),
+			}))
 		},
 
 		strike: (id) => { pose(id, 'strike') },
 		slay: (id) => { pose(id, 'slain') },
 		block: (id) => { pose(id, 'blocked') },
 		flee: (id) => { pose(id, 'fleeing') },
-		clear: () => { store.set(noNinjas) },
+		clear: () => { store.update(() => noNinjas) },
 	}
 }

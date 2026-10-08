@@ -8,7 +8,8 @@
  */
 
 import { createQuiz, noQuiz, type Quiz, type QuizState } from '../../_shared/state/quiz.mts'
-import { createStore, type Readable } from '../../_shared/state/store.mts'
+import { createStore } from '@rooted/store'
+import { type Readable, snapshot } from '../../_shared/state/store.mts'
 
 export type ReadingState = {
 	/** Index into the quiz's `order` of the card on screen. */
@@ -36,14 +37,16 @@ export const notReading: ReadingState = { card: 0, playing: false, rate: 1, word
 
 export function createReading(initial: ReadingState = notReading): Reading {
 	const store = createStore(initial)
-	const change = (next: Partial<ReadingState>) => { store.set({ ...store.get(), ...next }) }
+	const change = (next: Partial<ReadingState>) => { store.update(() => next) }
 	return {
-		get: store.get,
-		subscribe: store.subscribe,
+		get value() {
+			return snapshot(store)
+		},
+		on: store.on.bind(store),
 		play: () => { change({ playing: true }) },
 		pause: () => { change({ playing: false }) },
 		restart: () => { change({ card: 0, word: undefined }) },
-		next: (cards) => { change({ card: cards === 0 ? 0 : (store.get().card + 1) % cards, word: undefined }) },
+		next: (cards) => { change({ card: cards === 0 ? 0 : (snapshot(store).card + 1) % cards, word: undefined }) },
 		setRate: (rate) => { change({ rate: Math.min(2, Math.max(0.5, rate)) }) },
 		speak: (word) => { change({ word }) },
 	}

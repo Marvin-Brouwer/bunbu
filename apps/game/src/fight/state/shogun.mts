@@ -4,7 +4,8 @@
  * ([what the renderer may keep](../../../../../docs/architecture/state.md#what-the-renderer-may-keep)).
  */
 
-import { createStore, type Readable } from '../../_shared/state/store.mts'
+import { createStore } from '@rooted/store'
+import { type Readable, snapshot } from '../../_shared/state/store.mts'
 
 export type Pose = 'idle' | 'run' | 'strike' | 'block' | 'hurt' | 'fallen'
 
@@ -32,12 +33,14 @@ export function createShogun(initial: ShogunState = standing): Shogun {
 	const store = createStore(initial)
 
 	const pose = (next: Pose, target?: number) => {
-		store.set({ pose: next, target, sequence: store.get().sequence + 1 })
+		store.update(() => ({ pose: next, target, sequence: snapshot(store).sequence + 1 }))
 	}
 
 	return {
-		get: store.get,
-		subscribe: store.subscribe,
+		get value() {
+			return snapshot(store)
+		},
+		on: store.on.bind(store),
 
 		idle: () => { pose('idle') },
 		run: () => { pose('run') },
@@ -45,6 +48,6 @@ export function createShogun(initial: ShogunState = standing): Shogun {
 		block: (ninja) => { pose('block', ninja) },
 		hurt: () => { pose('hurt') },
 		fall: () => { pose('fallen') },
-		reset: () => { store.set(standing) },
+		reset: () => { store.update(() => standing) },
 	}
 }

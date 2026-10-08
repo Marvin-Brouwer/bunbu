@@ -3,7 +3,8 @@
  * ([score](../../../../../docs/design/gameplay.md#score)). There is no per-question time bonus.
  */
 
-import { createStore, type Readable } from '../../_shared/state/store.mts'
+import { createStore } from '@rooted/store'
+import { type Readable, snapshot } from '../../_shared/state/store.mts'
 
 /** Points for a correct answer. Wrong and unanswered score nothing. */
 export const pointsPerCorrect = 100
@@ -45,26 +46,27 @@ export function createScore(initial: ScoreState = noScore): Score {
 	const store = createStore(initial)
 
 	return {
-		get: store.get,
-		subscribe: store.subscribe,
+		get value() {
+			return snapshot(store)
+		},
+		on: store.on.bind(store),
 
 		addCorrect() {
-			const state = store.get()
-			store.set({
-				...state,
-				points: state.points + pointsPerCorrect,
+			const state = snapshot(store)
+			store.update(() => ({
+points: state.points + pointsPerCorrect,
 				correct: state.correct + 1,
 				answered: state.answered + 1,
-			})
+			}))
 		},
 
 		addMiss() {
-			const state = store.get()
-			store.set({ ...state, answered: state.answered + 1 })
+			const state = snapshot(store)
+			store.update(() => ({ answered: state.answered + 1 }))
 		},
 
 		reset(best) {
-			store.set({ ...noScore, best: best ?? store.get().best })
+			store.update(() => ({ ...noScore, best: best ?? snapshot(store).best }))
 		},
 	}
 }

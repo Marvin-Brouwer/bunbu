@@ -8,7 +8,8 @@
  * fixes the shapes and does the obvious thing.
  */
 
-import { createStore, refuse, type Readable } from './store.mts'
+import { createStore } from '@rooted/store'
+import { type Readable, refuse, snapshot } from './store.mts'
 import type { Outcome, QuestionRef } from './quiz.mts'
 
 /** The eight swipe directions ([more than 3 options](../../../../../docs/design/gameplay.md#more-than-3-options)). */
@@ -93,15 +94,17 @@ export function createAmbush(initial: AmbushState = noAmbush): Ambush {
 	const store = createStore(initial)
 
 	return {
-		get: store.get,
-		subscribe: store.subscribe,
+		get value() {
+			return snapshot(store)
+		},
+		on: store.on.bind(store),
 
 		open(opening) {
-			store.set({ ...opening, open: true, secondsLeft: opening.seconds })
+			store.update(() => ({ ...opening, open: true, secondsLeft: opening.seconds }))
 		},
 
 		pick(mark) {
-			const state = store.get()
+			const state = snapshot(store)
 			if (!state.open) {
 				refuse('ambush.pick', 'no ambush is open')
 				return
@@ -119,22 +122,22 @@ export function createAmbush(initial: AmbushState = noAmbush): Ambush {
 				if (was > 0 && option.pick > was) return { ...option, pick: option.pick - 1 }
 				return option
 			})
-			store.set({ ...state, options })
+			store.update(() => ({ options }))
 		},
 
 		tick(dt) {
-			const state = store.get()
+			const state = snapshot(store)
 			if (!state.open || state.seconds === 0) return
-			store.set({ ...state, secondsLeft: Math.max(0, state.secondsLeft - dt) })
+			store.update(() => ({ secondsLeft: Math.max(0, state.secondsLeft - dt) }))
 		},
 
 		unanswered() {
-			const state = store.get()
+			const state = snapshot(store)
 			return state.open && state.seconds > 0 && state.secondsLeft === 0
 		},
 
 		commit() {
-			const state = store.get()
+			const state = snapshot(store)
 			if (!state.open) {
 				refuse('ambush.commit', 'no ambush is open')
 				return undefined
@@ -150,7 +153,7 @@ export function createAmbush(initial: AmbushState = noAmbush): Ambush {
 			const slashed = (ninja: number) => state.options.some((option) => option.ninja === ninja && option.pick > 0)
 			const ninjas = [...new Set(state.options.map((option) => option.ninja))]
 
-			store.set(noAmbush)
+			store.update(() => noAmbush)
 			return {
 				at: state.at,
 				outcome: unanswered ? 'unanswered' : correct ? 'correct' : 'wrong',
@@ -161,7 +164,7 @@ export function createAmbush(initial: AmbushState = noAmbush): Ambush {
 		},
 
 		close() {
-			store.set(noAmbush)
+			store.update(() => noAmbush)
 		},
 	}
 }

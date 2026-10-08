@@ -8,7 +8,8 @@
 
 import { createAmbush, noAmbush, type Ambush, type AmbushState } from '../../_shared/state/ambush.mts'
 import { createQuiz, noQuiz, type Quiz, type QuizState } from '../../_shared/state/quiz.mts'
-import { createStore, type Readable } from '../../_shared/state/store.mts'
+import { createStore } from '@rooted/store'
+import { type Readable, snapshot } from '../../_shared/state/store.mts'
 
 export type TallyState = {
 	readonly right: number
@@ -31,12 +32,14 @@ export const noTally: TallyState = { right: 0, wrong: 0, missed: false }
 export function createTally(initial: TallyState = noTally): Tally {
 	const store = createStore(initial)
 	return {
-		get: store.get,
-		subscribe: store.subscribe,
-		right: () => { store.set({ ...store.get(), right: store.get().right + 1 }) },
-		wrong: () => { store.set({ ...store.get(), wrong: store.get().wrong + 1, missed: true }) },
-		carryOn: () => { store.set({ ...store.get(), missed: false }) },
-		reset: () => { store.set(noTally) },
+		get value() {
+			return snapshot(store)
+		},
+		on: store.on.bind(store),
+		right: () => { store.update(() => ({ right: snapshot(store).right + 1 })) },
+		wrong: () => { store.update(() => ({ wrong: snapshot(store).wrong + 1, missed: true })) },
+		carryOn: () => { store.update(() => ({ missed: false })) },
+		reset: () => { store.update(() => noTally) },
 	}
 }
 

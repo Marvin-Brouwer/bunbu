@@ -65,7 +65,7 @@ export default defineConfig(
 			'no-restricted-imports': ['error', {
 				patterns: [
 					{ group: ['three', 'three/*'], message: 'state/ and flows/ must not use three.js. Rendering reads the stores instead.' },
-					{ group: ['@rooted/*'], message: 'state/ and flows/ must not use Rooted. UI components read the stores instead.' },
+					{ group: ['@rooted/*', '!@rooted/store'], message: 'state/ and flows/ must not use Rooted, except @rooted/store. UI components read the stores instead.' },
 					{
 						// Anything relative, except a sibling module or a module in a state/ or flows/ folder.
 						regex: String.raw`^(?:\.\./(?!(?:.*/)?(?:state|flows)/[^/]+\.mts$)|\./(?![^/]+\.mts$))`,

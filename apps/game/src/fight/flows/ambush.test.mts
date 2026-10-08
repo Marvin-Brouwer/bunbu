@@ -40,20 +40,20 @@ describe('commitAmbush', () => {
 	it('scores a correct answer, slays the slashed ninja and resumes the run', () => {
 		answer(0)
 
-		expect(game.score.get()).toMatchObject({ points: 100, correct: 1, answered: 1 })
-		expect(game.life.get().value).toBe(1)
-		expect(game.ninjas.get().active.map((ninja) => ninja.pose)).toEqual(['slain', 'blocked'])
-		expect(game.shogun.get()).toMatchObject({ pose: 'strike', target: 0 })
-		expect(game.run.get().phase).toBe('running')
-		expect(game.quiz.get().answered).toBe(1)
+		expect(game.score.value).toMatchObject({ points: 100, correct: 1, answered: 1 })
+		expect(game.life.value.value).toBe(1)
+		expect(game.ninjas.value.active.map((ninja) => ninja.pose)).toEqual(['slain', 'blocked'])
+		expect(game.shogun.value).toMatchObject({ pose: 'strike', target: 0 })
+		expect(game.run.value.phase).toBe('running')
+		expect(game.quiz.value.answered).toBe(1)
 	})
 
 	it('takes the question share off the life bar on a miss and keeps the score', () => {
 		answer(1)
 
-		expect(game.score.get()).toMatchObject({ points: 0, correct: 0, answered: 1 })
-		expect(game.life.get().value).toBeCloseTo(1 - missShare(game))
-		expect(game.shogun.get().pose).toBe('hurt')
+		expect(game.score.value).toMatchObject({ points: 0, correct: 0, answered: 1 })
+		expect(game.life.value.value).toBeCloseTo(1 - missShare(game))
+		expect(game.shogun.value.pose).toBe('hurt')
 		expect(game.quiz.misses()).toHaveLength(1)
 	})
 
@@ -63,15 +63,15 @@ describe('commitAmbush', () => {
 		answer(1)
 
 		expect(game.life.empty()).toBe(true)
-		expect(game.run.get().phase).toBe('fallen')
-		expect(game.shogun.get().pose).toBe('fallen')
+		expect(game.run.value.phase).toBe('fallen')
+		expect(game.shogun.value.pose).toBe('fallen')
 	})
 
 	it('finishes the run after the last question', () => {
 		fixtureQuiz.questions.forEach(() => { answer(0) })
 
-		expect(game.run.get().phase).toBe('finished')
-		expect(game.score.get().points).toBe(fixtureQuiz.questions.length * 100)
+		expect(game.run.value.phase).toBe('finished')
+		expect(game.score.value.points).toBe(fixtureQuiz.questions.length * 100)
 	})
 })
 
@@ -79,6 +79,6 @@ describe('tickRun', () => {
 	it('lets the ninjas creep in as the ambush time runs out', () => {
 		openSingle()
 		tickRun(game, 5)
-		expect(game.ninjas.get().active[0]?.approach).toBeCloseTo(0.5)
+		expect(game.ninjas.value.active[0]?.approach).toBeCloseTo(0.5)
 	})
 })

@@ -6,7 +6,8 @@
  * ([time limit](../../../../../docs/design/gameplay.md#time-limit)). The values are defaults to tune.
  */
 
-import { createStore } from '../../_shared/state/store.mts'
+import { createStore } from '@rooted/store'
+import { snapshot } from '../../_shared/state/store.mts'
 
 export type Difficulty = 'novice' | 'adept' | 'master'
 
@@ -30,27 +31,29 @@ const initial: SettingsState = { difficulty: 'adept', haptics: true, volume: 0.8
 const settingsStore = createStore(initial)
 
 export const settings = {
-	get: settingsStore.get,
-	subscribe: settingsStore.subscribe,
+	get value() {
+		return snapshot(settingsStore)
+	},
+	on: settingsStore.on.bind(settingsStore),
 
 	/** The `timeScale` of the chosen difficulty, or `undefined` when there is no time limit. */
 	timeScale(): number | undefined {
-		return timeScales[settingsStore.get().difficulty]
+		return timeScales[snapshot(settingsStore).difficulty]
 	},
 
 	setDifficulty(difficulty: Difficulty): void {
-		settingsStore.set({ ...settingsStore.get(), difficulty })
+		settingsStore.update(() => ({ difficulty }))
 	},
 
 	setHaptics(haptics: boolean): void {
-		settingsStore.set({ ...settingsStore.get(), haptics })
+		settingsStore.update(() => ({ haptics }))
 	},
 
 	setVolume(volume: number): void {
-		settingsStore.set({ ...settingsStore.get(), volume: Math.min(1, Math.max(0, volume)) })
+		settingsStore.update(() => ({ volume: Math.min(1, Math.max(0, volume)) }))
 	},
 
 	reset(): void {
-		settingsStore.set(initial)
+		settingsStore.update(() => initial)
 	},
 }

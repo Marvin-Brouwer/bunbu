@@ -1,43 +1,28 @@
 /**
- * The smallest store that the architecture asks for: immutable state, listeners that are
- * removed with an `AbortSignal`, and no dependency on three.js or the DOM.
+ * The game's stores are [`@rooted/store`](https://github.com/Marvin-Brouwer/rooted/blob/main/docs/guide/state.md)
+ * stores, wrapped so a store module hands out reading and its own actions, never `update`.
  *
  * See [state.md](../../../../../docs/architecture/state.md).
  */
 
-export type Listener<TState> = (state: TState, previous: TState) => void
+import type { StateObject, Store } from '@rooted/store'
 
-/** What a store module hands out: reading and subscribing, never writing. */
-export type Readable<TState extends object> = {
-	/** The current state. Never mutate it: actions replace the whole object. */
-	get: () => Readonly<TState>
-	/** Calls `listener` on every change, until `signal` aborts. */
-	subscribe: (listener: Listener<Readonly<TState>>, signal: AbortSignal) => void
+/** What a store module hands out: a frozen snapshot and change events, never writing. */
+export type Readable<TState extends StateObject> = {
+	/** The current state, frozen. Actions replace it; never mutate it. */
+	readonly value: TState
+	readonly on: Store<TState>['on']
 }
 
-/** A store with its writer. Only the store's own module, tests and fixtures use `set`. */
-export type Store<TState extends object> = Readable<TState> & {
-	set: (next: TState) => void
-}
-
-export function createStore<TState extends object>(initial: TState): Store<TState> {
-	let state = initial
-	const listeners = new Set<Listener<Readonly<TState>>>()
-
-	return {
-		get: () => state,
-		set(next: TState) {
-			if (next === state) return
-			const previous = state
-			state = next
-			for (const listener of [...listeners]) listener(state, previous)
-		},
-		subscribe(listener, signal) {
-			if (signal.aborted) return
-			listeners.add(listener)
-			signal.addEventListener('abort', () => listeners.delete(listener), { once: true })
-		},
-	}
+/**
+ * The store's frozen snapshot, typed as the state it holds.
+ *
+ * `ReadonlyState` turns a branded string such as `@bunbu/data`'s `Markdown` into an object type
+ * and makes the quiz's arrays readonly, so a quiz read from a store would no longer be a
+ * `BunbuData`. The state types here are readonly already, and the snapshot is frozen at runtime.
+ */
+export function snapshot<TState extends StateObject>(store: Store<TState>): TState {
+	return store.value as unknown as TState
 }
 
 /**

@@ -7,7 +7,7 @@ describe('dojo', () => {
 		const practice = createPracticeGame()
 		practice.tally.right()
 		practice.tally.wrong()
-		expect(practice.tally.get()).toEqual({ right: 1, wrong: 1, missed: true })
+		expect(practice.tally.value).toEqual({ right: 1, wrong: 1, missed: true })
 		expect(Object.keys(practice)).not.toContain('life')
 	})
 
@@ -15,6 +15,6 @@ describe('dojo', () => {
 		const study = createStudyGame()
 		study.reading.next(2)
 		study.reading.next(2)
-		expect(study.reading.get().card).toBe(0)
+		expect(study.reading.value.card).toBe(0)
 	})
 })

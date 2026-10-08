@@ -4,7 +4,8 @@
  */
 
 import type { BunbuData } from '@bunbu/data'
-import { createStore } from './store.mts'
+import { createStore } from '@rooted/store'
+import { snapshot } from './store.mts'
 
 export const stages = ['rice-fields', 'bamboo-forest', 'mountain-temple', 'castle-town', 'edo-castle'] as const
 
@@ -21,18 +22,20 @@ const initial: SelectionState = { quiz: undefined, stage: 'rice-fields' }
 const selectionStore = createStore(initial)
 
 export const selection = {
-	get: selectionStore.get,
-	subscribe: selectionStore.subscribe,
+	get value() {
+		return snapshot(selectionStore)
+	},
+	on: selectionStore.on.bind(selectionStore),
 
 	chooseQuiz(quiz: BunbuData): void {
-		selectionStore.set({ ...selectionStore.get(), quiz })
+		selectionStore.update(() => ({ quiz }))
 	},
 
 	chooseStage(stage: Stage): void {
-		selectionStore.set({ ...selectionStore.get(), stage })
+		selectionStore.update(() => ({ stage }))
 	},
 
 	reset(): void {
-		selectionStore.set(initial)
+		selectionStore.update(() => initial)
 	},
 }

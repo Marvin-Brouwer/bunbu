@@ -11,7 +11,7 @@ import { endRun } from './run.mts'
 
 /** What one miss costs the life bar, for the quiz that is loaded. */
 export function missShare(game: RunGame): number {
-	const { quiz, refs } = game.quiz.get()
+	const { quiz, refs } = game.quiz.value
 	if (quiz === undefined) return 1
 	return shareOfOnePoint(refs.length, quiz.passingScore)
 }
@@ -34,10 +34,10 @@ export function commitAmbush(game: RunGame): void {
 		game.score.addMiss()
 		game.life.hit(missShare(game))
 		game.shogun.hurt()
-		for (const ninja of game.ninjas.get().active) game.ninjas.strike(ninja.id)
+		for (const ninja of game.ninjas.value.active) game.ninjas.strike(ninja.id)
 	}
 
-	const { answered, refs } = game.quiz.get()
+	const { answered, refs } = game.quiz.value
 	if (game.life.empty() || answered >= refs.length) {
 		endRun(game)
 		return

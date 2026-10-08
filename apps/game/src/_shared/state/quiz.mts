@@ -9,7 +9,8 @@
  */
 
 import type { BunbuData, Question } from '@bunbu/data'
-import { createStore, refuse, type Readable } from './store.mts'
+import { createStore } from '@rooted/store'
+import { type Readable, refuse, snapshot } from './store.mts'
 
 /** One ambush: a question, plus which solution or row of it is being asked. */
 export type QuestionRef = {
@@ -81,38 +82,40 @@ export function createQuiz(initial: QuizState = noQuiz): Quiz {
 	const store = createStore(initial)
 
 	return {
-		get: store.get,
-		subscribe: store.subscribe,
+		get value() {
+			return snapshot(store)
+		},
+		on: store.on.bind(store),
 
 		load(data, order) {
-			store.set(loaded(data, order))
+			store.update(() => loaded(data, order))
 		},
 
 		current() {
-			const { refs, answered } = store.get()
+			const { refs, answered } = snapshot(store)
 			return refs[answered]
 		},
 
 		question(at) {
-			return store.get().quiz?.questions[at.question]
+			return snapshot(store).quiz?.questions[at.question]
 		},
 
 		record(answer) {
-			const state = store.get()
+			const state = snapshot(store)
 			if (state.answered >= state.refs.length) {
 				refuse('quiz.record', 'every question has been answered')
 				return
 			}
-			store.set({ ...state, answered: state.answered + 1, records: [...state.records, answer] })
+			store.update(() => ({ answered: state.answered + 1, records: [...state.records, answer] }))
 		},
 
 		misses() {
-			return store.get().records.filter((record) => record.outcome !== 'correct')
+			return snapshot(store).records.filter((record) => record.outcome !== 'correct')
 		},
 
 		reset() {
-			const { quiz, order } = store.get()
-			store.set(quiz === undefined ? noQuiz : loaded(quiz, order))
+			const { quiz, order } = snapshot(store)
+			store.update(() => quiz === undefined ? noQuiz : loaded(quiz, order))
 		},
 	}
 }

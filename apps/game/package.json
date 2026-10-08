@@ -16,6 +16,7 @@
     "@bunbu/data": "workspace:*",
     "@rooted/components": "1.0.0-alpha.25",
     "@rooted/router": "1.0.0-alpha.32",
+    "@rooted/store": "1.0.0-alpha.13",
     "three": "^0.186.1"
   },
   "devDependencies": {

@@ -7,7 +7,8 @@
  * Finished and fallen are phases of the run, not routes: the results show over the run's world.
  */
 
-import { createStore, refuse, type Readable } from '../../_shared/state/store.mts'
+import { createStore } from '@rooted/store'
+import { type Readable, refuse, snapshot } from '../../_shared/state/store.mts'
 
 export type RunPhase = 'idle' | 'intro' | 'running' | 'ambush' | 'paused' | 'finished' | 'fallen'
 
@@ -65,70 +66,72 @@ export function createRun(initial: RunState = notRunning): Run {
 	const store = createStore(initial)
 
 	const expect = (action: string, phase: RunPhase): boolean => {
-		const current = store.get().phase
+		const current = snapshot(store).phase
 		if (current === phase) return true
 		refuse(action, `phase is ${current}`)
 		return false
 	}
 
 	return {
-		get: store.get,
-		subscribe: store.subscribe,
+		get value() {
+			return snapshot(store)
+		},
+		on: store.on.bind(store),
 
 		start(stageLength) {
-			store.set({ ...notRunning, phase: 'intro', stageLength })
+			store.update(() => ({ ...notRunning, phase: 'intro', stageLength }))
 		},
 
 		tick(dt) {
-			const state = store.get()
+			const state = snapshot(store)
 			if (over(state.phase)) return
 
 			if (state.countdown > 0) {
 				const countdown = Math.max(0, state.countdown - dt)
-				store.set({ ...state, countdown, phase: countdown === 0 ? state.resumeTo : state.phase })
+				store.update(() => ({ countdown, phase: countdown === 0 ? state.resumeTo : state.phase }))
 				return
 			}
 			if (state.phase === 'intro') {
 				const elapsed = state.elapsed + dt
-				store.set({ ...state, elapsed, phase: elapsed >= runConfig.introSeconds ? 'running' : 'intro' })
+				store.update(() => ({ elapsed, phase: elapsed >= runConfig.introSeconds ? 'running' : 'intro' }))
 				return
 			}
 			const distance = state.phase === 'running' ? state.distance + runConfig.pace * dt : state.distance
-			store.set({ ...state, elapsed: state.elapsed + dt, distance: Math.min(distance, state.stageLength) })
+			store.update(() => ({ elapsed: state.elapsed + dt, distance: Math.min(distance, state.stageLength) }))
 		},
 
 		beginAmbush() {
 			if (!expect('run.beginAmbush', 'running')) return
-			store.set({ ...store.get(), phase: 'ambush', worldScale: runConfig.ambushWorldScale })
+			store.update(() => ({ phase: 'ambush', worldScale: runConfig.ambushWorldScale }))
 		},
 
 		endAmbush() {
 			if (!expect('run.endAmbush', 'ambush')) return
-			store.set({ ...store.get(), phase: 'running', worldScale: 1 })
+			store.update(() => ({ phase: 'running', worldScale: 1 }))
 		},
 
 		pause() {
-			const state = store.get()
+			const state = snapshot(store)
 			if (over(state.phase)) return
-			store.set({ ...state, phase: 'paused', resumeTo: state.phase, countdown: 0 })
+			store.update(() => ({ phase: 'paused', resumeTo: state.phase, countdown: 0 }))
 		},
 
 		resume() {
 			if (!expect('run.resume', 'paused')) return
-			const state = store.get()
-			store.set({ ...state, phase: state.resumeTo, countdown: runConfig.countdownSeconds })
+			const state = snapshot(store)
+			store.update(() => ({ phase: state.resumeTo, countdown: runConfig.countdownSeconds }))
 		},
 
 		finish() {
-			store.set({ ...store.get(), phase: 'finished', worldScale: 1, countdown: 0 })
+			store.update(() => ({ phase: 'finished', worldScale: 1, countdown: 0 }))
 		},
 
 		fall() {
-			store.set({ ...store.get(), phase: 'fallen', worldScale: 1, countdown: 0 })
+			store.update(() => ({ phase: 'fallen', worldScale: 1, countdown: 0 }))
 		},
 
 		reset() {
-			store.set(notRunning)
+			store.update(() => notRunning)
 		},
 	}
 }

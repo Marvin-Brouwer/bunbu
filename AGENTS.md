@@ -52,7 +52,9 @@ The slice policy:
 Rules the linter enforces:
 
 - A slice's `state/` and `flows/` are plain TypeScript. They only import from other `state/` and
-  `flows/` folders, never `three` or `@rooted/*`, and never touch the DOM.
+  `flows/` folders and `@rooted/store`, never `three` or the rest of `@rooted/*`, and never touch
+  the DOM. Stores are [`@rooted/store`](https://github.com/Marvin-Brouwer/rooted/blob/main/docs/guide/state.md)
+  stores behind a module that hands out `value`, `on` and its actions, never `update`.
 
 Conventions the linter can't check:
 

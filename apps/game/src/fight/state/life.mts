@@ -6,7 +6,8 @@
  * whole share, however many ninjas or errors were involved.
  */
 
-import { createStore, type Readable } from '../../_shared/state/store.mts'
+import { createStore } from '@rooted/store'
+import { type Readable, snapshot } from '../../_shared/state/store.mts'
 
 export type LifeState = {
 	/** `1` at the start, `0` when the pass mark is out of reach. */
@@ -42,22 +43,24 @@ export function createLife(initial: LifeState = fullLife): Life {
 	const store = createStore(initial)
 
 	return {
-		get: store.get,
-		subscribe: store.subscribe,
+		get value() {
+			return snapshot(store)
+		},
+		on: store.on.bind(store),
 
 		hit(share) {
-			const state = store.get()
+			const state = snapshot(store)
 			const left = state.value - share
 			// Shares are fractions such as 1/6, so the last miss lands a rounding error away from zero.
-			store.set({ value: left < rounding ? 0 : left, lastLoss: share, hits: state.hits + 1 })
+			store.update(() => ({ value: left < rounding ? 0 : left, lastLoss: share, hits: state.hits + 1 }))
 		},
 
 		empty() {
-			return store.get().value === 0
+			return snapshot(store).value === 0
 		},
 
 		reset() {
-			store.set(fullLife)
+			store.update(() => fullLife)
 		},
 	}
 }

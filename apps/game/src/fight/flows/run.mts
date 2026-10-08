@@ -20,7 +20,7 @@ export function startRun(game: RunGame, data: BunbuData, best?: HighScore): void
 	game.ambush.close()
 	game.ninjas.clear()
 	game.shogun.run()
-	game.run.start(game.quiz.get().refs.length * metresPerAmbush)
+	game.run.start(game.quiz.value.refs.length * metresPerAmbush)
 }
 
 /** Ends the run: finished when the quiz is done, fallen when the bar is empty. */
@@ -36,9 +36,9 @@ export function endRun(game: RunGame): void {
 /** Ticks the stores that go by time, once per frame while the run is not paused. */
 export function tickRun(game: RunGame, dt: number): void {
 	game.run.tick(dt)
-	const ambush = game.ambush.get()
+	const ambush = game.ambush.value
 	if (!ambush.open) return
 	game.ambush.tick(dt)
 	// The ninjas creeping in are the timer (gameplay.md#time-limit).
-	if (ambush.seconds > 0) game.ninjas.advance(1 - game.ambush.get().secondsLeft / ambush.seconds)
+	if (ambush.seconds > 0) game.ninjas.advance(1 - game.ambush.value.secondsLeft / ambush.seconds)
 }

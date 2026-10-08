@@ -1,6 +1,6 @@
 /**
  * The stores are plain TypeScript, so they are tested without a browser: call actions, tick the
- * clock by hand and assert on `get()`
+ * clock by hand and assert on `value`
  * ([testing](../../../../../docs/architecture/state.md#testing)).
  */
 
@@ -25,24 +25,24 @@ describe('run', () => {
 	it('runs through intro into running', () => {
 		run.start(600)
 		run.tick(runConfig.introSeconds)
-		expect(run.get().phase).toBe('running')
+		expect(run.value.phase).toBe('running')
 	})
 
 	it('covers ground at a constant pace while running', () => {
 		run.start(600)
 		run.tick(runConfig.introSeconds)
 		run.tick(1)
-		expect(run.get().distance).toBeCloseTo(runConfig.pace)
+		expect(run.value.distance).toBeCloseTo(runConfig.pace)
 	})
 
 	it('slows the world down during an ambush and does not cover ground', () => {
 		run.start(600)
 		run.tick(runConfig.introSeconds)
 		run.beginAmbush()
-		const { distance } = run.get()
+		const { distance } = run.value
 		run.tick(1)
-		expect(run.get().worldScale).toBe(runConfig.ambushWorldScale)
-		expect(run.get().distance).toBe(distance)
+		expect(run.value.worldScale).toBe(runConfig.ambushWorldScale)
+		expect(run.value.distance).toBe(distance)
 	})
 
 	it('counts the run down from 3 when resuming, then returns to the phase it paused in', () => {
@@ -50,18 +50,18 @@ describe('run', () => {
 		run.tick(runConfig.introSeconds)
 		run.pause()
 		run.tick(5)
-		expect(run.get().elapsed).toBeCloseTo(runConfig.introSeconds)
+		expect(run.value.elapsed).toBeCloseTo(runConfig.introSeconds)
 
 		run.resume()
-		expect(run.get().countdown).toBe(runConfig.countdownSeconds)
+		expect(run.value.countdown).toBe(runConfig.countdownSeconds)
 		run.tick(runConfig.countdownSeconds)
-		expect(run.get().phase).toBe('running')
+		expect(run.value.phase).toBe('running')
 	})
 
 	it('refuses to resume a run that is not paused', () => {
 		run.start(600)
 		run.resume()
-		expect(run.get().phase).toBe('intro')
+		expect(run.value.phase).toBe('intro')
 	})
 })
 
@@ -69,7 +69,7 @@ describe('score', () => {
 	it('scores a flat 100 per correct answer and nothing for a miss', () => {
 		score.addCorrect()
 		score.addMiss()
-		expect(score.get()).toMatchObject({ points: pointsPerCorrect, correct: 1, answered: 2 })
+		expect(score.value).toMatchObject({ points: pointsPerCorrect, correct: 1, answered: 2 })
 	})
 
 	it('breaks a tie on the shorter run time', () => {
@@ -89,7 +89,7 @@ describe('life', () => {
 		expect(life.empty()).toBe(false)
 
 		life.hit(share)
-		expect(life.get().value).toBe(0)
+		expect(life.value.value).toBe(0)
 		expect(life.empty()).toBe(true)
 	})
 })
@@ -101,13 +101,13 @@ describe('run game', () => {
 		first.score.addCorrect()
 		first.life.hit(0.5)
 
-		expect(second.score.get().points).toBe(0)
-		expect(second.life.get().value).toBe(1)
+		expect(second.score.value.points).toBe(0)
+		expect(second.life.value.value).toBe(1)
 	})
 
 	it('starts a run from a given state, for fixtures and tests', () => {
 		const game = createRunGame({ life: { value: 0.25, lastLoss: 0.25, hits: 3 } })
-		expect(game.life.get().value).toBe(0.25)
-		expect(game.score.get().points).toBe(0)
+		expect(game.life.value.value).toBe(0.25)
+		expect(game.score.value.points).toBe(0)
 	})
 })

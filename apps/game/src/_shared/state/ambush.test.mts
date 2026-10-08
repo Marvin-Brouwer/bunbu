@@ -1,6 +1,6 @@
 /**
  * The stores are plain TypeScript, so they are tested without a browser: call actions, tick the
- * clock by hand and assert on `get()`
+ * clock by hand and assert on `value`
  * ([testing](../../../../../docs/architecture/state.md#testing)).
  */
 
@@ -35,7 +35,7 @@ describe('quiz', () => {
 	it('keeps misses for the review', () => {
 		quiz.record({ at: { question: 0, part: 0 }, outcome: 'correct', picked: [0] })
 		quiz.record({ at: { question: 1, part: 0 }, outcome: 'unanswered', picked: [] })
-		expect(quiz.get().answered).toBe(2)
+		expect(quiz.value.answered).toBe(2)
 		expect(quiz.misses()).toHaveLength(1)
 	})
 })
@@ -60,10 +60,10 @@ describe('ambush', () => {
 		open()
 		ambush.pick(marks[0]!)
 		ambush.pick(marks[1]!)
-		expect(ambush.get().options.map((item) => item.pick)).toEqual([1, 2, 0])
+		expect(ambush.value.options.map((item) => item.pick)).toEqual([1, 2, 0])
 
 		ambush.pick(marks[0]!)
-		expect(ambush.get().options.map((item) => item.pick)).toEqual([0, 1, 0])
+		expect(ambush.value.options.map((item) => item.pick)).toEqual([0, 1, 0])
 	})
 
 	it('is correct when every slash is on a correct option and every block on a wrong one', () => {
@@ -103,7 +103,7 @@ describe('ambush', () => {
 
 	it('ignores a pick when no ambush is open', () => {
 		ambush.pick(marks[0]!)
-		expect(ambush.get().open).toBe(false)
+		expect(ambush.value.open).toBe(false)
 		expect(ambush.commit()).toBeUndefined()
 	})
 })
