@@ -111,7 +111,6 @@ A wrong answer is never explained during the run. Every miss is reviewed at the 
 
 There is no speaker button in the main game. Reading aloud is a learning aid and lives in the [dojo](dojo.md).
 
-## Open questions
+## To tune
 
-- **`scoring: partial`:** the data format lets a question earn part of its point, but the life bar takes a question's whole share on any error. Decide whether partial scoring affects the life bar, the score, or neither.
-- **Defaults still to tune in playtests:** the timer numbers, `timeScale` values and the 0.8 s commit pause.
+- **Playtest defaults:** the timer numbers, `timeScale` values and the 0.8 s commit pause.
