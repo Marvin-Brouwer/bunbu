@@ -14,7 +14,7 @@ const dictionaries = ["technologies", "languages", "brands"];
 // The package root, seen from this script.
 const root = new URL("../", import.meta.url);
 // The type parameter is a deliberate cast of parsed JSON.
-// eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
+// oxlint-disable-next-line typescript/no-unnecessary-type-parameters
 const read = <T>(path: string): T => JSON.parse(readFileSync(new URL(path, root), "utf8")) as T;
 
 const { released } = read<{ released: Record<string, string> }>("pronunciations/releases.json");
@@ -27,7 +27,7 @@ if (String(version) in released) {
     (result, name) => Object.assign(result, read<Record<string, string>>(`src/pronunciations/${name}.json`)),
     {},
   );
-  const sorted = Object.fromEntries(Object.entries(merged).sort(([a], [b]) => a.localeCompare(b, "en")));
+  const sorted = Object.fromEntries(Object.entries(merged).toSorted(([a], [b]) => a.localeCompare(b, "en")));
   writeFileSync(new URL(file, root), `${JSON.stringify(sorted, null, 2)}\n`);
   const hash = createHash("sha256").update(JSON.stringify(sorted)).digest("hex");
   console.log(`${file}: ${Object.keys(sorted).length} entries, sha256 ${hash}`);

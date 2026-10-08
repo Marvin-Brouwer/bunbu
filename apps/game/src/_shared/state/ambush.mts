@@ -146,7 +146,7 @@ export function createAmbush(initial: AmbushState = noAmbush): Ambush {
 			const picked = state.options
 				.map((option, index) => ({ option, index }))
 				.filter(({ option }) => option.pick > 0)
-				.sort((left, right) => left.option.pick - right.option.pick)
+				.toSorted((left, right) => left.option.pick - right.option.pick)
 				.map(({ index }) => index)
 			const correct = !unanswered && state.options.every((option) => (option.pick > 0) === option.correct)
 			// A slash means "picked", a block means "not picked", so a ninja carrying a picked option is slain.

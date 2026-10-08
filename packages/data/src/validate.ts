@@ -52,7 +52,7 @@ function getValidator(version: number): ValidateFunction | undefined {
  * Never rejects for invalid input: returns a {@link BunbuValidationError} instead.
  */
 // `async` is part of the published API: a future schema version may load its validator on demand.
-// eslint-disable-next-line @typescript-eslint/require-await
+// oxlint-disable-next-line typescript/require-await
 export async function validate(fileBlob: string): Promise<BunbuData | BunbuValidationError> {
   const issues: ValidationIssue[] = [];
 
@@ -77,7 +77,7 @@ export async function validate(fileBlob: string): Promise<BunbuData | BunbuValid
 
   const quiz = data as BunbuData;
   // The schema types `version` as a string, but YAML parses an unquoted `version: 3` as a number.
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-conversion
+  // oxlint-disable-next-line typescript/no-unnecessary-type-conversion
   return { ...quiz, version: String(quiz.version) };
 }
 

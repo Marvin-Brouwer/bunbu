@@ -24,7 +24,7 @@ The architecture already gives us clean seams: stores and flows hold all rules a
 
 Everything else waits for this, so keep it small: shapes and plumbing, no rules.
 
-- **Linting.** ESLint flat config with `typescript-eslint` (type-checked rules) at the repo root, covering `apps/*` and `packages/*`. Add the import boundary from [state.md](architecture/state.md#folder-layout): a slice's `state/` and `flows/` only import from other `state/` and `flows/` folders, and never import `three` or touch the DOM. `pnpm lint` at the root, and fix what it finds in `packages/data`.
+- **Linting.** [oxlint](https://oxc.rs/docs/guide/usage/linter), type-aware, at the repo root (`oxlint.config.ts`), with typescript-eslint's strict and stylistic type-checked rules, covering `apps/*` and `packages/*`. Add the import boundary from [state.md](architecture/state.md#folder-layout): a slice's `state/` and `flows/` only import from other `state/` and `flows/` folders, and never import `three` or touch the DOM. `pnpm lint` at the root, and fix what it finds in `packages/data`.
 - **CI.** A GitHub Actions workflow on pull requests: install, `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`. Required to be green before merge.
 - **Dependencies.** Add `three` and `@types/three` to `apps/game`, and `vitest` for game tests.
 - **Folders.** Vertical slices as in [state.md](architecture/state.md#folder-layout) and the [Rooted application model](https://github.com/Marvin-Brouwer/rooted/blob/main/docs/guide/application-model.md): one folder per feature (`title/`, `fight/`, `dojo/`, `settings/`), plus `canvas/` for the loop and the renderer, `_shared/` for what several slices use and `_temp/` for stand-ins.
@@ -32,7 +32,7 @@ Everything else waits for this, so keep it small: shapes and plumbing, no rules.
 - **Contracts.** One module per store with its **state type and action signatures**, and a stub body that just does the obvious thing. Each game mode has its own state, created when its route mounts: the run (`run`, `quiz`, `ambush`, `score`, `life`, `shogun`, `ninjas`), practice (`quiz`, `ambush`, `tally`) and study (`quiz`, `reading`). Only `settings` and `selection` are app-wide. This is the most important part of the foundation: tracks D, E, G and H build against these types before A and B fill them in. Changing a contract after this is a small PR of its own that every track rebases on.
 - **Routing.** `@rooted/router` for app navigation: each slice has its own `_routes.mts`, collected into one route manifest at build time.
 - **Fixtures.** A dev-only way to start a run from a named state, for example `/fight/?fixture=ambush-multiple`, `/fight/?fixture=fallen`, in `apps/game/src/fight/_temp/fixtures.mts`. UI and render tracks use these to build and screenshot their work without playing a run.
-- **Sample quizzes.** A few YAML quizzes in `apps/game/test/quizzes/` that cover every question type, 2 to 8 options, long code blocks and an image. Valid against `@bunbu/data`.
+- **Sample quizzes.** A few YAML quizzes in `docs/testdata/` that cover every question type, 2 to 8 options, long code blocks and an image. Valid against `@bunbu/data`.
 - **Application.** The layer container from [rendering.md](architecture/rendering.md#layers), in the `Application` component: full-viewport container, canvas with a `ResizeObserver`, one empty slot per layer, and the game loop with clamped delta, pause and `visibilitychange`. Rendering a grey floor and a cube is enough.
 - **Agent notes.** An `AGENTS.md` (or `CLAUDE.md`) at the root that points agents at `docs/`, the folder ownership below, and "run `pnpm lint` and `pnpm test` before you push".
 
@@ -177,7 +177,7 @@ With three people the second and third person start on their tracks against the 
 - **Small PRs, one track each.** Prefer several PRs per track over one big one. Squash merge to `main`.
 - **Contracts change first.** If a track needs a store to look different, that is its own small PR to the store's owner, merged before the code that uses it.
 - **Shared files are hot spots.** `package.json`, `pnpm-lock.yaml`, `canvas/loop.mts` and `fight/run.mts` will conflict. Add dependencies in a separate tiny PR, and keep what a track mounts in the run screen to one line. Routes need no shared file: a slice's own `_routes.mts` registers it.
-- **Lint, typecheck and tests green** before a PR, locally and in CI. No `eslint-disable` without a comment saying why.
+- **Lint, typecheck and tests green** before a PR, locally and in CI. No `oxlint-disable` without a comment saying why.
 - **Docs stay the source of truth.** When a decision changes the rules, update the design doc in the same PR.
 - **Agents get a brief per task.** Point the agent at this file, its track, the design section it implements, and the folders it may touch.
 

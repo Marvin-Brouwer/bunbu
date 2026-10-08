@@ -36,7 +36,7 @@ apps/game/src/
   fight/           /fight/: quiz select, then the run; state/, flows/, world; _temp/ fixtures
   dojo/            /dojo/: study and practice, each with its own game state
   settings/        /settings/ and the settings store
-apps/game/test/quizzes/   sample quizzes every track develops against
+docs/testdata/            sample quizzes every track develops against (local/ is git-ignored, for your own)
 packages/data/            @bunbu/data: reading, validating and sharing quizzes
 schema/                   the JSON Schema per format version
 ```
@@ -87,7 +87,7 @@ pnpm build
 ```
 
 `pnpm lint` and `pnpm test` are the two that catch most of it, and CI runs all five on every pull
-request. No `eslint-disable` without a comment saying why.
+request. No `oxlint-disable` without a comment saying why.
 
 ## Seeing your work
 

@@ -1,6 +1,6 @@
 /**
  * A tiny quiz the fixtures build their states from, and the quiz a dev run starts on. Temporary:
- * it goes once quizzes load for real. The real samples are in `test/quizzes`.
+ * it goes once quizzes load for real. The real samples are in `docs/testdata/`.
  */
 
 import type { BunbuData, Markdown } from '@bunbu/data'

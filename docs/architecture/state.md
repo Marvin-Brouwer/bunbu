@@ -192,4 +192,4 @@ apps/game/src/
 
 Every `_routes.mts` is collected into the generated `_routes.g.mts` at build time, so adding a slice never touches `application.mts`.
 
-A slice's `state/` and `flows/` only import from other `state/` and `flows/` folders: never a component, the canvas, three.js or the DOM. eslint enforces that.
+A slice's `state/` and `flows/` only import from other `state/` and `flows/` folders: never a component, the canvas, three.js or the DOM. oxlint enforces that (`oxlint.config.ts`).

@@ -6,7 +6,7 @@
 import { describe, expect, it } from 'vitest'
 import { validate } from '@bunbu/data'
 
-const quizzes = import.meta.glob<string>('./quizzes/*.yaml', { query: '?raw', import: 'default', eager: true })
+const quizzes = import.meta.glob<string>('../../../docs/testdata/*.yaml', { query: '?raw', import: 'default', eager: true })
 
 describe('sample quizzes', () => {
 	it('finds the sample quizzes', () => {
@@ -26,7 +26,7 @@ describe('sample quizzes', () => {
 			if (result instanceof Error) continue
 			for (const question of result.questions) types.add(question.type)
 		}
-		expect([...types].sort()).toEqual(['match', 'multiple', 'order', 'single', 'solutions', 'yes-no'])
+		expect([...types].toSorted()).toEqual(['match', 'multiple', 'order', 'single', 'solutions', 'yes-no'])
 	})
 
 	it('covers 2 to 8 options', async () => {
