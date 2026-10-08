@@ -38,7 +38,8 @@ export interface Option {
 interface QuestionBase {
   query: Markdown;
   explanation?: Markdown;
-  source?: Markdown;
+  /** Where the question comes from: `text: url` entries. */
+  source?: Reference[];
   references?: Reference[];
 }
 

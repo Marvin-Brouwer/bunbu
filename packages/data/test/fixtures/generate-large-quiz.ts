@@ -96,7 +96,7 @@ function generator(random: Random) {
     const base = { query: query() as Question["query"] };
     const extras = (target: Question): Question => {
       if (chance(0.7)) target.explanation = paragraph(1 + Math.floor(random() * 2)) as Question["explanation"];
-      if (chance(0.2)) target.source = `Written for the ${pick(nouns)} module` as Question["source"];
+      if (chance(0.2)) target.source = [{ [`${pick(nouns)} module`]: `https://example.com/modules/${pick(nouns).replace(/ /g, "-")}` }];
       if (chance(0.4)) target.references = [{ [`Docs: ${pick(nouns)}`]: `https://example.com/docs/${pick(nouns).replace(/ /g, "-")}` }];
       return target;
     };

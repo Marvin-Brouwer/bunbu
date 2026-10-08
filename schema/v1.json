@@ -58,7 +58,7 @@
       "format": "gfm"
     },
     "references": {
-      "description": "Entries of `text: url` where the answer can be verified.",
+      "description": "Entries of `text: url`, plain text.",
       "type": "array",
       "items": {
         "type": "object",
@@ -88,7 +88,7 @@
       "properties": {
         "query": { "$ref": "#/$defs/markdown" },
         "explanation": { "$ref": "#/$defs/markdown" },
-        "source": { "$ref": "#/$defs/markdown" },
+        "source": { "$ref": "#/$defs/references" },
         "references": { "$ref": "#/$defs/references" }
       }
     },

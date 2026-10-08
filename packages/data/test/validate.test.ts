@@ -95,6 +95,13 @@ describe("validate", () => {
     expect(error.issues[0]!.path).toBe("/questions/0/type");
   });
 
+  it("requires source to be text: url entries, not Markdown", async () => {
+    const withSource = (source: string) => quiz(single.replace("    options:", `    source:${source}\n    options:`));
+    await expectValid(withSource("\n      - Origin: https://example.com/origin"));
+    const error = await expectIssues(withSource(" >-\n      [Origin](https://example.com/origin)"));
+    expect(error.issues).toContainEqual(expect.objectContaining({ path: "/questions/0/source", message: "must be array" }));
+  });
+
   it("rejects unknown properties", async () => {
     const error = await expectIssues(`${quiz(single)}tags: [a]\n`);
     expect(error.issues).toContainEqual(expect.objectContaining({ path: "", message: "must not have property 'tags'" }));

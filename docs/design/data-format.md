@@ -113,7 +113,7 @@ Questions have no id. They are identified by their position in `questions`. Prog
 | `type`        | yes      | One of the types below.                                                                             |
 | `query`       | yes      | The question, in Markdown.                                                                          |
 | `explanation` | no       | Markdown shown after answering. Explain why the answer is correct and why the alternatives are not. |
-| `source`      | no       | Where the question comes from (origin and attribution), in Markdown, such as a link or a credit.    |
+| `source`      | no       | List of `text: url` entries for where the question comes from (origin and attribution). Plain text. |
 | `references`  | no       | List of `text: url` entries where the answer can be verified. Plain text, not Markdown.             |
 
 ### Options
@@ -457,8 +457,8 @@ questions:
     query: >-
       Is this a yes/no question?
     answer: yes
-    source: >-
-      Written for this example
+    source:
+      - Bunbu design doc: https://github.com/Marvin-Brouwer/bunbu/blob/main/docs/design/data-format.md
 
   - type: single
     query: >-

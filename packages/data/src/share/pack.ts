@@ -248,15 +248,21 @@ function writeQuestion(writer: Writer, question: Question): void {
   }
 
   if (question.explanation !== undefined) writer.string(question.explanation);
-  if (question.source !== undefined) writer.string(question.source);
-  if (question.references !== undefined) {
-    writer.varint(question.references.length);
-    for (const reference of question.references) {
-      const [text, url] = Object.entries(reference)[0]!;
-      writer.string(text);
-      writer.string(url);
-    }
+  if (question.source !== undefined) writeReferences(writer, question.source);
+  if (question.references !== undefined) writeReferences(writer, question.references);
+}
+
+function writeReferences(writer: Writer, references: Reference[]): void {
+  writer.varint(references.length);
+  for (const reference of references) {
+    const [text, url] = Object.entries(reference)[0]!;
+    writer.string(text);
+    writer.string(url);
   }
+}
+
+function readReferences(reader: Reader): Reference[] {
+  return Array.from({ length: reader.count() }, (): Reference => ({ [reader.string()]: reader.string() }));
 }
 
 function readQuestion(reader: Reader): Question {
@@ -296,10 +302,8 @@ function readQuestion(reader: Reader): Question {
   }
 
   if (header & hasExplanation) question.explanation = reader.string<Markdown>();
-  if (header & hasSource) question.source = reader.string<Markdown>();
-  if (header & hasReferences) {
-    question.references = Array.from({ length: reader.count() }, (): Reference => ({ [reader.string()]: reader.string() }));
-  }
+  if (header & hasSource) question.source = readReferences(reader);
+  if (header & hasReferences) question.references = readReferences(reader);
   return question;
 }
 
