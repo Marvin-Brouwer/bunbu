@@ -34,7 +34,7 @@ export const NotFound = component({
 			create(Placeholder, {
 				title: 'Lost the path',
 				note: 'There is nothing at this address.',
-				links: [{ label: 'Back to the title', href: '/' }],
+				links: [{ label: 'Back to the title', href: href.path('/') }],
 			})
 		)
 	},

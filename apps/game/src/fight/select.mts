@@ -1,6 +1,7 @@
 /** 2 Quiz + stage ([screens.md](../../../../docs/design/screens.md#2-quiz--stage)). */
 
 import { component } from '@rooted/components'
+import { href } from '@rooted/router'
 import { fixtureQuiz } from '../_temp/quiz.mts'
 import { Placeholder } from '../_shared/placeholder.mts'
 import { selection } from '../_shared/state/selection.mts'
@@ -22,7 +23,7 @@ export const Select = component<SelectOptions>({
 				note: 'Quiz cards, Load .yaml, the five stages and Novice / Adept / Master go here.',
 				links: [
 					{ label: 'Start run', action: options.start, disabled: selection.value.quiz === undefined },
-					{ label: 'Back', href: '/' },
+					{ label: 'Back', href: href.path('/') },
 				],
 			})
 		)

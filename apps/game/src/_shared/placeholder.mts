@@ -8,7 +8,7 @@ import { Link, type Path } from '@rooted/router'
 import styles from './placeholder.css'
 
 export type PlaceholderLinkOptions =
-	| { readonly label: string; readonly href: Path | string }
+	| { readonly label: string; readonly href: Path }
 	| { readonly label: string; readonly action: () => void; readonly disabled?: boolean }
 
 export type PlaceholderOptions = {

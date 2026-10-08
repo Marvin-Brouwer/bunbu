@@ -13,7 +13,7 @@ export const DojoMenu = component({
 				links: [
 					{ label: 'Study', href: href.for(StudyRoute) },
 					{ label: 'Practice', href: href.for(PracticeRoute) },
-					{ label: 'Back', href: '/' },
+					{ label: 'Back', href: href.path('/') },
 				],
 			})
 		)
