@@ -10,7 +10,7 @@ How a run plays out: the auto-runner, the ambush that asks each question, the li
 ## Tech
 
 - The website is built with [Rooted](https://www.npmjs.com/package/@rooted/components) (`@rooted/components`).
-- 3D elements use three.js with GLB models.
+- 3D elements use three.js with GLB models. Where they come from, and the license rules, is in [assets.md](assets.md).
 - Use web-based controls (Rooted components over the canvas) wherever possible, rather than drawing UI inside the 3D canvas. The canvas is for the world: the samurai, the ninjas, the stage.
 
 ## Core loop
