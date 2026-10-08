@@ -4,12 +4,10 @@
  */
 
 import { component } from '@rooted/components'
-import { href } from '@rooted/router'
 import { createPracticeGame } from './state/practice.mts'
 import { selection } from '../_shared/state/selection.mts'
 import { snapshot } from '../_shared/state/store.mts'
-import { Placeholder } from '../_shared/placeholder.mts'
-import { DojoRoute } from './_routes.mts'
+import { back, Placeholder } from '../_shared/placeholder.mts'
 
 export const Practice = component({
 	name: 'practice',
@@ -22,7 +20,7 @@ export const Practice = component({
 			create(Placeholder, {
 				title: 'Practice',
 				note: 'The training dummy, the scroll, the swipe zone and the right vs wrong count go here.',
-				links: [{ label: 'Back to the dojo', href: href.for(DojoRoute) }],
+				links: [back],
 			})
 		)
 	},
