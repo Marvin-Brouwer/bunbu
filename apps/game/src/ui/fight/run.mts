@@ -40,11 +40,19 @@ export const RunScreen = component<RunScreenOptions>({
 			pause: () => { game.run.pause() },
 		}, signal)
 
-		const run = append(element('div', { classes: styles.run }))
+		const run = append(
+			element('div', {
+				classes: styles.run
+			})
+		)
 		for (const name of runLayers) {
-			const layer = element('div', { classes: [styles.layer, styles[name]] })
+			const layer = element('div', {
+				classes: [styles.layer, styles[name]]
+			})
 			layer.dataset.layer = name
-			run.append(layer)
+			run.append(
+				layer
+			)
 		}
 		// The tracks mount here, one line each, handing their component `game` (and the overlays `leave`).
 	},

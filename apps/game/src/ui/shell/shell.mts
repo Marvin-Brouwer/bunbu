@@ -23,9 +23,18 @@ export const Shell = component<ShellOptions>({
 	name: 'bunbu-shell',
 	styles,
 	onMount({ append, create, element, options, signal }) {
-		const canvas = element('canvas', { classes: styles.canvas })
-		const screen = element('div', { classes: styles.screen })
-		const container = append(element('div', { classes: styles.container, children: [canvas, screen] }))
+		const canvas = element('canvas', {
+			classes: styles.canvas
+		})
+		const screen = element('div', {
+			classes: styles.screen
+		})
+		const container = append(
+			element('div', {
+				classes: styles.container,
+				children: [canvas, screen]
+			})
+		)
 
 		// Pre-rendering the static pages at build time has a DOM but no WebGL: those pages get the
 		// screens, and the canvas comes alive when the app loads in a browser.
@@ -34,6 +43,8 @@ export const Shell = component<ShellOptions>({
 			startLoop(signal)
 		}
 
-		screen.append(create(options.router))
+		screen.append(
+			create(options.router)
+		)
 	},
 })

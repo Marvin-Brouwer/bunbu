@@ -90,3 +90,13 @@ the ones your track needs in `apps/game/src/fixtures/`.
   action. If the canvas were removed, the game would still play correctly to the end.
 - Small pull requests, one track each, squash merged to `main`.
 - Quiz files are untrusted input: sanitise what you render.
+- Write component trees as if you were writing HTML. `append(` gets its own line with its child
+  on the next, and the properties passed to `create` and `element` go one per line:
+
+  ```ts
+  append(
+  	create(Shell, {
+  		router: Router
+  	})
+  )
+  ```

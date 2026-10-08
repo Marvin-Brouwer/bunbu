@@ -23,6 +23,8 @@ export const Study = component({
 		const { quiz } = selection.get()
 		if (quiz !== undefined) game.quiz.load(quiz)
 
-		append(create(Screen))
+		append(
+			create(Screen)
+		)
 	},
 })

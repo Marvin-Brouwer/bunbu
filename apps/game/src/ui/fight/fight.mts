@@ -17,14 +17,25 @@ import { Select } from './select.mts'
 export const Fight = component({
 	name: 'bunbu-fight',
 	onMount({ append, create, element }) {
-		const view = append(element('div'))
+		const view = append(
+			element('div')
+		)
 
 		const showSelect = () => {
-			view.replaceChildren(create(Select, { start }))
+			view.replaceChildren(
+				create(Select, {
+					start
+				})
+			)
 		}
 
 		const showRun = (game: RunGame) => {
-			view.replaceChildren(create(RunScreen, { game, leave: showSelect }))
+			view.replaceChildren(
+				create(RunScreen, {
+					game,
+					leave: showSelect
+				})
+			)
 		}
 
 		function start() {

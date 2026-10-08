@@ -17,7 +17,11 @@ const Router = router({
 export const Application = component({
 	name: 'bunbu-application',
 	onMount({ append, create }) {
-		append(create(Shell, { router: Router }))
+		append(
+			create(Shell, {
+				router: Router
+			})
+		)
 	},
 })
 

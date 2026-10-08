@@ -16,13 +16,15 @@ export const Select = component<SelectOptions>({
 		// In dev a run can start without loading a quiz first, on the fixture quiz.
 		if (import.meta.env.DEV && selection.get().quiz === undefined) selection.chooseQuiz(fixtureQuiz)
 
-		append(create(placeholder('bunbu-select-placeholder', {
-			title: 'Choose your path',
-			note: 'Quiz cards, Load .yaml, the five stages and Novice / Adept / Master go here.',
-			links: [
-				{ label: 'Start run', action: options.start, disabled: selection.get().quiz === undefined },
-				{ label: 'Back', href: '/' },
-			],
-		})))
+		append(
+			create(placeholder('bunbu-select-placeholder', {
+				title: 'Choose your path',
+				note: 'Quiz cards, Load .yaml, the five stages and Novice / Adept / Master go here.',
+				links: [
+					{ label: 'Start run', action: options.start, disabled: selection.get().quiz === undefined },
+					{ label: 'Back', href: '/' },
+				],
+			}))
+		)
 	},
 })

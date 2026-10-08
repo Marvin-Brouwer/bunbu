@@ -22,22 +22,41 @@ export function placeholder(name: string, options: PlaceholderOptions): Componen
 		name,
 		styles,
 		onMount({ append, create, element }) {
-			append(element('section', {
-				classes: styles.screen,
-				children: [
-					element('h1', { classes: styles.title, textContent: options.title }),
-					element('p', { classes: styles.note, textContent: options.note }),
-					element('nav', {
-						classes: styles.links,
-						children: options.links.map((link) => {
-							if ('href' in link) return create(Link, { href: link.href, children: link.label })
-							const button = element('button', { type: 'button', textContent: link.label, disabled: link.disabled ?? false })
-							button.addEventListener('click', link.action)
-							return button
+			const linkOrButton = (link: PlaceholderLink) => {
+				if ('href' in link) {
+					return create(Link, {
+						href: link.href,
+						children: link.label
+					})
+				}
+				const button = element('button', {
+					type: 'button',
+					textContent: link.label,
+					disabled: link.disabled ?? false
+				})
+				button.addEventListener('click', link.action)
+				return button
+			}
+
+			append(
+				element('section', {
+					classes: styles.screen,
+					children: [
+						element('h1', {
+							classes: styles.title,
+							textContent: options.title
 						}),
-					}),
-				],
-			}))
+						element('p', {
+							classes: styles.note,
+							textContent: options.note
+						}),
+						element('nav', {
+							classes: styles.links,
+							children: options.links.map(linkOrButton)
+						})
+					]
+				})
+			)
 		},
 	})
 }
