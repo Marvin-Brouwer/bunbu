@@ -61,10 +61,13 @@ description: >-           # optional, Markdown
   Practice questions about HTTP, HTML and CSS.
 authors: [Jane Doe]       # optional
 license: CC-BY-4.0        # optional, SPDX identifier for the content
+passingScore: 70          # required, percentage (0-100) needed to pass
 
 pronunciations: {}        # optional, see Pronunciations
 questions: []             # required, at least one question
 ```
+
+`passingScore` is the percentage of points needed to pass. Each question is worth one point, and each proposed solution in a `solutions` question also counts as one point. A question with `scoring: partial` can earn part of its point.
 
 ## Markdown
 
@@ -432,6 +435,7 @@ id: example
 title: Example quiz
 version: '1'
 language: en
+passingScore: 70
 
 pronunciations:
   SQL: sequel
