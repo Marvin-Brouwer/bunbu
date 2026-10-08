@@ -6,6 +6,7 @@
  * the size follows a `ResizeObserver` on the container rather than window events.
  */
 
+import { resizeObserver } from '@rooted/observers'
 import { PerspectiveCamera, WebGLRenderer } from 'three'
 
 /** Cap on `devicePixelRatio`: above this the pixels to shade roughly double for no visible gain. */
@@ -38,12 +39,16 @@ export function createViewport(canvas: HTMLCanvasElement, container: Element, si
 		camera.updateProjectionMatrix()
 	}
 
-	const observer = new ResizeObserver(resize)
-	observer.observe(container)
+	resizeObserver({
+		targets: container,
+		signal,
+		on: {
+			resize,
+		},
+	})
 	resize()
 
 	signal.addEventListener('abort', () => {
-		observer.disconnect()
 		renderer.dispose()
 	}, { once: true })
 

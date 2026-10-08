@@ -68,7 +68,7 @@ Owns `fight/state/` (except `ninjas.mts`), `settings/state/`, `_shared/state/sel
 - Life bar: `(best still possible − pass) / (1 − pass)`, each miss takes its question's full share, empty bar means fallen ([life bar](design/gameplay.md#life-bar)).
 - Score: 100 per correct, total run time, high score per quiz `id` + `version`, only passed runs count, equal score is won by the shorter time ([score](design/gameplay.md#score)). The store contracts and [state.md](architecture/state.md#stores) follow this: `addCorrect()` has no time bonus.
 - Pause, resume with 3-2-1, auto-pause on `visibilitychange`.
-- Persistence in local storage: settings, high scores, last run's misses (for "practise mistakes"), loaded quizzes. Version the stored shape.
+- Persistence in local storage through [`@rooted/storage`](https://github.com/Marvin-Brouwer/rooted/blob/main/docs/guide/storage.md) (typed, JSON round-trip, safe during pre-rendering): settings, high scores, last run's misses (for "practise mistakes"), loaded quizzes. Version the stored shape. Its guide shows how to pair it with a store.
 
 ### C. Swipe input
 
@@ -90,7 +90,7 @@ Pure gesture logic with tests on recorded pointer sequences, plus the swipe zone
 Owns `_shared/scroll/`, `_shared/markdown/`, `fight/hud/` and the theme in `application.css`.
 
 - Theme: papyrus, ink, fonts, colours as CSS custom properties, shared by every DOM component.
-- Markdown to HTML for queries, options, explanations: GFM, code blocks with highlighting, images (SVG as `<img>`, never inline), no raw HTML. Sanitise; quizzes are untrusted input.
+- Markdown to HTML for queries, options, explanations: GFM, code blocks with highlighting, images (SVG as `<img>`, never inline), no raw HTML. Sanitise; quizzes are untrusted input. [`@rooted/markdown`](https://github.com/Marvin-Brouwer/rooted/blob/main/docs/guide/markdown.md) does not cover this: it parses `.md` files at build time and doesn't sanitise, while quiz Markdown arrives at runtime from the player. Bring a runtime parser and sanitiser.
 - The scroll: header (`AMBUSH · MULTIPLE · CHOOSE 2`), query, code, options with marks, `MARKED` state, order numbers, "2 of 3" for solutions. Unroll, roll-up, and being sliced in half on unanswered.
 - HUD: score with best to beat, life bar with the flashing lost chunk, pause button, progress bar with stage name, distance and ambush ticks.
 - Red edge flash on a hit, `+100` pop-up on correct.
@@ -130,6 +130,8 @@ Owns `title/`, `settings/` (except `state/`), the `fight/` screens (quiz select,
 
 - Title / menu (1), quiz and stage select (2) with quiz cards, **Load .yaml** and `.bunbu` through `validate` and `uncompress` from `@bunbu/data`, showing their errors to the user. Novice / Adept / Master.
 - Pause (6), settings (difficulty, haptics, volume).
+- Static pages such as asset credits and how to play as `.md` files through [`@rooted/markdown`](https://github.com/Marvin-Brouwer/rooted/blob/main/docs/guide/markdown.md), which renders them at build time.
+- A "new version" notice on the title screen with [`@rooted/pwa`](https://github.com/Marvin-Brouwer/rooted/blob/main/docs/guide/pwa.md), so an update never lands in the middle of a run.
 - Finished (7) and fallen (8), with the mistakes review scroll: your pick, the right answer, explanations, references.
 - Navigation between screens with `@rooted/router`: `Link` and `navigate`, one `_routes.mts` per screen folder. `/fight/` is the quiz select screen and the run in its place; pause, results and fallen are phases of the run shown over its world.
 

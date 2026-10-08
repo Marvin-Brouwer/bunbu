@@ -32,6 +32,9 @@ importers:
       '@rooted/components':
         specifier: 1.0.0-alpha.25
         version: 1.0.0-alpha.25(@rooted/events@1.0.0-alpha.17)(vite@8.3.3(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
+      '@rooted/observers':
+        specifier: 1.0.0-alpha.1
+        version: 1.0.0-alpha.1
       '@rooted/router':
         specifier: 1.0.0-alpha.32
         version: 1.0.0-alpha.32(@rooted/components@1.0.0-alpha.25(@rooted/events@1.0.0-alpha.17)(vite@8.3.3(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))(@rooted/util@1.0.0-alpha.15)(vite@8.3.3(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
@@ -1380,6 +1383,10 @@ packages:
 
   '@rooted/events@1.0.0-alpha.17':
     resolution: {integrity: sha512-0jRRxBlmJeEc9e+oJTM396pPoli4zbyU4C5IGqqyZX9w2n1B4qS9S54m3WjqNlKzsWQch5yuCkRYhbFaQP4Peg==}
+    engines: {node: '>=22.0.0', pnpm: '>=10.0.0'}
+
+  '@rooted/observers@1.0.0-alpha.1':
+    resolution: {integrity: sha512-OboEhwAhrrqSfP/ULjcW2rOYsWvY4L4UAjbIwPABa5KWNjV+UIXwB8+8GvIvfFUvdP0x5SVqrgalRVDz90+RoA==}
     engines: {node: '>=22.0.0', pnpm: '>=10.0.0'}
 
   '@rooted/prerender@1.0.0-alpha.1':
@@ -4476,6 +4483,8 @@ snapshots:
   '@rooted/events@1.0.0-alpha.17':
     dependencies:
       '@rooted/util': 1.0.0-alpha.15
+
+  '@rooted/observers@1.0.0-alpha.1': {}
 
   '@rooted/prerender@1.0.0-alpha.1':
     dependencies:
