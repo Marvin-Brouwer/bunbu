@@ -15,7 +15,7 @@ How a run plays out: the auto-runner, the ambush that asks each question, the li
 
 ## Core loop
 
-The samurai always runs down the centre of the path. There are no lanes and no gameplay input while running. The only control is a pause button, which leads to the [pause menu](screens.md#6-pause) (resume, restart, settings, quit).
+The samurai always runs down the centre of the path at a constant pace: the game never speeds up, however long the quiz is. There are no lanes and no gameplay input while running. The only control is a pause button, which leads to the [pause menu](screens.md#6-pause) (resume, restart, settings, quit).
 
 Each question in the quiz triggers an **ambush**: ninjas attack, a papyrus scroll shows the question, and the player answers with a swipe. A right answer slays (or blocks) the ninjas, a wrong one gets the samurai hit. After the ambush the run resumes.
 
@@ -97,7 +97,7 @@ per correct question = 100
 wrong or unanswered  = 0
 ```
 
-There is no per-question speed bonus: with hundreds of questions it would reward rushing every one of them. Speed only breaks ties: with equal scores, the shorter total run time wins the high score. A 20-question quiz maxes out at 2,000.
+There is no per-question speed bonus: with hundreds of questions it would reward rushing every one of them. Time is shown instead: the total run time is on the results screen and next to the high score (`17 / 20 correct · 4:05`), so runs can be compared, and with equal scores the shorter run time wins the high score. A 20-question quiz maxes out at 2,000.
 
 - The high score is kept **per quiz** (`id` + `version`).
 - Only a passed run sets a high score. A fallen run shows its score but does not count.
