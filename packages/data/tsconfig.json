@@ -7,7 +7,9 @@
     "isolatedDeclarations": true,
     "declaration": true,
     "skipLibCheck": true,
-    "verbatimModuleSyntax": true
+    "verbatimModuleSyntax": true,
+    "resolveJsonModule": true,
+    "types": ["node"]
   },
-  "include": ["src"]
+  "include": ["src", "test"]
 }

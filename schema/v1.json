@@ -1,0 +1,236 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/Marvin-Brouwer/bunbu/main/schema/v1.json",
+  "title": "Bunbu quiz",
+  "description": "A quiz in the Bunbu data format, version 1.",
+  "type": "object",
+  "required": ["id", "title", "version", "language", "passingScore", "questions"],
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "description": "Stable slug, used as storage key.",
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "version": {
+      "description": "Version of the quiz content. Bump it when questions are added, removed or reordered.",
+      "type": ["string", "number"]
+    },
+    "language": {
+      "description": "BCP 47 language tag, also selects the speech voice.",
+      "type": "string",
+      "pattern": "^[a-zA-Z]{2,3}(-[a-zA-Z0-9]{2,8})*$"
+    },
+    "description": { "$ref": "#/$defs/markdown" },
+    "authors": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "license": {
+      "description": "SPDX identifier for the content.",
+      "type": "string"
+    },
+    "passingScore": {
+      "description": "Percentage (0-100) of points needed to pass.",
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "pronunciations": {
+      "description": "Written term mapped to the text the speech engine should say instead.",
+      "type": "object",
+      "additionalProperties": { "type": "string", "minLength": 1 }
+    },
+    "questions": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/question" }
+    }
+  },
+  "$defs": {
+    "markdown": {
+      "description": "GitHub-flavored Markdown, without headings or raw HTML.",
+      "type": "string",
+      "format": "gfm"
+    },
+    "references": {
+      "description": "Entries of `text: url` where the answer can be verified.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "minProperties": 1,
+        "maxProperties": 1,
+        "additionalProperties": { "type": "string", "format": "uri" }
+      }
+    },
+    "option": {
+      "type": "object",
+      "required": ["correct", "answer"],
+      "additionalProperties": false,
+      "properties": {
+        "correct": { "type": "boolean" },
+        "answer": { "$ref": "#/$defs/markdown" },
+        "explanation": { "$ref": "#/$defs/markdown" }
+      }
+    },
+    "correctOption": {
+      "type": "object",
+      "required": ["correct"],
+      "properties": { "correct": { "const": true } }
+    },
+    "common": {
+      "type": "object",
+      "required": ["query"],
+      "properties": {
+        "query": { "$ref": "#/$defs/markdown" },
+        "explanation": { "$ref": "#/$defs/markdown" },
+        "source": { "$ref": "#/$defs/markdown" },
+        "references": { "$ref": "#/$defs/references" }
+      }
+    },
+    "question": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": { "enum": ["yes-no", "single", "multiple", "order", "match", "solutions"] }
+      },
+      "discriminator": { "propertyName": "type" },
+      "oneOf": [
+        { "$ref": "#/$defs/yesNo" },
+        { "$ref": "#/$defs/single" },
+        { "$ref": "#/$defs/multiple" },
+        { "$ref": "#/$defs/order" },
+        { "$ref": "#/$defs/match" },
+        { "$ref": "#/$defs/solutions" }
+      ]
+    },
+    "yesNo": {
+      "description": "A statement that is either correct or not.",
+      "type": "object",
+      "allOf": [{ "$ref": "#/$defs/common" }],
+      "required": ["type", "answer"],
+      "unevaluatedProperties": false,
+      "properties": {
+        "type": { "const": "yes-no" },
+        "answer": { "enum": ["yes", "no"] }
+      }
+    },
+    "single": {
+      "description": "Exactly one option is correct.",
+      "type": "object",
+      "allOf": [{ "$ref": "#/$defs/common" }],
+      "required": ["type", "options"],
+      "unevaluatedProperties": false,
+      "properties": {
+        "type": { "const": "single" },
+        "options": { "$ref": "#/$defs/singleOptions" }
+      }
+    },
+    "singleOptions": {
+      "type": "array",
+      "minItems": 2,
+      "items": { "$ref": "#/$defs/option" },
+      "contains": { "$ref": "#/$defs/correctOption" },
+      "minContains": 1,
+      "maxContains": 1
+    },
+    "multiple": {
+      "description": "One or more options are correct.",
+      "type": "object",
+      "allOf": [{ "$ref": "#/$defs/common" }],
+      "required": ["type", "options"],
+      "unevaluatedProperties": false,
+      "properties": {
+        "type": { "const": "multiple" },
+        "options": {
+          "type": "array",
+          "minItems": 2,
+          "items": { "$ref": "#/$defs/option" },
+          "contains": { "$ref": "#/$defs/correctOption" },
+          "minContains": 1
+        },
+        "scoring": { "enum": ["partial", "all"], "default": "all" }
+      }
+    },
+    "order": {
+      "description": "Put the correct options in sequence. Correct options are written in the correct order; options with `correct: false` are distractors.",
+      "type": "object",
+      "allOf": [{ "$ref": "#/$defs/common" }],
+      "required": ["type", "options"],
+      "unevaluatedProperties": false,
+      "properties": {
+        "type": { "const": "order" },
+        "options": {
+          "type": "array",
+          "minItems": 2,
+          "items": { "$ref": "#/$defs/option" },
+          "contains": { "$ref": "#/$defs/correctOption" },
+          "minContains": 2
+        }
+      }
+    },
+    "match": {
+      "description": "Pair each row with an option.",
+      "type": "object",
+      "allOf": [{ "$ref": "#/$defs/common" }],
+      "required": ["type", "rows"],
+      "unevaluatedProperties": false,
+      "properties": {
+        "type": { "const": "match" },
+        "rows": {
+          "type": "array",
+          "minItems": 2,
+          "items": { "$ref": "#/$defs/matchRow" }
+        },
+        "distractors": {
+          "description": "Options that match no row.",
+          "type": "array",
+          "items": { "$ref": "#/$defs/markdown" }
+        }
+      }
+    },
+    "matchRow": {
+      "type": "object",
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["text", "answer"],
+          "additionalProperties": false,
+          "properties": {
+            "text": { "$ref": "#/$defs/markdown" },
+            "answer": { "$ref": "#/$defs/markdown" }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["text", "options"],
+          "additionalProperties": false,
+          "properties": {
+            "text": { "$ref": "#/$defs/markdown" },
+            "options": { "$ref": "#/$defs/singleOptions" }
+          }
+        }
+      ]
+    },
+    "solutions": {
+      "description": "A scenario tested against several proposed solutions. `correct: true` means the solution meets the goal.",
+      "type": "object",
+      "allOf": [{ "$ref": "#/$defs/common" }],
+      "required": ["type", "scenario", "options"],
+      "unevaluatedProperties": false,
+      "properties": {
+        "type": { "const": "solutions" },
+        "scenario": { "$ref": "#/$defs/markdown" },
+        "options": {
+          "type": "array",
+          "minItems": 2,
+          "items": { "$ref": "#/$defs/option" }
+        }
+      }
+    }
+  }
+}

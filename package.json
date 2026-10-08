@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "build": "pnpm -r build",
-    "typecheck": "pnpm -r typecheck"
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test"
   },
   "packageManager": "pnpm@11.15.1"
 }
