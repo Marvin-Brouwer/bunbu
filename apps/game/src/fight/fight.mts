@@ -9,7 +9,7 @@
 import { component, environment } from '@rooted/components'
 import { selection } from '../_shared/state/selection.mts'
 import { snapshot } from '../_shared/state/store.mts'
-import { fixtureFromUrl } from './fixtures.mts'
+import { fixtureFromUrl } from './_temp/fixtures.mts'
 import { startRun } from './flows/run.mts'
 import { RunScreen } from './run.mts'
 import { Select } from './select.mts'

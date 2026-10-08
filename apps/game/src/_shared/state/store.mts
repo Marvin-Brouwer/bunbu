@@ -14,6 +14,9 @@ import type { StateObject, Store } from '@rooted/store'
  * `ReadonlyState` turns a branded string such as `@bunbu/data`'s `Markdown` into an object type
  * and makes the quiz's arrays readonly, so a quiz read from a store would no longer be a
  * `BunbuData`. The state types here are readonly already, and the snapshot is frozen at runtime.
+ *
+ * TODO: a workaround for `@rooted/store`. Remove this and read `store.value` directly once
+ * `ReadonlyState` leaves branded strings alone.
  */
 export function snapshot<TState extends StateObject>(store: Store<TState>): TState {
 	return store.value as unknown as TState

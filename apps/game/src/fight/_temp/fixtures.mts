@@ -4,17 +4,19 @@
  *
  * Open `/fight/?fixture=ambush-multiple`, `/fight/?fixture=fallen`, and so on. An unknown name logs
  * the list. A fixture is the starting state of every store, handed to `createRunGame`.
+ *
+ * Temporary: these go once the run can be played to every screen for real.
  */
 
-import type { AmbushOption, AmbushState } from '../_shared/state/ambush.mts'
-import { marks } from '../_shared/state/ambush.mts'
-import { loaded } from '../_shared/state/quiz.mts'
-import { newRun, type RunGameState } from './state/game.mts'
-import type { Ninja } from './state/ninjas.mts'
-import { runConfig } from './state/run.mts'
-import { pointsPerCorrect } from './state/score.mts'
-import { metresPerAmbush } from './flows/run.mts'
-import { fixtureQuiz, manyOptions } from '../_temp/quiz.mts'
+import type { AmbushOption, AmbushState } from '../../_shared/state/ambush.mts'
+import { marks } from '../../_shared/state/ambush.mts'
+import { loaded } from '../../_shared/state/quiz.mts'
+import { newRun, type RunGameState } from '../state/game.mts'
+import type { Ninja } from '../state/ninjas.mts'
+import { runConfig } from '../state/run.mts'
+import { pointsPerCorrect } from '../state/score.mts'
+import { metresPerAmbush } from '../flows/run.mts'
+import { fixtureQuiz, manyOptions } from '../../_temp/quiz.mts'
 
 type Options = readonly { answer: string; correct: boolean }[]
 

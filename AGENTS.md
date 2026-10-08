@@ -33,7 +33,7 @@ apps/game/src/
   _shared/         what several slices use: state (quiz, ambush, selection), Placeholder
   _temp/           stand-ins until the real thing lands: the fixture quiz
   title/           the title menu (the router's home) and not-found
-  fight/           /fight/: quiz select, then the run; state/, flows/, world, fixtures
+  fight/           /fight/: quiz select, then the run; state/, flows/, world; _temp/ fixtures
   dojo/            /dojo/: study and practice, each with its own game state
   settings/        /settings/ and the settings store
 apps/game/test/quizzes/   sample quizzes every track develops against
@@ -49,7 +49,8 @@ The slice policy:
   `_shared/`. A slice may import another slice's routes (for links) and its state, never its
   components.
 - Inside a slice, structure is free. A slice's game rules go in `state/` and `flows/` subfolders.
-- Only `_shared/`, `_temp/` and `_routes.mts` get a leading underscore; feature folders don't.
+- Only `_shared/`, `_temp/` (at the root or inside a slice, like `fight/_temp/`) and `_routes.mts`
+  get a leading underscore; feature folders don't.
 - Rooted is a component framework: a reusable piece of UI is a component used with `create`,
   not a function that builds one.
 
@@ -97,7 +98,7 @@ pnpm dev  # then open /fight/?fixture=ambush-multiple
 
 Fixtures put the stores into a named state without playing a run, so a screen can be built and
 screenshotted on its own. `/fight/?fixture=` with an unknown name logs the list. They are dev-only; add
-the ones your track needs in `apps/game/src/fight/fixtures.mts`.
+the ones your track needs in `apps/game/src/fight/_temp/fixtures.mts`.
 
 ## Conventions
 
