@@ -12,6 +12,7 @@ How a run plays out: the auto-runner, the ambush that asks each question, the li
 - The website is built with [Rooted](https://www.npmjs.com/package/@rooted/components) (`@rooted/components`).
 - 3D elements use three.js with GLB models. Where they come from, and the license rules, is in [assets.md](assets.md).
 - Use web-based controls (Rooted components over the canvas) wherever possible, rather than drawing UI inside the 3D canvas. The canvas is for the world: the samurai, the ninjas, the stage.
+- How the screen is layered (one canvas, DOM on top) is in [rendering.md](../architecture/rendering.md). How game state is kept and drawn is in [state.md](../architecture/state.md).
 
 ## Core loop
 
