@@ -176,7 +176,7 @@ With three people the second and third person start on their tracks against the 
 
 - **Small PRs, one track each.** Prefer several PRs per track over one big one. Squash merge to `main`.
 - **Contracts change first.** If a track needs a store to look different, that is its own small PR to the store's owner, merged before the code that uses it.
-- **Shared files are hot spots.** `package.json`, `pnpm-lock.yaml`, `canvas/loop.mts` and `fight/run.mts` will conflict. Add dependencies in a separate tiny PR, and keep what a track mounts in the run screen to one line. Routes need no shared file: a slice's own `_routes.mts` registers it.
+- **Shared files are hot spots.** `package.json`, `pnpm-lock.yaml`, `canvas/loop.mts` and `fight/run.mts` will conflict. Add dependencies in a commit of their own, and keep what a track mounts in the run screen to one line. Routes need no shared file: a slice's own `_routes.mts` registers it.
 - **Lint, typecheck and tests green** before a PR, locally and in CI. No `oxlint-disable` without a comment saying why.
 - **Docs stay the source of truth.** When a decision changes the rules, update the design doc in the same PR.
 - **Agents get a brief per task.** Point the agent at this file, its track, the design section it implements, and the folders it may touch.
