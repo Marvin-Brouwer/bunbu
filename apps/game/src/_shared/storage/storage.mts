@@ -14,7 +14,7 @@ import { localStorage } from '@rooted/storage/web'
 /** The version of the stored shapes. Raise it when one changes, and migrate in `read` if it is worth keeping. */
 export const storedVersion = 1
 
-export type StoredKey = 'settings' | 'high-scores' | 'last-run' | 'library'
+export type StoredKey = 'settings' | 'high-scores' | 'last-run'
 
 const keyOf = (key: StoredKey) => `bunbu:${key}`
 

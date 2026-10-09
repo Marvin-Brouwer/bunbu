@@ -50,7 +50,7 @@ export const QuizShelf = component({
 			failed = undefined
 			// Chosen first, so the new card comes in checked.
 			selection.value.chooseQuiz(result.quiz)
-			library.value.add(result.source, result.quiz)
+			library.value.add(result)
 		}
 
 		append(

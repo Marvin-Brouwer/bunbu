@@ -1,10 +1,12 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { compress, validate, type BunbuData } from '@bunbu/data'
+import { IDBFactory } from 'fake-indexeddb'
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { highScores } from '../../fight/state/highscores.mts'
 import { lastRun } from '../../fight/state/lastrun.mts'
 import { settings } from '../../settings/state/settings.mts'
-import { fixtureQuiz } from '../../_temp/quiz.mts'
-import { library } from './library.mts'
+import { fileOf, library } from './library.mts'
 import { parseHighScores, parseLastRun, parseLibrary, parseSettings, persistApp } from './persistence.mts'
+import { readQuizFiles, writeQuizFiles } from './quiz-files.mts'
 import { read, storedVersion, write } from './storage.mts'
 
 /** A stand-in for the browser's local storage. */
@@ -30,6 +32,22 @@ const source = [
 	'    answer: yes',
 ].join('\n')
 
+let savedQuiz: BunbuData
+let savedFile: Uint8Array
+
+/** The quiz `saved` with another title, and its `.bunbu` file. */
+async function savedAs(title: string) {
+	const quiz = { ...savedQuiz, title }
+	return { quiz, file: await compress(quiz) }
+}
+
+beforeAll(async () => {
+	const quiz = await validate(source)
+	if (!('questions' in quiz)) throw new Error('the saved quiz should be valid')
+	savedQuiz = quiz
+	savedFile = await compress(quiz)
+})
+
 let storage: ReturnType<typeof fakeStorage>
 let stop: AbortController
 const sessions: AbortController[] = []
@@ -44,6 +62,7 @@ function session(): AbortSignal {
 beforeEach(() => {
 	storage = fakeStorage()
 	vi.stubGlobal('localStorage', storage)
+	vi.stubGlobal('indexedDB', new IDBFactory())
 	stop = new AbortController()
 	settings.value.reset()
 	highScores.value.reset()
@@ -113,7 +132,7 @@ describe('parsing what was saved', () => {
 	})
 
 	it('validates the saved quiz files again', async () => {
-		const entries = await parseLibrary([source, 'id: broken', 7])
+		const entries = await parseLibrary([savedFile, new Uint8Array([1, 2, 3])])
 		expect(entries).toHaveLength(1)
 		expect(entries[0]?.quiz).toMatchObject({ id: 'saved', version: '1' })
 	})
@@ -159,27 +178,28 @@ describe('persistApp', () => {
 	})
 
 	it('keeps a quiz loaded while the saved ones are still being validated', async () => {
-		write('library', [source])
+		await writeQuizFiles([savedFile])
 		const loading = persistApp(stop.signal)
-		const newer = { ...fixtureQuiz, id: 'saved', version: '1', title: 'Newer' }
-		library.value.add('newer source', newer)
+		const newer = await savedAs('Newer')
+		library.value.add(newer)
 		await loading
 		expect(library.value.entries).toHaveLength(1)
-		expect(library.value.entries[0]).toMatchObject({ source: 'newer source', quiz: { title: 'Newer' } })
+		expect(library.value.entries[0]?.quiz.title).toBe('Newer')
+		expect(fileOf(newer.quiz)).toBe(newer.file)
 	})
 
 	it('does not bring back a quiz that was removed while the saved ones were validated', async () => {
-		write('library', [source])
+		await writeQuizFiles([savedFile])
 		const loading = persistApp(stop.signal)
-		const same = { ...fixtureQuiz, id: 'saved', version: '1' }
-		library.value.add('newer source', same)
+		library.value.add(await savedAs('Newer'))
 		library.value.remove('saved', '1')
 		await loading
 		expect(library.value.entries).toHaveLength(0)
 	})
 
 	it('keeps one saved quiz per id and version, the last', async () => {
-		write('library', [source.replace('title: Saved', 'title: First'), source.replace('title: Saved', 'title: Last')])
+		const [first, last] = await Promise.all([savedAs('First'), savedAs('Last')])
+		await writeQuizFiles([first.file, last.file])
 		await persistApp(stop.signal)
 		expect(library.value.entries).toHaveLength(1)
 		expect(library.value.entries[0]?.quiz.title).toBe('Last')
@@ -193,15 +213,15 @@ describe('persistApp', () => {
 
 	it('keeps the loaded quizzes and brings them back validated', async () => {
 		await persistApp(stop.signal)
-		library.value.add(source, fixtureQuiz)
-		expect(read('library')).toEqual([source])
+		library.value.add({ quiz: savedQuiz, file: savedFile })
+		await vi.waitFor(async () => { expect(await readQuizFiles()).toEqual([savedFile]) })
 		stop.abort()
 
 		// A new session: nothing loaded yet, then the saved quiz is validated and comes back.
-		library.value.remove('fixture', '1')
-		expect(library.value.entries).toHaveLength(0)
+		library.value.reset()
 		await persistApp(session())
 		expect(library.value.entries).toHaveLength(1)
 		expect(library.value.entries[0]?.quiz).toMatchObject({ id: 'saved', version: '1' })
+		expect(fileOf(savedQuiz)).toEqual(savedFile)
 	})
 })

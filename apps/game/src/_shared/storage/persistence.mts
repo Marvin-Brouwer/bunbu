@@ -1,20 +1,21 @@
 /**
- * Keeps the app-wide stores in local storage: settings, high scores, the last run's misses and
- * the loaded quizzes. Everything else starts fresh with every run
+ * Keeps the app-wide stores: settings, high scores and the last run's misses in local storage, the
+ * loaded quizzes as `.bunbu` files in IndexedDB. Everything else starts fresh with every run
  * ([state](../../../../../docs/architecture/state.md#stores)).
  *
  * `persistApp` puts back what was saved and then writes every change. The stores know nothing of
  * storage; this is the only place that does.
  */
 
-import { validate } from '@bunbu/data'
+import { uncompress } from '@bunbu/data'
 import { type, type Type } from 'arktype'
 import type { StateObject, Store } from '@rooted/store'
 import { highScores } from '../../fight/state/highscores.mts'
 import { lastRun, type LastRunState } from '../../fight/state/lastrun.mts'
 import { pointsPerCorrect, type HighScore } from '../../fight/state/score.mts'
 import { settings, type SettingsState } from '../../settings/state/settings.mts'
-import { library, type LibraryEntry } from './library.mts'
+import { fileOf, library, type QuizFile } from './library.mts'
+import { readQuizFiles, writeQuizFiles } from './quiz-files.mts'
 import { read, write, type StoredKey } from './storage.mts'
 
 // What is in local storage can be edited from DevTools or come from an older build, so it is
@@ -76,12 +77,16 @@ export function parseLastRun(data: unknown): LastRunState | undefined {
 
 const isObject = (data: unknown): data is Readonly<Record<string, unknown>> => typeof data === 'object' && data !== null && !Array.isArray(data)
 
-/** The quiz files, which are validated again: what is in storage is not trusted to still be a quiz. */
-export async function parseLibrary(data: unknown): Promise<LibraryEntry[]> {
-	if (!Array.isArray(data)) return []
-	const sources = data.filter((source) => typeof source === 'string')
-	const parsed = await Promise.all(sources.map(async (source) => ({ source, quiz: await validate(source) })))
-	return parsed.flatMap(({ source, quiz }) => 'questions' in quiz ? [{ source, quiz }] : [])
+/** The kept `.bunbu` files, validated again: what is in storage is not trusted to still be a quiz. */
+export async function parseLibrary(files: readonly Uint8Array[]): Promise<QuizFile[]> {
+	const parsed = await Promise.all(files.map(async (file) => {
+		try {
+			return [{ quiz: await uncompress(file), file }]
+		} catch {
+			return []
+		}
+	}))
+	return parsed.flat()
 }
 
 /** Saves `pick(state)` on every change of `store`. */
@@ -103,9 +108,12 @@ export function persistApp(signal: AbortSignal): Promise<void> {
 	save(settings, 'settings', signal, ({ difficulty, haptics, volume }) => ({ difficulty, haptics, volume }))
 	save(highScores, 'high-scores', signal, ({ scores }) => scores)
 	save(lastRun, 'last-run', signal, ({ quiz, misses }) => ({ quiz, misses }))
-	save(library, 'library', signal, ({ entries }) => entries.map((entry) => entry.source))
+	library.on('change', signal, ({ detail }) => {
+		const files = detail.state.entries.map(({ quiz }) => fileOf(quiz)).filter((file) => file !== undefined)
+		void writeQuizFiles(files)
+	})
 
-	return parseLibrary(read('library')).then((entries) => {
+	return readQuizFiles().then(parseLibrary).then((entries) => {
 		if (!signal.aborted) library.value.restore(entries)
 	})
 }

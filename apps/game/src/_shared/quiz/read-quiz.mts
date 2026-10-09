@@ -1,12 +1,13 @@
 /**
- * Reading a quiz file the player loads on the select screen: a `.yaml` file through `validate`, a
- * shared `.bunbu` file through `uncompress`. Both are untrusted input, so what goes wrong comes
+ * Reading a quiz file the player loads on the quizzes screen: a `.yaml` file through `validate`, a
+ * shared `.bunbu` file through `uncompress`. Either way the library keeps it as a `.bunbu` file. Both are untrusted input, so what goes wrong comes
  * back as problems to show the player, not as an error.
  */
 
 import {
 	BunbuShareError,
 	BunbuValidationError,
+	compress,
 	fileExtension,
 	uncompress,
 	validate,
@@ -18,16 +19,13 @@ import { fitOf, type Fit } from '../state/ambush-opening.mts'
 export type ReadQuiz =
 	| {
 		readonly quiz: BunbuData
-		/** The quiz as YAML, which the library keeps and validates again when the app starts. */
-		readonly source: string
+		/** The quiz as a `.bunbu` file, which the library keeps and validates again when the app starts. */
+		readonly file: Uint8Array
 	}
 	| {
 		/** What is wrong with the file, one line each. */
 		readonly problems: readonly string[]
 	}
-
-/** The schema line every quiz file starts with ([data format](../../../../../docs/design/data-format.md)). */
-const schemaLine = '# yaml-language-server: $schema=https://raw.githubusercontent.com/Marvin-Brouwer/bunbu/main/schema/v1.json'
 
 /** An issue as the player reads it: where in the file, and what is wrong there. */
 export function describeIssue(issue: ValidationIssue): string {
@@ -36,19 +34,11 @@ export function describeIssue(issue: ValidationIssue): string {
 	return issue.message
 }
 
-/**
- * A quiz as a YAML source the library can keep. JSON is YAML, so a quiz from a `.bunbu` file only
- * needs the schema line in front of it to be read back by `validate`.
- */
-export function sourceOf(quiz: BunbuData): string {
-	return `${schemaLine}\n${JSON.stringify(quiz)}\n`
-}
-
 export async function readQuiz(file: File): Promise<ReadQuiz> {
 	if (file.name.toLowerCase().endsWith(fileExtension)) {
 		try {
-			const quiz = await uncompress(file)
-			return { quiz, source: sourceOf(quiz) }
+			const bytes = new Uint8Array(await file.arrayBuffer())
+			return { quiz: await uncompress(bytes), file: bytes }
 		} catch (error) {
 			if (error instanceof BunbuValidationError) return { problems: error.issues.map(describeIssue) }
 			if (error instanceof BunbuShareError) return { problems: [error.message] }
@@ -59,7 +49,8 @@ export async function readQuiz(file: File): Promise<ReadQuiz> {
 	const source = await file.text()
 	const quiz = await validate(source)
 	if (quiz instanceof BunbuValidationError) return { problems: quiz.issues.map(describeIssue) }
-	return { quiz, source }
+	// Kept as a `.bunbu` file: smaller, and the same bytes a share sends on.
+	return { quiz, file: await compress(quiz) }
 }
 
 /** A question that won't play as written in a fight, by its place in the file (from `0`). */
