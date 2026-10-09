@@ -6,7 +6,7 @@
 
 import { component } from '@rooted/components'
 import { formatDuration, formatWhole } from '../../_shared/numbers.mts'
-import { selection, stageNames, stages } from '../../_shared/state/selection.mts'
+import { builtStages, selection, stageNames, stages } from '../../_shared/state/selection.mts'
 import { ScrollSheet } from '../../_shared/scroll/scroll-sheet.mts'
 import { snapshot } from '../../_shared/state/store.mts'
 import type { QuizActions, QuizState } from '../../_shared/state/quiz.mts'
@@ -34,8 +34,9 @@ export const Finished = component<FinishedOptions>({
 		const { elapsed, stageLength } = game.run.value
 		const total = pointsIn(quiz, refs)
 		const misses = game.quiz.value.misses()
-		// The same quiz on the next stage (docs/plan.md#open-questions), or this one again after the last.
-		const next = stages[stages.indexOf(selection.value.stage) + 1]
+		// The same quiz on the next stage that has a world (docs/plan.md#open-questions), or this one
+		// again after the last.
+		const next = stages.slice(stages.indexOf(selection.value.stage) + 1).find((stage) => builtStages.has(stage))
 
 		append(
 			element('section', {
