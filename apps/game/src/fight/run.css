@@ -36,3 +36,8 @@
 	align-content: center;
 	justify-content: center;
 }
+
+/* Over the results the run's HUD and scroll are done with; only the world stays behind them. */
+.run:has(.layer.overlays [data-outcome]) .layer:not(.overlays) {
+	visibility: hidden;
+}

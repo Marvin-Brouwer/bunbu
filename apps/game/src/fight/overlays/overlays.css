@@ -1,0 +1,283 @@
+/*
+ * The run's overlays over its world: the pause menu (docs/design/screens.md#6-pause), the 3-2-1
+ * after resuming, and the results of a finished (7) or fallen (8) run.
+ */
+
+/* Pause: the world dims behind the run so far and the menu. */
+
+.pause {
+	position: absolute;
+	inset: 0;
+	display: grid;
+	grid-template-rows: auto 1fr auto;
+	gap: 1rem;
+	padding: max(1.25rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) max(1.25rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
+	background: rgb(27 26 24 / 55%);
+	overflow-y: auto;
+}
+
+.panel {
+	display: grid;
+	gap: 0.75rem;
+	width: 100%;
+	max-width: 34rem;
+	margin-inline: auto;
+	padding: 1rem 1.1rem;
+	box-sizing: border-box;
+	border: var(--frame);
+	border-radius: var(--radius);
+	background: var(--paper);
+	color: var(--ink);
+	box-shadow: var(--shadow);
+}
+
+.menu {
+	grid-row: 3;
+}
+
+.label {
+	margin: 0;
+	font-family: var(--font-mono);
+	font-size: 0.75rem;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	color: var(--ink-soft);
+}
+
+.heading {
+	margin: 0;
+	font-family: var(--font-display);
+	font-size: 1.75rem;
+}
+
+.facts {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 0.6rem 1rem;
+	margin: 0;
+}
+
+.fact {
+	display: grid;
+	gap: 0.1rem;
+	min-width: 0;
+}
+
+.fact dt {
+	font-size: 0.8rem;
+	color: var(--ink-soft);
+}
+
+.fact dd {
+	margin: 0;
+	font-weight: 700;
+	overflow-wrap: anywhere;
+}
+
+.pair {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 0.75rem;
+}
+
+.note {
+	margin: 0;
+	font-family: var(--font-mono);
+	font-size: 0.75rem;
+	color: var(--ink-soft);
+}
+
+/* The 3-2-1 after resuming, over the world and the scroll. */
+
+.countdown {
+	position: absolute;
+	inset: 0;
+	display: grid;
+	place-items: center;
+	pointer-events: none;
+}
+
+.count {
+	font-family: var(--font-display);
+	font-size: 6rem;
+	font-weight: 700;
+	color: var(--mist);
+	text-shadow: 0 2px 12px rgb(0 0 0 / 60%);
+	animation: count 1s ease-out both;
+}
+
+@keyframes count {
+	from {
+		opacity: 0;
+		transform: scale(1.6);
+	}
+
+	30% {
+		opacity: 1;
+		transform: scale(1);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.count {
+		animation: none;
+	}
+}
+
+/* Results: finished or fallen, a page of its own over the world. */
+
+.results {
+	position: absolute;
+	inset: 0;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+	background: rgb(241 232 211 / 94%);
+	color: var(--ink);
+}
+
+.results[data-outcome='fallen'] {
+	/* Ink-wash grey: the samurai has fallen. */
+	background: rgb(214 210 202 / 95%);
+}
+
+.page {
+	display: grid;
+	align-content: start;
+	gap: 1rem;
+	max-width: 34rem;
+	min-height: 100%;
+	margin-inline: auto;
+	padding: max(1.25rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) max(1.25rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
+	box-sizing: border-box;
+}
+
+.header {
+	display: flex;
+	align-items: center;
+	gap: 1rem;
+	padding: 0.9rem 1rem;
+	border: 2px solid var(--vermilion);
+	border-radius: var(--radius);
+	background: var(--paper-light);
+}
+
+.seal {
+	display: grid;
+	place-items: center;
+	flex: none;
+	width: 3.6rem;
+	height: 3.6rem;
+	border: 3px solid var(--vermilion);
+	border-radius: 50%;
+	color: var(--vermilion);
+	font-family: var(--font-display);
+	font-size: 1.9rem;
+	font-weight: 700;
+}
+
+.headline {
+	display: grid;
+	gap: 0.15rem;
+	min-width: 0;
+}
+
+.verdict {
+	font-family: var(--font-mono);
+	font-size: 0.8rem;
+	font-weight: 700;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: var(--vermilion);
+}
+
+.total {
+	font-size: 2rem;
+	font-weight: 700;
+	line-height: 1.1;
+	font-variant-numeric: tabular-nums;
+}
+
+.was {
+	margin-left: 0.4rem;
+	font-family: var(--font-mono);
+	font-size: 0.9rem;
+	font-weight: 400;
+	color: var(--ink-soft);
+}
+
+.summary {
+	font-family: var(--font-mono);
+	font-size: 0.85rem;
+	color: var(--ink-soft);
+}
+
+/* Fallen: the kanji and the name over the world, the reason in vermilion. */
+
+.fallen {
+	display: grid;
+	gap: 0.25rem;
+	padding: 0.5rem 0 0.25rem;
+}
+
+.fallenKanji {
+	font-family: var(--font-display);
+	font-size: 4.5rem;
+	font-weight: 700;
+	line-height: 1;
+}
+
+.fallenTitle {
+	margin: 0;
+	font-family: var(--font-display);
+	font-size: 2.2rem;
+	line-height: 1.1;
+}
+
+.where {
+	font-family: var(--font-mono);
+	font-size: 0.85rem;
+}
+
+.why {
+	font-family: var(--font-mono);
+	font-size: 0.85rem;
+	color: var(--vermilion);
+}
+
+/* Correct, time, distance: three tiles. */
+
+.tiles {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 0.5rem;
+}
+
+.tile {
+	display: grid;
+	align-content: start;
+	gap: 0.1rem;
+	padding: 0.55rem 0.65rem;
+	border: var(--frame);
+	border-radius: var(--radius);
+	background: var(--paper-light);
+}
+
+.tileValue {
+	font-size: 1.3rem;
+	font-weight: 700;
+	line-height: 1.2;
+	font-variant-numeric: tabular-nums;
+	overflow-wrap: anywhere;
+}
+
+.tileNote {
+	font-family: var(--font-mono);
+	font-size: 0.7rem;
+	color: var(--ink-soft);
+}
+
+.actions {
+	display: grid;
+	gap: 0.75rem;
+	margin-top: 0.25rem;
+}

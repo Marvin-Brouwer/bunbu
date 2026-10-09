@@ -89,6 +89,7 @@
 
 .button {
 	display: grid;
+	align-content: center;
 	justify-items: center;
 	gap: 0.15rem;
 	padding: 0.85rem 1rem;

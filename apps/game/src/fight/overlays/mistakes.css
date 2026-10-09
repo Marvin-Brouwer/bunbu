@@ -1,0 +1,164 @@
+/*
+ * The mistakes scroll on the results (docs/design/screens.md#7-finished-results-and-mistakes):
+ * the scroll's rods and papyrus, one entry per miss.
+ */
+
+.mistakes {
+	display: grid;
+	grid-template-rows: auto minmax(0, 1fr) auto;
+	filter: drop-shadow(var(--shadow));
+}
+
+.rod {
+	height: 0.85rem;
+	margin: 0 -0.35rem;
+	border-radius: 999px;
+	background: linear-gradient(var(--wood-light), var(--wood) 60%, var(--ink));
+}
+
+.sheet {
+	display: grid;
+	gap: 0.25rem;
+	padding: 0.9rem 1rem 0.6rem;
+	background: linear-gradient(90deg, var(--paper-shade), var(--paper) 5%, var(--paper) 95%, var(--paper-shade));
+	border-inline: 1px solid var(--paper-edge);
+	color: var(--ink);
+}
+
+.top {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 1rem;
+}
+
+.title {
+	margin: 0;
+	font-size: 1.15rem;
+}
+
+.hint {
+	font-family: var(--font-mono);
+	font-size: 0.75rem;
+	color: var(--ink-soft);
+}
+
+.none {
+	margin: 0.25rem 0 0.4rem;
+	color: var(--ink-soft);
+}
+
+.entry + .entry {
+	border-top: 1px solid var(--paper-edge);
+}
+
+.entry summary {
+	display: grid;
+	gap: 0.35rem;
+	padding: 0.7rem 0;
+	cursor: pointer;
+	list-style: none;
+}
+
+.entry summary::-webkit-details-marker {
+	display: none;
+}
+
+.entry summary:focus-visible {
+	outline: 3px solid var(--indigo);
+	outline-offset: 2px;
+}
+
+.details {
+	display: grid;
+	gap: 0.4rem;
+	padding-bottom: 0.8rem;
+	font-size: 0.92rem;
+	color: var(--ink-soft);
+}
+
+.markdown > :first-child {
+	margin-top: 0;
+}
+
+.markdown > :last-child {
+	margin-bottom: 0;
+}
+
+.markdown pre {
+	overflow-x: auto;
+	padding: 0.5rem 0.6rem;
+	border-radius: var(--radius);
+	background: var(--paper-shade);
+	font-size: 0.85rem;
+}
+
+.markdown code {
+	font-family: var(--font-mono);
+}
+
+.markdown img {
+	max-width: 100%;
+}
+
+.markdown a,
+.references a {
+	color: var(--vermilion);
+}
+
+/* ✗ your pick ✓ the right answer, on one line when they fit. */
+
+.answers {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: 0.25rem 1rem;
+	font-family: var(--font-mono);
+	font-size: 0.9rem;
+}
+
+.answer {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: 0.25rem;
+}
+
+.answer[data-kind='picked'] {
+	color: var(--vermilion);
+}
+
+.answer[data-kind='right'] {
+	color: var(--moss);
+}
+
+.sign {
+	font-weight: 700;
+}
+
+.choice + .choice::before {
+	content: ', ';
+}
+
+.answer[data-ordered='true'] .choice + .choice::before {
+	content: ' → ';
+}
+
+.choice p {
+	display: inline;
+	margin: 0;
+}
+
+.references {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.25rem 0.9rem;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	font-size: 0.85rem;
+}
+
+.choices {
+	overflow-wrap: anywhere;
+}
