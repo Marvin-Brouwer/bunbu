@@ -12,7 +12,8 @@ import { snapshot } from '../_shared/state/store.mts'
 import { fixtureFromUrl } from './_temp/fixtures.mts'
 import { startRun } from './flows/run.mts'
 import { RunScreen } from './run.mts'
-import { Select } from './select.mts'
+import { fightable } from '../_shared/quiz/read-quiz.mts'
+import { Select } from './select/select.mts'
 import { createRunGame, type RunGame } from './state/game.mts'
 
 export const Fight = component({
@@ -37,15 +38,27 @@ export const Fight = component({
 
 		function start() {
 			const { quiz } = snapshot(selection)
-			if (quiz === undefined) return
+			if (quiz === undefined || !fightable(quiz)) {
+				showSelect()
+				return
+			}
 			const game = createRunGame()
 			startRun(game, quiz)
 			showRun(game)
 		}
 
 		// The page built at build time is the select screen; a run is the player's own.
-		const fixture = environment.is('preRenderer') ? undefined : fixtureFromUrl(window.location.search)
-		if (fixture === undefined) showSelect()
-		else showRun(createRunGame(fixture))
+		if (environment.is('preRenderer')) {
+			showSelect()
+			return
+		}
+
+		const fixture = fixtureFromUrl(window.location.search)
+		if (fixture !== undefined) {
+			showRun(createRunGame(fixture))
+			return
+		}
+
+		showSelect()
 	},
 })

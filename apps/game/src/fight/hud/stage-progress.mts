@@ -4,11 +4,11 @@
  * ([open questions](../../../../../docs/plan.md#open-questions)).
  */
 
-import { component, match } from '@rooted/components'
+import { component } from '@rooted/components'
 import type { Quiz, QuizState } from '../../_shared/state/quiz.mts'
-import { selection } from '../../_shared/state/selection.mts'
+import { selection, stageNames } from '../../_shared/state/selection.mts'
 import type { Run, RunState } from '../state/run.mts'
-import { formatWhole } from './numbers.mts'
+import { formatWhole } from '../../_shared/numbers.mts'
 import styles from './hud.css'
 
 export type StageProgressOptions = {
@@ -22,13 +22,7 @@ export const StageProgress = component<StageProgressOptions>({
 	onMount({ append, element, options, signal }) {
 		const { run, quiz } = options
 
-		const stage = match(selection.value.stage, {
-			'rice-fields': 'Rice fields',
-			'bamboo-forest': 'Bamboo forest',
-			'mountain-temple': 'Mountain temple',
-			'castle-town': 'Castle town',
-			'edo-castle': 'Edo castle',
-		})
+		const stage = stageNames[selection.value.stage]
 		const ticks = element('div', {
 			classes: styles.ticks,
 		})

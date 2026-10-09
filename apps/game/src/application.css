@@ -15,6 +15,8 @@
 	--paper: #f1e8d3;
 	--paper-shade: #e4d8bd;
 	--paper-edge: #c9b48c;
+	/* Lighter papyrus: buttons and cards on a papyrus screen. */
+	--paper-light: #faf6ec;
 	/* Ink: text and frames on papyrus. */
 	--ink: #1f1c18;
 	--ink-soft: #5b5348;

@@ -126,7 +126,7 @@ A good track for someone who'd rather not write TypeScript.
 
 ### G. Menus and results
 
-Owns `title/`, `settings/` (except `state/`), the `fight/` screens (quiz select, the run screen and its overlays: pause, results, fallen) and `application.mts`.
+Owns `title/`, `quizzes/`, `settings/` (except `state/`), the `fight/` screens (fight setup, the run screen and its overlays: pause, results, fallen) and `application.mts`.
 
 - Title / menu (1), quiz and stage select (2) with quiz cards, **Load .yaml** and `.bunbu` through `validate` and `uncompress` from `@bunbu/data`, showing their errors to the user. Novice / Adept / Master.
 - Pause (6), settings (difficulty, haptics, volume).

@@ -1,0 +1,48 @@
+/* Settings (docs/design/screens.md#6-pause): difficulty, haptics and volume. */
+
+.hint {
+	margin: 0;
+	font-size: 0.85rem;
+	color: var(--ink-soft);
+}
+
+.toggle {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 1rem;
+	padding: 0.85rem 1rem;
+	border: var(--frame);
+	border-radius: var(--radius);
+	background: var(--paper-light);
+	font-weight: 700;
+	cursor: pointer;
+}
+
+.toggle input {
+	width: 1.4rem;
+	height: 1.4rem;
+	accent-color: var(--vermilion);
+}
+
+.volume {
+	display: grid;
+	grid-template-columns: 1fr auto;
+	align-items: center;
+	gap: 1rem;
+	padding: 0.85rem 1rem;
+	border: var(--frame);
+	border-radius: var(--radius);
+	background: var(--paper-light);
+}
+
+.volume input {
+	width: 100%;
+	accent-color: var(--vermilion);
+}
+
+.percent {
+	min-width: 3.2rem;
+	font-family: var(--font-mono);
+	text-align: right;
+}

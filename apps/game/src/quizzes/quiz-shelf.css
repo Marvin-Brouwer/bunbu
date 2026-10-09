@@ -1,0 +1,106 @@
+/*
+ * The quizzes screen (docs/design/screens.md#1b-quizzes): the area to drop or choose a quiz file,
+ * and the quizzes as cards, one under the other.
+ */
+
+/* Quiz cards */
+
+.shelf {
+	display: grid;
+	gap: 0.6rem;
+}
+
+.card {
+	position: relative;
+	display: grid;
+	align-content: start;
+	gap: 0.3rem;
+	padding: 0.75rem 0.9rem;
+	border: var(--frame);
+	border-radius: var(--radius);
+	background: var(--paper-light);
+	color: var(--ink);
+	cursor: pointer;
+}
+
+.card:has(input:checked) {
+	border-color: var(--vermilion);
+	box-shadow: inset 0 0 0 1px var(--vermilion);
+}
+
+.card:has(input:focus-visible) {
+	outline: 3px solid var(--indigo);
+	outline-offset: 2px;
+}
+
+/* The radio itself is the whole card. */
+.card input {
+	position: absolute;
+	opacity: 0;
+	pointer-events: none;
+}
+
+.cardTitle {
+	font-weight: 700;
+	font-size: 1.05rem;
+	line-height: 1.2;
+	overflow-wrap: anywhere;
+}
+
+.cardNote {
+	font-family: var(--font-mono);
+	font-size: 0.75rem;
+	color: var(--ink-soft);
+}
+
+.load {
+	position: relative;
+	display: grid;
+	justify-items: center;
+	gap: 0.2rem;
+	padding: 0.9rem 1rem;
+	border: 2px dashed var(--ink-soft);
+	border-radius: var(--radius);
+	background: var(--paper-light);
+	color: var(--ink);
+	text-align: center;
+	cursor: pointer;
+}
+
+.load[data-dragging='true'] {
+	border-color: var(--vermilion);
+	background: rgb(179 57 31 / 10%);
+}
+
+.load:has(input:focus-visible) {
+	outline: 3px solid var(--indigo);
+	outline-offset: 2px;
+}
+
+.load input {
+	position: absolute;
+	opacity: 0;
+	pointer-events: none;
+}
+
+.loadTitle {
+	font-weight: 700;
+}
+
+.loadNote {
+	font-family: var(--font-mono);
+	font-size: 0.75rem;
+	color: var(--ink-soft);
+}
+
+
+/* Under the row: why a file didn't load, and how the chosen quiz fits in a fight. */
+
+.notices {
+	display: grid;
+	gap: 0.6rem;
+}
+
+.notices:empty {
+	display: none;
+}
