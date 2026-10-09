@@ -1,0 +1,105 @@
+/*
+ * 1 Title (docs/design/screens.md#1-title--menu): the name at the top, the world in between, and the
+ * high score and the menu at the bottom, in reach of a thumb.
+ */
+
+.title {
+	position: absolute;
+	inset: 0;
+	display: grid;
+	grid-template-rows: auto 1fr auto;
+	max-width: 34rem;
+	margin-inline: auto;
+	padding: max(1.25rem, env(safe-area-inset-top)) max(1.25rem, env(safe-area-inset-right)) max(1.25rem, env(safe-area-inset-bottom)) max(1.25rem, env(safe-area-inset-left));
+	box-sizing: border-box;
+	overflow-y: auto;
+}
+
+.name {
+	display: flex;
+	align-items: flex-end;
+	gap: 0.9rem;
+	justify-self: start;
+	margin: 0;
+	padding: 0.8rem 1.1rem;
+	box-shadow: var(--shadow);
+}
+
+.kanji {
+	font-family: var(--font-display);
+	font-size: 3.4rem;
+	font-weight: 700;
+	line-height: 1;
+}
+
+.words {
+	display: grid;
+	padding-bottom: 0.2rem;
+}
+
+.bunbu {
+	font-family: var(--font-display);
+	font-size: 1.9rem;
+	font-weight: 700;
+	line-height: 1.1;
+}
+
+.scholar {
+	font-family: var(--font-mono);
+	font-size: 0.8rem;
+	font-weight: 400;
+	letter-spacing: 0.12em;
+	color: var(--ink-soft);
+}
+
+.menu {
+	display: grid;
+	gap: 0.75rem;
+	grid-row: 3;
+}
+
+.pair {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 0.75rem;
+}
+
+/* Panels: the name and the high score. */
+
+.panel {
+	border: var(--frame);
+	border-radius: var(--radius);
+	background: var(--paper-light);
+	color: var(--ink);
+}
+
+.label {
+	font-family: var(--font-mono);
+	font-size: 0.75rem;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	color: var(--ink-soft);
+}
+
+.note {
+	font-family: var(--font-mono);
+	font-size: 0.8rem;
+	color: var(--ink-soft);
+}
+
+/* High score */
+
+.score {
+	display: grid;
+	gap: 0.1rem;
+	margin-bottom: 1rem;
+	padding: 0.8rem 1.1rem;
+	box-shadow: var(--shadow);
+}
+
+.points {
+	font-size: 2.2rem;
+	font-weight: 700;
+	line-height: 1.1;
+	font-variant-numeric: tabular-nums;
+}

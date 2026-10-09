@@ -10,6 +10,15 @@ export const stages = ['rice-fields', 'bamboo-forest', 'mountain-temple', 'castl
 
 export type Stage = (typeof stages)[number]
 
+/** What the stages are called on screen, in the stage select and the HUD. */
+export const stageNames: Readonly<Record<Stage, string>> = {
+	'rice-fields': 'Rice fields',
+	'bamboo-forest': 'Bamboo forest',
+	'mountain-temple': 'Mountain temple',
+	'castle-town': 'Castle town',
+	'edo-castle': 'Edo castle',
+}
+
 export type SelectionState = {
 	/** The quiz to play, or `undefined` until one is chosen or loaded. */
 	readonly quiz: BunbuData | undefined

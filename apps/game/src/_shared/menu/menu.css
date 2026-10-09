@@ -1,0 +1,170 @@
+/*
+ * The menus: title, quiz and stage select, settings. Papyrus framed in ink, like the HUD and the
+ * scroll, with the vermilion of a torii for the one thing to do next.
+ */
+
+.screen {
+	position: absolute;
+	inset: 0;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+	background: var(--paper);
+	color: var(--ink);
+}
+
+.page {
+	display: grid;
+	align-content: start;
+	gap: 1.25rem;
+	max-width: 34rem;
+	min-height: 100%;
+	margin-inline: auto;
+	padding: max(1.25rem, env(safe-area-inset-top)) max(1.25rem, env(safe-area-inset-right)) max(1.25rem, env(safe-area-inset-bottom)) max(1.25rem, env(safe-area-inset-left));
+	box-sizing: border-box;
+}
+
+.header {
+	display: flex;
+	align-items: center;
+	gap: 1rem;
+}
+
+.title {
+	margin: 0;
+	font-family: var(--font-display);
+	font-size: 1.75rem;
+	line-height: 1.15;
+}
+
+.back {
+	display: grid;
+	place-items: center;
+	flex: none;
+	width: 2.75rem;
+	height: 2.75rem;
+	border: var(--frame);
+	border-radius: var(--radius);
+	background: var(--paper-light);
+	color: inherit;
+	font-size: 1.5rem;
+	line-height: 1;
+	text-decoration: none;
+}
+
+/* A numbered part of a screen: `1 · QUIZ`. */
+.section {
+	display: grid;
+	gap: 0.6rem;
+	margin: 0;
+	padding: 0;
+	border: 0;
+	min-width: 0;
+}
+
+.label {
+	margin: 0;
+	padding: 0;
+	font-family: var(--font-mono);
+	font-size: 0.75rem;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	color: var(--ink-soft);
+}
+
+.panel {
+	border: var(--frame);
+	border-radius: var(--radius);
+	background: var(--paper-light);
+	color: var(--ink);
+}
+
+.note {
+	margin: 0;
+	font-family: var(--font-mono);
+	font-size: 0.8rem;
+	color: var(--ink-soft);
+}
+
+/* Buttons and button-like links. */
+
+.button {
+	display: grid;
+	justify-items: center;
+	gap: 0.15rem;
+	padding: 0.85rem 1rem;
+	border: var(--frame);
+	border-radius: var(--radius);
+	background: var(--paper-light);
+	color: var(--ink);
+	font: inherit;
+	font-size: 1.1rem;
+	font-weight: 700;
+	text-align: center;
+	text-decoration: none;
+	cursor: pointer;
+}
+
+.button.primary {
+	border-color: var(--vermilion);
+	background: var(--vermilion);
+	color: var(--paper-light);
+	font-size: 1.3rem;
+}
+
+.button:disabled {
+	opacity: 0.45;
+	cursor: default;
+}
+
+.button:focus-visible,
+.back:focus-visible {
+	outline: 3px solid var(--indigo);
+	outline-offset: 2px;
+}
+
+.buttonNote {
+	font-family: var(--font-mono);
+	font-size: 0.8rem;
+	font-weight: 400;
+}
+
+/* A choice of a few, side by side: Novice / Adept / Master. */
+
+.segments {
+	display: grid;
+	grid-auto-columns: 1fr;
+	grid-auto-flow: column;
+	border: var(--frame);
+	border-radius: var(--radius);
+	overflow: hidden;
+	background: var(--paper-light);
+}
+
+.segment {
+	display: grid;
+	place-items: center;
+	padding: 0.75rem 0.5rem;
+	font-weight: 700;
+	cursor: pointer;
+}
+
+.segment + .segment {
+	border-left: 1px solid var(--ink);
+}
+
+.segment:has(input:checked) {
+	background: var(--ink);
+	color: var(--paper-light);
+}
+
+.segment:has(input:focus-visible) {
+	outline: 3px solid var(--indigo);
+	outline-offset: -5px;
+}
+
+/* The radio itself is the whole segment. */
+.segment input {
+	position: absolute;
+	opacity: 0;
+	pointer-events: none;
+}

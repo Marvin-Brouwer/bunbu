@@ -5,7 +5,7 @@
 
 import { component } from '@rooted/components'
 import { pointsPerCorrect, type Score, type ScoreState } from '../state/score.mts'
-import { formatWhole } from './numbers.mts'
+import { formatWhole } from '../../_shared/numbers.mts'
 import styles from './hud.css'
 
 export type ScoreBoxOptions = {
