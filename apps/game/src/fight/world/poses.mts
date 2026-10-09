@@ -36,6 +36,8 @@ export type Rig = {
 	readonly shift: number
 	/** Turned away from what it faces, `π` is its back turned. */
 	readonly turn: number
+	/** `0` the sword in hand, `1` let go and lying on the ground beside the figure. */
+	readonly drop: number
 	/** `1` fully there, `0` gone. */
 	readonly fade: number
 }
@@ -51,6 +53,7 @@ export const standingRig: Rig = {
 	guardArm: 0.2,
 	shift: 0,
 	turn: 0,
+	drop: 0,
 	fade: 1,
 }
 
@@ -122,8 +125,10 @@ const rigs: Readonly<Record<FigurePose, (time: number, cycle: number) => Rig>> =
 	},
 	fallen: (time) => {
 		const down = easeOut(progress(time, poseSeconds.fallen))
-		// On one knee, head bowed, the sword let go.
-		return { ...standingRig, rise: -0.35 * down, lean: 0.35 * down, kneel: down, swordArm: mix(0.3, 0, down), guardArm: mix(0.2, 0.9, down) }
+		// On one knee, head bowed, the katana dropped
+		// ([8 Fallen](../../../../../docs/design/screens.md#8-fallen)): it leaves his hand on the way down.
+		const drop = easeOut(progress(time - poseSeconds.fallen * 0.3, poseSeconds.fallen * 0.7))
+		return { ...standingRig, rise: -0.35 * down, lean: 0.35 * down, kneel: down, swordArm: mix(0.3, 0, down), guardArm: mix(0.2, 0.9, down), drop }
 	},
 	slain: (time) => {
 		const down = easeOut(progress(time, poseSeconds.slain))

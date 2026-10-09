@@ -89,6 +89,12 @@ describe('poses', () => {
 		expect(rigOf('fallen', 60)).toEqual(rigOf('fallen', poseSeconds.fallen))
 	})
 
+	it('lets go of the katana when fallen, and holds it in every other pose', () => {
+		expect(rigOf('fallen', 0).drop).toBe(0)
+		expect(rigOf('fallen', poseSeconds.fallen).drop).toBe(1)
+		for (const pose of ['idle', 'run', 'strike', 'block', 'hurt'] as const) expect(rigOf(pose, 10, 1).drop).toBe(0)
+	})
+
 	it('lets a slain ninja lie, then fade', () => {
 		expect(rigOf('slain', poseSeconds.slain).fade).toBe(1)
 		expect(rigOf('slain', poseSeconds.slain + poseSeconds.slainFade + 1).fade).toBe(0)

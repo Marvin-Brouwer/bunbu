@@ -108,6 +108,14 @@ export function createFigure(parts: FigureParts, colours: FigureColours): Figure
 	guardArm.add(new Mesh(parts.arm, skin))
 	hips.add(swordArm, guardArm)
 
+	// The katana once it is let go: on the ground beside the figure, not in its hand.
+	const dropped = new Group()
+	dropped.position.set(0.5, 0, -0.3)
+	dropped.rotation.y = 0.4
+	dropped.add(new Mesh(parts.sword, blade))
+	dropped.visible = false
+	root.add(dropped)
+
 	return {
 		root,
 
@@ -120,6 +128,11 @@ export function createFigure(parts: FigureParts, colours: FigureColours): Figure
 			swordArm.rotation.x = rig.swordArm
 			sword.rotation.z = (Math.PI / 2) * rig.cross
 			guardArm.rotation.x = rig.guardArm
+			// Let go, it falls from about hand height and comes to lie flat.
+			sword.visible = rig.drop === 0
+			dropped.visible = rig.drop > 0
+			dropped.position.y = 0.03 + (swordLength + 0.05) * (1 - rig.drop)
+			dropped.rotation.z = (Math.PI / 2) * rig.drop
 
 			const opacity = rig.fade * faded
 			root.visible = opacity > 0
