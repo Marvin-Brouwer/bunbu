@@ -37,6 +37,11 @@ function answer(mark: number) {
 	commitAmbush(game)
 }
 
+/** Lets the hold after an answer run out, a hit's being the longest. */
+function playOut() {
+	tickRun(game, runConfig.hitSeconds, runConfig.hitSeconds)
+}
+
 beforeEach(() => {
 	// Ending a run writes the app-wide high scores and last run, and starting one reads them.
 	highScores.value.reset()
@@ -96,16 +101,27 @@ describe('commitAmbush', () => {
 		// Four questions at a 70% pass mark leave a margin of 1.2 points: the second miss is too many.
 		answer(1)
 		answer(1)
-
 		expect(game.life.value.empty()).toBe(true)
+
+		// The hit plays out first; then the ninjas vanish and the samurai falls.
+		expect(game.run.value.phase).toBe('running')
+		expect(game.run.value.recovery).toBe(runConfig.hitSeconds)
+		expect(game.shogun.value.pose).toBe('hurt')
+		playOut()
 		expect(game.run.value.phase).toBe('fallen')
 		expect(game.shogun.value.pose).toBe('fallen')
+		expect(game.ninjas.value.active).toHaveLength(0)
 	})
 
 	it('finishes the run after the last question', () => {
 		fixtureQuiz.questions.forEach(() => { answer(0) })
 
+		// The last strike plays out first; then the ninja he blocked flees and the run is done.
+		expect(game.run.value.phase).toBe('running')
+		expect(game.run.value.recovery).toBe(runConfig.strikeSeconds)
+		playOut()
 		expect(game.run.value.phase).toBe('finished')
+		expect(game.ninjas.value.active.find((ninja) => ninja.id === 1)?.pose).toBe('fleeing')
 		expect(game.score.value.points).toBe(fixtureQuiz.questions.length * 100)
 	})
 })
@@ -135,6 +151,7 @@ describe('openAmbush', () => {
 			for (const option of right) game.ambush.value.pick(option.mark)
 			commitAmbush(game)
 		}
+		playOut()
 		expect(game.run.value.phase).toBe('finished')
 		expect(game.score.value.correct).toBe(fixtureQuiz.questions.length)
 	})

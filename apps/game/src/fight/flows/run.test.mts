@@ -76,6 +76,33 @@ describe('the run', () => {
 		expect(game.run.value.distance).toBeGreaterThan(distance)
 	})
 
+	it('lets the ninjas that landed the hit vanish once the samurai recovers', () => {
+		runToAmbush()
+		answer(false)
+		expect(game.ninjas.value.active.every((ninja) => ninja.pose === 'strike')).toBe(true)
+
+		tickRun(game, 0.5, 0.5)
+		expect(game.ninjas.value.active).not.toHaveLength(0)
+		tickRun(game, 0.6, 0.6)
+		expect(game.ninjas.value.active).toHaveLength(0)
+	})
+
+	it('sends the blocked ninjas fleeing once the samurai recovers, and leaves the slain where they fell', () => {
+		// The second question is a `single` of three: one slain, two blocked.
+		play([true])
+		runToAmbush()
+		answer(true)
+		const blocked = game.ninjas.value.active.filter((ninja) => ninja.pose === 'blocked').map((ninja) => ninja.id)
+		const slain = game.ninjas.value.active.filter((ninja) => ninja.pose === 'slain').map((ninja) => ninja.id)
+		expect(blocked).toHaveLength(2)
+		expect(slain).toHaveLength(1)
+
+		tickRun(game, runConfig.strikeSeconds + 0.1, runConfig.strikeSeconds + 0.1)
+		const poses = new Map(game.ninjas.value.active.map((ninja) => [ninja.id, ninja.pose]))
+		for (const id of blocked) expect(poses.get(id)).toBe('fleeing')
+		for (const id of slain) expect(poses.get(id)).toBe('slain')
+	})
+
 	it('cannot be paused before it has started', () => {
 		game.run.value.reset()
 		game.run.value.pause()
@@ -110,20 +137,59 @@ describe('the run', () => {
 		expect(game.shogun.value.pose).toBe('fallen')
 	})
 
-	it('ends once', () => {
-		play([true, true, true, true])
+	it('ends once, and keeps its result once', () => {
+		play([true, true, true])
+		runToAmbush()
+		answer(true)
+		const best = highScores.value.of('fixture', '1')
+
+		// Another commit after the last answer is refused, and changes nothing that was kept.
+		commitAmbush(game)
+		tickRun(game, runConfig.strikeSeconds, runConfig.strikeSeconds)
 		endRun(game)
+		expect(game.run.value.phase).toBe('finished')
+		expect(highScores.value.of('fixture', '1')).toEqual(best)
 		expect(game.score.value.newBest).toBe(true)
 	})
 })
 
 describe('high score', () => {
-	it('is set by a passed run and shown as a new best', () => {
-		play([true, true, true, true])
+	it('is set by a passed run and shown as a new best, with the time the run ends at', () => {
+		play([true, true, true])
+		runToAmbush()
+		answer(true)
+		// The run ends when the hold after the last answer does.
+		const ends = game.run.value.elapsed + runConfig.strikeSeconds
+		tickRun(game, runConfig.strikeSeconds, runConfig.strikeSeconds)
+		expect(game.run.value.phase).toBe('finished')
+		expect(game.run.value.elapsed).toBeCloseTo(ends)
+
 		const best = highScores.value.of('fixture', '1')
 		expect(best).toMatchObject({ points: 400, correct: 4, answered: 4 })
-		expect(best?.seconds).toBe(game.run.value.elapsed)
+		expect(best?.seconds).toBeCloseTo(ends)
 		expect(game.score.value.newBest).toBe(true)
+	})
+
+	it('is kept the moment the last answer is in, so a pause in the last hold loses nothing', () => {
+		play([true, true, true])
+		runToAmbush()
+		answer(true)
+		const best = highScores.value.of('fixture', '1')
+		expect(best).toMatchObject({ points: 400, correct: 4, answered: 4 })
+		// The misses are kept too, for this quiz: none, every answer was right.
+		expect(lastRun.value.quiz).toBeDefined()
+		expect(lastRun.value.missesOf('fixture', '1')).toEqual([])
+
+		// Paused in the hold, resumed, counted down: the run ends once, at the time that was kept.
+		game.run.value.pause()
+		tickRun(game, 5, 5)
+		game.run.value.resume()
+		tickRun(game, runConfig.countdownSeconds, runConfig.countdownSeconds)
+		expect(game.run.value.phase).toBe('running')
+		tickRun(game, runConfig.strikeSeconds, runConfig.strikeSeconds)
+		expect(game.run.value.phase).toBe('finished')
+		expect(game.run.value.elapsed).toBeCloseTo(best?.seconds ?? 0)
+		expect(highScores.value.of('fixture', '1')).toEqual(best)
 	})
 
 	it('is not set by a fallen run', () => {
@@ -240,16 +306,20 @@ describe('frames', () => {
 		expect(game.run.value.distance).toBeCloseTo(ambushAt(0))
 	})
 
-	it('counts the frame that ends the run in its time', () => {
+	it('counts the frame that ends the last ambush, and the hold after it, in the run\'s time', () => {
 		play([true, true, true])
 		runToAmbush()
 		const before = game.run.value.elapsed
-		// The ambush times out on this frame, which is the last of the run.
+		// The ambush times out on this frame, which is the last answer of the run.
 		game.ambush.value.tick(game.ambush.value.seconds)
 		tickRun(game, 0.1, 0.1)
+		expect(game.run.value.phase).toBe('running')
+		// The hit plays out, then the run is finished: 3 of 4 still passes.
+		tickRun(game, runConfig.hitSeconds, runConfig.hitSeconds)
 		expect(game.run.value.phase).toBe('finished')
-		expect(game.run.value.elapsed).toBeCloseTo(before + 0.1)
-		expect(highScores.value.of('fixture', '1')?.seconds).toBeCloseTo(before + 0.1)
+		const seconds = before + 0.1 + runConfig.hitSeconds
+		expect(game.run.value.elapsed).toBeCloseTo(seconds)
+		expect(highScores.value.of('fixture', '1')?.seconds).toBeCloseTo(seconds)
 	})
 
 	it('does not take the frame that times an ambush out off the recovery', () => {
