@@ -4,15 +4,49 @@
  *
  * Portrait is the target, but nothing here breaks in landscape or on desktop
  * (docs/design/gameplay.md#platform).
+ *
+ * The theme is set on the container as custom properties, so every screen and component reads
+ * the same papyrus, ink and fonts. The fonts are the player's own: nothing to download, and the
+ * game works offline.
  */
 
 .container {
+	/* Papyrus: the scroll and the HUD's panels. */
+	--paper: #f1e8d3;
+	--paper-shade: #e4d8bd;
+	--paper-edge: #c9b48c;
+	/* Ink: text and frames on papyrus. */
+	--ink: #1f1c18;
+	--ink-soft: #5b5348;
+	--ink-faint: #8f8576;
+	/* Vermilion, the lacquer red of a torii: life, marks, hits. Moss and indigo for highlighting. */
+	--vermilion: #b3391f;
+	--vermilion-light: #d9765f;
+	--moss: #4f6b2f;
+	--indigo: #2f4a7a;
+	/* The wooden rods of the scroll. */
+	--wood: #5c3d24;
+	--wood-light: #8a6240;
+	/* The night behind the world, and text on it. */
+	--night: #1b1a18;
+	--mist: #f2ead8;
+
+	--font-body: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+	--font-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace;
+	--font-display: 'Hiragino Mincho ProN', 'Yu Mincho', 'Noto Serif JP', Georgia, serif;
+
+	--radius: 3px;
+	--frame: 2px solid var(--ink);
+	--shadow: 0 2px 6px rgb(0 0 0 / 35%);
+	/* The bottom strip the swipe zone takes during an ambush; the scroll stays above it. */
+	--swipe-zone-height: 11rem;
+
 	position: fixed;
 	inset: 0;
 	overflow: hidden;
-	background: #1b1a18;
-	color: #f2ead8;
-	font-family: system-ui, sans-serif;
+	background: var(--night);
+	color: var(--mist);
+	font-family: var(--font-body);
 	touch-action: manipulation;
 }
 

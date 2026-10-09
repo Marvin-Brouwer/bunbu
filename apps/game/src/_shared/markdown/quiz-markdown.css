@@ -1,0 +1,110 @@
+/*
+ * Quiz Markdown in the ink of the scroll: inline code, highlighted code blocks, tables and images.
+ * The colours come from the theme in application.css.
+ */
+
+.markdown {
+	overflow-wrap: anywhere;
+}
+
+.markdown > :first-child {
+	margin-top: 0;
+}
+
+.markdown > :last-child {
+	margin-bottom: 0;
+}
+
+p,
+ul,
+ol,
+pre,
+table,
+blockquote {
+	margin: 0 0 0.6em;
+}
+
+ul,
+ol {
+	padding-left: 1.4em;
+}
+
+blockquote {
+	padding-left: 0.8em;
+	border-left: 3px solid var(--ink-faint);
+	color: var(--ink-soft);
+}
+
+a {
+	color: var(--vermilion);
+}
+
+img {
+	max-width: 100%;
+	height: auto;
+}
+
+code {
+	font-family: var(--font-mono);
+	font-size: 0.9em;
+	padding: 0.05em 0.3em;
+	border-radius: var(--radius);
+	background: var(--paper-shade);
+}
+
+pre {
+	overflow-x: auto;
+	padding: 0.6em 0.75em;
+	border-radius: var(--radius);
+	background: var(--paper-shade);
+	font-size: 0.85em;
+	line-height: 1.45;
+}
+
+pre code {
+	padding: 0;
+	background: none;
+	font-size: inherit;
+}
+
+table {
+	border-collapse: collapse;
+	font-size: 0.9em;
+}
+
+th,
+td {
+	padding: 0.2em 0.6em;
+	border: 1px solid var(--ink-faint);
+	text-align: left;
+}
+
+/* highlight.js tokens, in ink: vermilion for the words of the language, a softer ink for the rest. */
+.hljs-keyword,
+.hljs-built_in,
+.hljs-selector-tag,
+.hljs-name {
+	color: var(--vermilion);
+}
+
+.hljs-string,
+.hljs-attr,
+.hljs-attribute,
+.hljs-regexp {
+	color: var(--moss);
+}
+
+.hljs-number,
+.hljs-literal,
+.hljs-type,
+.hljs-title,
+.hljs-selector-class,
+.hljs-selector-id {
+	color: var(--indigo);
+}
+
+.hljs-comment,
+.hljs-meta {
+	color: var(--ink-faint);
+	font-style: italic;
+}

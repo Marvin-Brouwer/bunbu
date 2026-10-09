@@ -113,7 +113,8 @@ export const noAmbush: AmbushState = {
 	rounds: 1,
 }
 
-const timeUp = (state: AmbushState) => state.seconds > 0 && state.secondsLeft === 0
+/** Whether the time limit has run out: the ambush ends unanswered. Never with no time limit. */
+export const timeUp = (state: AmbushState) => state.seconds > 0 && state.secondsLeft === 0
 
 /** Whether the option is answered right: picked when correct, and for `order` in its place. */
 const right = (kind: AmbushKind, option: AmbushOption) =>

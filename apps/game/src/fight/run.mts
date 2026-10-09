@@ -13,6 +13,8 @@ import { play } from '../canvas/loop.mts'
 import { createRunWorld } from './world.mts'
 import { show } from '../canvas/stage.mts'
 import type { RunGame } from './state/game.mts'
+import { Hud } from './hud/hud.mts'
+import { Scroll } from '../_shared/scroll/scroll.mts'
 import styles from './run.css'
 
 export type RunScreenOptions = {
@@ -24,7 +26,7 @@ export type RunScreenOptions = {
 export const RunScreen = component<RunScreenOptions>({
 	name: 'run',
 	styles,
-	onMount({ append, element, options, signal }) {
+	onMount({ append, create, element, options, signal }) {
 		const { game } = options
 
 		show((camera) => createRunWorld(game, camera), signal)
@@ -47,6 +49,9 @@ export const RunScreen = component<RunScreenOptions>({
 							styles.layer,
 							styles.hud,
 						],
+						children: create(Hud, {
+							game,
+						}),
 					}),
 					element('div', {
 						'data-layer': 'scroll',
@@ -54,6 +59,11 @@ export const RunScreen = component<RunScreenOptions>({
 							styles.layer,
 							styles.scroll,
 						],
+						children: create(Scroll, {
+							ambush: game.ambush,
+							quiz: game.quiz,
+							label: 'AMBUSH',
+						}),
 					}),
 					element('div', {
 						'data-layer': 'swipe',

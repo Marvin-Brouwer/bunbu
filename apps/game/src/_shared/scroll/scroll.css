@@ -1,0 +1,175 @@
+/*
+ * The scroll: two wooden rods with the papyrus between them. It stays clear of the HUD's top row
+ * and of the swipe zone, and the text scrolls inside it when a question is long.
+ *
+ * The stages (data-stage) are CSS animations, and each one but `open` ends with an animation on
+ * the scroll element itself, which tells the component it is done.
+ */
+
+.scroll {
+	position: relative;
+	color: var(--ink);
+}
+
+.scroll[data-stage='hidden'] {
+	display: none;
+}
+
+.paper {
+	display: grid;
+	max-width: 34rem;
+	margin-inline: auto;
+	grid-template-rows: auto 1fr auto;
+	max-height: calc(100dvh - 4rem - var(--swipe-zone-height));
+	filter: drop-shadow(var(--shadow));
+}
+
+.rod {
+	height: 0.85rem;
+	margin: 0 -0.35rem;
+	border-radius: 999px;
+	background: linear-gradient(var(--wood-light), var(--wood) 60%, var(--ink));
+}
+
+.sheet {
+	display: grid;
+	min-height: 0;
+	overflow: hidden;
+	background: linear-gradient(90deg, var(--paper-shade), var(--paper) 5%, var(--paper) 95%, var(--paper-shade));
+	border-inline: 1px solid var(--paper-edge);
+}
+
+.body {
+	min-height: 0;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+	padding: 0.9rem 1rem 1rem;
+}
+
+.heading {
+	margin: 0 0 0.6rem;
+	font-family: var(--font-mono);
+	font-size: 0.75rem;
+	letter-spacing: 0.08em;
+	color: var(--ink-soft);
+}
+
+.query {
+	margin-bottom: 0.9rem;
+	font-size: 1.15rem;
+	font-weight: 600;
+	line-height: 1.4;
+}
+
+.options {
+	display: grid;
+	gap: 0.5rem;
+}
+
+/* Unroll: the sheet grows from the top rod down. */
+.scroll[data-stage='unroll'] {
+	animation: settle 420ms;
+}
+
+.scroll[data-stage='unroll'] .paper {
+	animation: unroll 420ms ease-out;
+}
+
+/* Roll up: the sheet winds back onto the top rod, then the rods go. */
+.scroll[data-stage='roll-up'] {
+	animation: vanish 620ms forwards;
+}
+
+.scroll[data-stage='roll-up'] .paper {
+	animation: unroll 360ms ease-in reverse forwards;
+}
+
+/* Sliced: a cut across the scroll, then the halves fall apart. */
+.scroll[data-stage='slice'] {
+	animation: vanish 1000ms forwards;
+}
+
+.half + .half {
+	position: absolute;
+	inset: 0;
+}
+
+.upper {
+	clip-path: polygon(0 0, 100% 0, 100% 38%, 0 62%);
+	animation: fall-upper 750ms 200ms ease-in forwards;
+}
+
+.lower {
+	clip-path: polygon(0 62%, 100% 38%, 100% 100%, 0 100%);
+	animation: fall-lower 750ms 200ms ease-in forwards;
+}
+
+.cut {
+	position: absolute;
+	inset: 0 -0.5rem;
+	background: var(--vermilion);
+	animation: cut 200ms ease-out forwards;
+}
+
+@keyframes unroll {
+	from {
+		grid-template-rows: auto 0fr auto;
+	}
+
+	to {
+		grid-template-rows: auto 1fr auto;
+	}
+}
+
+@keyframes settle {
+	from {
+		opacity: 0.6;
+	}
+
+	to {
+		opacity: 1;
+	}
+}
+
+@keyframes vanish {
+	60% {
+		opacity: 1;
+	}
+
+	to {
+		opacity: 0;
+	}
+}
+
+/* The cut runs along the line the halves split on, from left to right, and fades as they fall. */
+@keyframes cut {
+	from {
+		clip-path: polygon(0 calc(62% - 2px), 0 calc(62% - 2px), 0 calc(62% + 2px), 0 calc(62% + 2px));
+	}
+
+	to {
+		clip-path: polygon(0 calc(62% - 2px), 100% calc(38% - 2px), 100% calc(38% + 2px), 0 calc(62% + 2px));
+	}
+}
+
+@keyframes fall-upper {
+	to {
+		transform: translate(-8%, -20%) rotate(-8deg);
+		opacity: 0;
+	}
+}
+
+@keyframes fall-lower {
+	to {
+		transform: translate(8%, 45%) rotate(6deg);
+		opacity: 0;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.scroll[data-stage],
+	.scroll[data-stage] * {
+		animation-duration: 1ms !important;
+		animation-delay: 0s !important;
+	}
+}
