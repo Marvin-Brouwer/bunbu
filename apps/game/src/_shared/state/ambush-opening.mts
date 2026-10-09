@@ -29,7 +29,7 @@ const markSets: Readonly<Record<number, readonly Mark[]>> = {
 
 /**
  * One swipe direction per option, so an ambush shows at most 8. This limits the fight, not the
- * quiz: a question with more options drops distractors at random, see {@link playable}.
+ * quiz: a question with more options drops distractors at random, see {@link fitOf}.
  */
 export const maxOptions = 8
 
@@ -80,7 +80,7 @@ export function openingOf(quiz: BunbuData, refs: readonly QuestionRef[], at: Que
 	const choices = choicesOf(question, at.part)
 	const correct = choices.map((choice) => choice.correct)
 	if (correct.filter(Boolean).length > maxOptions) {
-		throw new RangeError(`[bunbu] question ${at.question} has more than ${maxOptions} correct options and can't be fought; check playable() when a quiz is loaded`)
+		throw new RangeError(`[bunbu] question ${at.question} has more than ${maxOptions} correct options and can't be fought; check fitOf() when a quiz is loaded`)
 	}
 
 	const sources = choices.map((_, source) => source)
@@ -115,12 +115,19 @@ export function openingOf(quiz: BunbuData, refs: readonly QuestionRef[], at: Que
 }
 
 /**
- * Whether every ambush of the question fits on the 8 marks: more than 8 options are fine as long
- * as at most 8 of them are correct, because the extra distractors are dropped.
+ * How a question fits on the 8 marks in a fight, for warning about it when a quiz is loaded:
+ *
+ * - `fits`: every option gets a mark.
+ * - `truncated`: more than 8 options, so distractors are dropped at random.
+ * - `unplayable`: more than 8 correct options (or `order` items); no fight can ask it.
  */
-export function playable(question: Question): boolean {
-	return Array.from({ length: partsOf(question) }, (_, part) => choicesOf(question, part))
-		.every((choices) => choices.filter((choice) => choice.correct).length <= maxOptions)
+export type Fit = 'fits' | 'truncated' | 'unplayable'
+
+export function fitOf(question: Question): Fit {
+	const ambushes = Array.from({ length: partsOf(question) }, (_, part) => choicesOf(question, part))
+	if (ambushes.some((choices) => choices.filter((choice) => choice.correct).length > maxOptions)) return 'unplayable'
+	if (ambushes.some((choices) => choices.length > maxOptions)) return 'truncated'
+	return 'fits'
 }
 
 /**

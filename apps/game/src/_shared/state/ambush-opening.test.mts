@@ -2,7 +2,7 @@ import { validate, type BunbuData, type Markdown, type Option } from '@bunbu/dat
 import { beforeAll, describe, expect, it } from 'vitest'
 import { fixtureQuiz, manyOptions } from '../../_temp/quiz.mts'
 import { createAmbush, type AmbushOpening } from './ambush.mts'
-import { frontRow, maxNinjas, openingOf, playable } from './ambush-opening.mts'
+import { frontRow, maxNinjas, fitOf, openingOf } from './ambush-opening.mts'
 import { ambushConfig, ambushSeconds, approachOf, wordsIn } from './ambush-time.mts'
 import { refsOf } from './quiz.mts'
 import { seeded } from './random.mts'
@@ -79,12 +79,13 @@ describe('opening an ambush', () => {
 			for (const option of opening.options) kept.add(option.source)
 		}
 		expect(kept.size).toBe(12)
-		expect(playable(withOptions(options).questions[0]!)).toBe(true)
+		expect(fitOf(withOptions(options).questions[0]!)).toBe('truncated')
+		expect(fitOf(withOptions(options.slice(0, 8)).questions[0]!)).toBe('fits')
 	})
 
 	it('cannot fight more than 8 correct options', () => {
 		const options = Array.from({ length: 9 }, (_, index) => ({ answer: markdown(`${index}`), correct: true }))
-		expect(playable(withOptions(options).questions[0]!)).toBe(false)
+		expect(fitOf(withOptions(options).questions[0]!)).toBe('unplayable')
 		expect(() => open(withOptions(options))).toThrow(RangeError)
 	})
 

@@ -57,7 +57,7 @@ Each ninja carries one option. A **slash** means "this option is picked", a **bl
 ### More than 3 options
 
 - Up to **5 ninjas**: 3 in front, 2 behind. One scroll, one answer, then they strike in 2 waves (front, then back; the back row is drawn faded).
-- One swipe direction per option, **8 directions** in total: ← ↖ ↑ ↗ → ↘ ↓ ↙. So an ambush shows **at most 8 options**. This limits the fight, not the quiz format: with more options, distractors are dropped at random (a different set each time) until 8 are left. A question with more than 8 correct options (or `order` items) can't be fought; the screen where a quiz is loaded will warn about it.
+- One swipe direction per option, **8 directions** in total: ← ↖ ↑ ↗ → ↘ ↓ ↙. So an ambush shows **at most 8 options**. This limits the fight, not the quiz format: with more options, distractors are dropped at random (a different set each time) until 8 are left. A question with more than 8 correct options (or `order` items) can't be fought. Loading a quiz warns about questions that will be truncated, and about the ones that can't be played.
 - With **6 or more options**, the options are shuffled and then bundled at random onto the 5 ninjas (7 options = 1, 2, 2, 1, 1). Every option keeps its own swipe. A bundled ninja is only handled right if all its options are.
 
 <img src="screens/4d-many-options.png" alt="7 options bundled onto 5 ninjas" width="195">
