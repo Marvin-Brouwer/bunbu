@@ -1,0 +1,91 @@
+/*
+ * 2 Fight (docs/design/screens.md#2-fight-setup): the chosen quiz, the stage and the difficulty,
+ * then Start run.
+ */
+
+/* The chosen quiz */
+
+.quiz {
+	display: grid;
+	gap: 0.3rem;
+	padding: 0.75rem 0.9rem;
+	border: var(--frame);
+	border-radius: var(--radius);
+	background: var(--paper-light);
+}
+
+.quizTitle {
+	font-weight: 700;
+	font-size: 1.1rem;
+	line-height: 1.2;
+	overflow-wrap: anywhere;
+}
+
+.quizNote {
+	margin: 0;
+	font-family: var(--font-mono);
+	font-size: 0.75rem;
+	color: var(--ink-soft);
+}
+
+/* Stages */
+
+.stages {
+	display: grid;
+	gap: 0.6rem;
+}
+
+.stage {
+	display: flex;
+	align-items: center;
+	gap: 0.4rem;
+	padding: 0.95rem 1rem;
+	border: var(--frame);
+	border-radius: var(--radius);
+	background: var(--paper-light);
+	font-size: 1.1rem;
+	font-weight: 700;
+	cursor: pointer;
+}
+
+.stage:has(input:checked) {
+	border-color: var(--vermilion);
+	box-shadow: inset 0 0 0 1px var(--vermilion);
+}
+
+.stage:has(input:focus-visible) {
+	outline: 3px solid var(--indigo);
+	outline-offset: 2px;
+}
+
+.stage:has(input:disabled) {
+	border-style: dashed;
+	color: var(--ink-soft);
+	cursor: not-allowed;
+}
+
+.stage input {
+	position: absolute;
+	opacity: 0;
+	pointer-events: none;
+}
+
+.stageNumber {
+	font-family: var(--font-mono);
+	font-weight: 400;
+	color: var(--ink-soft);
+}
+
+.stageSoon {
+	margin-left: auto;
+	font-family: var(--font-mono);
+	font-size: 0.75rem;
+	font-weight: 400;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+}
+
+.start {
+	display: grid;
+	margin-top: 0.5rem;
+}

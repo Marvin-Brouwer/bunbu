@@ -7,7 +7,7 @@ Wireframe source: the project's design canvas (`design/wireframes/*.dc.html` and
 ## Flow
 
 ```text
-1 Title ──► 2 Quiz + stage ──► 3 Running ──► 4 Ambush ──► 5 Outcome ──► 3 Running …
+1 Title ──► 2 Fight setup ──► 3 Running ──► 4 Ambush ──► 5 Outcome ──► 3 Running …
    │                              │                                   │
    │                              └─► 6 Pause                         ├─► 7 Finished
    │                                                                  └─► 8 Fallen
@@ -23,16 +23,24 @@ Wireframe source: the project's design canvas (`design/wireframes/*.dc.html` and
 
 - 3D samurai idling under a torii, falling petals.
 - 文武 · **Bunbu** · Shogun Scholar.
-- High score for the last quiz: `2,480`, with `17 / 20 correct · 4:05`.
-- **Run** (shows the current quiz and stage), **Quiz and stage**, **Dojo**, **Settings**.
+- The chosen quiz: its title, and its high score `2,480` with `17 / 20 correct · 4:05` (or "No high score yet").
+- **Fight**, **Change quiz**, **Dojo**, **Settings**. Without a chosen quiz: **Fight** ("Choose a quiz first") and **Quizzes** both lead to Quizzes.
 
-### 2 Quiz + stage
+### 1b Quizzes
 
-<img src="screens/2-quiz-stage.png" alt="Quiz and stage select" width="195">
+A screen of its own, so the title stays calm:
 
-"Choose your path":
+- An area to drop a `.yaml` or `.bunbu` file on, or tap to choose one.
+- Why a file didn't load (by line), and which questions of the chosen quiz won't fit in a fight.
+- The loaded quizzes as cards, one under the other, with title, `version`, pass mark and best score (`v3 · pass 70% · best 2,480`, or `new`). Tapping one chooses it.
 
-1. **Quiz:** cards with title, `version`, pass mark and best score (`v3 · pass 70% · best 2,480`, or `new`), plus **Load .yaml**.
+### 2 Fight setup
+
+<img src="screens/2-quiz-stage.png" alt="Fight setup" width="195">
+
+"Choose your path". The quiz is chosen on Quizzes (1b); the stage and the difficulty only matter to a fight, so they are chosen here:
+
+1. **Quiz:** the chosen quiz, and which of its questions won't fit in a fight.
 2. **Stage:** Rice fields, Bamboo forest, Mountain temple, Castle town, Edo castle. Each shows its best distance and whether it was cleared.
 
 A Novice / Adept / Master selector (sets `timeScale`, see [time limit](gameplay.md#time-limit)) and **Start run**.
