@@ -15,12 +15,15 @@ import { show } from '../canvas/stage.mts'
 import type { RunGame } from './state/game.mts'
 import { Hud } from './hud/hud.mts'
 import { Scroll } from '../_shared/scroll/scroll.mts'
+import { RunOverlays } from './overlays/overlays.mts'
 import styles from './run.css'
 
 export type RunScreenOptions = {
 	readonly game: RunGame
-	/** Leaves the run for the select screen, from the pause menu, results or the fallen screen. */
+	/** Leaves the run for the select screen, from the pause menu. */
 	readonly leave: () => void
+	/** Starts a new run on the chosen quiz and stage: Restart stage, Next stage, Rise again. */
+	readonly restart: () => void
 }
 
 export const RunScreen = component<RunScreenOptions>({
@@ -72,6 +75,11 @@ export const RunScreen = component<RunScreenOptions>({
 							styles.layer,
 							styles.overlays,
 						],
+						children: create(RunOverlays, {
+							game,
+							restart: options.restart,
+							leave: options.leave,
+						}),
 					}),
 				],
 			})

@@ -17,6 +17,8 @@ const difficulties: readonly { readonly value: Difficulty; readonly label: strin
 export type DifficultyPickerOptions = {
 	/** The radio group's name, unique on the screen. */
 	readonly name: string
+	/** Shows the difficulty without letting it change, as during a run. */
+	readonly disabled?: boolean
 }
 
 export const DifficultyPicker = component<DifficultyPickerOptions>({
@@ -28,6 +30,7 @@ export const DifficultyPicker = component<DifficultyPickerOptions>({
 			name: options.name,
 			value,
 			checked: settings.value.difficulty === value,
+			disabled: options.disabled ?? false,
 			on: {
 				change() {
 					settings.value.setDifficulty(value)

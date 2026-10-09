@@ -10,7 +10,7 @@
 
 import type { BunbuData, Markdown } from '@bunbu/data'
 import { openingOf } from '../../_shared/state/ambush-opening.mts'
-import { loaded } from '../../_shared/state/quiz.mts'
+import { loaded, type AnswerRecord } from '../../_shared/state/quiz.mts'
 import { newRun, type RunGameState } from '../state/game.mts'
 import { spawnsOf, type Ninja } from '../state/ninjas.mts'
 import { runConfig } from '../state/run.mts'
@@ -68,6 +68,15 @@ function picking(state: RunGameState, places: readonly number[]): RunGameState {
 	const options = state.ambush.options
 		.map((option, place) => ({ ...option, pick: places.indexOf(place) + 1 }))
 	return { ...state, ambush: { ...state.ambush, options } }
+}
+
+/** What the player answered, one per question in order: `'correct'`, or the picks of a miss, none when time ran out. */
+function answers(...outcomes: readonly ('correct' | readonly number[])[]): AnswerRecord[] {
+	return outcomes.map((picked, question) => {
+		const at = { question, part: 0 }
+		if (picked === 'correct') return { at, outcome: 'correct', picked: [] }
+		return { at, outcome: picked.length === 0 ? 'unanswered' : 'wrong', picked }
+	})
 }
 
 /** Running, with `answered` questions behind the samurai, all of them right. */
@@ -176,12 +185,24 @@ export const fixtures: Readonly<Record<string, () => Fixture>> = {
 	},
 	finished: () => {
 		const state = midRun(quiz.refs.length)
-		return { ...state, run: { ...state.run, phase: 'finished', distance: state.run.stageLength } }
+		return {
+			...state,
+			quiz: { ...state.quiz, records: answers('correct', [1], 'correct', 'correct') },
+			score: {
+				points: 3 * pointsPerCorrect,
+				correct: 3,
+				answered: 4,
+				best: { points: 2 * pointsPerCorrect, seconds: 312, correct: 2, answered: 4 },
+				newBest: true,
+			},
+			run: { ...state.run, phase: 'finished', elapsed: 245, distance: state.run.stageLength },
+		}
 	},
 	fallen: () => {
 		const state = midRun(3)
 		return {
 			...state,
+			quiz: { ...state.quiz, records: answers('correct', [1], []) },
 			life: { value: 0, lastLoss: 1 / 6, hits: 6 },
 			score: { ...state.score, correct: 1, answered: 3, points: pointsPerCorrect },
 			run: { ...state.run, phase: 'fallen' },
