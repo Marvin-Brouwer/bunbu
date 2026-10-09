@@ -32,7 +32,12 @@ type Shown = {
 	sequence: number
 	/** Seconds since the store last changed this ninja's pose. */
 	time: number
+	/** How far the samurai had run when this ninja was beaten, so it stays on that spot of the path. */
+	beatenAt: number | undefined
 }
+
+/** Poses after the fight: the ninja stays on the path where it was beaten, and the run passes it by. */
+const beaten = new Set<Ninja['pose']>(['slain', 'blocked', 'fleeing'])
 
 /** The mark a ninja comes from: its first option's, or `undefined` once the ambush's options are gone. */
 export function markOf(ninja: Ninja, options: readonly AmbushOption[]): Mark | undefined {
@@ -44,8 +49,11 @@ export function markOf(ninja: Ninja, options: readonly AmbushOption[]): Mark | u
 const markById = (id: number): Mark => marks[(id * 2) % marks.length] ?? 'up'
 
 export type NinjasView = {
-	/** Makes the figures match `active`. `delta` is real time, `worldDelta` slowed down. */
-	draw: (active: readonly Ninja[], options: readonly AmbushOption[], delta: number, worldDelta: number) => void
+	/**
+	 * Makes the figures match `active`. `delta` is real time, `worldDelta` slowed down, `distance`
+	 * how far the samurai has run.
+	 */
+	draw: (active: readonly Ninja[], options: readonly AmbushOption[], distance: number, delta: number, worldDelta: number) => void
 	/** The mark the ninja with `id` was last drawn at, for the samurai to turn toward. */
 	markOf: (id: number) => Mark | undefined
 	dispose: () => void
@@ -63,13 +71,13 @@ export function createNinjasView(parent: Group, parts: FigureParts): NinjasView 
 	}
 
 	return {
-		draw(active, options, delta, worldDelta) {
+		draw(active, options, distance, delta, worldDelta) {
 			cycle += worldDelta * creepCycle
 
 			for (const ninja of active) {
 				let entry = shown.get(ninja.id)
 				if (entry === undefined) {
-					entry = { figure: createFigure(parts, colours), mark: markById(ninja.id), sequence: ninja.sequence, time: 0 }
+					entry = { figure: createFigure(parts, colours), mark: markById(ninja.id), sequence: ninja.sequence, time: 0, beatenAt: undefined }
 					shown.set(ninja.id, entry)
 					parent.add(entry.figure.root)
 				}
@@ -80,10 +88,14 @@ export function createNinjasView(parent: Group, parts: FigureParts): NinjasView 
 					entry.time = 0
 				}
 
+				if (!beaten.has(ninja.pose)) entry.beatenAt = undefined
+				else entry.beatenAt ??= distance
+
 				entry.mark = markOf(ninja, options) ?? entry.mark
 				const spot = spotOf(entry.mark, ninja.wave, ninja.approach)
 				const { root } = entry.figure
-				root.position.set(spot.x, 0, spot.z)
+				// The path comes toward the camera as the samurai runs on.
+				root.position.set(spot.x, 0, spot.z + distance - (entry.beatenAt ?? distance))
 				root.rotation.y = spot.facing
 				// Out of step with each other, so they don't run as one.
 				entry.figure.pose(rigOf(ninja.pose, entry.time, cycle + ninja.id * 1.7), ninja.wave > 0 ? backRowOpacity : 1)
