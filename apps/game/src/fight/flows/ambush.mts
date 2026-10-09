@@ -14,6 +14,7 @@ import type { QuizActions, QuizState } from '../../_shared/state/quiz.mts'
 import type { RunGame } from '../state/game.mts'
 import { shareOfOnePoint } from '../state/life.mts'
 import { spawnsOf } from '../state/ninjas.mts'
+import { runConfig } from '../state/run.mts'
 import { endRun } from './run.mts'
 
 /** What one miss costs the life bar, for the quiz that is loaded. */
@@ -86,7 +87,7 @@ export function commitAmbush(game: RunGame): void {
 		endRun(game)
 		return
 	}
-	// The samurai keeps the pose he struck, blocked or was hit in: the run track adds the pause
-	// before the run resumes (about 1 s after a hit) and puts him back to running.
-	game.run.value.endAmbush()
+	// The samurai keeps the pose he struck, blocked or was hit in while the run holds; `tickRun`
+	// puts him back to running.
+	game.run.value.endAmbush(result.outcome === 'correct' ? runConfig.strikeSeconds : runConfig.hitSeconds)
 }

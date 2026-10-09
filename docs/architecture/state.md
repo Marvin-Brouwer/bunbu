@@ -50,7 +50,9 @@ App-wide:
 | `settings`  | Difficulty (`timeScale`), haptics on/off, volume   | `setDifficulty(level)`, `setHaptics(on)` |
 | `selection` | The quiz and stage chosen on the select screen     | `chooseQuiz(quiz)`, `chooseStage(stage)` |
 
-`settings` is the only store that is persisted (local storage), together with the high scores. The rest starts fresh with every run.
+Two more app-wide stores hold what outlives a run: `highScores` (per quiz `id` + `version`) and `lastRun` (the misses, for "practise mistakes"). A small `library` store holds the quizzes the player loaded.
+
+Those, with `settings`, are persisted in local storage through `@rooted/storage` by `_shared/storage/persistence.mts`, which `Application` starts before the first screen: it puts back what was saved and writes every change. The stores themselves know nothing of storage. Every value is wrapped in an envelope with the version of its shape, and what comes back is validated field by field (quiz files are validated again), so edited, old or broken data falls back to defaults. The rest of the state starts fresh with every run.
 
 Choosing a quiz and running it share one route, `/fight/`: the select screen starts the run in its place, so a run can't be opened from a URL without a quiz. The run's stores are created when the player starts and dropped when they leave the run or the route. Pause, the results and the fallen screen are phases of the run, shown as overlays on it.
 

@@ -23,11 +23,15 @@ export type ScoreState = {
 	readonly answered: number
 	/** The high score to beat, shown in the HUD, or `undefined` for a quiz with no run yet. */
 	readonly best: HighScore | undefined
+	/** Whether this run set the high score, for the "new high score" header. `best` is then the one it beat. */
+	readonly newBest: boolean
 }
 
 export type ScoreActions = {
 	addCorrect: () => void
 	addMiss: () => void
+	/** Ends the run, with whether it set the high score. */
+	settle: (newBest: boolean) => void
 	/** Starts a run, keeping the high score to beat. */
 	reset: (best?: HighScore) => void
 }
@@ -35,7 +39,7 @@ export type ScoreActions = {
 /** The store, with its actions on its state. Change it through those, not `update`. */
 export type Score = Store<ScoreState & ScoreActions>
 
-export const noScore: ScoreState = { points: 0, correct: 0, answered: 0, best: undefined }
+export const noScore: ScoreState = { points: 0, correct: 0, answered: 0, best: undefined, newBest: false }
 
 /** Whether `score` beats `best`: more points, or the same points in less time. */
 export function beats(score: HighScore, best: HighScore | undefined): boolean {
@@ -52,7 +56,7 @@ export function createScore(initial: ScoreState = noScore): Score {
 		addCorrect() {
 			const state = store.value
 			store.update(() => ({
-points: state.points + pointsPerCorrect,
+			points: state.points + pointsPerCorrect,
 				correct: state.correct + 1,
 				answered: state.answered + 1,
 			}))
@@ -61,6 +65,10 @@ points: state.points + pointsPerCorrect,
 		addMiss() {
 			const state = store.value
 			store.update(() => ({ answered: state.answered + 1 }))
+		},
+
+		settle(newBest) {
+			store.update(() => ({ newBest }))
 		},
 
 		reset(best) {

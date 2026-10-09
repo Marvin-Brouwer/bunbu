@@ -25,6 +25,8 @@ export type RunState = {
 	readonly countdown: number
 	/** The phase to return to when the pause or the countdown ends. */
 	readonly resumeTo: RunPhase
+	/** Seconds the samurai still holds after an ambush, for the strike or the hit to play out. */
+	readonly recovery: number
 }
 
 export type RunActions = {
@@ -35,7 +37,8 @@ export type RunActions = {
 	 */
 	tick: (worldDelta: number, realDelta: number) => void
 	beginAmbush: () => void
-	endAmbush: () => void
+	/** Back to running, after `recovery` seconds of standing still. */
+	endAmbush: (recovery?: number) => void
 	pause: () => void
 	/** Resumes with the 3-2-1 countdown. */
 	resume: () => void
@@ -54,6 +57,10 @@ export const runConfig = {
 	ambushWorldScale: 0.15,
 	introSeconds: 1.5,
 	countdownSeconds: 3,
+	/** How long the samurai holds after slaying or blocking. */
+	strikeSeconds: 0.5,
+	/** How long he holds after a hit: the run resumes after about 1 s ([outcome](../../../../../docs/design/gameplay.md#outcome)). */
+	hitSeconds: 1,
 }
 
 export const notRunning: RunState = {
@@ -64,6 +71,7 @@ export const notRunning: RunState = {
 	worldScale: 1,
 	countdown: 0,
 	resumeTo: 'running',
+	recovery: 0,
 }
 
 const over = (phase: RunPhase) => phase === 'paused' || phase === 'finished' || phase === 'fallen'
@@ -98,8 +106,13 @@ export function createRun(initial: RunState = notRunning): Run {
 				store.update(() => ({ elapsed, phase: elapsed >= runConfig.introSeconds ? 'running' : 'intro' }))
 				return
 			}
+			const elapsed = state.elapsed + realDelta
+			if (state.recovery > 0) {
+				store.update(() => ({ elapsed, recovery: Math.max(0, state.recovery - realDelta) }))
+				return
+			}
 			const distance = state.phase === 'running' ? state.distance + runConfig.pace * worldDelta : state.distance
-			store.update(() => ({ elapsed: state.elapsed + realDelta, distance: Math.min(distance, state.stageLength) }))
+			store.update(() => ({ elapsed, distance: Math.min(distance, state.stageLength) }))
 		},
 
 		beginAmbush() {
@@ -107,14 +120,14 @@ export function createRun(initial: RunState = notRunning): Run {
 			store.update(() => ({ phase: 'ambush', worldScale: runConfig.ambushWorldScale }))
 		},
 
-		endAmbush() {
+		endAmbush(recovery = 0) {
 			if (!expect('run.endAmbush', 'ambush')) return
-			store.update(() => ({ phase: 'running', worldScale: 1 }))
+			store.update(() => ({ phase: 'running', worldScale: 1, recovery }))
 		},
 
 		pause() {
 			const state = store.value
-			if (over(state.phase)) return
+			if (over(state.phase) || state.phase === 'idle') return
 			store.update(() => ({ phase: 'paused', resumeTo: state.phase, countdown: 0 }))
 		},
 
@@ -125,11 +138,11 @@ export function createRun(initial: RunState = notRunning): Run {
 		},
 
 		finish() {
-			store.update(() => ({ phase: 'finished', worldScale: 1, countdown: 0 }))
+			store.update(() => ({ phase: 'finished', worldScale: 1, countdown: 0, recovery: 0 }))
 		},
 
 		fall() {
-			store.update(() => ({ phase: 'fallen', worldScale: 1, countdown: 0 }))
+			store.update(() => ({ phase: 'fallen', worldScale: 1, countdown: 0, recovery: 0 }))
 		},
 
 		reset() {

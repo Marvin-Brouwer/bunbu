@@ -15,6 +15,7 @@ import { startLoop } from './canvas/loop.mts'
 import { attachViewport } from './canvas/stage.mts'
 import { createViewport } from './canvas/viewport.mts'
 import { appRoutes } from './_routes.g.mts'
+import { persistApp } from './_shared/storage/persistence.mts'
 import styles from './application.css'
 import { NotFound, Title } from './title/title.mts'
 
@@ -30,6 +31,9 @@ export const Application = component({
 	name: 'application',
 	styles,
 	onMount({ append, create, element, signal }) {
+		// Before the first screen, so the screens start from the saved settings and high scores.
+		void persistApp(signal)
+
 		const canvas = element('canvas', {
 			classes: styles.canvas,
 		})

@@ -43,6 +43,7 @@ function midRun(answered: number): RunGameState {
 			correct: answered,
 			answered,
 			best: { points: 2210, seconds: 245, correct: 17, answered: 20 },
+			newBest: false,
 		},
 		run: {
 			...newRun.run,
