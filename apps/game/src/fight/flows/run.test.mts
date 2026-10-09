@@ -47,7 +47,7 @@ beforeEach(() => {
 describe('the run', () => {
 	it('springs an ambush at the end of each leg of the path', () => {
 		runToAmbush()
-		expect(game.run.value.distance).toBe(ambushAt(0))
+		expect(game.run.value.distance).toBeCloseTo(ambushAt(0))
 		expect(game.ambush.value.open).toBe(true)
 		expect(game.run.value.worldScale).toBe(runConfig.ambushWorldScale)
 	})
@@ -141,6 +141,33 @@ describe('the last run', () => {
 		startRun(game, fixtureQuiz)
 		play([true, true, true, true])
 		expect(lastRun.value.missesOf('fixture', '1')).toEqual([])
+	})
+})
+
+describe('frames', () => {
+	it('never carries the samurai past an ambush, whatever the frame length', () => {
+		tickRun(game, 2, 2)
+		for (let frame = 0; frame < 300 && game.run.value.phase !== 'ambush'; frame++) tickRun(game, 0.1, 0.1)
+		expect(game.run.value.distance).toBeCloseTo(ambushAt(0))
+	})
+
+	it('counts the frame that ends the run in its time', () => {
+		play([true, true, true])
+		runToAmbush()
+		const before = game.run.value.elapsed
+		// The ambush times out on this frame, which is the last of the run.
+		game.ambush.value.tick(game.ambush.value.seconds)
+		tickRun(game, 0.1, 0.1)
+		expect(game.run.value.phase).toBe('finished')
+		expect(game.run.value.elapsed).toBeCloseTo(before + 0.1)
+		expect(highScores.value.of('fixture', '1')?.seconds).toBeCloseTo(before + 0.1)
+	})
+
+	it('does not take the frame that times an ambush out off the recovery', () => {
+		runToAmbush()
+		game.ambush.value.tick(game.ambush.value.seconds)
+		tickRun(game, 0.1, 0.1)
+		expect(game.run.value.recovery).toBe(runConfig.hitSeconds)
 	})
 })
 

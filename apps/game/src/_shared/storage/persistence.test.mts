@@ -95,6 +95,7 @@ describe('parsing what was saved', () => {
 		const good = { points: 300, seconds: 61.5, correct: 3, answered: 4 }
 		expect(parseHighScores({ a: good, b: { ...good, points: -1 }, c: 'x' })).toEqual({ a: good })
 		expect(parseHighScores([good])).toEqual({})
+		expect(parseHighScores({ a: { ...good, seconds: 0 } })).toEqual({})
 	})
 
 	it('drops high scores that do not add up', () => {
@@ -106,6 +107,8 @@ describe('parsing what was saved', () => {
 		const miss = { at: { question: 1, part: 0 }, outcome: 'wrong', picked: [2, 0] }
 		expect(parseLastRun({ quiz: { id: 'a', version: '1' }, misses: [miss, { ...miss, outcome: 'maybe' }, null] }))
 			.toEqual({ quiz: { id: 'a', version: '1' }, misses: [miss] })
+		expect(parseLastRun({ quiz: { id: 'a', version: '1' }, misses: [{ ...miss, outcome: 'correct' }] }))
+			.toEqual({ quiz: { id: 'a', version: '1' }, misses: [] })
 		expect(parseLastRun({ quiz: { id: 'a' }, misses: [] })).toBeUndefined()
 	})
 
@@ -163,6 +166,13 @@ describe('persistApp', () => {
 		await loading
 		expect(library.value.entries).toHaveLength(1)
 		expect(library.value.entries[0]).toMatchObject({ source: 'newer source', quiz: { title: 'Newer' } })
+	})
+
+	it('keeps one saved quiz per id and version, the last', async () => {
+		write('library', [source.replace('title: Saved', 'title: First'), source.replace('title: Saved', 'title: Last')])
+		await persistApp(stop.signal)
+		expect(library.value.entries).toHaveLength(1)
+		expect(library.value.entries[0]?.quiz.title).toBe('Last')
 	})
 
 	it('starts from the defaults when nothing was saved', async () => {

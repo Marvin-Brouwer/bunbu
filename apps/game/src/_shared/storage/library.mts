@@ -48,8 +48,12 @@ export const library: Library = createStore<LibraryState & LibraryActions>({
 
 	restore(saved) {
 		const { entries } = snapshot<LibraryState & LibraryActions>(library)
-		// A quiz loaded this session is newer than the one saved, so it wins.
-		const older = saved.filter((each) => !entries.some((entry) => same(entry.quiz, each.quiz)))
-		library.update(() => ({ entries: [...older, ...entries] }))
+		// One quiz per `id` + `version`, as in `add`: the last saved wins, and one loaded this
+		// session is newer than any saved.
+		const older = new Map<string, LibraryEntry>()
+		for (const each of saved) older.set(JSON.stringify([each.quiz.id, each.quiz.version]), each)
+		const fresh = new Set(entries.map((entry) => JSON.stringify([entry.quiz.id, entry.quiz.version])))
+		const restored = [...older].filter(([key]) => !fresh.has(key)).map(([, entry]) => entry)
+		library.update(() => ({ entries: [...restored, ...entries] }))
 	},
 })

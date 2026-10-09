@@ -40,7 +40,8 @@ export function parseSettings(data: unknown): Partial<SettingsState> {
 const highScore = type({
 	'+': 'delete',
 	points: 'number.integer >= 0',
-	seconds: 'number >= 0',
+	// No run takes no time, and a score of zero seconds could never be beaten.
+	seconds: 'number > 0',
 	correct: 'number.integer >= 0',
 	answered: 'number.integer >= 0',
 }).narrow((score) => score.points === score.correct * pointsPerCorrect && score.correct <= score.answered)
@@ -55,7 +56,8 @@ export function parseHighScores(data: unknown): Record<string, HighScore> {
 const miss = type({
 	'+': 'delete',
 	at: { '+': 'delete', question: 'number.integer >= 0', part: 'number.integer >= 0' },
-	outcome: type.enumerated('correct', 'wrong', 'unanswered'),
+	// Only what was missed: the last run is kept for practising its mistakes.
+	outcome: type.enumerated('wrong', 'unanswered'),
 	picked: 'number.integer >= 0 []',
 })
 

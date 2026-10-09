@@ -13,6 +13,7 @@ import { settings } from '../../settings/state/settings.mts'
 import type { RunGame } from '../state/game.mts'
 import { highScores } from '../state/highscores.mts'
 import { lastRun } from '../state/lastrun.mts'
+import { runConfig } from '../state/run.mts'
 import type { HighScore } from '../state/score.mts'
 import { openAmbush, tickAmbush } from './ambush.mts'
 
@@ -68,16 +69,30 @@ export function endRun(game: RunGame): void {
  * world time, slowed down during an ambush; `realDelta` is the player's time.
  */
 export function tickRun(game: RunGame, worldDelta: number, realDelta: number): void {
-	// The ambush first: a frame that ends the resume countdown is still part of the pause.
-	tickAmbush(game, realDelta)
-	game.run.value.tick(worldDelta, realDelta)
+	// A frame that ends the resume countdown is still part of the pause, for the ambush too.
+	const counting = game.run.value.countdown > 0
+
+	// The run first, so its clock has this frame in it when an ambush ends the run.
+	game.run.value.tick(cappedAtAmbush(game, worldDelta), realDelta)
+	if (!counting) tickAmbush(game, realDelta)
 
 	const { phase, recovery, distance, countdown } = game.run.value
 	if (phase !== 'running' || recovery > 0 || countdown > 0) return
 
 	// The samurai is back on his feet once the strike or the hit has played out.
 	if (game.shogun.value.pose !== 'run') game.shogun.value.run()
-	if (game.quiz.value.current() !== undefined && distance >= ambushAt(game.quiz.value.answered)) {
+	if (game.quiz.value.current() !== undefined && distance >= ambushAt(game.quiz.value.answered) - reached) {
 		openAmbush(game, settings.value.timeScale())
 	}
+}
+
+/** Distances this close to the ambush count as there: the path is a sum of fractions. */
+const reached = 1e-9
+
+/** The world time that gets the samurai to the next ambush at most, so a long frame never carries him past it. */
+function cappedAtAmbush(game: RunGame, worldDelta: number): number {
+	const { phase, recovery, distance } = game.run.value
+	if (phase !== 'running' || recovery > 0 || game.quiz.value.current() === undefined) return worldDelta
+	const left = Math.max(0, ambushAt(game.quiz.value.answered) - distance)
+	return Math.min(worldDelta, left / runConfig.pace)
 }

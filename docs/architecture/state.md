@@ -6,7 +6,7 @@ How the game keeps its state, who may change it, and how the screen follows it. 
 
 - The game state lives in **several small stores**, one per concern: the run, the score, the life bar, the shogun, the ninjas, the current ambush.
 - Each **game mode** (the run, dojo practice, dojo study) has its own set of stores. Its route creates them when it mounts and drops them when it unmounts, so nothing carries over from one run to the next or into the dojo.
-- Only **settings** and the **selection** (the chosen quiz and stage) are app-wide. Moving between screens is routing ([@rooted/router](https://www.npmjs.com/package/@rooted/router)), not state.
+- Only **settings**, the **selection** (the chosen quiz and stage) and what outlives a run (**high scores**, the **last run's misses**, the **library** of loaded quizzes) are app-wide. Moving between screens is routing ([@rooted/router](https://www.npmjs.com/package/@rooted/router)), not state.
 - Each store owns its state and exposes **functions that change it** (actions). Nothing else writes to a store.
 - Most stores are small **state machines**: they have a phase, and their actions only allow the transitions that make sense from that phase.
 - The **canvas only renders**. On every frame of the game loop it reads the stores and makes the scene match. It holds no rules, no timers and no score, and it never calls an action.
