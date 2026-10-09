@@ -1,0 +1,364 @@
+/*
+ * The scroll: two wooden rods with the papyrus between them. It stays clear of the HUD's top row
+ * and of the swipe zone, and the text scrolls inside it when a question is long.
+ *
+ * The stages (data-stage) are CSS animations, and each one but `open` ends with an animation on
+ * the scroll element itself, which tells the component it is done.
+ */
+
+.scroll {
+	position: relative;
+	color: var(--ink);
+	/* Swipes and long presses on the scroll are play, not text selection. */
+	user-select: none;
+	-webkit-user-select: none;
+	-webkit-touch-callout: none;
+}
+
+.scroll[data-stage='hidden'] {
+	display: none;
+}
+
+.paper {
+	display: grid;
+	max-width: 34rem;
+	margin-inline: auto;
+	grid-template-rows: auto 1fr auto;
+	/* Keeps the rods against the sheet while it grows, instead of sharing out the space left. */
+	align-content: start;
+	max-height: calc(100dvh - 4rem - var(--swipe-zone-height));
+	filter: drop-shadow(var(--shadow));
+}
+
+.rod {
+	height: 0.85rem;
+	margin: 0 -0.35rem;
+	border-radius: 999px;
+	background: linear-gradient(var(--wood-light), var(--wood) 60%, var(--ink));
+}
+
+.sheet {
+	display: grid;
+	min-height: 0;
+	overflow: hidden;
+	background: linear-gradient(90deg, var(--paper-shade), var(--paper) 5%, var(--paper) 95%, var(--paper-shade));
+	border-inline: 1px solid var(--paper-edge);
+}
+
+.body {
+	min-height: 0;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+	/* Room for the scrollbar either way, so the text doesn't shift when it shows up after an animation. */
+	scrollbar-gutter: stable;
+	padding: 0.9rem 1rem 1rem;
+}
+
+/* No scrollbar while the scroll moves. */
+.scroll:not([data-stage='open']) .body {
+	overflow-y: hidden;
+}
+
+.heading {
+	margin: 0 0 0.6rem;
+	font-family: var(--font-mono);
+	font-size: 0.75rem;
+	letter-spacing: 0.08em;
+	color: var(--ink-soft);
+}
+
+.query {
+	margin-bottom: 0.9rem;
+	font-size: 1.15rem;
+	font-weight: 600;
+	line-height: 1.4;
+}
+
+.options {
+	display: grid;
+	gap: 0.5rem;
+}
+
+/* Unroll: the sheet grows from the top rod down. */
+.scroll[data-stage='unroll'] {
+	animation: settle 420ms;
+}
+
+.scroll[data-stage='unroll'] .paper {
+	animation: unroll 420ms ease-out;
+}
+
+/* Roll up: the sheet winds back onto the top rod, then the rods go. */
+.scroll[data-stage='roll-up'] {
+	animation: vanish 620ms forwards;
+}
+
+.scroll[data-stage='roll-up'] .paper {
+	animation: unroll 360ms ease-in reverse forwards;
+}
+
+/* Sliced: a cut across the scroll, then the halves fall apart. */
+.scroll[data-stage='slice'] {
+	animation: vanish 1000ms forwards;
+}
+
+.half + .half {
+	position: absolute;
+	inset: 0;
+}
+
+.upper {
+	clip-path: polygon(0 0, 100% 0, 100% 38%, 0 62%);
+	animation: fall-upper 750ms 200ms ease-in forwards;
+}
+
+.lower {
+	clip-path: polygon(0 62%, 100% 38%, 100% 100%, 0 100%);
+	animation: fall-lower 750ms 200ms ease-in forwards;
+}
+
+.cut {
+	position: absolute;
+	inset: 0 -0.5rem;
+	background: var(--vermilion);
+	animation: cut 200ms ease-out forwards;
+}
+
+@keyframes unroll {
+	from {
+		grid-template-rows: auto 0fr auto;
+	}
+
+	to {
+		grid-template-rows: auto 1fr auto;
+	}
+}
+
+@keyframes settle {
+	from {
+		opacity: 0.6;
+	}
+
+	to {
+		opacity: 1;
+	}
+}
+
+@keyframes vanish {
+	60% {
+		opacity: 1;
+	}
+
+	to {
+		opacity: 0;
+	}
+}
+
+/* The cut runs along the line the halves split on, from left to right, and fades as they fall. */
+@keyframes cut {
+	from {
+		clip-path: polygon(0 calc(62% - 2px), 0 calc(62% - 2px), 0 calc(62% + 2px), 0 calc(62% + 2px));
+	}
+
+	to {
+		clip-path: polygon(0 calc(62% - 2px), 100% calc(38% - 2px), 100% calc(38% + 2px), 0 calc(62% + 2px));
+	}
+}
+
+@keyframes fall-upper {
+	to {
+		transform: translate(-8%, -20%) rotate(-8deg);
+		opacity: 0;
+	}
+}
+
+@keyframes fall-lower {
+	to {
+		transform: translate(8%, 45%) rotate(6deg);
+		opacity: 0;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.scroll[data-stage],
+	.scroll[data-stage] * {
+		animation-duration: 1ms !important;
+		animation-delay: 0s !important;
+	}
+}
+
+/* An option: its mark, its text, and what the player did with it. */
+
+.option {
+	display: grid;
+	grid-template-columns: 2.25rem 1fr auto;
+	align-items: center;
+	gap: 0.75rem;
+	padding: 0.4rem 0.6rem 0.4rem 0.4rem;
+	border: var(--frame);
+	border-radius: var(--radius);
+	background: var(--paper);
+	transition: border-color 120ms, box-shadow 120ms;
+}
+
+.option[data-picked='true'] {
+	border-color: var(--vermilion);
+	box-shadow: 0 0 0 1px var(--vermilion);
+}
+
+.mark {
+	display: grid;
+	place-items: center;
+	width: 2.25rem;
+	height: 2.25rem;
+	border-radius: var(--radius);
+	background: var(--ink);
+	color: var(--paper);
+	font-size: 1.25rem;
+	line-height: 1;
+	transition: background 120ms;
+}
+
+.option[data-picked='true'] .mark {
+	background: var(--vermilion);
+}
+
+.answer {
+	min-width: 0;
+	font-size: 1.05rem;
+}
+
+.notes {
+	display: grid;
+	justify-items: end;
+	gap: 0.1rem;
+	font-family: var(--font-mono);
+	font-size: 0.75rem;
+	letter-spacing: 0.05em;
+}
+
+.picked {
+	color: var(--vermilion);
+	font-weight: 700;
+}
+
+.picked:empty {
+	display: none;
+}
+
+.ninja {
+	color: var(--ink-soft);
+}
+
+/* For `order`: the place the option was swiped in. */
+.option[data-kind='order'] .picked {
+	font-size: 1.25rem;
+}
+
+/* Quiz Markdown in the ink of the scroll: inline code, highlighted code blocks, tables and images. */
+
+.markdown {
+	overflow-wrap: anywhere;
+}
+
+.markdown > :first-child {
+	margin-top: 0;
+}
+
+.markdown > :last-child {
+	margin-bottom: 0;
+}
+
+.markdown p,
+.markdown ul,
+.markdown ol,
+.markdown pre,
+.markdown table,
+.markdown blockquote {
+	margin: 0 0 0.6em;
+}
+
+.markdown ul,
+.markdown ol {
+	padding-left: 1.4em;
+}
+
+.markdown blockquote {
+	padding-left: 0.8em;
+	border-left: 3px solid var(--ink-faint);
+	color: var(--ink-soft);
+}
+
+.markdown a {
+	color: var(--vermilion);
+}
+
+.markdown img {
+	max-width: 100%;
+	height: auto;
+}
+
+.markdown code {
+	font-family: var(--font-mono);
+	font-size: 0.9em;
+	padding: 0.05em 0.3em;
+	border-radius: var(--radius);
+	background: var(--paper-shade);
+}
+
+.markdown pre {
+	overflow-x: auto;
+	padding: 0.6em 0.75em;
+	border-radius: var(--radius);
+	background: var(--paper-shade);
+	font-size: 0.85em;
+	line-height: 1.45;
+}
+
+.markdown pre code {
+	padding: 0;
+	background: none;
+	font-size: inherit;
+}
+
+.markdown table {
+	border-collapse: collapse;
+	font-size: 0.9em;
+}
+
+.markdown th,
+.markdown td {
+	padding: 0.2em 0.6em;
+	border: 1px solid var(--ink-faint);
+	text-align: left;
+}
+
+/* highlight.js tokens, in ink: vermilion for the words of the language, a softer ink for the rest. */
+.markdown .hljs-keyword,
+.markdown .hljs-built_in,
+.markdown .hljs-selector-tag,
+.markdown .hljs-name {
+	color: var(--vermilion);
+}
+
+.markdown .hljs-string,
+.markdown .hljs-attr,
+.markdown .hljs-attribute,
+.markdown .hljs-regexp {
+	color: var(--moss);
+}
+
+.markdown .hljs-number,
+.markdown .hljs-literal,
+.markdown .hljs-type,
+.markdown .hljs-title,
+.markdown .hljs-selector-class,
+.markdown .hljs-selector-id {
+	color: var(--indigo);
+}
+
+.markdown .hljs-comment,
+.markdown .hljs-meta {
+	color: var(--ink-faint);
+	font-style: italic;
+}

@@ -74,7 +74,7 @@ Conventions the linter can't check:
 Each track in [docs/plan.md](docs/plan.md#tracks) owns its folders. Change another track's folder
 through a small pull request its owner reviews. `package.json`, `pnpm-lock.yaml`,
 `canvas/loop.mts` and `fight/run.mts` are shared, so keep changes there to a line or two, and add
-dependencies in a pull request of their own.
+dependencies in a commit of their own.
 
 ## Before you push
 

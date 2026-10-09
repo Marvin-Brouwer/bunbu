@@ -8,7 +8,7 @@
  * Temporary: these go once the run can be played to every screen for real.
  */
 
-import type { BunbuData } from '@bunbu/data'
+import type { BunbuData, Markdown } from '@bunbu/data'
 import { openingOf } from '../../_shared/state/ambush-opening.mts'
 import { loaded } from '../../_shared/state/quiz.mts'
 import { newRun, type RunGameState } from '../state/game.mts'
@@ -23,6 +23,26 @@ type Fixture = Partial<RunGameState>
 
 const quiz = loaded(fixtureQuiz)
 
+/** A query long enough to scroll, with every kind of Markdown a quiz may use. */
+const longQuery = `A screen reader announces this image only as *"image"*, and the chart is
+[described on the page](https://example.com/chart) anyway:
+
+\`\`\`html
+<figure>
+  <img src="chart.png">
+  <figcaption>Visitors per month</figcaption>
+</figure>
+\`\`\`
+
+| Attribute | Read aloud |
+| --------- | ---------- |
+| \`alt\`     | yes        |
+| \`title\`   | sometimes  |
+
+![A bar chart, three bars rising](data:image/svg+xml;base64,${btoa('<svg xmlns="http://www.w3.org/2000/svg" width="120" height="48"><rect x="4" y="28" width="28" height="18" fill="#b3391f"/><rect x="46" y="16" width="28" height="30" fill="#b3391f"/><rect x="88" y="4" width="28" height="42" fill="#b3391f"/></svg>')})
+
+Which attribute should be added so it is described properly?` as Markdown
+
 /** The fixture quiz with seven options on the `multiple` question, for bundling. */
 const manyQuiz: BunbuData = {
 	...fixtureQuiz,
@@ -31,6 +51,23 @@ const manyQuiz: BunbuData = {
 			? { ...question, options: manyOptions }
 			: question)
 		),
+}
+
+/** The fixture quiz with a long `single` query: a paragraph, a code block, a table and an image, so the scroll has to scroll. */
+const longQuiz: BunbuData = {
+	...fixtureQuiz,
+	questions: fixtureQuiz.questions
+		.map((question, index) => (index === 1
+			? { ...question, query: longQuery }
+			: question)
+		),
+}
+
+/** Picks the options at `places` in the opening's order, as the swipes would. */
+function picking(state: RunGameState, places: readonly number[]): RunGameState {
+	const options = state.ambush.options
+		.map((option, place) => ({ ...option, pick: places.indexOf(place) + 1 }))
+	return { ...state, ambush: { ...state.ambush, options } }
 }
 
 /** Running, with `answered` questions behind the samurai, all of them right. */
@@ -85,6 +122,9 @@ export const fixtures: Readonly<Record<string, () => Fixture>> = {
 	'ambush-multiple': () => ambush(2),
 	'ambush-order': () => ambush(3),
 	'ambush-many': () => ambush(2, manyQuiz),
+	'ambush-marked': () => picking(ambush(2), [0]),
+	'ambush-order-picked': () => picking(ambush(3), [2, 0]),
+	'ambush-long': () => ambush(1, longQuiz),
 	'outcome-correct': () => {
 		const state = single()
 		const slain = state.ambush.options.find((option) => option.correct)?.ninja ?? 0
