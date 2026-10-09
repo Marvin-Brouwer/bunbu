@@ -45,16 +45,18 @@ export function createHighScores(initial: HighScoresState = noHighScores): HighS
 		submit(id, version, score) {
 			const key = highScoreKey(id, version)
 			if (!beats(score, store.value.scores[key])) return false
-			store.update(() => ({ scores: { ...store.value.scores, [key]: score } }))
+			store.update((state) => ({ scores: { ...state.scores, [key]: score } }))
 			return true
 		},
 
 		restore(saved) {
-			const scores: Record<string, HighScore> = { ...saved }
-			for (const [key, score] of Object.entries(store.value.scores)) {
-				if (beats(score, scores[key])) scores[key] = score
-			}
-			store.update(() => ({ scores }))
+			store.update((state) => {
+				const scores: Record<string, HighScore> = { ...saved }
+				for (const [key, score] of Object.entries(state.scores)) {
+					if (beats(score, scores[key])) scores[key] = score
+				}
+				return { scores }
+			})
 		},
 
 		reset() {

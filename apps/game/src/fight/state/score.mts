@@ -54,17 +54,15 @@ export function createScore(initial: ScoreState = noScore): Score {
 		...initial,
 
 		addCorrect() {
-			const state = store.value
-			store.update(() => ({
-			points: state.points + pointsPerCorrect,
+			store.update((state) => ({
+				points: state.points + pointsPerCorrect,
 				correct: state.correct + 1,
 				answered: state.answered + 1,
 			}))
 		},
 
 		addMiss() {
-			const state = store.value
-			store.update(() => ({ answered: state.answered + 1 }))
+			store.update((state) => ({ answered: state.answered + 1 }))
 		},
 
 		settle(newBest) {
@@ -72,7 +70,7 @@ export function createScore(initial: ScoreState = noScore): Score {
 		},
 
 		reset(best) {
-			store.update(() => ({ ...noScore, best: best ?? store.value.best }))
+			store.update((state) => ({ ...noScore, best: best ?? state.best }))
 		},
 	})
 	return store
