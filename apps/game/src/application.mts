@@ -13,7 +13,6 @@ import { router } from '@rooted/router/application'
 
 import { startLoop } from './canvas/loop.mts'
 import { attachViewport } from './canvas/stage.mts'
-import { createViewport } from './canvas/viewport.mts'
 import { appRoutes } from './_routes.g.mts'
 import styles from './application.css'
 import { NotFound, Title } from './title/title.mts'
@@ -29,7 +28,7 @@ const Router = router({
 export const Application = component({
 	name: 'application',
 	styles,
-	onMount({ append, create, element, signal }) {
+	async onMount({ append, create, element, signal }) {
 		const canvas = element('canvas', {
 			classes: styles.canvas,
 		})
@@ -47,8 +46,11 @@ export const Application = component({
 		)
 
 		// Pre-rendering the static pages at build time has a DOM but no WebGL: those pages get the
-		// screens, and the canvas comes alive when the app loads in a browser.
+		// screens, and the canvas comes alive when the app loads in a browser. three.js is only
+		// imported then, so the pre-render never loads it.
 		if (environment.is('preRenderer')) return
+		const { createViewport } = await import('./canvas/viewport.mts')
+		if (signal.aborted) return
 		attachViewport(createViewport(canvas, container, signal), signal)
 		startLoop(signal)
 	},
