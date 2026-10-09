@@ -8,42 +8,71 @@
  */
 
 import { validate } from '@bunbu/data'
+import { type, type Type } from 'arktype'
 import type { StateObject, Store } from '@rooted/store'
 import { highScores } from '../../fight/state/highscores.mts'
 import { lastRun, type LastRunState } from '../../fight/state/lastrun.mts'
 import { pointsPerCorrect, type HighScore } from '../../fight/state/score.mts'
-import { settings, timeScales, type Difficulty, type SettingsState } from '../../settings/state/settings.mts'
-import type { AnswerRecord, Outcome } from '../state/quiz.mts'
+import { settings, type SettingsState } from '../../settings/state/settings.mts'
 import { library, type LibraryEntry } from './library.mts'
-import { arrayOf, count, flag, fraction, listOf, object, oneOf, partial, recordOf, seconds, text, where } from './schema.mts'
 import { read, write, type StoredKey } from './storage.mts'
 
+// What is in local storage can be edited from DevTools or come from an older build, so it is
+// checked before it is used: https://arktype.io. `'+': 'delete'` drops keys that are not ours.
+
+/** Whether an ArkType check passed. */
+const passed = <T,>(result: T | type.errors): result is T => !(result instanceof type.errors)
+
+const settingFields = {
+	difficulty: type.enumerated('novice', 'adept', 'master'),
+	haptics: type('boolean'),
+	volume: type('0 <= number <= 1'),
+} satisfies Record<keyof SettingsState, Type>
+
 /** Settings are kept field by field: a field that is missing or invalid keeps its default. */
-export const parseSettings = partial<SettingsState>({
-	difficulty: oneOf<Difficulty>(...(Object.keys(timeScales) as Difficulty[])),
-	haptics: flag,
-	volume: fraction,
-})
+export function parseSettings(data: unknown): Partial<SettingsState> {
+	if (!isObject(data)) return {}
+	const valid = Object.entries(settingFields).filter(([key, field]) => passed(field(data[key])))
+	return Object.fromEntries(valid.map(([key]) => [key, data[key]]))
+}
 
 /** A score has to add up: edited points would otherwise become a high score nobody can beat. */
-const highScoreOf = where(
-	object<HighScore>({ points: count, seconds, correct: count, answered: count }),
-	(score) => score.points === score.correct * pointsPerCorrect && score.correct <= score.answered
-)
+const highScore = type({
+	'+': 'delete',
+	points: 'number.integer >= 0',
+	seconds: 'number >= 0',
+	correct: 'number.integer >= 0',
+	answered: 'number.integer >= 0',
+}).narrow((score) => score.points === score.correct * pointsPerCorrect && score.correct <= score.answered)
 
-export const parseHighScores = recordOf(highScoreOf)
+/** The high scores that are valid, by quiz. */
+export function parseHighScores(data: unknown): Record<string, HighScore> {
+	if (!isObject(data)) return {}
+	const checked = Object.entries(data).map(([key, score]) => [key, highScore(score)] as const)
+	return Object.fromEntries(checked.filter((entry): entry is readonly [string, HighScore] => passed(entry[1])))
+}
 
-const missOf = object<AnswerRecord>({
-	at: object({ question: count, part: count }),
-	outcome: oneOf<Outcome>('correct', 'wrong', 'unanswered'),
-	picked: arrayOf(count),
+const miss = type({
+	'+': 'delete',
+	at: { '+': 'delete', question: 'number.integer >= 0', part: 'number.integer >= 0' },
+	outcome: type.enumerated('correct', 'wrong', 'unanswered'),
+	picked: 'number.integer >= 0 []',
+})
+
+const lastRunShape = type({
+	'+': 'delete',
+	quiz: { '+': 'delete', id: 'string', version: 'string' },
+	misses: 'unknown[]',
 })
 
 /** The last run, or `undefined` when it is not one. The misses that are invalid are dropped. */
-export const parseLastRun = object<LastRunState>({
-	quiz: object({ id: text, version: text }),
-	misses: listOf(missOf),
-})
+export function parseLastRun(data: unknown): LastRunState | undefined {
+	const run = lastRunShape(data)
+	if (!passed(run)) return undefined
+	return { quiz: run.quiz, misses: run.misses.map((each) => miss(each)).filter(passed) }
+}
+
+const isObject = (data: unknown): data is Readonly<Record<string, unknown>> => typeof data === 'object' && data !== null && !Array.isArray(data)
 
 /** The quiz files, which are validated again: what is in storage is not trusted to still be a quiz. */
 export async function parseLibrary(data: unknown): Promise<LibraryEntry[]> {
