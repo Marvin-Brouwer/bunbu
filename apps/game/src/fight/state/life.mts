@@ -47,10 +47,11 @@ export function createLife(initial: LifeState = fullLife): Life {
 		...initial,
 
 		hit(share) {
-			const state = store.value
-			const left = state.value - share
-			// Shares are fractions such as 1/6, so the last miss lands a rounding error away from zero.
-			store.update(() => ({ value: left < rounding ? 0 : left, lastLoss: share, hits: state.hits + 1 }))
+			store.update((state) => {
+				const left = state.value - share
+				// Shares are fractions such as 1/6, so the last miss lands a rounding error away from zero.
+				return { value: left < rounding ? 0 : left, lastLoss: share, hits: state.hits + 1 }
+			})
 		},
 
 		empty() {

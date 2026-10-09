@@ -25,6 +25,8 @@ export type RunState = {
 	readonly countdown: number
 	/** The phase to return to when the pause or the countdown ends. */
 	readonly resumeTo: RunPhase
+	/** Seconds the samurai still holds after an ambush, for the strike or the hit to play out. */
+	readonly recovery: number
 }
 
 export type RunActions = {
@@ -35,7 +37,8 @@ export type RunActions = {
 	 */
 	tick: (worldDelta: number, realDelta: number) => void
 	beginAmbush: () => void
-	endAmbush: () => void
+	/** Back to running, after `recovery` seconds of standing still. */
+	endAmbush: (recovery?: number) => void
 	pause: () => void
 	/** Resumes with the 3-2-1 countdown. */
 	resume: () => void
@@ -54,6 +57,10 @@ export const runConfig = {
 	ambushWorldScale: 0.15,
 	introSeconds: 1.5,
 	countdownSeconds: 3,
+	/** How long the samurai holds after slaying or blocking. */
+	strikeSeconds: 0.5,
+	/** How long he holds after a hit: the run resumes after about 1 s ([outcome](../../../../../docs/design/gameplay.md#outcome)). */
+	hitSeconds: 1,
 }
 
 export const notRunning: RunState = {
@@ -64,9 +71,34 @@ export const notRunning: RunState = {
 	worldScale: 1,
 	countdown: 0,
 	resumeTo: 'running',
+	recovery: 0,
 }
 
 const over = (phase: RunPhase) => phase === 'paused' || phase === 'finished' || phase === 'fallen'
+
+// What one tick changes, by what the run is doing. Each returns only the fields that change.
+
+/** The 3-2-1 after resuming: the run itself stands still. */
+function countDown(state: RunState, realDelta: number): Partial<RunState> {
+	const countdown = Math.max(0, state.countdown - realDelta)
+	return { countdown, phase: countdown === 0 ? state.resumeTo : state.phase }
+}
+
+function introduce(state: RunState, realDelta: number): Partial<RunState> {
+	const elapsed = state.elapsed + realDelta
+	return { elapsed, phase: elapsed >= runConfig.introSeconds ? 'running' : 'intro' }
+}
+
+/** Holding after an ambush: time passes, the samurai does not move. */
+function recover(state: RunState, realDelta: number): Partial<RunState> {
+	return { elapsed: state.elapsed + realDelta, recovery: Math.max(0, state.recovery - realDelta) }
+}
+
+/** Running covers ground; an ambush only lets time pass. */
+function advance(state: RunState, worldDelta: number, realDelta: number): Partial<RunState> {
+	const moved = state.phase === 'running' ? state.distance + runConfig.pace * worldDelta : state.distance
+	return { elapsed: state.elapsed + realDelta, distance: Math.min(moved, state.stageLength) }
+}
 
 export function createRun(initial: RunState = notRunning): Run {
 
@@ -88,18 +120,10 @@ export function createRun(initial: RunState = notRunning): Run {
 			const state = store.value
 			if (over(state.phase)) return
 
-			if (state.countdown > 0) {
-				const countdown = Math.max(0, state.countdown - realDelta)
-				store.update(() => ({ countdown, phase: countdown === 0 ? state.resumeTo : state.phase }))
-				return
-			}
-			if (state.phase === 'intro') {
-				const elapsed = state.elapsed + realDelta
-				store.update(() => ({ elapsed, phase: elapsed >= runConfig.introSeconds ? 'running' : 'intro' }))
-				return
-			}
-			const distance = state.phase === 'running' ? state.distance + runConfig.pace * worldDelta : state.distance
-			store.update(() => ({ elapsed: state.elapsed + realDelta, distance: Math.min(distance, state.stageLength) }))
+			if (state.countdown > 0) store.update(() => countDown(state, realDelta))
+			else if (state.phase === 'intro') store.update(() => introduce(state, realDelta))
+			else if (state.recovery > 0) store.update(() => recover(state, realDelta))
+			else store.update(() => advance(state, worldDelta, realDelta))
 		},
 
 		beginAmbush() {
@@ -107,14 +131,15 @@ export function createRun(initial: RunState = notRunning): Run {
 			store.update(() => ({ phase: 'ambush', worldScale: runConfig.ambushWorldScale }))
 		},
 
-		endAmbush() {
+		endAmbush(recovery = 0) {
 			if (!expect('run.endAmbush', 'ambush')) return
-			store.update(() => ({ phase: 'running', worldScale: 1 }))
+			// Back to running for good: a countdown that was still going belonged to the ambush.
+			store.update(() => ({ phase: 'running', worldScale: 1, recovery, countdown: 0, resumeTo: 'running' }))
 		},
 
 		pause() {
 			const state = store.value
-			if (over(state.phase)) return
+			if (over(state.phase) || state.phase === 'idle') return
 			store.update(() => ({ phase: 'paused', resumeTo: state.phase, countdown: 0 }))
 		},
 
@@ -125,11 +150,11 @@ export function createRun(initial: RunState = notRunning): Run {
 		},
 
 		finish() {
-			store.update(() => ({ phase: 'finished', worldScale: 1, countdown: 0 }))
+			store.update(() => ({ phase: 'finished', worldScale: 1, countdown: 0, recovery: 0 }))
 		},
 
 		fall() {
-			store.update(() => ({ phase: 'fallen', worldScale: 1, countdown: 0 }))
+			store.update(() => ({ phase: 'fallen', worldScale: 1, countdown: 0, recovery: 0 }))
 		},
 
 		reset() {

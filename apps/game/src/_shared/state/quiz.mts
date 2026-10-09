@@ -4,8 +4,9 @@
  *
  * A question can take several ambushes: one per `solutions` entry and one per `match` row
  * ([per question type](../../../../../docs/design/gameplay.md#per-question-type)). A single ambush is
- * addressed by a {@link QuestionRef}, and each ref is worth one point
- * ([life bar](../../../../../docs/design/gameplay.md#life-bar)).
+ * addressed by a {@link QuestionRef}. Points go by question, not by ambush: every `solutions` entry
+ * is a point, any other question one point however many ambushes it takes
+ * ([life bar](../../../../../docs/design/gameplay.md#life-bar), `pointOf` in `fight/state/score.mts`).
  */
 
 import type { BunbuData, Markdown, Option, Question } from '@bunbu/data'
@@ -72,7 +73,7 @@ export function partsOf(question: Question): number {
 }
 
 /**
- * Every ambush of the quiz, in the order the questions are asked. Each one is worth a point.
+ * Every ambush of the quiz, in the order the questions are asked.
  * With `random` the solutions and rows of a question are shuffled, as the data format asks;
  * without it they are asked in file order.
  */

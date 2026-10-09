@@ -14,13 +14,15 @@ import type { QuizActions, QuizState } from '../../_shared/state/quiz.mts'
 import type { RunGame } from '../state/game.mts'
 import { shareOfOnePoint } from '../state/life.mts'
 import { spawnsOf } from '../state/ninjas.mts'
-import { endRun } from './run.mts'
+import { runConfig } from '../state/run.mts'
+import { pointsIn } from '../state/score.mts'
+import { endRun, scoreAnswer } from './run.mts'
 
 /** What one miss costs the life bar, for the quiz that is loaded. */
 export function missShare(game: RunGame): number {
-	const { quiz, refs } = game.quiz.value
+	const { quiz, refs } = snapshot<QuizState & QuizActions>(game.quiz)
 	if (quiz === undefined) return 1
-	return shareOfOnePoint(refs.length, quiz.passingScore)
+	return shareOfOnePoint(pointsIn(quiz, refs), quiz.passingScore)
 }
 
 /**
@@ -62,21 +64,26 @@ export function tickAmbush(game: RunGame, realDelta: number): void {
 
 /** Commits the open ambush and spreads the result over the run's stores. */
 export function commitAmbush(game: RunGame): void {
+	// Paused, or in the 3-2-1 after a pause: the player can't answer until the run is back.
+	const { phase, countdown } = game.run.value
+	if (phase !== 'ambush' || countdown > 0) {
+		refuse('commitAmbush', phase === 'ambush' ? 'the run is counting down' : `phase is ${phase}`)
+		return
+	}
 	const result = game.ambush.value.commit()
 	if (result === undefined) return
 
 	game.quiz.value.record({ at: result.at, outcome: result.outcome, picked: result.picked })
 
+	scoreAnswer(game, result.at, result.outcome)
+
 	if (result.outcome === 'correct') {
-		game.score.value.addCorrect()
 		for (const ninja of result.slain) game.ninjas.value.slay(ninja)
 		for (const ninja of result.blocked) game.ninjas.value.block(ninja)
 		const [first] = result.slain
 		if (first === undefined) game.shogun.value.block(result.blocked[0] ?? 0)
 		else game.shogun.value.strike(first)
 	} else {
-		game.score.value.addMiss()
-		game.life.value.hit(missShare(game))
 		game.shogun.value.hurt()
 		for (const ninja of game.ninjas.value.active) game.ninjas.value.strike(ninja.id)
 	}
@@ -86,7 +93,7 @@ export function commitAmbush(game: RunGame): void {
 		endRun(game)
 		return
 	}
-	// The samurai keeps the pose he struck, blocked or was hit in: the run track adds the pause
-	// before the run resumes (about 1 s after a hit) and puts him back to running.
-	game.run.value.endAmbush()
+	// The samurai keeps the pose he struck, blocked or was hit in while the run holds; `tickRun`
+	// puts him back to running.
+	game.run.value.endAmbush(result.outcome === 'correct' ? runConfig.strikeSeconds : runConfig.hitSeconds)
 }

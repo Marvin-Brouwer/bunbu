@@ -6,7 +6,7 @@ How the game keeps its state, who may change it, and how the screen follows it. 
 
 - The game state lives in **several small stores**, one per concern: the run, the score, the life bar, the shogun, the ninjas, the current ambush.
 - Each **game mode** (the run, dojo practice, dojo study) has its own set of stores. Its route creates them when it mounts and drops them when it unmounts, so nothing carries over from one run to the next or into the dojo.
-- Only **settings** and the **selection** (the chosen quiz and stage) are app-wide. Moving between screens is routing ([@rooted/router](https://www.npmjs.com/package/@rooted/router)), not state.
+- Only **settings**, the **selection** (the chosen quiz and stage) and what outlives a run (**high scores**, the **last run's misses**, the **library** of loaded quizzes) are app-wide. Moving between screens is routing ([@rooted/router](https://www.npmjs.com/package/@rooted/router)), not state.
 - Each store owns its state and exposes **functions that change it** (actions). Nothing else writes to a store.
 - Most stores are small **state machines**: they have a phase, and their actions only allow the transitions that make sense from that phase.
 - The **canvas only renders**. On every frame of the game loop it reads the stores and makes the scene match. It holds no rules, no timers and no score, and it never calls an action.
@@ -31,7 +31,7 @@ The run's stores:
 
 | Store      | Holds                                                                                                                 | Example actions                                                    |
 | ---------- | --------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| `run`      | Phase (`intro`, `running`, `ambush`, `paused`, `finished`, `fallen`), run time, world speed scale (slow-mo), distance | `start()`, `pause()`, `resume()`, `finish()`, `fall()`, `tick(delta)` |
+| `run`      | Phase (`intro`, `running`, `ambush`, `paused`, `finished`, `fallen`), run time, world speed scale (slow-mo), distance, hold after an ambush | `start()`, `pause()`, `resume()`, `finish()`, `fall()`, `tick(delta)` |
 | `quiz`     | The loaded quiz, question order, current index, answers given                                                         | `load(quiz)`, `next()`, `record(answer)`                           |
 | `ambush`   | Current question, options with their marks, picks so far, time left                                                   | `open(question)`, `pick(mark)`, `commit()`, `tick(delta)`             |
 | `score`    | Points, correct count, answered count, high score for this quiz                                                       | `addCorrect()`, `addMiss()`, `reset()`                             |
@@ -50,7 +50,9 @@ App-wide:
 | `settings`  | Difficulty (`timeScale`), haptics on/off, volume   | `setDifficulty(level)`, `setHaptics(on)` |
 | `selection` | The quiz and stage chosen on the select screen     | `chooseQuiz(quiz)`, `chooseStage(stage)` |
 
-`settings` is the only store that is persisted (local storage), together with the high scores. The rest starts fresh with every run.
+Two more app-wide stores hold what outlives a run: `highScores` (per quiz `id` + `version`) and `lastRun` (the misses, for "practise mistakes"). A small `library` store holds the quizzes the player loaded.
+
+Those, with `settings`, are persisted in local storage through `@rooted/storage` by `_shared/storage/persistence.mts`, which `Application` starts before the first screen: it puts back what was saved and writes every change. The stores themselves know nothing of storage. Every value is wrapped in an envelope with the version of its shape, and what comes back is validated field by field (quiz files are validated again), so edited, old or broken data falls back to defaults. The rest of the state starts fresh with every run.
 
 Choosing a quiz and running it share one route, `/fight/`: the select screen starts the run in its place, so a run can't be opened from a URL without a quiz. The run's stores are created when the player starts and dropped when they leave the run or the route. Pause, the results and the fallen screen are phases of the run, shown as overlays on it.
 
@@ -126,7 +128,7 @@ Flows take the game mode's stores as an argument rather than importing them, so 
 One `requestAnimationFrame` loop drives everything. The `Application` starts it once; a route plugs its game mode into it with `play(mode, signal)`, which unplugs again when the route unmounts. Without a mode (on a menu) the loop only draws. Each frame, in a fixed order:
 
 1. **Time.** Take the real frame delta, clamp it (a tab coming back from the background must not jump the run forward by minutes), and multiply it by the run's speed scale. That is how slow motion during an ambush works. The mode gets the real delta as well: slow motion is only visual, so timers the player plays against, such as the ambush's time limit, count real time.
-2. **Update.** Call the time-based actions: `ambush.value.tick(realDelta)` with real time (held during the resume countdown), `run.value.tick(worldDelta, realDelta)` (distance by world time, run time and countdown by real time), then `ninjas.value.advance(…)` from the time left. Timeouts (the ambush running out) are decided here, by the stores, through flows.
+2. **Update.** Call the time-based actions: `run.value.tick(worldDelta, realDelta)` first (distance by world time, capped at the next ambush; run time, countdown and the hold after an ambush by real time), so the run's clock has the frame in it when an ambush ends the run. Then `ambush.value.tick(realDelta)` with real time (held during the resume countdown) and `ninjas.value.advance(…)` from the time left. Last, once the samurai has recovered, the next ambush springs when he reaches it. Timeouts (the ambush running out) are decided here, by the stores, through flows.
 3. **Render.** The renderer reads every store it needs through `value` and updates the scene: the shogun's position and animation clip, which ninjas exist and where they are, the camera. Then `renderer.render(scene, camera)`.
 
 While paused, step 2 is skipped. The loop stops entirely when the page is hidden (`visibilitychange`) and restarts when it is visible again.

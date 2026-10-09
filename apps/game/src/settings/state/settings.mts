@@ -33,6 +33,8 @@ export type SettingsActions = {
 	setDifficulty: (difficulty: Difficulty) => void
 	setHaptics: (haptics: boolean) => void
 	setVolume: (volume: number) => void
+	/** Puts back saved settings. What is missing keeps its default. */
+	restore: (saved: Partial<SettingsState>) => void
 	reset: () => void
 }
 
@@ -52,6 +54,10 @@ export const settings: Store<SettingsState & SettingsActions> = createStore<Sett
 
 	setVolume: (volume) => {
 		settings.update(() => ({ volume: Math.min(1, Math.max(0, volume)) }))
+	},
+
+	restore: (saved) => {
+		settings.update(() => ({ ...initial, ...saved }))
 	},
 
 	reset: () => {
