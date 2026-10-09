@@ -24,6 +24,8 @@
 	max-width: 34rem;
 	margin-inline: auto;
 	grid-template-rows: auto 1fr auto;
+	/* Keeps the rods against the sheet while it grows, instead of sharing out the space left. */
+	align-content: start;
 	max-height: calc(100dvh - 4rem - var(--swipe-zone-height));
 	filter: drop-shadow(var(--shadow));
 }
@@ -47,7 +49,14 @@
 	min-height: 0;
 	overflow-y: auto;
 	overscroll-behavior: contain;
+	/* Room for the scrollbar either way, so the text doesn't shift when it shows up after an animation. */
+	scrollbar-gutter: stable;
 	padding: 0.9rem 1rem 1rem;
+}
+
+/* No scrollbar while the scroll moves. */
+.scroll:not([data-stage='open']) .body {
+	overflow-y: hidden;
 }
 
 .heading {
