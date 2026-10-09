@@ -38,9 +38,15 @@ importers:
       '@rooted/router':
         specifier: 1.0.0-alpha.32
         version: 1.0.0-alpha.32(@rooted/components@1.0.0-alpha.25(@rooted/events@1.0.0-alpha.17)(vite@8.3.3(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))(@rooted/util@1.0.0-alpha.15)(vite@8.3.3(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
+      '@rooted/storage':
+        specifier: 1.0.0-alpha.13
+        version: 1.0.0-alpha.13(@rooted/util@1.0.0-alpha.15)
       '@rooted/store':
         specifier: 1.0.0-alpha.13
         version: 1.0.0-alpha.13
+      arktype:
+        specifier: ^2.2.8
+        version: 2.2.8
       dompurify:
         specifier: ^3.4.16
         version: 3.4.16
@@ -126,6 +132,12 @@ packages:
     engines: {node: '>=10'}
     peerDependencies:
       ajv: '>=8'
+
+  '@ark/schema@0.56.7':
+    resolution: {integrity: sha512-jmoOJlYIc4k1uv8oYBDNOFnAsKk2a2D9t/D6npF2JUfW4ecPB0v6ce6lruKg7lkBxIBA8Z7UtxfmvephYbhUGQ==}
+
+  '@ark/util@0.56.7':
+    resolution: {integrity: sha512-z8pVnrPk/x9GC18yOp5wCe8rR2+Z6us4CTSg7dvxdsDLuA2xXYq+QETD1fO6f3fMuXe+PCjpvtCnhTW9RHLgEw==}
 
   '@asamuzakjp/css-color@7.1.3':
     resolution: {integrity: sha512-1t1U8Cm3RBl9vh3RAZhjkPaduzLSvQJRToRrxpGR/eDRW99mOREleuu+mWfiFa795bUzjwht7NgphCKTs2ianQ==}
@@ -1572,6 +1584,12 @@ packages:
       '@rooted/router':
         optional: true
 
+  '@rooted/storage@1.0.0-alpha.13':
+    resolution: {integrity: sha512-Eihon4ilvzIN21Lavxp+Xl1BJvpgG+OKb7njJV/GOHzEtK1NhbKYR1v8J7FK8yEl7UvSoBt+ARHSePO1KkHhgw==}
+    engines: {node: '>=22.0.0', pnpm: '>=10.0.0'}
+    peerDependencies:
+      '@rooted/util': 1.0.0-alpha.15
+
   '@rooted/store@1.0.0-alpha.13':
     resolution: {integrity: sha512-kJi2AYZ3/lf80Vq9oTB0LmPO/vK56E0HnOhtYlXyEQQMZ4XxDDYZ8nt7dq9brpIR7tnxTw4YhPPTdghPGFZxdw==}
     engines: {node: '>=22.0.0', pnpm: '>=10.0.0'}
@@ -1939,6 +1957,12 @@ packages:
 
   argparse@3.0.2:
     resolution: {integrity: sha512-mFdDM6WqWKraGLsVb+C9CahPnzTXOefAOLq3jYcca2YZ8bEWpr++Tzj+zSaKW9+X9L5uSxcm1AZ3Y6aZJ09OhQ==}
+
+  arkregex@0.0.13:
+    resolution: {integrity: sha512-c17sqCqiiZauxyoU1KZ2zbzCgeghGmc8dR2CrdQnlEtpq3bLhRLoLrxTL52M/8yQD8e/i1/IBRpRCNAuqJa7xQ==}
+
+  arktype@2.2.8:
+    resolution: {integrity: sha512-tZyLza7kO2vN8BXBKcj4t43IVMe8/ZyqlITH0chZv7FfEw+edLovpY922tqcK4mCjTpf4oNo2xV6np7tquP1ww==}
 
   array-buffer-byte-length@1.0.2:
     resolution: {integrity: sha512-LHE+8BuR7RYGDKvnrmcuSq3tDcKv9OFEXQt/HpbZhY7V6h0zlUXutnAD82GiFx9rdieCMjkvtcsPqBwgUl1Iiw==}
@@ -3423,6 +3447,12 @@ snapshots:
       jsonpointer: 5.0.1
       leven: 3.1.0
 
+  '@ark/schema@0.56.7':
+    dependencies:
+      '@ark/util': 0.56.7
+
+  '@ark/util@0.56.7': {}
+
   '@asamuzakjp/css-color@7.1.3':
     dependencies:
       '@csstools/css-calc': 3.4.3(@csstools/css-parser-algorithms@4.0.2(@csstools/css-tokenizer@4.0.2))(@csstools/css-tokenizer@4.0.2)
@@ -4700,6 +4730,10 @@ snapshots:
     optionalDependencies:
       '@rooted/router': 1.0.0-alpha.32(@rooted/components@1.0.0-alpha.25(@rooted/events@1.0.0-alpha.17)(vite@8.3.3(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))(@rooted/util@1.0.0-alpha.15)(vite@8.3.3(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
 
+  '@rooted/storage@1.0.0-alpha.13(@rooted/util@1.0.0-alpha.15)':
+    dependencies:
+      '@rooted/util': 1.0.0-alpha.15
+
   '@rooted/store@1.0.0-alpha.13':
     dependencies:
       '@rooted/util': 1.0.0-alpha.15
@@ -4925,6 +4959,16 @@ snapshots:
       sprintf-js: 1.0.3
 
   argparse@3.0.2: {}
+
+  arkregex@0.0.13:
+    dependencies:
+      '@ark/util': 0.56.7
+
+  arktype@2.2.8:
+    dependencies:
+      '@ark/schema': 0.56.7
+      '@ark/util': 0.56.7
+      arkregex: 0.0.13
 
   array-buffer-byte-length@1.0.2:
     dependencies:

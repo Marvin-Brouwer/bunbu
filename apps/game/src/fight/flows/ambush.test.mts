@@ -1,7 +1,10 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { marks } from '../../_shared/state/ambush.mts'
 import { createRunGame, type RunGame } from '../state/game.mts'
+import { highScores } from '../state/highscores.mts'
+import { lastRun } from '../state/lastrun.mts'
 import { runConfig } from '../state/run.mts'
+import { settings } from '../../settings/state/settings.mts'
 import { fixtureQuiz } from '../../_temp/quiz.mts'
 import { seeded } from '../../_temp/random.mts'
 import { commitAmbush, missShare, openAmbush } from './ambush.mts'
@@ -35,12 +38,40 @@ function answer(mark: number) {
 }
 
 beforeEach(() => {
+	// Ending a run writes the app-wide high scores and last run, and starting one reads them.
+	highScores.value.reset()
+	lastRun.value.reset()
+	settings.value.reset()
 	game = createRunGame()
 	startRun(game, fixtureQuiz)
 	tickRun(game, 2, 2)
 })
 
 describe('commitAmbush', () => {
+	it('is refused while paused, and the ambush stays open', () => {
+		openSingle()
+		game.run.value.pause()
+		game.ambush.value.pick(marks[0]!)
+		commitAmbush(game)
+		expect(game.ambush.value.open).toBe(true)
+		expect(game.quiz.value.answered).toBe(0)
+	})
+
+	it('is refused during the countdown after resuming, then goes through', () => {
+		openSingle()
+		game.run.value.pause()
+		game.run.value.resume()
+		game.ambush.value.pick(marks[0]!)
+		commitAmbush(game)
+		expect(game.ambush.value.open).toBe(true)
+
+		tickRun(game, runConfig.countdownSeconds, runConfig.countdownSeconds)
+		commitAmbush(game)
+		expect(game.ambush.value.open).toBe(false)
+		expect(game.run.value).toMatchObject({ phase: 'running', countdown: 0, resumeTo: 'running' })
+	})
+
+
 	it('scores a correct answer, slays the slashed ninja and resumes the run', () => {
 		answer(0)
 
