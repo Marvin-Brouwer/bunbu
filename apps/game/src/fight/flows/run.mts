@@ -15,7 +15,7 @@ import { highScores } from '../state/highscores.mts'
 import { lastRun } from '../state/lastrun.mts'
 import { runConfig } from '../state/run.mts'
 import { pointOf, type HighScore } from '../state/score.mts'
-import { missShare, openAmbush, tickAmbush } from './ambush.mts'
+import { missShare, openAmbush, settleOutcome, tickAmbush } from './ambush.mts'
 
 /** Metres of path per ambush, until stage length and question count are decided (docs/plan.md). */
 export const metresPerAmbush = 120
@@ -63,24 +63,39 @@ export function scoreAnswer(game: RunGame, at: QuestionRef, outcome: Outcome): v
 	if (answered.length === parts) game.score.value.addCorrect()
 }
 
+/** Whether the run is over: the bar is empty, or every question has been answered. */
+export function runIsOver(game: RunGame): boolean {
+	const { answered, refs } = game.quiz.value
+	return game.life.value.empty() || answered >= refs.length
+}
+
 /**
- * Ends the run: finished when the quiz is done, fallen when the bar is empty. Either way the
- * misses are kept for "practise mistakes", and only a finished run, which is a passed one, can set
- * the high score.
+ * Keeps what the run leaves behind, the moment its last answer is in: the misses for "practise
+ * mistakes" either way, and the high score when it passed. Saved then rather than when the run
+ * ends after the hold, so pausing or closing the app during the last strike or hit loses nothing.
+ * The time is the run's time when it ends: now, plus the hold that is left, which a pause doesn't
+ * add to. The run's own clock goes by whole frames, so it may pass that by part of the frame that
+ * ends the hold.
+ */
+export function recordRun(game: RunGame): void {
+	const { quiz } = snapshot<QuizState & QuizActions>(game.quiz)
+	if (quiz === undefined) return
+	const fallen = game.life.value.empty()
+	lastRun.value.save(quiz.id, quiz.version, game.quiz.value.misses())
+	const { points, correct, answered } = game.score.value
+	const seconds = game.run.value.elapsed + game.run.value.recovery
+	game.score.value.settle(!fallen && highScores.value.submit(quiz.id, quiz.version, { points, seconds, correct, answered }))
+}
+
+/**
+ * Ends the run once the last outcome has played out: finished when the quiz is done, fallen when
+ * the bar is empty. What it leaves behind was kept by {@link recordRun} at the last answer.
  */
 export function endRun(game: RunGame): void {
-	const { phase, elapsed } = game.run.value
+	const { phase } = game.run.value
 	if (phase === 'finished' || phase === 'fallen') return
 
-	const fallen = game.life.value.empty()
-	const { quiz } = snapshot<QuizState & QuizActions>(game.quiz)
-	if (quiz !== undefined) {
-		lastRun.value.save(quiz.id, quiz.version, game.quiz.value.misses())
-		const { points, correct, answered } = game.score.value
-		game.score.value.settle(!fallen && highScores.value.submit(quiz.id, quiz.version, { points, seconds: elapsed, correct, answered }))
-	}
-
-	if (fallen) {
+	if (game.life.value.empty()) {
 		game.shogun.value.fall()
 		game.run.value.fall()
 		return
@@ -96,15 +111,23 @@ export function tickRun(game: RunGame, worldDelta: number, realDelta: number): v
 	// A frame that ends the resume countdown is still part of the pause, for the ambush too.
 	const counting = game.run.value.countdown > 0
 
-	// The run first, so its clock has this frame in it when an ambush ends the run.
+	// The run first, so its clock has this frame in it when the last answer comes in.
 	game.run.value.tick(cappedAtAmbush(game, worldDelta), realDelta)
 	if (!counting) tickAmbush(game, realDelta)
 
 	const { phase, recovery, distance, countdown } = game.run.value
 	if (phase !== 'running' || recovery > 0 || countdown > 0) return
 
-	// The samurai is back on his feet once the strike or the hit has played out.
-	if (game.shogun.value.pose !== 'run') game.shogun.value.run()
+	// Once the strike or the hit has played out, the ninjas he faced flee or vanish, and the
+	// samurai is back on his feet, or the run ends after its last answer or a hit too many.
+	if (game.shogun.value.pose !== 'run') {
+		settleOutcome(game)
+		if (runIsOver(game)) {
+			endRun(game)
+			return
+		}
+		game.shogun.value.run()
+	}
 	if (game.quiz.value.current() !== undefined && distance >= ambushAt(game.quiz.value.answered) - reached) {
 		openAmbush(game, settings.value.timeScale())
 	}

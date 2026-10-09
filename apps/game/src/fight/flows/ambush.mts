@@ -16,7 +16,7 @@ import { shareOfOnePoint } from '../state/life.mts'
 import { spawnsOf } from '../state/ninjas.mts'
 import { runConfig } from '../state/run.mts'
 import { pointsIn } from '../state/score.mts'
-import { endRun, scoreAnswer } from './run.mts'
+import { recordRun, runIsOver, scoreAnswer } from './run.mts'
 
 /** What one miss costs the life bar, for the quiz that is loaded. */
 export function missShare(game: RunGame): number {
@@ -88,12 +88,26 @@ export function commitAmbush(game: RunGame): void {
 		for (const ninja of game.ninjas.value.active) game.ninjas.value.strike(ninja.id)
 	}
 
-	const { answered, refs } = game.quiz.value
-	if (game.life.value.empty() || answered >= refs.length) {
-		endRun(game)
+	// The samurai keeps the pose he struck, blocked or was hit in while the run holds, the last
+	// answer too, so the outcome plays out before the results or the fall. `tickRun` then settles
+	// it and puts him back to running, or ends the run.
+	game.run.value.endAmbush(result.outcome === 'correct' ? runConfig.strikeSeconds : runConfig.hitSeconds)
+	// The last answer keeps the run's high score and misses now; the run itself ends after the hold.
+	if (runIsOver(game)) recordRun(game)
+}
+
+/**
+ * Ends the outcome once the samurai's hold after an ambush is over: the ninjas that landed the hit
+ * vanish, and the ones he blocked flee ([outcome](../../../../../docs/design/gameplay.md#outcome)).
+ * The slain stay where they fell; the next ambush clears the field.
+ */
+export function settleOutcome(game: RunGame): void {
+	const { active } = game.ninjas.value
+	if (active.some((ninja) => ninja.pose === 'strike')) {
+		game.ninjas.value.clear()
 		return
 	}
-	// The samurai keeps the pose he struck, blocked or was hit in while the run holds; `tickRun`
-	// puts him back to running.
-	game.run.value.endAmbush(result.outcome === 'correct' ? runConfig.strikeSeconds : runConfig.hitSeconds)
+	for (const ninja of active) {
+		if (ninja.pose === 'blocked') game.ninjas.value.flee(ninja.id)
+	}
 }

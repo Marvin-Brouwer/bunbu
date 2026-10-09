@@ -116,7 +116,7 @@ function ambush(question: number, data = fixtureQuiz): RunGameState {
 	return {
 		...state,
 		run: { ...state.run, phase: 'ambush', worldScale: runConfig.ambushWorldScale },
-		ambush: { ...opening, open: true, secondsLeft: opening.seconds * 0.6 },
+		ambush: { ...opening, open: true, openingLeft: 0, secondsLeft: opening.seconds * 0.6 },
 		ninjas: { active: ninjas },
 	}
 }
@@ -126,6 +126,11 @@ const single = () => ambush(1)
 /** Every fixture, by the name that goes in `?fixture=`. */
 export const fixtures: Readonly<Record<string, () => Fixture>> = {
 	running: () => midRun(2),
+	// Running round the first street corner, for the camera and the houses at the turn.
+	'running-corner': () => {
+		const state = midRun(0)
+		return { ...state, run: { ...state.run, distance: 78 } }
+	},
 	'ambush-yes-no': () => ambush(0),
 	'ambush-single': single,
 	'ambush-multiple': () => ambush(2),
@@ -153,6 +158,17 @@ export const fixtures: Readonly<Record<string, () => Fixture>> = {
 			life: { value: 0.66, lastLoss: 1 / 6, hits: 2 },
 			shogun: { pose: 'hurt', target: 0, sequence: 4 },
 			ninjas: { active: state.ninjas.active.map((ninja) => ({ ...ninja, pose: 'strike', approach: 1, sequence: 1 })) },
+		}
+	},
+	// A wrong answer swiped early, with the ninjas still far off: they lunge in to land the hit.
+	'outcome-wrong-early': () => {
+		const state = single()
+		return {
+			...state,
+			ambush: { ...state.ambush, open: false },
+			life: { value: 0.66, lastLoss: 1 / 6, hits: 2 },
+			shogun: { pose: 'hurt', target: 0, sequence: 4 },
+			ninjas: { active: state.ninjas.active.map((ninja) => ({ ...ninja, pose: 'strike', approach: 0.15, sequence: 1 })) },
 		}
 	},
 	'outcome-unanswered': () => {

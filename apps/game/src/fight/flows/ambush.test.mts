@@ -37,6 +37,11 @@ function answer(mark: number) {
 	commitAmbush(game)
 }
 
+/** Lets the hold after an answer run out, a hit's being the longest. */
+function playOut() {
+	tickRun(game, runConfig.hitSeconds, runConfig.hitSeconds)
+}
+
 beforeEach(() => {
 	// Ending a run writes the app-wide high scores and last run, and starting one reads them.
 	highScores.value.reset()
@@ -96,16 +101,27 @@ describe('commitAmbush', () => {
 		// Four questions at a 70% pass mark leave a margin of 1.2 points: the second miss is too many.
 		answer(1)
 		answer(1)
-
 		expect(game.life.value.empty()).toBe(true)
+
+		// The hit plays out first; then the ninjas vanish and the samurai falls.
+		expect(game.run.value.phase).toBe('running')
+		expect(game.run.value.recovery).toBe(runConfig.hitSeconds)
+		expect(game.shogun.value.pose).toBe('hurt')
+		playOut()
 		expect(game.run.value.phase).toBe('fallen')
 		expect(game.shogun.value.pose).toBe('fallen')
+		expect(game.ninjas.value.active).toHaveLength(0)
 	})
 
 	it('finishes the run after the last question', () => {
 		fixtureQuiz.questions.forEach(() => { answer(0) })
 
+		// The last strike plays out first; then the ninja he blocked flees and the run is done.
+		expect(game.run.value.phase).toBe('running')
+		expect(game.run.value.recovery).toBe(runConfig.strikeSeconds)
+		playOut()
 		expect(game.run.value.phase).toBe('finished')
+		expect(game.ninjas.value.active.find((ninja) => ninja.id === 1)?.pose).toBe('fleeing')
 		expect(game.score.value.points).toBe(fixtureQuiz.questions.length * 100)
 	})
 })
@@ -135,6 +151,7 @@ describe('openAmbush', () => {
 			for (const option of right) game.ambush.value.pick(option.mark)
 			commitAmbush(game)
 		}
+		playOut()
 		expect(game.run.value.phase).toBe('finished')
 		expect(game.score.value.correct).toBe(fixtureQuiz.questions.length)
 	})
@@ -147,8 +164,8 @@ describe('tickRun', () => {
 	it('lets the ninjas creep in as the ambush time runs out', () => {
 		openSingle()
 		tickReal(5)
-		expect(game.ambush.value.secondsLeft).toBeCloseTo(5)
-		expect(game.ninjas.value.active[0]?.approach).toBeCloseTo(0.5)
+		expect(game.ambush.value.secondsLeft).toBeCloseTo(7)
+		expect(game.ninjas.value.active[0]?.approach).toBeCloseTo(0.3)
 	})
 
 	it('holds the time limit during the countdown after resuming', () => {
@@ -163,7 +180,7 @@ describe('tickRun', () => {
 	it('ends the ambush unanswered when the time runs out, half-swiped or not', () => {
 		openSingle()
 		game.ambush.value.pick(marks[0]!)
-		tickReal(10)
+		tickReal(12)
 
 		expect(game.ambush.value.open).toBe(false)
 		expect(game.quiz.value.records).toEqual([{ at: { question: 0, part: 0 }, outcome: 'unanswered', picked: [0] }])

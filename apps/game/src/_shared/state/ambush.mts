@@ -43,6 +43,8 @@ export type AmbushOption = {
 
 export type AmbushState = {
 	readonly open: boolean
+	/** Seconds of the visual ninja entrance before the answer scroll appears. */
+	readonly openingLeft: number
 	readonly kind: AmbushKind
 	readonly at: QuestionRef
 	/** The query as Markdown, with the scenario for `solutions` and the row for `match`. */
@@ -60,7 +62,7 @@ export type AmbushState = {
 }
 
 /** What an ambush opens with. The ambush track decides marks, ninjas and seconds. */
-export type AmbushOpening = Omit<AmbushState, 'open' | 'secondsLeft'>
+export type AmbushOpening = Omit<AmbushState, 'open' | 'openingLeft' | 'secondsLeft'>
 
 /** The result of a commit, for the flow that spreads it over the other stores. */
 export type AmbushResult = {
@@ -102,6 +104,7 @@ export type Ambush = Store<AmbushState & AmbushActions>
 
 export const noAmbush: AmbushState = {
 	open: false,
+	openingLeft: 0,
 	kind: 'single',
 	at: { question: 0, part: 0 },
 	query: '',
@@ -112,6 +115,9 @@ export const noAmbush: AmbushState = {
 	round: 1,
 	rounds: 1,
 }
+
+/** The ninja telegraph before the answer scroll unrolls. */
+export const openingSeconds = 2
 
 /** Whether the time limit has run out: the ambush ends unanswered. Never with no time limit. */
 export const timeUp = (state: AmbushState) => state.seconds > 0 && state.secondsLeft === 0
@@ -130,7 +136,7 @@ export function createAmbush(initial: AmbushState = noAmbush): Ambush {
 		...initial,
 
 		start(opening) {
-			store.update(() => ({ ...opening, open: true, secondsLeft: opening.seconds }))
+			store.update(() => ({ ...opening, open: true, openingLeft: openingSeconds, secondsLeft: opening.seconds }))
 		},
 
 		pick(mark) {
@@ -161,8 +167,13 @@ export function createAmbush(initial: AmbushState = noAmbush): Ambush {
 
 		tick(delta) {
 			const state = store.value
-			if (!state.open || state.seconds === 0) return
-			store.update(() => ({ secondsLeft: Math.max(0, state.secondsLeft - delta) }))
+			if (!state.open) return
+			const openingLeft = Math.max(0, state.openingLeft - delta)
+			// The scroll entrance is a presentation pause. Only time after it has
+			// finished belongs to the player's answer window.
+			const answerDelta = Math.max(0, delta - state.openingLeft)
+			const secondsLeft = state.seconds === 0 ? state.secondsLeft : Math.max(0, state.secondsLeft - answerDelta)
+			store.update(() => ({ openingLeft, secondsLeft }))
 		},
 
 		unanswered() {

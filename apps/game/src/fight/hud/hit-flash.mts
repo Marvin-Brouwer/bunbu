@@ -1,5 +1,5 @@
 /**
- * The red flash round the edge of the screen when the samurai is hit, with the haptic buzz
+ * The ninja's katana slice and blood spray when the samurai is hit, with the haptic buzz
  * ([5B](../../../../../docs/design/screens.md#5-outcome)).
  */
 
@@ -22,15 +22,26 @@ export const HitFlash = component<HitFlashOptions>({
 		life.on('change', signal, ({ detail }) => {
 			if (detail.state.hits > hits) {
 				buzz(buzzes.hit)
+				let hit: HTMLElement | undefined
+				const remove = () => { hit?.remove() }
+				const blood = element('div', {
+					classes: styles.blood,
+					on: { animationend: remove },
+				})
+				hit = element('div', {
+					classes: styles.hit,
+					children: [
+						element('div', {
+							classes: styles.slice,
+							children: element('div', { classes: styles.handle }),
+						}),
+						blood,
+					],
+				})
+				const fallback = window.setTimeout(remove, 1700)
+				blood.addEventListener('animationend', () => { window.clearTimeout(fallback) }, { once: true })
 				append(
-					element('div', {
-						classes: styles.flash,
-						on: {
-							animationend(event) {
-								event.currentTarget.remove()
-							},
-						},
-					})
+					hit,
 				)
 			}
 			hits = detail.state.hits

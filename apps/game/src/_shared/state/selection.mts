@@ -28,6 +28,7 @@ export type SelectionState = {
 	readonly stage: Stage
 }
 
+// Castle town is the stage that is built so far; the others fall back to it until they are.
 const initial: SelectionState = { quiz: undefined, stage: 'castle-town' }
 
 export type SelectionActions = {

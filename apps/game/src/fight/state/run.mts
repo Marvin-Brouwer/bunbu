@@ -53,7 +53,7 @@ export type Run = Store<RunState & RunActions>
 /** Defaults to tune in playtests ([to tune](../../../../../docs/design/gameplay.md#to-tune)). */
 export const runConfig = {
 	/** Metres per second along the path. */
-	pace: 8,
+	pace: 9,
 	ambushWorldScale: 0.15,
 	introSeconds: 1.5,
 	countdownSeconds: 3,
