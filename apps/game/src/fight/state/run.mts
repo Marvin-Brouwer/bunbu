@@ -76,6 +76,30 @@ export const notRunning: RunState = {
 
 const over = (phase: RunPhase) => phase === 'paused' || phase === 'finished' || phase === 'fallen'
 
+// What one tick changes, by what the run is doing. Each returns only the fields that change.
+
+/** The 3-2-1 after resuming: the run itself stands still. */
+function countDown(state: RunState, realDelta: number): Partial<RunState> {
+	const countdown = Math.max(0, state.countdown - realDelta)
+	return { countdown, phase: countdown === 0 ? state.resumeTo : state.phase }
+}
+
+function introduce(state: RunState, realDelta: number): Partial<RunState> {
+	const elapsed = state.elapsed + realDelta
+	return { elapsed, phase: elapsed >= runConfig.introSeconds ? 'running' : 'intro' }
+}
+
+/** Holding after an ambush: time passes, the samurai does not move. */
+function recover(state: RunState, realDelta: number): Partial<RunState> {
+	return { elapsed: state.elapsed + realDelta, recovery: Math.max(0, state.recovery - realDelta) }
+}
+
+/** Running covers ground; an ambush only lets time pass. */
+function advance(state: RunState, worldDelta: number, realDelta: number): Partial<RunState> {
+	const moved = state.phase === 'running' ? state.distance + runConfig.pace * worldDelta : state.distance
+	return { elapsed: state.elapsed + realDelta, distance: Math.min(moved, state.stageLength) }
+}
+
 export function createRun(initial: RunState = notRunning): Run {
 
 	const expect = (action: string, phase: RunPhase): boolean => {
@@ -96,23 +120,10 @@ export function createRun(initial: RunState = notRunning): Run {
 			const state = store.value
 			if (over(state.phase)) return
 
-			if (state.countdown > 0) {
-				const countdown = Math.max(0, state.countdown - realDelta)
-				store.update(() => ({ countdown, phase: countdown === 0 ? state.resumeTo : state.phase }))
-				return
-			}
-			if (state.phase === 'intro') {
-				const elapsed = state.elapsed + realDelta
-				store.update(() => ({ elapsed, phase: elapsed >= runConfig.introSeconds ? 'running' : 'intro' }))
-				return
-			}
-			const elapsed = state.elapsed + realDelta
-			if (state.recovery > 0) {
-				store.update(() => ({ elapsed, recovery: Math.max(0, state.recovery - realDelta) }))
-				return
-			}
-			const distance = state.phase === 'running' ? state.distance + runConfig.pace * worldDelta : state.distance
-			store.update(() => ({ elapsed, distance: Math.min(distance, state.stageLength) }))
+			if (state.countdown > 0) store.update(() => countDown(state, realDelta))
+			else if (state.phase === 'intro') store.update(() => introduce(state, realDelta))
+			else if (state.recovery > 0) store.update(() => recover(state, realDelta))
+			else store.update(() => advance(state, worldDelta, realDelta))
 		},
 
 		beginAmbush() {
