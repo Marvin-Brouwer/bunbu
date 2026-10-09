@@ -10,9 +10,10 @@
 import { component } from '@rooted/components'
 import { tickRun } from './flows/run.mts'
 import { play } from '../canvas/loop.mts'
-import { createRunWorld } from './world.mts'
 import { show } from '../canvas/stage.mts'
 import type { RunGame } from './state/game.mts'
+import { Hud } from './hud/hud.mts'
+import { Scroll } from '../_shared/scroll/scroll.mts'
 import styles from './run.css'
 
 export type RunScreenOptions = {
@@ -24,10 +25,9 @@ export type RunScreenOptions = {
 export const RunScreen = component<RunScreenOptions>({
 	name: 'run',
 	styles,
-	onMount({ append, element, options, signal }) {
+	async onMount({ append, create, element, options, signal }) {
 		const { game } = options
 
-		show((camera) => createRunWorld(game, camera), signal)
 		play({
 			update: (worldDelta, realDelta) => { tickRun(game, worldDelta, realDelta) },
 			paused: () => game.run.value.phase === 'paused',
@@ -47,6 +47,9 @@ export const RunScreen = component<RunScreenOptions>({
 							styles.layer,
 							styles.hud,
 						],
+						children: create(Hud, {
+							game,
+						}),
 					}),
 					element('div', {
 						'data-layer': 'scroll',
@@ -54,6 +57,11 @@ export const RunScreen = component<RunScreenOptions>({
 							styles.layer,
 							styles.scroll,
 						],
+						children: create(Scroll, {
+							ambush: game.ambush,
+							quiz: game.quiz,
+							label: 'AMBUSH',
+						}),
 					}),
 					element('div', {
 						'data-layer': 'swipe',
@@ -72,5 +80,10 @@ export const RunScreen = component<RunScreenOptions>({
 				],
 			})
 		)
+
+		// The world needs three.js, which is only loaded once a run starts in the browser.
+		const { createRunWorld } = await import('./world.mts')
+		if (signal.aborted) return
+		show((camera) => createRunWorld(game, camera), signal)
 	},
 })

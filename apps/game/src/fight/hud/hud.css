@@ -1,0 +1,254 @@
+/*
+ * The run's HUD: score and pause on top, then the life bar and the stage progress
+ * (docs/design/screens.md#3-running). Panels are papyrus framed in ink, like the scroll.
+ *
+ * Only the pause button takes touches; everything else lets them through to the layers below.
+ */
+
+.hud {
+	display: grid;
+	gap: 0.5rem;
+	padding: max(0.75rem, env(safe-area-inset-top)) max(0.75rem, env(safe-area-inset-right)) 0 max(0.75rem, env(safe-area-inset-left));
+	pointer-events: none;
+}
+
+.top {
+	display: flex;
+	justify-content: space-between;
+	align-items: flex-start;
+}
+
+.panel {
+	border: var(--frame);
+	border-radius: var(--radius);
+	background: var(--paper);
+	color: var(--ink);
+	box-shadow: var(--shadow);
+}
+
+.label {
+	font-family: var(--font-mono);
+	font-size: 0.7rem;
+	letter-spacing: 0.08em;
+}
+
+/* Score */
+
+.score {
+	position: relative;
+	display: grid;
+	min-width: 7.5rem;
+	padding: 0.35rem 0.7rem 0.4rem;
+}
+
+.score .label {
+	color: var(--ink-soft);
+}
+
+.points {
+	font-size: 1.6rem;
+	font-weight: 700;
+	line-height: 1.1;
+	font-variant-numeric: tabular-nums;
+}
+
+.best {
+	font-family: var(--font-mono);
+	font-size: 0.75rem;
+	color: var(--ink-soft);
+}
+
+.best:empty {
+	display: none;
+}
+
+.pop {
+	position: absolute;
+	right: 0.7rem;
+	top: 1.35rem;
+	font-family: var(--font-mono);
+	font-size: 1.1rem;
+	font-weight: 700;
+	color: var(--vermilion);
+	text-shadow: 0 0 3px var(--paper), 0 0 6px var(--paper);
+	pointer-events: none;
+	animation: pop 1100ms ease-out forwards;
+}
+
+@keyframes pop {
+	from {
+		opacity: 0;
+		transform: translateY(0.5rem) scale(0.8);
+	}
+
+	15% {
+		opacity: 1;
+		transform: translateY(0) scale(1.15);
+	}
+
+	70% {
+		opacity: 1;
+		transform: translateY(-0.2rem) scale(1);
+	}
+
+	to {
+		opacity: 0;
+		transform: translateY(-0.8rem);
+	}
+}
+
+/* Pause */
+
+.pause {
+	display: grid;
+	place-items: center;
+	width: 2.75rem;
+	height: 2.75rem;
+	padding: 0;
+	cursor: pointer;
+	pointer-events: auto;
+}
+
+/* Two ink strokes. */
+.pause::before {
+	content: '';
+	width: 0.85rem;
+	height: 1.1rem;
+	border-inline: 0.3rem solid currentcolor;
+}
+
+.pause:disabled {
+	opacity: 0.5;
+	cursor: default;
+}
+
+/* Life */
+
+.life {
+	display: grid;
+	gap: 0.2rem;
+}
+
+.caption {
+	display: flex;
+	justify-content: space-between;
+	text-shadow: 0 1px 2px var(--night);
+}
+
+.bar {
+	position: relative;
+	height: 0.9rem;
+	border: var(--frame);
+	border-radius: var(--radius);
+	background: var(--paper);
+	overflow: hidden;
+}
+
+.fill {
+	height: 100%;
+	width: calc(var(--life, 1) * 100%);
+	background: var(--vermilion);
+	transition: width 250ms ease-out;
+}
+
+/* The chunk a miss took: hatched, flashing, then dropping off the bar. */
+.lost {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	background: repeating-linear-gradient(-45deg, var(--vermilion) 0 4px, var(--paper) 4px 8px);
+	animation: lose 900ms ease-in forwards;
+}
+
+@keyframes lose {
+	0%,
+	40% {
+		opacity: 1;
+		transform: none;
+	}
+
+	20%,
+	60% {
+		opacity: 0.3;
+	}
+
+	to {
+		opacity: 0;
+		transform: translateY(120%);
+	}
+}
+
+/* Progress */
+
+.progress {
+	display: grid;
+	gap: 0.2rem;
+}
+
+.track {
+	position: relative;
+	height: 0.5rem;
+	border: 1px solid var(--paper);
+	background: rgb(0 0 0 / 35%);
+}
+
+.travelled {
+	height: 100%;
+	width: calc(var(--travelled, 0) * 100%);
+	background: var(--paper);
+}
+
+.ticks {
+	position: absolute;
+	inset: -0.2rem 0;
+}
+
+.tick {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	width: 2px;
+	margin-left: -1px;
+	background: var(--vermilion);
+}
+
+.tick[data-passed='true'] {
+	background: var(--ink-soft);
+}
+
+.distance {
+	font-family: var(--font-mono);
+	font-size: 0.7rem;
+	text-shadow: 0 1px 2px var(--night);
+}
+
+/* The red edge flash on a hit. */
+.flash {
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+	box-shadow: inset 0 0 0 0.5rem var(--vermilion), inset 0 0 3rem 1rem var(--vermilion);
+	animation: flash 600ms ease-out forwards;
+}
+
+@keyframes flash {
+	from {
+		opacity: 0.9;
+	}
+
+	to {
+		opacity: 0;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.pop,
+	.lost,
+	.flash {
+		animation-duration: 400ms;
+	}
+
+	.fill {
+		transition: none;
+	}
+}
