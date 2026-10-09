@@ -48,8 +48,8 @@ importers:
         specifier: 1.0.0-alpha.13
         version: 1.0.0-alpha.13(@rooted/util@1.0.0-alpha.15)
       '@rooted/store':
-        specifier: 1.0.0-alpha.13
-        version: 1.0.0-alpha.13
+        specifier: 1.0.0-alpha.14
+        version: 1.0.0-alpha.14
       arktype:
         specifier: ^2.2.8
         version: 2.2.8
@@ -1602,8 +1602,8 @@ packages:
     peerDependencies:
       '@rooted/util': 1.0.0-alpha.15
 
-  '@rooted/store@1.0.0-alpha.13':
-    resolution: {integrity: sha512-kJi2AYZ3/lf80Vq9oTB0LmPO/vK56E0HnOhtYlXyEQQMZ4XxDDYZ8nt7dq9brpIR7tnxTw4YhPPTdghPGFZxdw==}
+  '@rooted/store@1.0.0-alpha.14':
+    resolution: {integrity: sha512-mVRSBWKKKkRzI+unEhQ4meV2qFxAaJ/od3r3llUYUwUOXEunzWnGxdiJGOLrHJjyy+q94/9Gy3x2AeUf0xiimw==}
     engines: {node: '>=22.0.0', pnpm: '>=10.0.0'}
 
   '@rooted/util@1.0.0-alpha.15':
@@ -4752,7 +4752,7 @@ snapshots:
     dependencies:
       '@rooted/util': 1.0.0-alpha.15
 
-  '@rooted/store@1.0.0-alpha.13':
+  '@rooted/store@1.0.0-alpha.14':
     dependencies:
       '@rooted/util': 1.0.0-alpha.15
 
