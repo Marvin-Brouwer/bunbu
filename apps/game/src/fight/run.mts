@@ -18,6 +18,7 @@ import { pausable } from './state/run.mts'
 import { Hud } from './hud/hud.mts'
 import { Scroll } from '../_shared/scroll/scroll.mts'
 import { RunOverlays } from './overlays/overlays.mts'
+import { createRunWorld } from './world.mts'
 import styles from './run.css'
 
 export type RunScreenOptions = {
@@ -31,7 +32,7 @@ export type RunScreenOptions = {
 export const RunScreen = component<RunScreenOptions>({
 	name: 'run',
 	styles,
-	async onMount({ append, create, element, options, signal }) {
+	onMount({ append, create, element, options, signal }) {
 		const { game } = options
 
 		play({
@@ -99,9 +100,6 @@ export const RunScreen = component<RunScreenOptions>({
 			})
 		)
 
-		// The world needs three.js, which is only loaded once a run starts in the browser.
-		const { createRunWorld } = await import('./world.mts')
-		if (signal.aborted) return
 		show((camera) => createRunWorld(game, camera), signal)
 	},
 })
