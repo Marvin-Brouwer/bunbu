@@ -1,0 +1,160 @@
+/*
+ * The mistakes on the results scroll (docs/design/screens.md#7-finished-results-and-mistakes):
+ * one entry per miss.
+ */
+
+.mistakes {
+	display: grid;
+	gap: 0.25rem;
+	padding-top: 0.75rem;
+	border-top: 1px dashed var(--paper-edge);
+}
+
+.top {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 1rem;
+}
+
+.title {
+	margin: 0;
+	font-size: 1.15rem;
+}
+
+.hint {
+	font-family: var(--font-mono);
+	font-size: 0.75rem;
+	color: var(--ink-soft);
+}
+
+.none {
+	margin: 0.25rem 0 0.4rem;
+	color: var(--ink-soft);
+}
+
+.entry + .entry {
+	border-top: 1px solid var(--paper-edge);
+}
+
+.entry summary {
+	display: grid;
+	gap: 0.35rem;
+	padding: 0.7rem 0;
+	cursor: pointer;
+	list-style: none;
+}
+
+.entry summary::-webkit-details-marker {
+	display: none;
+}
+
+.entry summary:focus-visible {
+	outline: 3px solid var(--indigo);
+	outline-offset: 2px;
+}
+
+.details {
+	display: grid;
+	gap: 0.4rem;
+	padding-bottom: 0.8rem;
+	font-size: 0.92rem;
+	color: var(--ink-soft);
+}
+
+.prose > :first-child {
+	margin-top: 0;
+}
+
+.prose > :last-child {
+	margin-bottom: 0;
+}
+
+.prose pre {
+	overflow-x: auto;
+	padding: 0.5rem 0.6rem;
+	border-radius: var(--radius);
+	background: var(--paper-shade);
+	font-size: 0.85rem;
+}
+
+.prose code {
+	padding: 0 0.25rem;
+	border-radius: var(--radius);
+	background: var(--paper-shade);
+	font-family: var(--font-mono);
+}
+
+.prose img {
+	max-width: 100%;
+}
+
+.prose a,
+.references a {
+	color: var(--vermilion);
+}
+
+/* ✗ your pick ✓ the right answer, on one line when they fit. */
+
+.answers {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: 0.25rem 1rem;
+	font-family: var(--font-mono);
+	font-size: 0.9rem;
+}
+
+.side {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: 0.25rem;
+}
+
+.side[data-kind='picked'] {
+	color: var(--vermilion);
+}
+
+.side[data-kind='right'] {
+	color: var(--moss);
+}
+
+.sign {
+	font-weight: 700;
+}
+
+/*
+ * A flex box, so the line break the markdown ends with doesn't show as a space before the comma.
+ * Flex drops plain spaces at the edges too, hence the no-break spaces in the separators.
+ */
+.choice {
+	display: inline-flex;
+}
+
+.choice + .choice::before {
+	content: ',\00a0';
+}
+
+.side[data-ordered='true'] .choice + .choice::before {
+	content: '\00a0→\00a0';
+}
+
+.choice p {
+	display: inline;
+	margin: 0;
+}
+
+.references {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.25rem 0.9rem;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	font-size: 0.85rem;
+}
+
+.choices {
+	overflow-wrap: anywhere;
+}

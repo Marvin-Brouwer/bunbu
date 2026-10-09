@@ -18,13 +18,16 @@ export const fixtureQuiz: BunbuData = {
 			type: 'yes-no',
 			query: markdown('Is `PUT` idempotent?'),
 			answer: 'yes',
+			explanation: markdown('`PUT` replaces the resource with the given state, so repeating it leaves the same state.'),
+			references: [{ 'RFC 9110, section 9.2.2': 'https://www.rfc-editor.org/rfc/rfc9110#section-9.2.2' }],
 		},
 		{
 			type: 'single',
 			query: markdown('Which attribute describes an image to a screen reader?'),
+			explanation: markdown('`alt` is the text alternative for an image.'),
 			options: [
 				{ answer: markdown('`alt`'), correct: true },
-				{ answer: markdown('`title`'), correct: false },
+				{ answer: markdown('`title`'), correct: false, explanation: markdown('`title` is a tooltip, which screen readers don\'t reliably read.') },
 				{ answer: markdown('`caption`'), correct: false },
 			],
 		},

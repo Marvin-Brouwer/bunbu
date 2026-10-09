@@ -89,6 +89,7 @@
 
 .button {
 	display: grid;
+	align-content: center;
 	justify-items: center;
 	gap: 0.15rem;
 	padding: 0.85rem 1rem;
@@ -155,6 +156,18 @@
 .segment:has(input:checked) {
 	background: var(--ink);
 	color: var(--paper-light);
+}
+
+.segment:has(input:disabled) {
+	cursor: default;
+}
+
+.segments:has(input:disabled) {
+	border-style: dashed;
+}
+
+.segment:has(input:disabled:not(:checked)) {
+	color: var(--ink-soft);
 }
 
 .segment:has(input:focus-visible) {

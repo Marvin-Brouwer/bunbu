@@ -78,30 +78,34 @@ The scroll's heading is the label, the question type, `2 OF 3` for the rounds of
 
 <img src="screens/6-pause.png" alt="Pause menu" width="195">
 
+All on a scroll over the dimmed world, like an ambush:
+
 - This run: quiz, stage, answered (`11 / 13`), distance.
-- **Resume**, **Restart stage**, **Settings**, **Quit**.
+- **Resume**, **Restart stage**, **Settings**, **Quit** at the foot of the scroll. Settings open in place on the scroll; the difficulty only shows there, since it can't change halfway through a run.
 - Auto-pauses when the app goes to the background or a call comes in. 3-2-1 countdown on resume.
 
 ### 7 Finished: results and mistakes
 
 <img src="screens/7-finished.png" alt="Results and mistakes" width="195">
 
+One scroll over the world holds all of it; the buttons stay at its foot while the rest scrolls.
+
 - 勝 · `QUIZ PASSED · NEW HIGH SCORE` · score, with the previous best (`was 2,210`).
 - `17 / 20 correct (85%) · 4:05`.
 - Breakdown: **Correct** (`17 × 100`), **Time** (tiebreak for the high score), **Distance** (stage cleared).
-- **Mistakes** scroll: each miss with ✗ your pick, ✓ the right answer, the explanation and references.
+- **Mistakes**: each miss with ✗ your pick, ✓ the right answer, the explanation and references.
 - **Next stage**, **Practise mistakes**, **Menu**.
 
 ### 8 Fallen
 
 <img src="screens/8-fallen.png" alt="Fallen screen" width="195">
 
-Shown instead of 7 when the life bar is empty.
+Shown instead of 7 when the life bar is empty, on the same kind of scroll.
 
 - 散 · **Fallen** · stage and distance reached (`1,120 of 1,500 m`) · "life bar empty: 70% is out of reach".
 - 3D samurai on one knee, katana dropped, ink-wash grey, petals falling.
 - Correct (`8 / 11`, best possible 65%), **run score** (marked "not a high score"), time.
-- "What cut you down": the mistakes scroll, tap to expand.
+- "What cut you down": the mistakes, tap to expand.
 - **Rise again**, **Practise mistakes**, **Menu**.
 
 ## Dojo
