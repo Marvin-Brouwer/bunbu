@@ -9,6 +9,7 @@
 import type { BunbuData } from '@bunbu/data'
 import type { RunGame } from '../state/game.mts'
 import type { HighScore } from '../state/score.mts'
+import { tickAmbush } from './ambush.mts'
 
 /** Metres of path per ambush, until stage length and question count are decided (docs/plan.md). */
 export const metresPerAmbush = 120
@@ -36,9 +37,5 @@ export function endRun(game: RunGame): void {
 /** Ticks the stores that go by time, once per frame while the run is not paused. */
 export function tickRun(game: RunGame, dt: number): void {
 	game.run.value.tick(dt)
-	const ambush = game.ambush.value
-	if (!ambush.open) return
-	game.ambush.value.tick(dt)
-	// The ninjas creeping in are the timer (gameplay.md#time-limit).
-	if (ambush.seconds > 0) game.ninjas.value.advance(1 - game.ambush.value.secondsLeft / ambush.seconds)
+	tickAmbush(game, dt)
 }

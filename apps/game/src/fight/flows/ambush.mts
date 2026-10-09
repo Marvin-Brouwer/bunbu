@@ -2,11 +2,18 @@
  * Answering a question, which touches the ambush, the score or the life bar, the samurai and the
  * ninjas at once ([flows](../../../../../docs/architecture/state.md#flows-changes-that-span-stores)).
  *
- * The rules themselves belong to the ambush and run tracks; this is the obvious stub.
+ * Opening, timing and committing an ambush are the ambush rules; what happens to the run around
+ * it (the pause after a hit, resuming) belongs to the run flows.
  */
 
+import { openingOf } from '../../_shared/state/ambush-opening.mts'
+import { approachOf } from '../../_shared/state/ambush-time.mts'
+import type { Random } from '../../_shared/state/random.mts'
+import { refuse, snapshot } from '../../_shared/state/store.mts'
+import type { QuizActions, QuizState } from '../../_shared/state/quiz.mts'
 import type { RunGame } from '../state/game.mts'
 import { shareOfOnePoint } from '../state/life.mts'
+import { spawnsOf } from '../state/ninjas.mts'
 import { endRun } from './run.mts'
 
 /** What one miss costs the life bar, for the quiz that is loaded. */
@@ -14,6 +21,42 @@ export function missShare(game: RunGame): number {
 	const { quiz, refs } = game.quiz.value
 	if (quiz === undefined) return 1
 	return shareOfOnePoint(refs.length, quiz.passingScore)
+}
+
+/**
+ * Springs the ambush for the question that is up next: the world slows down, the ninjas spawn
+ * and the scroll opens. `timeScale` comes from the settings, `undefined` for no time limit.
+ */
+export function openAmbush(game: RunGame, timeScale: number | undefined, random: Random = Math.random): void {
+	const at = game.quiz.value.current()
+	if (at === undefined) {
+		refuse('openAmbush', 'every question has been answered')
+		return
+	}
+	game.run.value.beginAmbush()
+	if (game.run.value.phase !== 'ambush') return
+
+	const { quiz, refs } = snapshot<QuizState & QuizActions>(game.quiz)
+	if (quiz === undefined) return
+	const opening = openingOf(quiz, refs, at, { timeScale, random })
+	game.ninjas.value.clear()
+	game.ninjas.value.spawn(spawnsOf(opening.options))
+	game.ambush.value.start(opening)
+}
+
+/**
+ * Counts the ambush down and lets the ninjas creep in, so they are the timer. When the time runs
+ * out the ambush ends unanswered, whatever was half-swiped.
+ *
+ * `dt` is world time, which the loop slows down during an ambush; the time limit is the player's
+ * reading time, so it runs at real speed.
+ */
+export function tickAmbush(game: RunGame, dt: number): void {
+	const { ambush } = game
+	if (!ambush.value.open) return
+	ambush.value.tick(dt / game.run.value.worldScale)
+	game.ninjas.value.advance(approachOf(ambush.value.seconds, ambush.value.secondsLeft))
+	if (ambush.value.unanswered()) commitAmbush(game)
 }
 
 /** Commits the open ambush and spreads the result over the run's stores. */
