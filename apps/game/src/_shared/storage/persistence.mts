@@ -1,6 +1,6 @@
 /**
- * Keeps the app-wide stores: settings, high scores and the last run's misses in local storage, the
- * loaded quizzes as `.bunbu` files in IndexedDB. Everything else starts fresh with every run
+ * Keeps the app-wide stores: settings, high scores, the last run's misses and the chosen quiz and
+ * stage in local storage, the loaded quizzes as `.bunbu` files in IndexedDB. Everything else starts fresh with every run
  * ([state](../../../../../docs/architecture/state.md#stores)).
  *
  * `persistApp` puts back what was saved and then writes every change. The stores know nothing of
@@ -14,7 +14,9 @@ import { highScores } from '../../fight/state/highscores.mts'
 import { lastRun, type LastRunState } from '../../fight/state/lastrun.mts'
 import { pointsPerCorrect, type HighScore } from '../../fight/state/score.mts'
 import { settings, type SettingsState } from '../../settings/state/settings.mts'
-import { fileOf, library, type QuizFile } from './library.mts'
+import { builtStages, selection, stages, type Stage } from '../state/selection.mts'
+import { snapshot } from '../state/store.mts'
+import { fileOf, library, type LibraryActions, type LibraryState, type QuizFile } from './library.mts'
 import { readQuizFiles, writeQuizFiles } from './quiz-files.mts'
 import { read, write, type StoredKey } from './storage.mts'
 
@@ -75,6 +77,33 @@ export function parseLastRun(data: unknown): LastRunState | undefined {
 	return { quiz: run.quiz, misses: run.misses.map((each) => miss(each)).filter(passed) }
 }
 
+const savedSelection = type({
+	'+': 'delete',
+	'quiz?': { '+': 'delete', id: 'string', version: 'string' },
+	stage: type.enumerated(...stages),
+})
+
+export type SavedSelection = {
+	/** The chosen quiz by `id` and `version`; it is put back once the library has its file. */
+	readonly quiz: { readonly id: string, readonly version: string } | undefined
+	/** The stage, when it can still be chosen. */
+	readonly stage: Stage | undefined
+}
+
+/** The chosen quiz and stage. A stage that isn't built (any more) is dropped. */
+export function parseSelection(data: unknown): SavedSelection {
+	const saved = savedSelection(data)
+	if (!passed(saved)) return { quiz: undefined, stage: undefined }
+	return { quiz: saved.quiz, stage: builtStages.has(saved.stage) ? saved.stage : undefined }
+}
+
+/** Chooses the saved quiz again when it is in the library, unless another was chosen meanwhile. */
+function chooseSaved(quiz: SavedSelection['quiz']): void {
+	if (quiz === undefined || selection.value.quiz !== undefined) return
+	const entry = snapshot<LibraryState & LibraryActions>(library).entries.find((each) => each.quiz.id === quiz.id && each.quiz.version === quiz.version)
+	if (entry !== undefined) selection.value.chooseQuiz(entry.quiz)
+}
+
 const isObject = (data: unknown): data is Readonly<Record<string, unknown>> => typeof data === 'object' && data !== null && !Array.isArray(data)
 
 /** The kept `.bunbu` files, validated again: what is in storage is not trusted to still be a quiz. */
@@ -104,16 +133,21 @@ export function persistApp(signal: AbortSignal): Promise<void> {
 	highScores.value.restore(parseHighScores(read('high-scores')))
 	const saved = parseLastRun(read('last-run'))
 	if (saved !== undefined) lastRun.value.restore(saved)
+	const chosen = parseSelection(read('selection'))
+	if (chosen.stage !== undefined) selection.value.chooseStage(chosen.stage)
 
 	save(settings, 'settings', signal, ({ difficulty, haptics, volume }) => ({ difficulty, haptics, volume }))
 	save(highScores, 'high-scores', signal, ({ scores }) => scores)
 	save(lastRun, 'last-run', signal, ({ quiz, misses }) => ({ quiz, misses }))
+	save(selection, 'selection', signal, ({ quiz, stage }) => ({ quiz: quiz && { id: quiz.id, version: quiz.version }, stage }))
 	library.on('change', signal, ({ detail }) => {
 		const files = detail.state.entries.map(({ quiz }) => fileOf(quiz)).filter((file) => file !== undefined)
 		void writeQuizFiles(files)
 	})
 
 	return readQuizFiles().then(parseLibrary).then((entries) => {
-		if (!signal.aborted) library.value.restore(entries)
+		if (signal.aborted) return
+		library.value.restore(entries)
+		chooseSaved(chosen.quiz)
 	})
 }
