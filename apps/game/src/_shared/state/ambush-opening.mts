@@ -80,7 +80,7 @@ export function openingOf(quiz: BunbuData, refs: readonly QuestionRef[], at: Que
 	const choices = choicesOf(question, at.part)
 	const correct = choices.map((choice) => choice.correct)
 	if (correct.filter(Boolean).length > maxOptions) {
-		throw new RangeError(`[bunbu] question ${at.question} has more than ${maxOptions} correct options and can't be fought; check playable() first`)
+		throw new RangeError(`[bunbu] question ${at.question} has more than ${maxOptions} correct options and can't be fought; check playable() when a quiz is loaded`)
 	}
 
 	const sources = choices.map((_, source) => source)
