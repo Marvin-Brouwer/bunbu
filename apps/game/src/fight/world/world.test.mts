@@ -10,7 +10,7 @@ import { distanceFor } from '../../canvas/framing.mts'
 import { cameraOf, runFraming } from './camera.mts'
 import { markOf } from './ninjas.mts'
 import { headingOf, lungeOf, placementConfig, spotOf } from './placement.mts'
-import { clipPlays, clipTimeOf, poseSeconds, rigOf } from './poses.mts'
+import { clipPlays, clipTimeOf, finishing, finishingOf, helmetFlight, helmetRest, helmetSeconds, poseSeconds, rigOf } from './poses.mts'
 
 describe('placement', () => {
 	it('puts a ninja where its mark points on screen', () => {
@@ -141,6 +141,40 @@ describe('clips on the real model', () => {
 	it('has a clip for every pose, from the clips the model has', () => {
 		const clips = new Set(['Death', 'Duck', 'HitReact', 'Idle', 'Run', 'Weapon'])
 		for (const play of Object.values(clipPlays)) expect(clips).toContain(play.clip)
+	})
+})
+
+describe('the fall', () => {
+	it('has a ninja run in, then strike, and the samurai go down only as the blade lands', () => {
+		expect(finishingOf(0).ninja).toMatchObject({ pose: 'approach', distance: finishing.from })
+		expect(finishingOf(finishing.run).ninja).toMatchObject({ pose: 'strike', distance: finishing.reach })
+		expect(finishingOf(finishing.run).samurai.pose).toBe('hurt')
+		const down = finishingOf(finishing.run + poseSeconds.strike)
+		expect(down.samurai.pose).toBe('fallen')
+		expect(down.samurai.time).toBeGreaterThan(0)
+	})
+
+	it('holds at its end, the ninja standing over him', () => {
+		expect(finishingOf(30).ninja.distance).toBe(finishing.reach)
+		expect(clipTimeOf(finishingOf(30).ninja.pose, finishingOf(30).ninja.time, 0, 1)).toBe(clipTimeOf('strike', 99, 0, 1))
+	})
+
+	it('knocks the helmet up and back; it lands, bounces once and rests, the same at any frame rate', () => {
+		const from = 1.6
+		expect(helmetFlight(0, from)).toMatchObject({ back: 0, side: 0, height: from, tumble: 0 })
+		expect(helmetFlight(0.1, from).height).toBeGreaterThan(from)
+		const heights = Array.from({ length: 200 }, (_, step) => helmetFlight(step / 100, from).height)
+		expect(Math.min(...heights)).toBeCloseTo(helmetRest)
+		// Falling, it turns round once near the ground: one bounce, then it rests.
+		const bounces = heights.filter((height, step) => {
+			const before = heights[step - 1] ?? from
+			const after = heights[step + 1] ?? height
+			return height < before && height < after
+		})
+		expect(bounces).toHaveLength(1)
+		expect(heights.at(-1)).toBe(helmetRest)
+		expect(helmetFlight(helmetSeconds, from)).toEqual(helmetFlight(60, from))
+		expect(helmetFlight(helmetSeconds, from).back).toBeGreaterThan(0.5)
 	})
 })
 

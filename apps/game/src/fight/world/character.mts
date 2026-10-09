@@ -1,7 +1,7 @@
 /**
- * The samurai and the ninjas on the real model: Quaternius's animated ninja (CC0), cloned per
- * figure and coloured per side, so both sides share one rig, one set of clips and one style
- * ([one art style](../../../../../docs/design/assets.md#rules)).
+ * The samurai and the ninjas on the real models: Quaternius's "Matt" in armour for the samurai and
+ * his animated ninja for the ninjas (both CC0), cloned per figure. Both come from one pack, so they
+ * share one rig, one set of clips and one style ([one art style](../../../../../docs/design/assets.md#rules)).
  *
  * The clips are never left to run on their own clock: each frame the pose and the time since it
  * began, both from the store, say exactly where in its clip the figure is ({@link clipTimeOf}).
@@ -13,6 +13,7 @@ import {
 	Group,
 	Mesh,
 	MeshStandardMaterial,
+	Quaternion,
 	SkinnedMesh,
 	Vector3,
 	type AnimationAction,
@@ -22,7 +23,8 @@ import {
 import type { GLTF } from 'three/addons/loaders/GLTFLoader.js'
 import { clone } from 'three/addons/utils/SkeletonUtils.js'
 import { createFigure, type FigureParts } from './figure.mts'
-import { clipPlays, clipTimeOf, rigOf, type FigurePose } from './poses.mts'
+import { dress, type Armour } from './armour.mts'
+import { clipPlays, clipTimeOf, helmetFlight, rigOf, type FigurePose } from './poses.mts'
 
 /** A figure in the world, on the real model or on the placeholder until the model has loaded. */
 export type Body = {
@@ -34,15 +36,23 @@ export type Body = {
 	dispose: () => void
 }
 
-/** The colours a side wears, by the model's material names. */
+/** How a side looks on its model. */
 export type Look = {
-	readonly main: number
-	readonly secondary: number
-	readonly belt: number
+	/** Colours by the model's material names. */
+	readonly colours?: Readonly<Record<string, number>>
+	/** Dressed in the samurai's armour ({@link dress}), with the helmet that comes off when he falls. */
+	readonly armour?: boolean
+	/** The model's own names for clips, where they differ from {@link clipPlays}. */
+	readonly clips?: Readonly<Record<string, string>>
 }
 
-export const samuraiLook: Look = { main: 0x7d1d18, secondary: 0xd9b25c, belt: 0x1d1a17 }
-export const ninjaLook: Look = { main: 0x15161c, secondary: 0x3a3f4a, belt: 0x8e1f1a }
+/** The samurai: Quaternius's "Matt" in armour, cutting with `Slash`. */
+export const samuraiLook: Look = { armour: true, clips: { Weapon: 'Slash' } }
+/** The ninjas: Quaternius's ninja in black with a red sash. */
+export const ninjaLook: Look = { colours: { Ninja_Main: 0x15161c, Ninja_Secondary: 0x3a3f4a, Belt: 0x8e1f1a } }
+
+/** Seconds into the fallen pose when the helmet comes off. */
+const helmetOff = 0.05
 
 /** Metres from the ground to the top of the head. */
 const height = 1.8
@@ -66,7 +76,7 @@ export function placeholderBody(parts: FigureParts, colours: Parameters<typeof c
 
 function recolour(material: Material, look: Look): void {
 	if (!(material instanceof MeshStandardMaterial)) return
-	const colour = { Ninja_Main: look.main, Ninja_Secondary: look.secondary, Belt: look.belt }[material.name]
+	const colour = look.colours?.[material.name]
 	if (colour !== undefined) material.color.setHex(colour)
 }
 
@@ -92,7 +102,6 @@ export function createCharacter(model: GLTF, look: Look): Body {
 		if (own instanceof MeshStandardMaterial) materials.push(own)
 		object.material = own
 	})
-	const colours = materials.map((material) => material.color.clone())
 
 	// The model's parts share one skeleton; a clone gives each its own. Bind them back to one, so a
 	// figure uploads its bones once a frame, and free it with the figure.
@@ -109,6 +118,14 @@ export function createCharacter(model: GLTF, look: Look): Body {
 	const top = head === undefined ? height : head.getWorldPosition(new Vector3()).y
 	scene.scale.setScalar(height / Math.max(top, 1e-3))
 
+	const armour = look.armour === true ? dress(scene) : undefined
+	// Fading takes the armour along; turning grey leaves the helmet in its colours, lying there.
+	const greying = [...materials, ...(armour?.body ?? [])]
+	const greys = greying.map((material) => material.color.clone())
+	if (armour !== undefined) materials.push(...armour.materials)
+	/** The helmet once it is off: where it came off, in the figure's own frame. */
+	let off: { readonly position: Vector3; readonly quaternion: Quaternion } | undefined
+
 	const mixer = new AnimationMixer(scene)
 	const actions = new Map<string, AnimationAction>()
 	for (const clip of model.animations) {
@@ -117,6 +134,33 @@ export function createCharacter(model: GLTF, look: Look): Body {
 		action.setEffectiveWeight(0)
 		actions.set(clip.name.split('|').pop() ?? clip.name, action)
 	}
+
+	/**
+	 * Knocks the helmet off and lets it fly, `since` seconds after it came off; puts it back on when
+	 * `since` is `undefined` or not yet reached.
+	 */
+	function loseHelmet({ helmet, headBone, helmetAt }: Armour, since: number | undefined): void {
+		if (since === undefined || since < 0) {
+			if (off !== undefined) {
+				headBone.add(helmet)
+				helmetAt.decompose(helmet.position, helmet.quaternion, helmet.scale)
+				off = undefined
+			}
+			return
+		}
+		if (off === undefined) {
+			// From the head into the figure's own frame, where it was the moment it came off.
+			root.updateMatrixWorld(true)
+			root.attach(helmet)
+			off = { position: helmet.position.clone(), quaternion: helmet.quaternion.clone() }
+		}
+		const flight = helmetFlight(since, off.position.y)
+		// Behind him is +z in his own frame, and his right is +x.
+		helmet.position.set(off.position.x + flight.side, flight.height, off.position.z + flight.back)
+		helmet.quaternion.copy(off.quaternion).multiply(tumble.setFromAxisAngle(sideways, flight.tumble))
+	}
+	const tumble = new Quaternion()
+	const sideways = new Vector3(1, 0, 0.3).normalize()
 
 	let current: { readonly pose: FigurePose; readonly clip: string } | undefined
 	let previous: { readonly clip: string; readonly at: number } | undefined
@@ -131,7 +175,8 @@ export function createCharacter(model: GLTF, look: Look): Body {
 			body.position.z = -rig.shift
 			body.rotation.y = rig.turn
 
-			const { clip } = clipPlays[pose]
+			const played = clipPlays[pose].clip
+			const clip = look.clips?.[played] ?? played
 			if (current?.pose !== pose) {
 				if (current !== undefined) previous = { clip: current.clip, at: lastAt }
 				current = { pose, clip }
@@ -153,6 +198,8 @@ export function createCharacter(model: GLTF, look: Look): Body {
 			}
 			mixer.update(0)
 
+			if (armour !== undefined) loseHelmet(armour, pose === 'fallen' ? time - helmetOff : undefined)
+
 			const opacity = rig.fade * faded
 			root.visible = opacity > 0
 			const translucent = opacity < 1
@@ -168,12 +215,13 @@ export function createCharacter(model: GLTF, look: Look): Body {
 		},
 
 		grey(amount) {
-			materials.forEach((material, index) => {
-				material.color.copy(colours[index] ?? inkWash).lerp(inkWash, amount)
+			greying.forEach((material, index) => {
+				material.color.copy(greys[index] ?? inkWash).lerp(inkWash, amount)
 			})
 		},
 
 		dispose() {
+			armour?.dispose()
 			mixer.stopAllAction()
 			mixer.uncacheRoot(scene)
 			for (const each of skeletons) each.dispose()

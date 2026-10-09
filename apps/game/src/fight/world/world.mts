@@ -21,7 +21,7 @@ import { createFigureParts } from './figure.mts'
 import { createNinjasView } from './ninjas.mts'
 import { createPath } from './path.mts'
 import { headingOf } from './placement.mts'
-import { poseSeconds } from './poses.mts'
+import { finishingOf, poseSeconds } from './poses.mts'
 
 /** Metres per half a running cycle: one step, matched to the run clip at the run's pace. */
 const stepLength = 2.1
@@ -45,9 +45,9 @@ export function createRunWorld(game: RunGame, viewport: Viewport): View {
 	const length = Math.max(game.run.value.stageLength, 300) + beyond
 	const path = createPath(length)
 	// The figures first, which the run waits on to look right; the town's trees after them.
-	const ninja = loadModel('ninja')
-	const townModels = ninja
-		.catch(() => undefined)
+	const samuraiModel = loadModel('samurai')
+	const ninjaModel = loadModel('ninja')
+	const townModels = Promise.allSettled([samuraiModel, ninjaModel])
 		.then(() => Promise.all([loadModel('maple'), loadModel('torii'), loadModel('bamboo')]))
 		.then(([maple, torii, bamboo]) => ({ maple, torii, bamboo }))
 	const stage = createCastleTown(scene, path, -60, length, townModels)
@@ -57,18 +57,35 @@ export function createRunWorld(game: RunGame, viewport: Viewport): View {
 	scene.add(fighters)
 	let samurai: Body = placeholderBody(parts, { body: 0x7a2a22, skin: 0xe2c4a0, band: 0x1f1c18, blade: 0xdfe3ea })
 	fighters.add(samurai.root)
-	const ninjas = createNinjasView(fighters, (distance) => path.at(distance), () => placeholderBody(parts, { body: 0x2e2d38, skin: 0x2e2d38, band: 0xa3322a, blade: 0xb8bcc4 }))
+	let makeNinja = (): Body => placeholderBody(parts, { body: 0x2e2d38, skin: 0x2e2d38, band: 0xa3322a, blade: 0xb8bcc4 })
+	const ninjas = createNinjasView(fighters, (distance) => path.at(distance), makeNinja)
+	// The ninja that comes for the samurai when he falls: only there while he is down.
+	let finisher: Body | undefined
+	const dropFinisher = () => {
+		if (finisher === undefined) return
+		fighters.remove(finisher.root)
+		finisher.dispose()
+		finisher = undefined
+	}
 
 	let disposed = false
-	void ninja.then((model) => {
+	// Each side swaps to its model on its own, so one that fails to load leaves the other be.
+	void samuraiModel.then((model) => {
 		if (disposed) return
 		fighters.remove(samurai.root)
 		samurai.dispose()
 		samurai = createCharacter(model, samuraiLook)
 		fighters.add(samurai.root)
-		ninjas.remake(() => createCharacter(model, ninjaLook))
 	}).catch((error: unknown) => {
-		console.warn('[bunbu] the character model did not load; the placeholders stay', error)
+		console.warn('[bunbu] the samurai model did not load; the placeholder stays', error)
+	})
+	void ninjaModel.then((model) => {
+		if (disposed) return
+		makeNinja = () => createCharacter(model, ninjaLook)
+		ninjas.remake(makeNinja)
+		dropFinisher()
+	}).catch((error: unknown) => {
+		console.warn('[bunbu] the ninja model did not load; the placeholders stay', error)
 	})
 
 	// The renderer and camera are the viewport's, shared by every world: set them up for this one and
@@ -124,8 +141,13 @@ export function createRunWorld(game: RunGame, viewport: Viewport): View {
 				seen = shogun.sequence
 				since = 0
 			}
-			samurai.show(shogun.pose, since, (run.distance / stepLength) * Math.PI)
-			samurai.grey(shogun.pose === 'fallen' ? Math.min(1, since / poseSeconds.fallen) : 0)
+			const cycle = (run.distance / stepLength) * Math.PI
+			const fallen = shogun.pose === 'fallen'
+			// Falling, the samurai is finished off first and goes down as the blade lands.
+			const finish = fallen ? finishingOf(since) : undefined
+			if (finish === undefined) samurai.show(shogun.pose, since, cycle)
+			else samurai.show(finish.samurai.pose, finish.samurai.time, cycle)
+			samurai.grey(finish?.samurai.pose === 'fallen' ? Math.min(1, finish.samurai.time / poseSeconds.fallen) : 0)
 
 			// The ninjas first: they keep the mark each came from after the ambush's options are gone.
 			ninjas.draw(game.ninjas.value.active, ambush.options, run.distance, delta, worldDelta)
@@ -137,10 +159,25 @@ export function createRunWorld(game: RunGame, viewport: Viewport): View {
 			samurai.root.position.set(here.x, 0, here.z)
 			samurai.root.rotation.y = here.heading + turnedTo
 
+			if (finish === undefined) {
+				dropFinisher()
+			} else {
+				if (finisher === undefined) {
+					finisher = makeNinja()
+					fighters.add(finisher.root)
+				}
+				// In front of him, the way he faces, running in and then striking.
+				const facing = samurai.root.rotation.y
+				const { distance: away, pose, time } = finish.ninja
+				finisher.root.position.set(here.x - Math.sin(facing) * away, 0, here.z - Math.cos(facing) * away)
+				finisher.root.rotation.y = facing + Math.PI
+				finisher.show(pose, time, time * 14)
+			}
+
 			// The camera follows down the path behind him, so it never cuts through a house at a
 			// corner, and it swings round the corners smoothly.
 			pathHeading += shortWay(pathHeading, here.heading) * (first ? 1 : damp(delta, 3))
-			const spot = cameraOf(camera.aspect, shogun.pose === 'fallen')
+			const spot = cameraOf(camera.aspect, fallen)
 			const [, height, back] = spot.position
 			const ground = path.at(run.distance - back)
 			target.set(ground.x, height, ground.z)
@@ -164,6 +201,7 @@ export function createRunWorld(game: RunGame, viewport: Viewport): View {
 			// Routes come and go, so free what this world uploaded to the GPU.
 			disposed = true
 			ninjas.dispose()
+			dropFinisher()
 			samurai.dispose()
 			parts.dispose()
 			stage.dispose()

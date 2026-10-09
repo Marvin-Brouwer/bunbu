@@ -63,6 +63,10 @@ const palette = {
 	timber: [0x5a4030, 0x6a4a32, 0x4d3a2c, 0x7a5236],
 	plaster: [0xe8e0cc, 0xd9cfb6, 0xefe7d6],
 	roof: 0x3a3e46,
+	/** Roof tiles vary from house to house: grey, brown, blue-grey. */
+	roofs: [0x3a3e46, 0x4d3c33, 0x34404f, 0x2e3036],
+	signs: [0xe9e2d0, 0x1f2a44, 0x8e2a22, 0xd8b25a],
+	flags: [0x8e2a22, 0x23345e, 0xe9e2d0, 0x3d6b3a, 0xc9a24a],
 	eave: 0x5a5f68,
 	noren: [0x23345e, 0x8e2a22, 0xe9e2d0, 0x2f4a3a],
 	lantern: 0xff5a2a,
@@ -195,11 +199,133 @@ type Town = {
 	readonly water: Batch
 	readonly bridge: Batch
 	readonly rocks: Batch
+	/** Painted boards and cloth: shop signs, banners, flags, bench covers. */
+	readonly cloth: Batch
+	/** Red-lacquered wood: balcony railings. */
+	readonly railings: Batch
+	/** Bamboo blinds, poles and carts. */
+	readonly bamboo: Batch
 	readonly glows: number[]
 }
 
 /** The point a matrix places its origin at, for the glow of a lantern. */
 const origin = (matrix: Matrix4) => new Vector3().setFromMatrixPosition(matrix).toArray()
+
+/** A roof colour for the building at `index`. */
+const roofOf = (index: number) => palette.roofs[Math.floor(scatter(index + 31) * palette.roofs.length)] ?? palette.roof
+
+/** Which kind of building stands at `index`: mostly town houses, with storehouses, shops and teahouses. */
+function kindOf(index: number): 'house' | 'storehouse' | 'shop' | 'teahouse' {
+	const roll = scatter(index + 40)
+	if (roll < 0.45) return 'house'
+	if (roll < 0.62) return 'storehouse'
+	if (roll < 0.84) return 'shop'
+	return 'teahouse'
+}
+
+/** Builds the building at `index`, `width` wide, its front on the street. */
+function building(town: Town, frame: Matrix4, width: number, index: number): void {
+	const kind = kindOf(index)
+	if (kind === 'storehouse') storehouse(town, frame, width, index)
+	else if (kind === 'shop') shop(town, frame, width, index)
+	else if (kind === 'teahouse') teahouse(town, frame, width, index)
+	else house(town, frame, width, index)
+}
+
+/** A gable roof with its ridge, `top` metres up over a body `depth` deep set `back` from the front. */
+function roof(town: Town, frame: Matrix4, width: number, depth: number, top: number, back: number, colour: number): void {
+	town.roofs.add(within(frame, placed(0, top, back, 0, width + 0.5, 1.5, depth + 1.2)), colour)
+	town.ridges.add(within(frame, placed(0, top + 1.5, back, 0, width + 0.5, 0.18, 0.3)), 0x2a2d33)
+}
+
+/** A storehouse (kura): thick white plaster on a black base, small barred windows, a heavy roof. */
+function storehouse(town: Town, frame: Matrix4, width: number, index: number): void {
+	const depth = 6
+	const front = depth / 2 - 0.5
+	town.plaster.add(within(frame, placed(0, 2.75, -0.5, 0, width, 5.5, depth)), palette.plaster[0])
+	// The tiled base (namako) and the plaster band under the eaves.
+	town.walls.add(within(frame, placed(0, 0.65, -0.5, 0, width + 0.04, 1.3, depth + 0.04)), 0x2a2a2e)
+	town.ridges.add(within(frame, placed(0, 5.35, -0.5, 0, width + 0.1, 0.3, depth + 0.1)), 0x2a2d33)
+	for (const y of [2.1, 4.2]) town.windows.add(within(frame, placed((scatter(index + 41) - 0.5) * (width - 2), y, front + 0.04, 0, 0.9, 0.7, 0.08)), 0x2a2420)
+	town.walls.add(within(frame, placed(width / 4, 1.1, front + 0.03, 0, 1.2, 2.2, 0.06)), 0x3a2a1f)
+	roof(town, frame, width, depth, 5.5, -0.5, roofOf(index))
+}
+
+/** A shop: an awning over goods in front, and a tall painted sign by the door. */
+function shop(town: Town, frame: Matrix4, width: number, index: number): void {
+	house(town, frame, width, index)
+	const front = 3.5
+	// From the wall out over the goods.
+	const awning = within(frame, placed(0, 2.55, front + 0.8))
+	awning.multiply(new Matrix4().makeRotationX(0.22)).multiply(placed(0, 0, 0, 0, width - 0.6, 0.06, 1.6))
+	town.cloth.add(awning, palette.flags[Math.floor(scatter(index + 51) * palette.flags.length)] ?? palette.flags[0])
+	// The standing sign (kanban): a framed board on the street side of the door.
+	const side = scatter(index + 52) > 0.5 ? 1 : -1
+	const sign = within(frame, placed(side * (width / 2 - 0.45), 1.25, front + 1.6))
+	town.walls.add(within(sign, placed(0, 0, 0, 0, 0.7, 2.5, 0.16)), 0x2a1f18)
+	town.cloth.add(within(sign, placed(0, 0.1, 0.09, 0, 0.55, 2.1, 0.02)), palette.signs[Math.floor(scatter(index + 53) * palette.signs.length)] ?? palette.signs[0])
+	// Goods out front: crates and sacks.
+	for (let crate = 0; crate < 3; crate++) {
+		const along = (crate - 1) * 0.9 - side * 0.6
+		const size = 0.45 + scatter(index + 54 + crate) * 0.25
+		// Out past where a house keeps its barrel.
+		town.barrels.add(within(frame, placed(along, size / 2, front + 1.6 + scatter(index + 57 + crate) * 0.3, scatter(index + 60 + crate), size, size, size)), crate === 1 ? 0xb89a6a : 0x7a5a3a)
+	}
+}
+
+/** A teahouse: two storeys, a balcony with a red railing, bamboo blinds, a row of lanterns, a bench. */
+function teahouse(town: Town, frame: Matrix4, width: number, index: number): void {
+	const depth = 7
+	const front = depth / 2
+	const timber = palette.timber[Math.floor(scatter(index + 12) * palette.timber.length)] ?? palette.timber[0]
+	town.walls.add(within(frame, placed(0, 1.5, 0, 0, width, 3, depth)), timber)
+	town.lattice.add(within(frame, placed(0, 1.35, front + 0.04, 0, width - 0.5, 2.2, 0.08)), timber)
+	town.walls.add(within(frame, placed(0, 4.3, -0.3, 0, width - 0.2, 2.6, depth - 0.6)), timber)
+	// The balcony: a floor out over the street, a red railing, blinds rolled half down behind it.
+	town.walls.add(within(frame, placed(0, 3.1, front + 0.5, 0, width - 0.2, 0.15, 1.2)), 0x3a2a1f)
+	town.railings.add(within(frame, placed(0, 3.75, front + 1.05, 0, width - 0.2, 0.08, 0.08)), palette.bridge)
+	// Posts spread evenly from end to end of the balcony.
+	const posts = Math.max(1, Math.round((width - 0.4) / 1.2))
+	for (let post = 0; post <= posts; post++) {
+		town.railings.add(within(frame, placed(-width / 2 + 0.2 + (post * (width - 0.4)) / posts, 3.45, front + 1.05, 0, 0.08, 0.6, 0.08)), palette.bridge)
+	}
+	town.bamboo.add(within(frame, placed(0, 4.6, front - 0.25, 0, width - 0.6, 1.3, 0.05)), 0xc8a86a)
+	// Lanterns all along the eaves.
+	for (let lantern = 0; lantern < Math.floor(width / 1.4); lantern++) {
+		// Hung under the eaves, which end at the front wall.
+		const at = within(frame, placed(-width / 2 + 0.8 + lantern * 1.4, 5.25, front - 0.15))
+		town.lanterns.add(within(at, placed(0, 0, 0, 0, 0.36, 0.48, 0.36)), lantern % 2 === 0 ? palette.lantern : palette.paper)
+		town.glows.push(...origin(at))
+	}
+	town.noren.add(within(frame, placed(0, 2.15, front + 0.16, 0, Math.min(2.6, width - 1), 0.75, 0.04)), palette.noren[1] ?? palette.lantern)
+	// A bench out front under a red cloth, for tea.
+	town.cloth.add(within(frame, placed(width / 4, 0.5, front + 1.3, 0, 1.6, 0.12, 0.7)), 0xb3281f)
+	town.bamboo.add(within(frame, placed(width / 4, 0.22, front + 1.3, 0, 1.5, 0.44, 0.6)), 0x5a4030)
+	roof(town, frame, width, depth - 0.6, 5.6, -0.3, roofOf(index))
+}
+
+/** Street furniture between the houses: a banner on a pole (nobori), or a handcart. */
+function streetThing(town: Town, point: PathPoint, side: number, index: number): void {
+	if (scatter(index + 70) > 0.4) {
+		const at = beside(point, side * (streetHalfWidth - 0.4), 0)
+		const frame = placed(at.x, 0, at.z, facingPath(point, side))
+		town.bamboo.add(within(frame, placed(0, 2.2, 0, 0, 0.08, 4.4, 0.08)), 0x6a5a3a)
+		town.cloth.add(within(frame, placed(0.32, 2.6, 0, 0, 0.55, 2.6, 0.02)), palette.flags[Math.floor(scatter(index + 71) * palette.flags.length)] ?? palette.flags[0])
+	} else {
+		// Parked along the street at its edge, out of the way, the handle along the street too.
+		const at = beside(point, side * (streetHalfWidth + 0.1), 0)
+		const frame = placed(at.x, 0, at.z, facingPath(point, side))
+		const cart = within(frame, placed(0, 0, 0, (scatter(index + 72) - 0.5) * 0.3))
+		town.bamboo.add(within(cart, placed(0, 0.75, 0, 0, 1.8, 0.12, 1)), 0x7a5a3a)
+		town.barrels.add(within(cart, placed(0, 1.05, 0, 0, 0.7, 0.6, 0.7)), 0xb89a6a)
+		for (const wheel of [-1, 1]) {
+			const turned = within(cart, placed(0, 0.45, wheel * 0.55))
+			turned.multiply(new Matrix4().makeRotationX(Math.PI / 2)).multiply(placed(0, 0, 0, 0, 0.9, 0.08, 0.9))
+			town.barrels.add(turned, 0x4a3324)
+		}
+		town.bamboo.add(within(cart, placed(-1.4, 0.75, 0, 0, 1.2, 0.06, 0.06)), 0x7a5a3a)
+	}
+}
 
 /** A town house (machiya) `width` wide, its front on the street. */
 function house(town: Town, frame: Matrix4, width: number, index: number): void {
@@ -228,7 +354,7 @@ function house(town: Town, frame: Matrix4, width: number, index: number): void {
 		top = 5.2
 		roofDepth = upperDepth + 1.2
 	}
-	town.roofs.add(within(frame, placed(0, top, two ? -0.8 : 0, 0, width + 0.5, 1.5, roofDepth)), palette.roof)
+	town.roofs.add(within(frame, placed(0, top, two ? -0.8 : 0, 0, width + 0.5, 1.5, roofDepth)), roofOf(index))
 	town.ridges.add(within(frame, placed(0, top + 1.5, two ? -0.8 : 0, 0, width + 0.5, 0.18, 0.3)), 0x2a2d33)
 
 	if (scatter(index + 16) > 0.45) {
@@ -336,6 +462,9 @@ function lay(path: Path, from: number, to: number): { town: Town; pending: Pendi
 		water: new Batch(geometry(new CircleGeometry(1, 28).rotateX(-Math.PI / 2)), material(new MeshStandardMaterial({ roughness: 0.15, metalness: 0.4 })), cursor),
 		bridge: new Batch(box, lit(0.6), cursor, { cast: true }),
 		rocks: new Batch(geometry(new DodecahedronGeometry(1, 0)), lit(1), cursor, { cast: true }),
+		cloth: new Batch(box, lit(0.9), cursor, { cast: true }),
+		railings: new Batch(box, lit(0.5), cursor),
+		bamboo: new Batch(box, lit(0.8), cursor, { cast: true }),
 		glows: [],
 	}
 	const pending: Pending = { maples: [], bamboo: [], torii: [] }
@@ -354,7 +483,11 @@ function lay(path: Path, from: number, to: number): { town: Town; pending: Pendi
 			const middle = distance + width / 2
 			const street = path.at(distance).zone === 'street' && path.at(distance + width).zone === 'street'
 			if (!street || scatter(index + 500) < 0.08) {
-				// A garden, or an alley between houses.
+				// A garden, or an alley between houses, with a banner or a cart at the street's edge.
+				if (street) {
+					cursor.chunk = chunkOf(distance + 1.25)
+					streetThing(town, path.at(distance + 1.25), side, index)
+				}
 				distance += street ? 2.5 : 4
 				continue
 			}
@@ -369,7 +502,7 @@ function lay(path: Path, from: number, to: number): { town: Town; pending: Pendi
 				return clear(corner.x, corner.z, middle, streetHalfWidth + 0.4)
 			})
 			if (free) {
-				house(town, frame, width - 0.15, index)
+				building(town, frame, width - 0.15, index)
 				taken.push({ x: centre.x, z: centre.z, radius: Math.hypot(width, 7) / 2 })
 			}
 			distance += width

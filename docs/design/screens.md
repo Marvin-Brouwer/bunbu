@@ -91,7 +91,7 @@ The scroll's heading is the label, the question type, `2 OF 3` for the rounds of
 Shown instead of 7 when the life bar is empty.
 
 - 散 · **Fallen** · stage and distance reached (`1,120 of 1,500 m`) · "life bar empty: 70% is out of reach".
-- 3D samurai on one knee, katana dropped, ink-wash grey, petals falling.
+- 3D: a ninja runs in and runs the samurai through. He goes down in ink-wash grey, and his helmet is knocked off and rolls away, still in its colours. Petals falling.
 - Correct (`8 / 11`, best possible 65%), **run score** (marked "not a high score"), time.
 - "What cut you down": the mistakes scroll, tap to expand.
 - **Rise again**, **Practise mistakes**, **Menu**.

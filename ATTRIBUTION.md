@@ -5,6 +5,7 @@ Every third-party asset in the game, with its author, source and license
 
 | Asset | Author | Source | License | In the repo |
 | ----- | ------ | ------ | ------- | ----------- |
+| Samurai base: "Matt" (animated) | Quaternius | [Poly Pizza](https://poly.pizza/m/66kQ4dBBC7) | [CC0](https://creativecommons.org/publicdomain/zero/1.0/) | `apps/game/public/models/samurai.glb` |
 | Ninja (animated) | Quaternius | [Poly Pizza](https://poly.pizza/m/xGYmeDpfTu) | [CC0](https://creativecommons.org/publicdomain/zero/1.0/) | `apps/game/public/models/ninja.glb` |
 | Maple trees | Quaternius | [Poly Pizza](https://poly.pizza/m/iGFtQd0PJO) | [CC0](https://creativecommons.org/publicdomain/zero/1.0/) | `apps/game/public/models/maple.glb` |
 | Bamboo | Quaternius | [Poly Pizza](https://poly.pizza/m/xBPj13w3JQ) | [CC0](https://creativecommons.org/publicdomain/zero/1.0/) | `apps/game/public/models/bamboo.glb` |

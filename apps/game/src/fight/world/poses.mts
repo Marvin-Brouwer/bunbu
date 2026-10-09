@@ -205,3 +205,72 @@ export function clipTimeOf(pose: FigurePose, time: number, cycle: number, durati
 	const end = duration * (play.until ?? 1) - 1e-4
 	return Math.min(1, Math.max(0, time / playSeconds(pose))) * end
 }
+
+/** Metres a helmet rests above the ground, on its side. */
+export const helmetRest = 0.22
+
+/** Seconds a knocked-off helmet takes to come to rest. */
+export const helmetSeconds = 1.6
+
+const gravity = 9.8
+
+export type HelmetFlight = {
+	/** Metres behind where it came off. */
+	readonly back: number
+	/** Metres to his right of where it came off: thrown clear of the body, which falls back. */
+	readonly side: number
+	/** Metres above the ground. */
+	readonly height: number
+	/** Radians it has tumbled. */
+	readonly tumble: number
+}
+
+/**
+ * Where a helmet knocked off from `from` metres up is, `time` seconds later: thrown back and up, it
+ * lands, bounces once and rolls to a stop. A function of time alone, so it plays the same at any
+ * frame rate and holds still once it rests.
+ */
+export function helmetFlight(time: number, from: number): HelmetFlight {
+	const t = Math.max(0, time)
+	const up = 2.4
+	// When it first lands: from + up t - g t² / 2 = rest.
+	const drop = Math.max(0, from - helmetRest)
+	const landed = (up + Math.sqrt(up * up + 2 * gravity * drop)) / gravity
+	const bounce = 0.3 * (gravity * landed - up)
+	const bounced = (2 * bounce) / gravity
+	let height = helmetRest
+	if (t < landed) height = from + up * t - (gravity * t * t) / 2
+	else if (t < landed + bounced) height = helmetRest + bounce * (t - landed) - (gravity * (t - landed) ** 2) / 2
+	// Back and tumble slow down to a stop, as it rolls.
+	const rolled = Math.min(t, helmetSeconds)
+	const slowing = rolled - (rolled * rolled) / (2 * helmetSeconds)
+	return { back: 1.1 * slowing, side: 1.5 * slowing, height, tumble: 5 * slowing }
+}
+
+/** The finishing blow when the samurai falls: a ninja runs in and stabs him ([8 Fallen](../../../../../docs/design/screens.md#8-fallen)). */
+export const finishing = {
+	/** Metres in front of the samurai the ninja comes from, and where it stops to strike. */
+	from: 5,
+	reach: 1,
+	/** Seconds it runs in before it strikes. */
+	run: 0.35,
+}
+
+export type Finishing = {
+	readonly samurai: { readonly pose: Pose; readonly time: number }
+	readonly ninja: { readonly pose: NinjaPose; readonly time: number; readonly distance: number }
+}
+
+/**
+ * Who does what `time` seconds into the samurai's fall: the ninja runs in and strikes, and the
+ * samurai, hurt, goes down only as the blade lands. Timed from the store's fallen pose, so it plays
+ * the same every time and holds at its end.
+ */
+export function finishingOf(time: number): Finishing {
+	const lands = finishing.run + poseSeconds.strike * 0.6
+	const ninja = time < finishing.run
+		? { pose: 'approach' as const, time, distance: mix(finishing.from, finishing.reach, easeOut(progress(time, finishing.run))) }
+		: { pose: 'strike' as const, time: time - finishing.run, distance: finishing.reach }
+	const samurai = time < lands ? { pose: 'hurt' as const, time } : { pose: 'fallen' as const, time: time - lands }
+	return { samurai, ninja }
+}

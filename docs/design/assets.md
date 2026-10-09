@@ -26,13 +26,18 @@ The samurai's run, attack and hit animations come from the [Universal Animation 
 
 ### In the game now
 
-Until the retargeted samurai lands, **both sides use the Quaternius ninja**: the samurai in crimson and gold, the ninjas in black with a red sash. One rig, one set of clips, one style. The world plays these clips, fitted to the state's timing (`fight/world/poses.mts`):
+Until a samurai model of our own lands, both sides come from one Quaternius pack ([Ultimate Animated Character Pack](https://quaternius.com/), CC0), so they share one rig, one set of clips and one style:
+
+- **Samurai:** ["Matt"](https://poly.pizza/m/66kQ4dBBC7) in armour built in code (`fight/world/armour.mts`). The armour is a kabuto helmet with gilt horns and a neck guard, a laced breastplate, shoulder and hip plates, sleeves and hakama, hung on the bones. His long blade serves as the katana. The helmet comes off when he falls.
+- **Ninjas:** the [ninja](https://poly.pizza/m/xGYmeDpfTu) in black with a red sash.
+
+The world plays these clips, fitted to the state's timing (`fight/world/poses.mts`):
 
 | Pose                     | Clip       |
 | ------------------------ | ---------- |
 | run, approach, fleeing   | `Run`      |
 | idle                     | `Idle`     |
-| strike                   | `Weapon`   |
+| strike                   | `Weapon` (ninja), `Slash` (samurai) |
 | block                    | `Duck` (first 40%) |
 | hurt, blocked            | `HitReact` |
 | fallen, slain            | `Death`    |
