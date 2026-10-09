@@ -2,8 +2,8 @@
  * Keeps the player in the game while they play, a fight or a practice: full screen on a phone, and
  * Back pauses before it leaves.
  *
- * - **Full screen** on a touch screen without hover, as a phone is. Leaving full screen (the
- *   system's back gesture, or swiping down) pauses; resuming goes full screen again.
+ * - **Full screen** on a phone. Leaving full screen (the system's back gesture, or swiping down)
+ *   pauses; resuming goes full screen again.
  * - **Back** pauses first: playing puts one history entry on the page, which Back takes off
  *   again. Back once more leaves as usual. Resuming puts the entry back.
  *
@@ -32,7 +32,12 @@ const guarding = () => (history.state as Record<string, unknown> | null)?.[guard
 /** The guards of the play on screen; a restart starts the next before the last has gone. */
 let active = 0
 
-const phone = () => window.matchMedia('(hover: none) and (pointer: coarse)').matches
+/**
+ * A phone: its main pointer is a finger. A laptop with a touch screen still points with its
+ * trackpad or mouse, so it stays out. The dev server stays out too, as the device mode of the
+ * devtools passes for a phone.
+ */
+const phone = () => !import.meta.env.DEV && window.matchMedia('(hover: none) and (pointer: coarse)').matches
 
 /** Puts the entry Back takes off to pause, unless it is there already. */
 function guard() {
