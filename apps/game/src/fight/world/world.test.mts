@@ -3,9 +3,11 @@
  * far back the camera stands. The three.js side only applies these.
  */
 
+import { PerspectiveCamera, Vector3 } from 'three'
 import { describe, expect, it } from 'vitest'
 import { marks } from '../../_shared/state/ambush.mts'
 import { distanceFor } from '../../canvas/framing.mts'
+import { cameraOf, runFraming } from './camera.mts'
 import { markOf } from './ninjas.mts'
 import { headingOf, placementConfig, spotOf } from './placement.mts'
 import { poseSeconds, rigOf } from './poses.mts'
@@ -36,7 +38,7 @@ describe('placement', () => {
 	})
 
 	it('keeps the ninjas from behind between the samurai and the camera', () => {
-		// The camera stands at least 6.5 m back, most of that behind him.
+		// The camera stands at least 8 m back, most of that behind him.
 		expect(spotOf('down', 1, 0).z).toBeLessThan(5)
 		expect(spotOf('down', 0, 0).z).toBeLessThan(-spotOf('up', 0, 0).z)
 	})
@@ -61,7 +63,8 @@ describe('placement', () => {
 		const ninja = { id: 1, wave: 0, options: [2], approach: 0, pose: 'approach', sequence: 0 } as const
 		const option = (mark: (typeof marks)[number]) => ({ answer: '', correct: false, mark, ninja: 1, pick: 0, source: 0, rank: 0 })
 		expect(markOf(ninja, [option('left'), option('up'), option('right')])).toBe('right')
-		expect(marks).toContain(markOf(ninja, []))
+		// Committing clears the options; the world keeps the mark it last drew.
+		expect(markOf(ninja, [])).toBeUndefined()
 	})
 })
 
@@ -110,4 +113,35 @@ describe('framing', () => {
 	it('never comes closer than the closest on a wide screen', () => {
 		expect(distanceFor(16 / 9, framing)).toBe(framing.closest)
 	})
+})
+
+describe('camera', () => {
+	const shapes = { phone: 9 / 19.5, tablet: 3 / 4, desktop: 16 / 9 }
+
+	/** Where a point lands on screen, from -1 to 1 either way. */
+	function onScreen(aspect: number, point: Vector3): Vector3 {
+		const camera = new PerspectiveCamera(runFraming.fov, aspect, 0.1, 200)
+		const spot = cameraOf(aspect, false)
+		camera.position.set(...spot.position)
+		camera.lookAt(new Vector3(...spot.look))
+		camera.updateMatrixWorld()
+		return point.clone().project(camera)
+	}
+
+	for (const [shape, aspect] of Object.entries(shapes)) {
+		it(`keeps every ninja in view on a ${shape}, from where they start to within reach`, () => {
+			for (const mark of marks) {
+				for (const wave of [0, 1]) {
+					for (const approach of [0, 0.25, 0.5, 0.75, 1]) {
+						const spot = spotOf(mark, wave, approach)
+						// Their middle, with a margin, so a ninja is on screen and not cut in half.
+						const seen = onScreen(aspect, new Vector3(spot.x, 1, spot.z))
+						expect(Math.abs(seen.x), `${mark} wave ${wave} at ${approach}`).toBeLessThan(0.9)
+						expect(Math.abs(seen.y), `${mark} wave ${wave} at ${approach}`).toBeLessThan(0.9)
+						expect(seen.z, `${mark} wave ${wave} at ${approach}`).toBeLessThan(1)
+					}
+				}
+			}
+		})
+	}
 })

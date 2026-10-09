@@ -18,14 +18,18 @@ export type Spot = {
 	readonly facing: number
 }
 
+const lowSide = Math.sin(Math.PI / 6)
+const lowDown = Math.cos(Math.PI / 6)
+
 /** The direction of each mark on the ground, as the camera sees it. */
 const directions: Readonly<Record<Mark, readonly [x: number, z: number]>> = {
 	up: [0, -1],
 	'up-right': [Math.SQRT1_2, -Math.SQRT1_2],
 	right: [1, 0],
-	'down-right': [Math.SQRT1_2, Math.SQRT1_2],
+	// The lower diagonals are steeper: close to the camera, a wide angle runs off the screen's sides.
+	'down-right': [lowSide, lowDown],
 	down: [0, 1],
-	'down-left': [-Math.SQRT1_2, Math.SQRT1_2],
+	'down-left': [-lowSide, lowDown],
 	left: [-1, 0],
 	'up-left': [-Math.SQRT1_2, -Math.SQRT1_2],
 }
@@ -39,8 +43,8 @@ export const placementConfig = {
 	aside: 7,
 	/** How far to the side they start, for a mark that points fully sideways. */
 	wide: 3.2,
-	/** How far behind the samurai they start from below, short of the camera. */
-	behind: 3.5,
+	/** How much farther than in reach they start from below, short of the camera. */
+	behind: 1,
 	/** How much farther the back row stands than the front row. */
 	backRow: 1.4,
 }
@@ -55,9 +59,10 @@ export function spotOf(mark: Mark, wave: number, approach: number, config = plac
 	const [x, z] = directions[mark]
 	const near = Math.min(1, Math.max(0, approach))
 	const back = wave * config.backRow
-	const startX = x * (config.wide + back)
+	// From below they come straight in from a little farther out, with the camera at their back.
+	const startX = z > 0 ? x * (config.reach + back + config.behind) : x * (config.wide + back)
 	const startZ = z > 0
-		? z * (config.behind + back)
+		? z * (config.reach + back + config.behind)
 		: -(config.aside + (config.ahead - config.aside) * -z) - back
 	const endX = x * (config.reach + back)
 	const endZ = z * (config.reach + back)

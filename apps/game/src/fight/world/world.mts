@@ -8,11 +8,11 @@
  */
 
 import { Group, Scene, Vector3, type PerspectiveCamera } from 'three'
-import { distanceFor, type Framing } from '../../canvas/framing.mts'
 import type { View } from '../../canvas/stage.mts'
 import type { RunGame } from '../state/game.mts'
+import { cameraOf, runFraming } from './camera.mts'
 import { createFigure, createFigureParts } from './figure.mts'
-import { createNinjasView, markOf } from './ninjas.mts'
+import { createNinjasView } from './ninjas.mts'
 import { headingOf } from './placement.mts'
 import { poseSeconds, rigOf } from './poses.mts'
 import { createRiceFields } from './rice-fields.mts'
@@ -21,15 +21,6 @@ const samuraiColours = { body: 0x7a2a22, skin: 0xe2c4a0, band: 0x1f1c18, blade: 
 
 /** Metres per half a running cycle: one step. */
 const stepLength = 1.4
-
-/** What has to stay in view: the samurai with the front row of ninjas in reach either side. */
-const framing: Framing = { fov: 50, halfWidth: 2.6, closest: 6.5 }
-/** The camera looks down the path from behind and above the samurai. */
-const behind = new Vector3(0, 0.45, 1).normalize()
-const lookAhead = new Vector3(0, 1.1, -2.5)
-/** Fallen, it comes in close to the samurai on his knee. */
-const fallenCloser = 0.55
-const lookFallen = new Vector3(0, 0.7, 0)
 
 /** How quickly the camera and the samurai's heading settle, per second. */
 const settle = 4
@@ -56,9 +47,10 @@ export function createRunWorld(game: RunGame, camera: PerspectiveCamera): View {
 	const position = new Vector3()
 	const target = new Vector3()
 	const look = new Vector3()
+	const lookAt = new Vector3()
 
-	if (camera.fov !== framing.fov) {
-		camera.fov = framing.fov
+	if (camera.fov !== runFraming.fov) {
+		camera.fov = runFraming.fov
 		camera.updateProjectionMatrix()
 	}
 
@@ -86,27 +78,28 @@ export function createRunWorld(game: RunGame, camera: PerspectiveCamera): View {
 			samurai.pose(rigOf(shogun.pose, since, (run.distance / stepLength) * Math.PI))
 			samurai.grey(shogun.pose === 'fallen' ? Math.min(1, since / poseSeconds.fallen) : 0)
 
+			// The ninjas first: they keep the mark each came from after the ambush's options are gone.
+			ninjas.draw(game.ninjas.value.active, ambush.options, delta, worldDelta)
+
 			// He turns toward the ninja he strikes or blocks, and back to the path after.
-			const aimed = shogun.target === undefined ? undefined : game.ninjas.value.active.find((ninja) => ninja.id === shogun.target)
-			const turnTo = (shogun.pose === 'strike' || shogun.pose === 'block') && aimed !== undefined ? headingOf(markOf(aimed, ambush.options)) : 0
+			const aimed = shogun.target === undefined ? undefined : ninjas.markOf(shogun.target)
+			const turnTo = (shogun.pose === 'strike' || shogun.pose === 'block') && aimed !== undefined ? headingOf(aimed) : 0
 			// The short way round.
 			const turn = Math.atan2(Math.sin(turnTo - heading), Math.cos(turnTo - heading))
 			heading += turn * damp(delta, 14)
 			samurai.root.rotation.y = heading
 
-			ninjas.draw(game.ninjas.value.active, ambush.options, delta, worldDelta)
-
-			const fallen = shogun.pose === 'fallen'
-			const distance = distanceFor(camera.aspect, framing) * (fallen ? fallenCloser : 1)
-			target.copy(behind).multiplyScalar(distance)
-			const lookAt = fallen ? lookFallen : lookAhead
+			const spot = cameraOf(camera.aspect, shogun.pose === 'fallen')
+			target.set(...spot.position)
+			lookAt.set(...spot.look)
 			if (first) {
 				position.copy(target)
 				look.copy(lookAt)
 				first = false
 			} else {
-				position.lerp(target, damp(realDelta))
-				look.lerp(lookAt, damp(realDelta))
+				// Held with the rest of the world while paused.
+				position.lerp(target, damp(delta))
+				look.lerp(lookAt, damp(delta))
 			}
 			camera.position.copy(position)
 			camera.lookAt(look)

@@ -24,20 +24,30 @@ const creepCycle = 9
 
 type Shown = {
 	readonly figure: Figure
+	/**
+	 * The mark it closes in from. Kept, because committing an ambush clears its options while the
+	 * ninjas are still being slain or blocked where the player swiped.
+	 */
+	mark: Mark
 	sequence: number
 	/** Seconds since the store last changed this ninja's pose. */
 	time: number
 }
 
-/** The mark a ninja comes from: its first option's, or one by its id when the options are gone. */
-export function markOf(ninja: Ninja, options: readonly AmbushOption[]): Mark {
+/** The mark a ninja comes from: its first option's, or `undefined` once the ambush's options are gone. */
+export function markOf(ninja: Ninja, options: readonly AmbushOption[]): Mark | undefined {
 	const first = ninja.options[0]
-	return (first === undefined ? undefined : options[first]?.mark) ?? marks[(ninja.id * 2) % marks.length] ?? 'up'
+	return first === undefined ? undefined : options[first]?.mark
 }
+
+/** A mark for a ninja that never had options to go by, spread out by its id. */
+const markById = (id: number): Mark => marks[(id * 2) % marks.length] ?? 'up'
 
 export type NinjasView = {
 	/** Makes the figures match `active`. `delta` is real time, `worldDelta` slowed down. */
 	draw: (active: readonly Ninja[], options: readonly AmbushOption[], delta: number, worldDelta: number) => void
+	/** The mark the ninja with `id` was last drawn at, for the samurai to turn toward. */
+	markOf: (id: number) => Mark | undefined
 	dispose: () => void
 }
 
@@ -59,7 +69,7 @@ export function createNinjasView(parent: Group, parts: FigureParts): NinjasView 
 			for (const ninja of active) {
 				let entry = shown.get(ninja.id)
 				if (entry === undefined) {
-					entry = { figure: createFigure(parts, colours), sequence: ninja.sequence, time: 0 }
+					entry = { figure: createFigure(parts, colours), mark: markById(ninja.id), sequence: ninja.sequence, time: 0 }
 					shown.set(ninja.id, entry)
 					parent.add(entry.figure.root)
 				}
@@ -70,7 +80,8 @@ export function createNinjasView(parent: Group, parts: FigureParts): NinjasView 
 					entry.time = 0
 				}
 
-				const spot = spotOf(markOf(ninja, options), ninja.wave, ninja.approach)
+				entry.mark = markOf(ninja, options) ?? entry.mark
+				const spot = spotOf(entry.mark, ninja.wave, ninja.approach)
 				const { root } = entry.figure
 				root.position.set(spot.x, 0, spot.z)
 				root.rotation.y = spot.facing
@@ -82,6 +93,8 @@ export function createNinjasView(parent: Group, parts: FigureParts): NinjasView 
 				if (!active.some((ninja) => ninja.id === id)) drop(id, entry)
 			}
 		},
+
+		markOf: (id) => shown.get(id)?.mark,
 
 		dispose() {
 			for (const [id, entry] of shown) drop(id, entry)
