@@ -19,7 +19,7 @@ describe('readQuiz', () => {
 		if (!('quiz' in result)) expect.unreachable(result.problems.join('\n'))
 		expect(result.quiz.id).toBe('every-type')
 		// The file leaves out the built-in pronunciations, and reading it puts them all back.
-		expect(await uncompress(result.file)).toEqual({ ...result.quiz, pronunciations: expect.objectContaining(result.quiz.pronunciations) })
+		expect(await uncompress(result.file.value)).toEqual({ ...result.quiz, pronunciations: expect.objectContaining(result.quiz.pronunciations) })
 	})
 
 	it('lists what is wrong with an invalid .yaml quiz, by line', async () => {
@@ -39,7 +39,7 @@ describe('readQuiz', () => {
 		const result = await readQuiz(file(bytes, 'fixture.bunbu'))
 		if (!('quiz' in result)) expect.unreachable(result.problems.join('\n'))
 		expect(result.quiz.title).toBe(fixtureQuiz.title)
-		expect(result.file).toEqual(new Uint8Array(bytes))
+		expect(result.file.value).toEqual(new Uint8Array(bytes))
 	})
 
 	it('explains a damaged .bunbu file', async () => {
