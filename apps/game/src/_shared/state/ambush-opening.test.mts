@@ -2,7 +2,7 @@ import { validate, type BunbuData, type Markdown, type Option } from '@bunbu/dat
 import { beforeAll, describe, expect, it } from 'vitest'
 import { fixtureQuiz, manyOptions } from '../../_temp/quiz.mts'
 import { createAmbush, type AmbushOpening } from './ambush.mts'
-import { frontRow, maxNinjas, openingOf } from './ambush-opening.mts'
+import { frontRow, maxNinjas, openingOf, playable } from './ambush-opening.mts'
 import { ambushConfig, ambushSeconds, approachOf, wordsIn } from './ambush-time.mts'
 import { refsOf } from './quiz.mts'
 import { seeded } from './random.mts'
@@ -69,8 +69,22 @@ describe('opening an ambush', () => {
 		}
 	})
 
-	it('refuses more than 8 options', () => {
-		const options = Array.from({ length: 9 }, (_, index) => ({ answer: markdown(`${index}`), correct: index === 0 }))
+	it('drops distractors at random to fit more than 8 options on the marks, keeping every correct one', () => {
+		const options = Array.from({ length: 12 }, (_, index) => ({ answer: markdown(`${index}`), correct: index < 3 }))
+		const kept = new Set<number>()
+		for (let seed = 0; seed < 10; seed++) {
+			const opening = open(withOptions(options), 0, seed)
+			expect(opening.options).toHaveLength(8)
+			expect(opening.options.filter((option) => option.correct).map((option) => option.source).toSorted((first, second) => first - second)).toEqual([0, 1, 2])
+			for (const option of opening.options) kept.add(option.source)
+		}
+		expect(kept.size).toBe(12)
+		expect(playable(withOptions(options).questions[0]!)).toBe(true)
+	})
+
+	it('cannot fight more than 8 correct options', () => {
+		const options = Array.from({ length: 9 }, (_, index) => ({ answer: markdown(`${index}`), correct: true }))
+		expect(playable(withOptions(options).questions[0]!)).toBe(false)
 		expect(() => open(withOptions(options))).toThrow(RangeError)
 	})
 

@@ -8,7 +8,7 @@
 import type { BunbuData, Question } from '@bunbu/data'
 import { yesNoMarks, type AmbushKind, type AmbushOpening, type AmbushOption, type Mark } from './ambush.mts'
 import { ambushSeconds } from './ambush-time.mts'
-import { choicesOf, type QuestionRef } from './quiz.mts'
+import { choicesOf, partsOf, type QuestionRef } from './quiz.mts'
 import { shuffle, type Random } from './random.mts'
 
 /** Up to 5 ninjas: 3 in front, 2 behind. */
@@ -27,7 +27,10 @@ const markSets: Readonly<Record<number, readonly Mark[]>> = {
 	8: ['left', 'up-left', 'up', 'up-right', 'right', 'down-right', 'down', 'down-left'],
 }
 
-/** One swipe direction per option, so at most 8. */
+/**
+ * One swipe direction per option, so an ambush shows at most 8. This limits the fight, not the
+ * quiz: a question with more options drops distractors at random, see {@link playable}.
+ */
 export const maxOptions = 8
 
 /** How a question is answered: `solutions` entries as `yes-no`, `match` rows as `single`. */
@@ -75,18 +78,18 @@ export function openingOf(quiz: BunbuData, refs: readonly QuestionRef[], at: Que
 	if (question === undefined) throw new RangeError(`[bunbu] the quiz has no question ${at.question}`)
 	const kind = kindOf(question)
 	const choices = choicesOf(question, at.part)
-	if (choices.length > maxOptions) {
-		throw new RangeError(`[bunbu] question ${at.question} has ${choices.length} options, at most ${maxOptions} are allowed`)
+	const correct = choices.map((choice) => choice.correct)
+	if (correct.filter(Boolean).length > maxOptions) {
+		throw new RangeError(`[bunbu] question ${at.question} has more than ${maxOptions} correct options and can't be fought; check playable() first`)
 	}
 
-	const correct = choices.map((choice) => choice.correct)
 	const sources = choices.map((_, source) => source)
 	// Yes stays on ↑ and no on ↓; everything else is shuffled.
-	const order = kind === 'yes-no' ? sources : shuffle(sources, settings.random)
+	const order = kind === 'yes-no' ? sources : withoutExtraDistractors(shuffle(sources, settings.random), correct)
 	if (kind === 'order') startOutOfOrder(order, correct)
 
-	const marks = kind === 'yes-no' ? [yesNoMarks.yes, yesNoMarks.no] : markSets[choices.length] ?? []
-	const ninjas = kind === 'yes-no' ? [0, 0] : ninjasFor(choices.length, settings.random)
+	const marks = kind === 'yes-no' ? [yesNoMarks.yes, yesNoMarks.no] : markSets[order.length] ?? []
+	const ninjas = kind === 'yes-no' ? [0, 0] : ninjasFor(order.length, settings.random)
 	const options = order.map((source, place): AmbushOption => ({
 		answer: choices[source]!.answer,
 		correct: correct[source]!,
@@ -109,6 +112,25 @@ export function openingOf(quiz: BunbuData, refs: readonly QuestionRef[], at: Que
 		round: Math.max(1, ownRefs.findIndex((ref) => ref.part === at.part) + 1),
 		rounds: Math.max(1, ownRefs.length),
 	}
+}
+
+/**
+ * Whether every ambush of the question fits on the 8 marks: more than 8 options are fine as long
+ * as at most 8 of them are correct, because the extra distractors are dropped.
+ */
+export function playable(question: Question): boolean {
+	return Array.from({ length: partsOf(question) }, (_, part) => choicesOf(question, part))
+		.every((choices) => choices.filter((choice) => choice.correct).length <= maxOptions)
+}
+
+/**
+ * Keeps every correct option and as many distractors as fit on the marks. `order` is shuffled
+ * already, so the first distractors in it are a random pick.
+ */
+function withoutExtraDistractors(order: readonly number[], correct: readonly boolean[]): number[] {
+	const room = maxOptions - correct.filter(Boolean).length
+	const kept = new Set(order.filter((source) => correct[source] !== true).slice(0, room))
+	return order.filter((source) => correct[source] === true || kept.has(source))
 }
 
 /**
