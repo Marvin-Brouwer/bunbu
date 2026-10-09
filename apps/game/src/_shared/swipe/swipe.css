@@ -33,7 +33,7 @@
 	grid-area: 1 / 1;
 	display: grid;
 	grid-template-rows: 0.9rem 1fr 0.9rem;
-	height: 10rem;
+	height: 13rem;
 }
 
 .edge {
@@ -70,9 +70,9 @@
 .hint {
 	margin: 0;
 	padding-inline: 1rem;
-	color: var(--ink);
+	color: var(--ink-faint);
 	font-family: var(--font-brush);
-	font-size: 1.05rem;
+	font-size: 0.85rem;
 	line-height: 1.2;
 }
 
