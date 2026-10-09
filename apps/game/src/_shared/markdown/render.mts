@@ -5,6 +5,10 @@
  * GitHub-flavoured Markdown with highlighted code blocks. Raw HTML is escaped, headings come out as
  * bold paragraphs, and images stay `<img>`, so an SVG never ends up inline. DOMPurify goes over
  * the result as well, in case a Markdown rule ever lets something through.
+ *
+ * Rooted's `Markdown` component puts the result on the page; it has no parser in the browser and
+ * doesn't sanitise ([@rooted/markdown](https://github.com/Marvin-Brouwer/rooted/blob/main/docs/guide/markdown.md)),
+ * which is what this adds.
  */
 
 import DOMPurify from 'dompurify'
@@ -50,12 +54,11 @@ function preparePurifier(): void {
 	})
 }
 
-/** Renders quiz Markdown to sanitised HTML, ready to append. */
-export function renderMarkdown(source: string): DocumentFragment {
+/** Renders quiz Markdown to sanitised HTML, for Rooted's `Markdown` component. */
+export function renderMarkdown(source: string): string {
 	preparePurifier()
 	return DOMPurify.sanitize(parser.render(source), {
 		USE_PROFILES: { html: true },
 		ADD_ATTR: ['target'],
-		RETURN_DOM_FRAGMENT: true,
 	})
 }

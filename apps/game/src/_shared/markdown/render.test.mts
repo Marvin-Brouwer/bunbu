@@ -2,11 +2,7 @@
 import { describe, expect, it } from 'vitest'
 import { renderMarkdown } from './render.mts'
 
-const html = (source: string) => {
-	const container = document.createElement('div')
-	container.append(renderMarkdown(source))
-	return container.innerHTML
-}
+const html = renderMarkdown
 
 describe('renderMarkdown', () => {
 	it('renders GitHub-flavoured Markdown', () => {

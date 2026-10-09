@@ -4,8 +4,9 @@
  */
 
 import { component } from '@rooted/components'
+import { Markdown } from '@rooted/markdown'
 import type { Ambush, AmbushState } from '../state/ambush.mts'
-import { QuizMarkdown } from '../markdown/quiz-markdown.mts'
+import { renderMarkdown } from '../markdown/render.mts'
 import { bundled } from './heading.mts'
 import { ScrollOption } from './scroll-option.mts'
 import styles from './scroll.css'
@@ -42,8 +43,9 @@ export const ScrollPaper = component<ScrollPaperOptions>({
 								}),
 								element('div', {
 									classes: styles.query,
-									children: create(QuizMarkdown, {
-										source: state.query,
+									children: create(Markdown, {
+										source: renderMarkdown(state.query),
+										classes: styles.markdown,
 									}),
 								}),
 								element('div', {

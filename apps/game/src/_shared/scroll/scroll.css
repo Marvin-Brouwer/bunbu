@@ -177,3 +177,179 @@
 		animation-delay: 0s !important;
 	}
 }
+
+/* An option: its mark, its text, and what the player did with it. */
+
+.option {
+	display: grid;
+	grid-template-columns: 2.25rem 1fr auto;
+	align-items: center;
+	gap: 0.75rem;
+	padding: 0.4rem 0.6rem 0.4rem 0.4rem;
+	border: var(--frame);
+	border-radius: var(--radius);
+	background: var(--paper);
+	transition: border-color 120ms, box-shadow 120ms;
+}
+
+.option[data-picked='true'] {
+	border-color: var(--vermilion);
+	box-shadow: 0 0 0 1px var(--vermilion);
+}
+
+.mark {
+	display: grid;
+	place-items: center;
+	width: 2.25rem;
+	height: 2.25rem;
+	border-radius: var(--radius);
+	background: var(--ink);
+	color: var(--paper);
+	font-size: 1.25rem;
+	line-height: 1;
+	transition: background 120ms;
+}
+
+.option[data-picked='true'] .mark {
+	background: var(--vermilion);
+}
+
+.answer {
+	min-width: 0;
+	font-size: 1.05rem;
+}
+
+.notes {
+	display: grid;
+	justify-items: end;
+	gap: 0.1rem;
+	font-family: var(--font-mono);
+	font-size: 0.75rem;
+	letter-spacing: 0.05em;
+}
+
+.picked {
+	color: var(--vermilion);
+	font-weight: 700;
+}
+
+.picked:empty {
+	display: none;
+}
+
+.ninja {
+	color: var(--ink-soft);
+}
+
+/* For `order`: the place the option was swiped in. */
+.option[data-kind='order'] .picked {
+	font-size: 1.25rem;
+}
+
+/* Quiz Markdown in the ink of the scroll: inline code, highlighted code blocks, tables and images. */
+
+.markdown {
+	overflow-wrap: anywhere;
+}
+
+.markdown > :first-child {
+	margin-top: 0;
+}
+
+.markdown > :last-child {
+	margin-bottom: 0;
+}
+
+.markdown p,
+.markdown ul,
+.markdown ol,
+.markdown pre,
+.markdown table,
+.markdown blockquote {
+	margin: 0 0 0.6em;
+}
+
+.markdown ul,
+.markdown ol {
+	padding-left: 1.4em;
+}
+
+.markdown blockquote {
+	padding-left: 0.8em;
+	border-left: 3px solid var(--ink-faint);
+	color: var(--ink-soft);
+}
+
+.markdown a {
+	color: var(--vermilion);
+}
+
+.markdown img {
+	max-width: 100%;
+	height: auto;
+}
+
+.markdown code {
+	font-family: var(--font-mono);
+	font-size: 0.9em;
+	padding: 0.05em 0.3em;
+	border-radius: var(--radius);
+	background: var(--paper-shade);
+}
+
+.markdown pre {
+	overflow-x: auto;
+	padding: 0.6em 0.75em;
+	border-radius: var(--radius);
+	background: var(--paper-shade);
+	font-size: 0.85em;
+	line-height: 1.45;
+}
+
+.markdown pre code {
+	padding: 0;
+	background: none;
+	font-size: inherit;
+}
+
+.markdown table {
+	border-collapse: collapse;
+	font-size: 0.9em;
+}
+
+.markdown th,
+.markdown td {
+	padding: 0.2em 0.6em;
+	border: 1px solid var(--ink-faint);
+	text-align: left;
+}
+
+/* highlight.js tokens, in ink: vermilion for the words of the language, a softer ink for the rest. */
+.markdown .hljs-keyword,
+.markdown .hljs-built_in,
+.markdown .hljs-selector-tag,
+.markdown .hljs-name {
+	color: var(--vermilion);
+}
+
+.markdown .hljs-string,
+.markdown .hljs-attr,
+.markdown .hljs-attribute,
+.markdown .hljs-regexp {
+	color: var(--moss);
+}
+
+.markdown .hljs-number,
+.markdown .hljs-literal,
+.markdown .hljs-type,
+.markdown .hljs-title,
+.markdown .hljs-selector-class,
+.markdown .hljs-selector-id {
+	color: var(--indigo);
+}
+
+.markdown .hljs-comment,
+.markdown .hljs-meta {
+	color: var(--ink-faint);
+	font-style: italic;
+}

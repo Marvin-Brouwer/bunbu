@@ -4,10 +4,11 @@
  */
 
 import { component, optional } from '@rooted/components'
+import { Markdown } from '@rooted/markdown'
 import type { Ambush, AmbushKind, AmbushOption } from '../state/ambush.mts'
-import { QuizMarkdown } from '../markdown/quiz-markdown.mts'
+import { renderMarkdown } from '../markdown/render.mts'
 import { arrows, ninjaName } from './heading.mts'
-import styles from './scroll-option.css'
+import styles from './scroll.css'
 
 export type ScrollOptionOptions = {
 	readonly option: AmbushOption
@@ -41,8 +42,9 @@ export const ScrollOption = component<ScrollOptionOptions>({
 					}),
 					element('div', {
 						classes: styles.answer,
-						children: create(QuizMarkdown, {
-							source: option.answer,
+						children: create(Markdown, {
+							source: renderMarkdown(option.answer),
+							classes: styles.markdown,
 						}),
 					}),
 					element('span', {
