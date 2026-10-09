@@ -97,19 +97,3 @@ export function commitAmbush(game: RunGame): void {
 	// puts him back to running.
 	game.run.value.endAmbush(result.outcome === 'correct' ? runConfig.strikeSeconds : runConfig.hitSeconds)
 }
-
-/**
- * Ends the outcome once the samurai's hold after an ambush is over: the ninjas that landed the hit
- * vanish, and the ones he blocked flee ([outcome](../../../../../docs/design/gameplay.md#outcome)).
- * The slain stay where they fell; the next ambush clears the field.
- */
-export function settleOutcome(game: RunGame): void {
-	const { active } = game.ninjas.value
-	if (active.some((ninja) => ninja.pose === 'strike')) {
-		game.ninjas.value.clear()
-		return
-	}
-	for (const ninja of active) {
-		if (ninja.pose === 'blocked') game.ninjas.value.flee(ninja.id)
-	}
-}

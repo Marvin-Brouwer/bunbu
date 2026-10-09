@@ -15,7 +15,7 @@ import { highScores } from '../state/highscores.mts'
 import { lastRun } from '../state/lastrun.mts'
 import { runConfig } from '../state/run.mts'
 import { pointOf, type HighScore } from '../state/score.mts'
-import { missShare, openAmbush, settleOutcome, tickAmbush } from './ambush.mts'
+import { missShare, openAmbush, tickAmbush } from './ambush.mts'
 
 /** Metres of path per ambush, until stage length and question count are decided (docs/plan.md). */
 export const metresPerAmbush = 120
@@ -103,12 +103,8 @@ export function tickRun(game: RunGame, worldDelta: number, realDelta: number): v
 	const { phase, recovery, distance, countdown } = game.run.value
 	if (phase !== 'running' || recovery > 0 || countdown > 0) return
 
-	// The samurai is back on his feet once the strike or the hit has played out, and the ninjas
-	// he faced flee or vanish.
-	if (game.shogun.value.pose !== 'run') {
-		game.shogun.value.run()
-		settleOutcome(game)
-	}
+	// The samurai is back on his feet once the strike or the hit has played out.
+	if (game.shogun.value.pose !== 'run') game.shogun.value.run()
 	if (game.quiz.value.current() !== undefined && distance >= ambushAt(game.quiz.value.answered) - reached) {
 		openAmbush(game, settings.value.timeScale())
 	}
