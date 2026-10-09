@@ -1,6 +1,6 @@
 /*
  * The run's layers over the canvas, back to front (docs/architecture/rendering.md#layers):
- * HUD, scroll, swipe zone, overlays. Each is a track of its own.
+ * HUD, scroll (with the swipe zone at its foot), overlays. Each is a track of its own.
  */
 
 .run,
@@ -19,20 +19,20 @@
 	pointer-events: auto;
 }
 
-.hud {
+/*
+ * Class names are scoped to the run, not to this file, so the components inside have their own
+ * `.hud` and `.scroll`: the layers are matched as `.layer.…` to leave those alone.
+ */
+.layer.hud {
 	align-content: start;
 }
 
-.scroll {
+.layer.scroll {
 	align-content: start;
 	padding: 3.5rem 0.75rem 0;
 }
 
-.swipe {
-	align-content: end;
-}
-
-.overlays {
+.layer.overlays {
 	align-content: center;
 	justify-content: center;
 }

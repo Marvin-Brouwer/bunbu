@@ -15,7 +15,6 @@ import { show } from '../canvas/stage.mts'
 import type { RunGame } from './state/game.mts'
 import { Hud } from './hud/hud.mts'
 import { Scroll } from '../_shared/scroll/scroll.mts'
-import { SwipeZone } from '../_shared/swipe/swipe-zone.mts'
 import styles from './run.css'
 
 export type RunScreenOptions = {
@@ -63,16 +62,6 @@ export const RunScreen = component<RunScreenOptions>({
 							ambush: game.ambush,
 							quiz: game.quiz,
 							label: 'AMBUSH',
-						}),
-					}),
-					element('div', {
-						'data-layer': 'swipe',
-						classes: [
-							styles.layer,
-							styles.swipe,
-						],
-						children: create(SwipeZone, {
-							ambush: game.ambush,
 							commit: () => { commitAmbush(game) },
 							held: () => game.run.value.phase !== 'ambush' || game.run.value.countdown > 0,
 						}),

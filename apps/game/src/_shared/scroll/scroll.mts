@@ -4,8 +4,9 @@
  * is answered, and is sliced in half when the time runs out
  * ([5 Outcome](../../../../../docs/design/screens.md#5-outcome)).
  *
- * Shared by the run and dojo practice: each hands it its own ambush and quiz. It only shows them;
- * the swipe zone is a layer of its own.
+ * Shared by the run and dojo practice: each hands it its own ambush and quiz, and the `commit`
+ * that answers it. Its footer is the swipe zone, where the ambush is answered.
+ * Without a `commit` the scroll only shows the ambush.
  */
 
 import { component } from '@rooted/components'
@@ -14,6 +15,8 @@ import type { Quiz } from '../state/quiz.mts'
 import { headingOf } from './heading.mts'
 import { scrollChangeOf } from './scroll-change.mts'
 import { ScrollPaper } from './scroll-paper.mts'
+import { MarkLegend } from '../swipe/mark-legend.mts'
+import { SwipeZone } from '../swipe/swipe-zone.mts'
 import styles from './scroll.css'
 
 export type ScrollOptions = {
@@ -21,6 +24,10 @@ export type ScrollOptions = {
 	readonly quiz: Quiz
 	/** The first word of the heading: `AMBUSH` in a run, `PRACTICE` in the dojo. */
 	readonly label: string
+	/** Strikes: commits the ambush through the mode's flow, like `commitAmbush` in a run. */
+	readonly commit?: () => void
+	/** Whether the mode is paused or counting down to resume; see {@link SwipeZone}. */
+	readonly held?: () => boolean
 }
 
 /** Unrolling, open, rolling up, sliced, or nothing to show. Each stage has its own CSS animation. */
@@ -30,7 +37,7 @@ export const Scroll = component<ScrollOptions>({
 	name: 'scroll',
 	styles,
 	onMount({ append, create, element, options, signal }) {
-		const { ambush, quiz, label } = options
+		const { ambush, quiz, label, commit, held } = options
 
 		const heading = (state: AmbushState) => headingOf(label, state, quiz.value.question(state.at)?.type)
 
@@ -66,6 +73,13 @@ export const Scroll = component<ScrollOptions>({
 					state,
 					heading: heading(state),
 					ambush,
+					footer: commit === undefined
+						? undefined
+						: create(SwipeZone, {
+							ambush,
+							commit,
+							held,
+						}),
 				})
 			)
 			setStage('unroll')
@@ -83,6 +97,11 @@ export const Scroll = component<ScrollOptions>({
 				children: create(ScrollPaper, {
 					state,
 					heading: heading(state),
+					footer: commit === undefined
+						? undefined
+						: create(MarkLegend, {
+							state,
+						}),
 				}),
 			})
 			scroll.replaceChildren(

@@ -76,7 +76,7 @@ Owns `_shared/swipe/` (the run and practice both use it).
 
 Pure gesture logic with tests on recorded pointer sequences, plus the swipe zone component.
 
-- Pointer events in the swipe zone only, so the scroll above keeps native scrolling.
+- Pointer events in the swipe zone only, so the scroll's text above it keeps native scrolling. The zone is the scroll's footer.
 - Classify a stroke into the 8 directions, with a dead zone for taps and jitter.
 - One continuous stroke can pick several marks (← → in one go); lifting between swipes is optional.
 - 0.8 s pause after lifting commits for `multiple` and `order`; a single swipe commits at once for `yes-no` and `single`.

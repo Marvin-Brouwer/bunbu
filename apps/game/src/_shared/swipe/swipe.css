@@ -1,19 +1,10 @@
 /*
- * The swipe zone and its mark legend (docs/design/screens.md#4-ambush): a strip of papyrus at the
- * bottom of the screen, under the scroll, with a ninja figure per ninja.
+ * The swipe zone and its mark legend (docs/design/screens.md#4-ambush): the footer of the scroll,
+ * under its text, with a ninja figure where each ninja behind the scroll stands.
  */
 
 .zone {
 	display: grid;
-	box-sizing: border-box;
-	width: min(100% - 1.5rem, 34rem);
-	/* With its margin it takes exactly the strip the scroll keeps clear. */
-	height: calc(var(--swipe-zone-height) - 0.75rem);
-	margin: 0 auto 0.75rem;
-	border: 2px dashed var(--ink-soft);
-	border-radius: var(--radius);
-	background: color-mix(in srgb, var(--paper) 88%, transparent);
-	color: var(--ink);
 	/*
 	 * Every gesture here is a swipe: no browser panning, zooming, pull-to-refresh or overscroll
 	 * glow, no text selection and no long-press menu.
@@ -25,9 +16,8 @@
 	-webkit-touch-callout: none;
 }
 
-/* Only there while an ambush is open; otherwise swipes go to nothing and taps pass through. */
+/* Once the ambush is answered the legend stays as it was while the scroll rolls up. */
 .zone[data-open='false'] {
-	visibility: hidden;
 	pointer-events: none;
 }
 
@@ -36,7 +26,13 @@
 	align-content: center;
 	justify-items: center;
 	gap: 0.2rem;
+	box-sizing: border-box;
+	/* The same height for every ambush, with or without a back row, so the text above doesn't jump. */
+	height: 9.5rem;
 	padding: 0.4rem 0.75rem;
+	border: 2px dashed var(--ink-soft);
+	border-radius: var(--radius);
+	background: var(--paper-shade);
 }
 
 /*

@@ -1,6 +1,7 @@
 /*
- * The scroll: two wooden rods with the papyrus between them. It stays clear of the HUD's top row
- * and of the swipe zone, and the text scrolls inside it when a question is long.
+ * The scroll: two wooden rods with the papyrus between them. It stays clear of the HUD's top row,
+ * and the text scrolls inside it when a question is long. With a footer (the swipe zone) it
+ * reaches down to the bottom of the screen and the text scrolls above the footer.
  *
  * The stages (data-stage) are CSS animations, and each one but `open` ends with an animation on
  * the scroll element itself, which tells the component it is done.
@@ -26,8 +27,12 @@
 	grid-template-rows: auto 1fr auto;
 	/* Keeps the rods against the sheet while it grows, instead of sharing out the space left. */
 	align-content: start;
-	max-height: calc(100dvh - 4rem - var(--swipe-zone-height));
+	max-height: calc(100dvh - 4rem);
 	filter: drop-shadow(var(--shadow));
+}
+
+.paper[data-footer='true'] {
+	height: calc(100dvh - 4rem);
 }
 
 .rod {
@@ -43,6 +48,14 @@
 	overflow: hidden;
 	background: linear-gradient(90deg, var(--paper-shade), var(--paper) 5%, var(--paper) 95%, var(--paper-shade));
 	border-inline: 1px solid var(--paper-edge);
+}
+
+.paper[data-footer='true'] .sheet {
+	grid-template-rows: minmax(0, 1fr) auto;
+}
+
+.footer {
+	padding: 0 1rem 0.9rem;
 }
 
 .body {

@@ -1,15 +1,16 @@
 /**
- * The swipe zone ([ambush](../../../../../docs/design/gameplay.md#ambush)): the strip at the bottom
- * of the screen where swipes answer an open ambush, with the mark legend in it. Only swipes here
- * count, so the scroll above keeps its own native scrolling.
+ * The swipe zone ([ambush](../../../../../docs/design/gameplay.md#ambush)): the footer of the
+ * scroll, where swipes answer the open ambush, with the mark legend in it. Only swipes here count,
+ * so the text above keeps its own native scrolling.
  *
  * A swipe toward a mark picks it. `yes-no` and `single` strike at once; `multiple` and `order`
  * strike once the pointer has been lifted for the commit pause, and touching down again before
  * that keeps the answer open. Lifting between swipes is optional: one continuous stroke can pick
  * several marks ([stroke.mts](./stroke.mts)).
  *
- * Shared by the run and dojo practice. It picks through the ambush store and strikes through the
- * mode's own `commit`, which spreads the result over the mode's other stores.
+ * The scroll puts it in its footer, in the run and in dojo practice. It picks through the
+ * ambush store and strikes through the mode's own `commit`, which spreads the result over the
+ * mode's other stores.
  */
 
 import { component } from '@rooted/components'
@@ -128,22 +129,18 @@ export const SwipeZone = component<SwipeZoneOptions>({
 		)
 
 		// The ambush changes every frame while its time runs down; the legend only when the picks do.
+		// Once the ambush closes the legend stays as it was while the scroll rolls up.
 		let drawn = ''
 		const show = (state: AmbushState) => {
 			zone.dataset.open = String(state.open)
 			if (!state.open) {
 				cancelStrike()
 				forgetStroke()
-			}
-			const legend = state.open
-				? `${state.kind} ${state.options.map((option) => `${option.mark}:${option.ninja}:${option.pick}`).join(' ')}`
-				: ''
-			if (legend === drawn) return
-			drawn = legend
-			if (!state.open) {
-				zone.replaceChildren()
 				return
 			}
+			const picks = `${state.kind} ${state.options.map((option) => `${option.mark}:${option.ninja}:${option.pick}`).join(' ')}`
+			if (picks === drawn) return
+			drawn = picks
 			zone.replaceChildren(
 				create(MarkLegend, {
 					state,

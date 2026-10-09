@@ -28,7 +28,7 @@ One screen, no Draw or Submit button: **the swipe is the answer**.
 
 1. The world freezes into slow motion. The scroll opens and fills the top of the screen with the query, any code, and the options.
 2. Every option is tagged with a **mark**: the swipe direction (← ↑ → …) of the ninja carrying it.
-3. The bottom of the screen is the **swipe zone**. Swiping toward a mark picks that option. Only swipes in this zone count, so the scroll text above can be scrolled freely.
+3. The foot of the scroll is the **swipe zone**: the scroll reaches down to the bottom of the screen, and its text scrolls above the zone. Swiping toward a mark picks that option. Only swipes in this zone count, so the text above can be scrolled freely.
 4. The scroll rolls up, slow motion snaps back to full speed, and the slashes and blocks play.
 
 The ninja figures in the swipe zone are only a legend for the marks. The real ninjas creep in, in 3D, behind the scroll (see [time limit](#time-limit)).
