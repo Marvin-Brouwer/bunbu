@@ -68,7 +68,7 @@ Owns `fight/state/` (except `ninjas.mts`), `settings/state/`, `_shared/state/sel
 - Life bar: `(best still possible − pass) / (1 − pass)`, each miss takes its question's full share, empty bar means fallen ([life bar](design/gameplay.md#life-bar)).
 - Score: 100 per correct, total run time, high score per quiz `id` + `version`, only passed runs count, equal score is won by the shorter time ([score](design/gameplay.md#score)). The store contracts and [state.md](architecture/state.md#stores) follow this: `addCorrect()` has no time bonus.
 - Pause, resume with 3-2-1, auto-pause on `visibilitychange`.
-- Persistence in local storage through [`@rooted/storage`](https://github.com/Marvin-Brouwer/rooted/blob/main/docs/guide/storage.md) (typed, JSON round-trip, safe during pre-rendering): settings, high scores, last run's misses (for "practise mistakes"), loaded quizzes. Version the stored shape. Its guide shows how to pair it with a store.
+- Persistence in local storage through [`@rooted/storage`](https://github.com/Marvin-Brouwer/rooted/blob/main/docs/guide/storage.md) (typed, JSON round-trip, safe during pre-rendering): settings, high scores, last run's misses (for "practise mistakes"). Loaded quizzes as `.bunbu` files in IndexedDB. Version the stored shape. Its guide shows how to pair it with a store.
 
 ### C. Swipe input
 

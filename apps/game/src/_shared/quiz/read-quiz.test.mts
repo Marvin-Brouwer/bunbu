@@ -1,4 +1,4 @@
-import { compress, validate, type BunbuData, type Markdown } from '@bunbu/data'
+import { compress, uncompress, type BunbuData, type Markdown } from '@bunbu/data'
 import { describe, expect, it } from 'vitest'
 import { fixtureQuiz } from '../../_temp/quiz.mts'
 import { describeIssue, fightable, fitNotesOf, readQuiz } from './read-quiz.mts'
@@ -14,11 +14,12 @@ const options = (correct: number, wrong: number) => [
 ]
 
 describe('readQuiz', () => {
-	it('reads a .yaml quiz and keeps its source', async () => {
+	it('reads a .yaml quiz and packs it as a .bunbu file', async () => {
 		const result = await readQuiz(file(everyType, 'every-type.yaml'))
 		if (!('quiz' in result)) expect.unreachable(result.problems.join('\n'))
 		expect(result.quiz.id).toBe('every-type')
-		expect(result.source).toBe(everyType)
+		// The file leaves out the built-in pronunciations, and reading it puts them all back.
+		expect(await uncompress(result.file)).toEqual({ ...result.quiz, pronunciations: expect.objectContaining(result.quiz.pronunciations) })
 	})
 
 	it('lists what is wrong with an invalid .yaml quiz, by line', async () => {
@@ -33,11 +34,12 @@ describe('readQuiz', () => {
 		expect(result).toEqual({ problems: [expect.stringContaining('first line must reference the schema')] })
 	})
 
-	it('reads a .bunbu quiz, with a source that reads back as the same quiz', async () => {
-		const result = await readQuiz(file(await compress(fixtureQuiz), 'fixture.bunbu'))
+	it('reads a .bunbu quiz and keeps the file as it was', async () => {
+		const bytes = await compress(fixtureQuiz)
+		const result = await readQuiz(file(bytes, 'fixture.bunbu'))
 		if (!('quiz' in result)) expect.unreachable(result.problems.join('\n'))
 		expect(result.quiz.title).toBe(fixtureQuiz.title)
-		expect(await validate(result.source)).toEqual(result.quiz)
+		expect(result.file).toEqual(new Uint8Array(bytes))
 	})
 
 	it('explains a damaged .bunbu file', async () => {
