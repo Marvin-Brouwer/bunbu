@@ -1,5 +1,5 @@
 /**
- * What the player chose on the quiz and stage screen ([2 Quiz + stage](../../../../../docs/design/screens.md#2-quiz--stage)).
+ * What the player chose: the quiz on the title, the stage on the fight screen ([2 Fight setup](../../../../../docs/design/screens.md#2-fight-setup)).
  * App-wide, so it survives navigating from the menus into a run, the dojo and back.
  */
 

@@ -10,10 +10,12 @@ import styles from './menu.css'
 type Target =
 	| { readonly href: Path }
 	| { readonly action: () => void; readonly disabled?: boolean }
+	/** A button that can't be pressed yet, such as Fight before a quiz is chosen. */
+	| { readonly disabled: true }
 
 export type MenuButtonOptions = Target & {
 	readonly label: string
-	/** A smaller line under the label, such as the quiz and stage a run starts on. */
+	/** A smaller line under the label, such as the quiz a fight starts on. */
 	readonly note?: string
 	readonly kind?: 'primary' | 'plain'
 }
@@ -50,9 +52,9 @@ export const MenuButton = component<MenuButtonOptions>({
 					classes,
 					disabled: options.disabled ?? false,
 					children,
-					on: {
-						click: options.action,
-					},
+					on: 'action' in options
+						? { click: options.action }
+						: {},
 				})
 		)
 	},

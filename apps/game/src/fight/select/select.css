@@ -1,127 +1,31 @@
 /*
- * 2 Quiz + stage (docs/design/screens.md#2-quiz--stage): the quiz cards in a row that swipes
- * sideways, the stages under them, then the difficulty and Start run.
+ * 2 Fight (docs/design/screens.md#2-fight-setup): the chosen quiz, the stage and the difficulty,
+ * then Start run.
  */
 
-/* Quiz cards */
+/* The chosen quiz */
 
-.shelf {
+.quiz {
 	display: grid;
-	grid-auto-flow: column;
-	grid-auto-columns: minmax(10.5rem, 46%);
-	gap: 0.75rem;
-	/* Out to the edges of the screen, so a card half in view says there is more to swipe to. */
-	margin-inline: -1.25rem;
-	padding: 0.2rem 1.25rem 0.5rem;
-	overflow-x: auto;
-	overscroll-behavior-x: contain;
-	scroll-snap-type: x proximity;
-	scroll-padding-inline: 1.25rem;
-}
-
-.card {
-	position: relative;
-	display: grid;
-	align-content: start;
 	gap: 0.3rem;
 	padding: 0.75rem 0.9rem;
 	border: var(--frame);
 	border-radius: var(--radius);
 	background: var(--paper-light);
-	scroll-snap-align: start;
-	cursor: pointer;
 }
 
-.card:has(input:checked) {
-	border-color: var(--vermilion);
-	box-shadow: inset 0 0 0 1px var(--vermilion);
-}
-
-.card:has(input:focus-visible) {
-	outline: 3px solid var(--indigo);
-	outline-offset: 2px;
-}
-
-/* The radio itself is the whole card. */
-.card input {
-	position: absolute;
-	opacity: 0;
-	pointer-events: none;
-}
-
-.cardTitle {
+.quizTitle {
 	font-weight: 700;
-	font-size: 1.05rem;
+	font-size: 1.1rem;
 	line-height: 1.2;
 	overflow-wrap: anywhere;
 }
 
-.cardNote {
+.quizNote {
+	margin: 0;
 	font-family: var(--font-mono);
 	font-size: 0.75rem;
 	color: var(--ink-soft);
-}
-
-.load {
-	border-style: dashed;
-	border-color: var(--ink-faint);
-	align-content: center;
-	justify-items: center;
-	text-align: center;
-}
-
-.load .cardTitle {
-	color: var(--ink-soft);
-}
-
-/* What the player should know about a quiz: why it didn't load, or how it fits in a fight. */
-
-.notices {
-	display: grid;
-	gap: 0.6rem;
-}
-
-.notices:empty {
-	display: none;
-}
-
-.notice {
-	display: grid;
-	gap: 0.35rem;
-	padding: 0.7rem 0.9rem;
-	border: 2px solid var(--ink-faint);
-	border-radius: var(--radius);
-	background: var(--paper-light);
-	font-size: 0.9rem;
-}
-
-.notice[data-severity='problem'] {
-	border-color: var(--vermilion);
-}
-
-.noticeTitle {
-	margin: 0;
-	font-weight: 700;
-}
-
-.notice[data-severity='problem'] .noticeTitle {
-	color: var(--vermilion);
-}
-
-.notice ul {
-	display: grid;
-	gap: 0.25rem;
-	margin: 0;
-	padding-left: 1.1rem;
-}
-
-.notice li {
-	overflow-wrap: anywhere;
-}
-
-.issue {
-	font-family: var(--font-mono);
-	font-size: 0.8rem;
 }
 
 /* Stages */
@@ -168,10 +72,5 @@
 
 .start {
 	display: grid;
-	gap: 0.75rem;
 	margin-top: 0.5rem;
-}
-
-.startButton {
-	display: grid;
 }

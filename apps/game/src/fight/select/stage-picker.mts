@@ -1,4 +1,4 @@
-/** 2 · Stage: the five stages, one to choose ([2 Quiz + stage](../../../../../docs/design/screens.md#2-quiz--stage)). */
+/** 2 · Stage: the five stages, one to choose ([2 Fight setup](../../../../../docs/design/screens.md#2-fight-setup)). */
 
 import { component } from '@rooted/components'
 import { selection, stageNames, stages } from '../../_shared/state/selection.mts'

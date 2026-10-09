@@ -6,7 +6,7 @@
 
 import { component, match } from '@rooted/components'
 import type { FitNote } from './read-quiz.mts'
-import styles from './select.css'
+import styles from './quiz.css'
 
 export type LoadProblemsOptions = {
 	readonly file: string

@@ -1,25 +1,54 @@
 /**
  * 1 Title / menu ([screens.md](../../../../docs/design/screens.md#1-title--menu)), the router's
- * home at `/`: the name, the high score of the chosen quiz, and the way into a run, the dojo and
- * the settings.
+ * home at `/`: the name, the quizzes to choose from and load, the high score of the chosen quiz,
+ * and the way into a fight, the dojo and the settings. The stage and the difficulty are chosen on
+ * the fight screen, since only a fight needs them.
  */
 
 import { component } from '@rooted/components'
 import { href } from '@rooted/router'
 import { DojoRoute } from '../dojo/_routes.mts'
-import { FightRoute, runNow } from '../fight/_routes.mts'
+import { FightRoute } from '../fight/_routes.mts'
 import { SettingsRoute } from '../settings/_routes.mts'
 import { MenuButton } from '../_shared/menu/menu-button.mts'
 import { Placeholder } from '../_shared/placeholder.mts'
-import { selection, stageNames } from '../_shared/state/selection.mts'
+import { selection, type SelectionState } from '../_shared/state/selection.mts'
+import { snapshot } from '../_shared/state/store.mts'
 import { HighScoreCard } from './high-score-card.mts'
+import { QuizShelf } from './quiz-shelf.mts'
 import styles from './title.css'
 
 export const Title = component({
 	name: 'title',
 	styles,
-	onMount({ append, create, element }) {
-		const { quiz, stage } = selection.value
+	onMount({ append, create, element, signal }) {
+		// The high score and Fight follow the quiz chosen on the shelf.
+		const chosen = element('div', {
+			classes: styles.chosen,
+		})
+		const showChosen = () => {
+			const { quiz } = snapshot<SelectionState>(selection)
+			chosen.replaceChildren(
+				...quiz === undefined
+					? [create(MenuButton, {
+						kind: 'primary',
+						label: 'Fight',
+						note: 'Choose a quiz above',
+						disabled: true,
+					})]
+					: [
+						create(HighScoreCard, {
+							quiz,
+						}),
+						create(MenuButton, {
+							kind: 'primary',
+							label: 'Fight',
+							note: quiz.title,
+							href: href.for(FightRoute),
+						}),
+					],
+			)
+		}
 
 		append(
 			element('section', {
@@ -54,26 +83,17 @@ export const Title = component({
 					element('nav', {
 						classes: styles.menu,
 						children: [
-							quiz === undefined
-								? undefined
-								: create(HighScoreCard, {
-									quiz,
-								}),
-							create(MenuButton, {
-								kind: 'primary',
-								label: 'Run',
-								// Without a quiz, the run starts by choosing one.
-								note: quiz === undefined
-									? 'Choose a quiz first'
-									: `${quiz.title} · ${stageNames[stage]}`,
-								href: quiz === undefined
-									? href.for(FightRoute)
-									: runNow(),
+							element('section', {
+								classes: styles.quiz,
+								children: [
+									element('h2', {
+										classes: styles.quizLabel,
+										textContent: 'Quiz',
+									}),
+									create(QuizShelf),
+								],
 							}),
-							create(MenuButton, {
-								label: 'Quiz and stage',
-								href: href.for(FightRoute),
-							}),
+							chosen,
 							element('div', {
 								classes: styles.pair,
 								children: [
@@ -92,6 +112,9 @@ export const Title = component({
 				],
 			})
 		)
+
+		showChosen()
+		selection.on('change', signal, showChosen)
 	},
 })
 

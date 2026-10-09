@@ -1,6 +1,7 @@
 /**
- * 2 Quiz + stage ([screens.md](../../../../../docs/design/screens.md#2-quiz--stage)): "Choose your
- * path". The quiz, the stage and the difficulty, then **Start run**.
+ * 2 Fight ([screens.md](../../../../../docs/design/screens.md#2-fight-setup)): "Choose your path".
+ * The quiz chosen on the title and how it fits in a fight, then the stage and the difficulty, which
+ * only a fight needs, then **Start run**.
  */
 
 import { component } from '@rooted/components'
@@ -9,11 +10,13 @@ import { DifficultyPicker } from '../../_shared/menu/difficulty-picker.mts'
 import { MenuButton } from '../../_shared/menu/menu-button.mts'
 import { MenuScreen } from '../../_shared/menu/menu-screen.mts'
 import { MenuSection } from '../../_shared/menu/menu-section.mts'
+import { formatWhole } from '../../_shared/numbers.mts'
+import { FitNotice } from '../../_shared/quiz/quiz-notices.mts'
+import { fightable, fitNotesOf } from '../../_shared/quiz/read-quiz.mts'
 import { selection, type SelectionState } from '../../_shared/state/selection.mts'
 import { snapshot } from '../../_shared/state/store.mts'
 import { fixtureQuiz } from '../../_temp/quiz.mts'
-import { QuizShelf } from './quiz-shelf.mts'
-import { fightable } from './read-quiz.mts'
+import { highScores } from '../state/highscores.mts'
 import { StagePicker } from './stage-picker.mts'
 import styles from './select.css'
 
@@ -25,53 +28,92 @@ export type SelectOptions = {
 export const Select = component<SelectOptions>({
 	name: 'select',
 	styles,
-	onMount({ append, create, element, options, signal }) {
+	onMount({ append, create, element, options }) {
 		// In dev a run can start without loading a quiz first, on the fixture quiz.
 		if (import.meta.env.DEV && selection.value.quiz === undefined) selection.value.chooseQuiz(fixtureQuiz)
 
-		const start = element('div', {
-			classes: styles.startButton,
-		})
-		// Start run waits for a quiz that a fight can ask.
-		const showStart = () => {
-			const { quiz } = snapshot<SelectionState>(selection)
-			start.replaceChildren(
-				create(MenuButton, {
-					kind: 'primary',
-					label: 'Start run',
-					action: options.start,
-					disabled: quiz === undefined || !fightable(quiz),
-				}),
+		const { quiz } = snapshot<SelectionState>(selection)
+		const title = href.path('/')
+
+		// The quiz is chosen on the title; a fight opened without one is sent back there.
+		if (quiz === undefined) {
+			append(
+				create(MenuScreen, {
+					title: 'Choose your path',
+					back: title,
+					children: create(MenuSection, {
+						label: 'Quiz',
+						children: [
+							element('p', {
+								classes: styles.quizNote,
+								textContent: 'Choose a quiz on the title first.',
+							}),
+							create(MenuButton, {
+								kind: 'primary',
+								label: 'Choose a quiz',
+								href: title,
+							}),
+						],
+					}),
+				})
 			)
+			return
 		}
+
+		const best = highScores.value.of(quiz.id, quiz.version)
 
 		append(
 			create(MenuScreen, {
 				title: 'Choose your path',
-				back: href.path('/'),
+				back: title,
 				children: [
 					create(MenuSection, {
-						label: '1 · Quiz',
-						children: create(QuizShelf),
+						label: 'Quiz',
+						children: [
+							element('div', {
+								classes: styles.quiz,
+								children: [
+									element('span', {
+										classes: styles.quizTitle,
+										textContent: quiz.title,
+									}),
+									element('span', {
+										classes: styles.quizNote,
+										textContent: [
+											`v${quiz.version}`,
+											`pass ${quiz.passingScore}%`,
+											best === undefined ? 'new' : `best ${formatWhole(best.points)}`,
+										].join(' · '),
+									}),
+								],
+							}),
+							create(FitNotice, {
+								notes: fitNotesOf(quiz),
+							}),
+						],
 					}),
 					create(MenuSection, {
-						label: '2 · Stage',
+						label: 'Stage',
 						children: create(StagePicker),
+					}),
+					create(MenuSection, {
+						label: 'Difficulty',
+						children: create(DifficultyPicker, {
+							name: 'difficulty',
+						}),
 					}),
 					element('div', {
 						classes: styles.start,
-						children: [
-							create(DifficultyPicker, {
-								name: 'difficulty',
-							}),
-							start,
-						],
+						children: create(MenuButton, {
+							kind: 'primary',
+							label: 'Start run',
+							action: options.start,
+							// An unplayable question can't be asked in a fight.
+							disabled: !fightable(quiz),
+						}),
 					}),
 				],
 			})
 		)
-
-		showStart()
-		selection.on('change', signal, showStart)
 	},
 })

@@ -1,10 +1,10 @@
-/** One quiz on the select screen: its title, version, pass mark and high score, or `new`. */
+/** One quiz on the title's shelf: its title, version, pass mark and high score, or `new`. */
 
 import type { BunbuData } from '@bunbu/data'
 import { component } from '@rooted/components'
-import { formatWhole } from '../../_shared/numbers.mts'
-import { highScores } from '../state/highscores.mts'
-import styles from './select.css'
+import { formatWhole } from '../_shared/numbers.mts'
+import { highScores } from '../fight/state/highscores.mts'
+import styles from './quiz-shelf.css'
 
 export type QuizCardOptions = {
 	readonly quiz: BunbuData

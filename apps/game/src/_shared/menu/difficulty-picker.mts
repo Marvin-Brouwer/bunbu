@@ -1,6 +1,6 @@
 /**
  * Novice / Adept / Master, which sets the ambush time limit
- * ([time limit](../../../../../docs/design/gameplay.md#time-limit)). On the quiz and stage select
+ * ([time limit](../../../../../docs/design/gameplay.md#time-limit)). On the fight screen
  * and in the settings, both changing the same setting.
  */
 

@@ -1,19 +1,20 @@
 /**
- * 1 · Quiz: the loaded quizzes as cards in a row that swipes sideways, with **Load quiz** at the
- * end. Under it, why the last file didn't load, or else what won't fit in a fight of the chosen quiz.
+ * The quizzes on the title: the loaded quizzes as cards in a row that swipes sideways, and under it
+ * the area to drop or choose a quiz file. Under that, why the last file didn't load, and what won't
+ * fit in a fight of the chosen quiz.
  */
 
 import type { BunbuData } from '@bunbu/data'
 import { component } from '@rooted/components'
-import { library, type LibraryState } from '../../_shared/storage/library.mts'
-import { selection, type SelectionState } from '../../_shared/state/selection.mts'
-import { snapshot } from '../../_shared/state/store.mts'
-import { fixtureQuiz } from '../../_temp/quiz.mts'
+import { library, type LibraryState } from '../_shared/storage/library.mts'
+import { selection, type SelectionState } from '../_shared/state/selection.mts'
+import { snapshot } from '../_shared/state/store.mts'
+import { fixtureQuiz } from '../_temp/quiz.mts'
 import { LoadQuiz } from './load-quiz.mts'
 import { QuizCard } from './quiz-card.mts'
-import { FitNotice, LoadProblems } from './quiz-notices.mts'
-import { fitNotesOf, type ReadQuiz } from './read-quiz.mts'
-import styles from './select.css'
+import { FitNotice, LoadProblems } from '../_shared/quiz/quiz-notices.mts'
+import { fitNotesOf, type ReadQuiz } from '../_shared/quiz/read-quiz.mts'
+import styles from './quiz-shelf.css'
 
 const same = (quiz: BunbuData, other: BunbuData | undefined) => quiz.id === other?.id && quiz.version === other.version
 
@@ -38,10 +39,6 @@ export const QuizShelf = component({
 		const notices = element('div', {
 			classes: styles.notices,
 		})
-		append(
-			shelf,
-			notices,
-		)
 
 		let failed: { readonly file: string, readonly problems: readonly string[] } | undefined
 
@@ -57,6 +54,14 @@ export const QuizShelf = component({
 			library.value.add(result.source, result.quiz)
 		}
 
+		append(
+			shelf,
+			create(LoadQuiz, {
+				read,
+			}),
+			notices,
+		)
+
 		// Only a change of the library refills the row: choosing a card checks its radio, and refilling
 		// would scroll the row back to the start under the player's thumb.
 		const showShelf = (state: LibraryState) => {
@@ -67,9 +72,6 @@ export const QuizShelf = component({
 					chosen: same(quiz, chosen),
 					choose: () => { selection.value.chooseQuiz(quiz) },
 				})),
-				create(LoadQuiz, {
-					read,
-				}),
 			)
 			shelf.querySelector('input:checked')?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
 		}

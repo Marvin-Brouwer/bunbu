@@ -13,7 +13,7 @@ import {
 	type BunbuData,
 	type ValidationIssue,
 } from '@bunbu/data'
-import { fitOf, type Fit } from '../../_shared/state/ambush-opening.mts'
+import { fitOf, type Fit } from '../state/ambush-opening.mts'
 
 export type ReadQuiz =
 	| {
