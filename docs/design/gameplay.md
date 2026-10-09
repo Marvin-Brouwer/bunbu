@@ -28,10 +28,10 @@ One screen, no Draw or Submit button: **the swipe is the answer**.
 
 1. The world freezes into slow motion. The scroll opens and fills the top of the screen with the query, any code, and the options.
 2. Every option is tagged with a **mark**: the swipe direction (← ↑ → …) of the ninja carrying it.
-3. The bottom of the screen is the **swipe zone**. Swiping toward a mark picks that option. Only swipes in this zone count, so the scroll text above can be scrolled freely.
+3. The foot of the scroll is the **swipe zone**: the scroll reaches down to the bottom of the screen, and its text scrolls above the zone. Swiping toward a mark picks that option. Only swipes in this zone count, so the text above can be scrolled freely.
 4. The scroll rolls up, slow motion snaps back to full speed, and the slashes and blocks play.
 
-The ninja figures in the swipe zone are only a legend for the marks. The real ninjas creep in, in 3D, behind the scroll (see [time limit](#time-limit)).
+The swipe zone is an abstract paper-cutting target, as in kumdo (종이베기): the scroll's own paper, edge to edge, ruled between grey strips, with a black band and ring; it shows no ninjas. Only the swipe zone blocks text selection; the scroll's text can be selected. Above it are one brush-lettered line on how to answer and the marks swiped so far, as small arrows in swipe order, since the options above may have scrolled away. The finger leaves a faint trace on the paper, and each pick cuts it with a red slash in the direction of its mark; only the last cut matters, so the one before fades. The ambush is about the answers: the real ninjas creep in, in 3D, behind the scroll (see [time limit](#time-limit)), and what happens to them follows the answer.
 
 <img src="screens/4a-single.png" alt="Single-answer ambush" width="195"> <img src="screens/4c-multiple.png" alt="Multiple-answer ambush" width="195">
 
@@ -41,7 +41,7 @@ The ninja figures in the swipe zone are only a legend for the marks. The real ni
 | ----------- | --------------------------- | --------------------------------------------------------------------------------------- |
 | `yes-no`    | 1                           | One swipe: ↑ yes (slash), ↓ no (block).                                                 |
 | `single`    | one per option              | One swipe toward the chosen option's mark.                                              |
-| `multiple`  | one per option              | Swipe toward each mark to pick it. Lifting between swipes is optional: ← lift → and one continuous ← → stroke both pick two marks. A pause of 0.8 s after lifting strikes. Swiping a marked mark again unmarks it. |
+| `multiple`  | one per option              | Swipe toward each mark to pick it. Lifting between swipes is optional: ← lift → and one continuous ← → stroke both pick two marks. A pause of 0.8 s after lifting strikes. A swipe is final: swiping a marked mark again does nothing. |
 | `order`     | one per item                | As `multiple`; the marks get numbers 1, 2, 3 … in swipe order.                          |
 | `solutions` | 1 per proposed solution     | One ambush per solution, answered like `yes-no` ("2 of 3" on the scroll).               |
 | `match`     | one per option              | One `single`-style ambush per row.                                                      |
@@ -121,3 +121,4 @@ There is no speaker button in the main game. Reading aloud is a learning aid and
 ## To tune
 
 - **Playtest defaults:** the timer numbers, `timeScale` values and the 0.8 s commit pause.
+- **On a real phone:** how far a swipe has to go and how sharp a turn starts the next one (`swipeConfig` in the swipe zone).

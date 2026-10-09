@@ -78,8 +78,8 @@ export type AmbushActions = {
 	/** Opens an ambush on a question. */
 	start: (opening: AmbushOpening) => void
 	/**
-	 * Picks the option on `mark`, or unpicks it when it was already picked. `yes-no` and `single`
-	 * hold one pick, so a new pick replaces the old one.
+	 * Picks the option on `mark`. A swipe is final: picking it again does nothing. `yes-no` and
+	 * `single` hold one pick, so a new pick replaces the old one.
 	 */
 	pick: (mark: Mark) => void
 	/** Counts down the time left. */
@@ -148,19 +148,14 @@ export function createAmbush(initial: AmbushState = noAmbush): Ambush {
 				refuse('ambush.pick', `no option on ${mark}`)
 				return
 			}
-			const was = state.options[index]!.pick
+			if (state.options[index]!.pick > 0) return
 			if (state.kind === 'yes-no' || state.kind === 'single') {
-				const options = state.options.map((option, at) => ({ ...option, pick: at === index && was === 0 ? 1 : 0 }))
+				const options = state.options.map((option, at) => ({ ...option, pick: at === index ? 1 : 0 }))
 				store.update(() => ({ options }))
 				return
 			}
 			const highest = Math.max(0, ...state.options.map((option) => option.pick))
-			const options = state.options.map((option, at) => {
-				if (at === index) return { ...option, pick: was > 0 ? 0 : highest + 1 }
-				// Keep the numbers 1, 2, 3 … without gaps when an earlier pick is taken back.
-				if (was > 0 && option.pick > was) return { ...option, pick: option.pick - 1 }
-				return option
-			})
+			const options = state.options.map((option, at) => (at === index ? { ...option, pick: highest + 1 } : option))
 			store.update(() => ({ options }))
 		},
 

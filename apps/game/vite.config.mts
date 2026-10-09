@@ -14,6 +14,17 @@ export default rootedManifest({
 		background_color: '#ffffff',
 		display: 'standalone',
 	},
+	// The service worker only precaches scripts, styles and pages; the bundled brush font is kept the
+	// first time it loads, so it is there offline after that.
+	runtimeCaching: [
+		{
+			urlPattern: ({ request }) => request.destination === 'font',
+			handler: 'CacheFirst',
+			options: {
+				cacheName: 'fonts',
+			},
+		},
+	],
 	plugins: [
 		// Collects every `_routes.mts` under src/ into `_routes.g.mts`, so each screen registers its own routes.
 		generateRouteManifest({
