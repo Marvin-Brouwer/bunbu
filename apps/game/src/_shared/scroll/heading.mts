@@ -6,7 +6,7 @@
 import type { Question } from '@bunbu/data'
 import type { AmbushState, Mark } from '../state/ambush.mts'
 
-/** The arrow for each swipe direction, as the scroll and the mark legend show it. */
+/** The arrow for each swipe direction, as the scroll shows it. */
 export const arrows: Readonly<Record<Mark, string>> = {
 	up: '↑',
 	'up-right': '↗',
@@ -23,14 +23,9 @@ export function ninjaCount(ambush: AmbushState): number {
 	return new Set(ambush.options.map((option) => option.ninja)).size
 }
 
-/** Whether some ninja carries more than one option, so the scroll says which ninja has which. */
+/** Whether some ninja carries more than one option, so the heading counts the options as well. */
 export function bundled(ambush: AmbushState): boolean {
 	return ambush.kind !== 'yes-no' && ninjaCount(ambush) < ambush.options.length
-}
-
-/** The ninja's name on the scroll: A, B, C … */
-export function ninjaName(ninja: number): string {
-	return String.fromCodePoint('A'.codePointAt(0)! + ninja)
 }
 
 /**

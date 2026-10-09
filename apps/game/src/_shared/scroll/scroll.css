@@ -1,6 +1,7 @@
 /*
- * The scroll: two wooden rods with the papyrus between them. It stays clear of the HUD's top row
- * and of the swipe zone, and the text scrolls inside it when a question is long.
+ * The scroll: two wooden rods with the papyrus between them. It stays clear of the HUD's top row,
+ * and the text scrolls inside it when a question is long. With a footer (the swipe zone) it
+ * reaches down to the bottom of the screen and the text scrolls above the footer.
  *
  * The stages (data-stage) are CSS animations, and each one but `open` ends with an animation on
  * the scroll element itself, which tells the component it is done.
@@ -9,10 +10,6 @@
 .scroll {
 	position: relative;
 	color: var(--ink);
-	/* Swipes and long presses on the scroll are play, not text selection. */
-	user-select: none;
-	-webkit-user-select: none;
-	-webkit-touch-callout: none;
 }
 
 .scroll[data-stage='hidden'] {
@@ -26,8 +23,12 @@
 	grid-template-rows: auto 1fr auto;
 	/* Keeps the rods against the sheet while it grows, instead of sharing out the space left. */
 	align-content: start;
-	max-height: calc(100dvh - 4rem - var(--swipe-zone-height));
+	max-height: calc(100dvh - 4rem);
 	filter: drop-shadow(var(--shadow));
+}
+
+.paper[data-footer='true'] {
+	height: calc(100dvh - 4rem);
 }
 
 .rod {
@@ -43,6 +44,16 @@
 	overflow: hidden;
 	background: linear-gradient(90deg, var(--paper-shade), var(--paper) 5%, var(--paper) 95%, var(--paper-shade));
 	border-inline: 1px solid var(--paper-edge);
+}
+
+.paper[data-footer='true'] .sheet {
+	grid-template-rows: minmax(0, 1fr) auto;
+}
+
+.footer {
+	/* A clear gap between the text, which scrolls, and the swipe zone, whose paper runs to the edges. */
+	padding-top: 1rem;
+	border-top: 1px dashed var(--paper-edge);
 }
 
 .body {
@@ -231,7 +242,6 @@
 .notes {
 	display: grid;
 	justify-items: end;
-	gap: 0.1rem;
 	font-family: var(--font-mono);
 	font-size: 0.75rem;
 	letter-spacing: 0.05em;
@@ -244,10 +254,6 @@
 
 .picked:empty {
 	display: none;
-}
-
-.ninja {
-	color: var(--ink-soft);
 }
 
 /* For `order`: the place the option was swiped in. */

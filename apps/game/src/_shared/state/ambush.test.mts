@@ -124,14 +124,14 @@ describe('quiz', () => {
 })
 
 describe('ambush', () => {
-	it('numbers picks in swipe order and renumbers when one is taken back', () => {
+	it('numbers picks in swipe order, and a second swipe on a picked mark does nothing', () => {
 		open('multiple', safeMethods())
 		ambush.value.pick(marks[0]!)
 		ambush.value.pick(marks[1]!)
 		expect(ambush.value.options.map((item) => item.pick)).toEqual([1, 2, 0])
 
 		ambush.value.pick(marks[0]!)
-		expect(ambush.value.options.map((item) => item.pick)).toEqual([0, 1, 0])
+		expect(ambush.value.options.map((item) => item.pick)).toEqual([1, 2, 0])
 	})
 
 	it('holds one pick for single: a new swipe replaces the old one', () => {

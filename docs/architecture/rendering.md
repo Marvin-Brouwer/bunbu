@@ -7,7 +7,7 @@ How the screen is put together: one three.js canvas for the world, with Rooted c
 **One WebGL canvas for all 3D, and DOM for all UI.**
 
 - The stage, the ninjas and the shogun are all in **one** three.js scene, drawn by **one** `WebGLRenderer` into **one** `<canvas>`.
-- The scroll, the HUD, the swipe zone, menus and results are Rooted (`@rooted/components`) components layered over that canvas.
+- The scroll (with the swipe zone), the HUD, menus and results are Rooted (`@rooted/components`) components layered over that canvas.
 
 There is no canvas per concern (scene, ninjas, shogun, scroll).
 
@@ -28,18 +28,17 @@ There is no canvas per concern (scene, ninjas, shogun, scroll).
 
 From back to front:
 
-| Layer           | What                                                      | Input                         |
-| --------------- | --------------------------------------------------------- | ----------------------------- |
-| Backdrop (opt.) | CSS background behind the canvas, such as an ink-wash sky | none                          |
-| World canvas    | three.js: stage, props, shogun, ninjas, effects           | none (`pointer-events: none`) |
-| HUD             | Life bar, score, pause button                             | pause button only             |
-| Scroll          | Papyrus scroll with query, code and options               | scrolls its own text          |
-| Swipe zone      | Bottom strip during an ambush, with the mark legend       | swipes                        |
-| Overlays        | Pause menu, results, fallen screen, settings              | full                          |
+| Layer           | What                                                                      | Input                                    |
+| --------------- | ------------------------------------------------------------------------- | ---------------------------------------- |
+| Backdrop (opt.) | CSS background behind the canvas, such as an ink-wash sky                 | none                                     |
+| World canvas    | three.js: stage, props, shogun, ninjas, effects                           | none (`pointer-events: none`)            |
+| HUD             | Life bar, score, pause button                                             | pause button only                        |
+| Scroll          | Papyrus scroll with query, code and options; its footer is the swipe zone | scrolls its own text; swipes in the zone |
+| Overlays        | Pause menu, results, fallen screen, settings                              | full                                     |
 
 All layers are siblings in one fixed, full-viewport container, stacked with `z-index`. The canvas fills the container and resizes with it.
 
-The `Application` component (`application.mts`) owns the container, the canvas and the renderer, and mounts once. The router renders the current screen over the canvas, so moving between screens never creates a new WebGL context. A screen puts its world on the canvas with `show(view, signal)` and the view is disposed when the screen unmounts; on a screen without a view the canvas is clear and the backdrop shows. The run's screen holds the HUD, scroll, swipe and overlay layers.
+The `Application` component (`application.mts`) owns the container, the canvas and the renderer, and mounts once. The router renders the current screen over the canvas, so moving between screens never creates a new WebGL context. A screen puts its world on the canvas with `show(view, signal)` and the view is disposed when the screen unmounts; on a screen without a view the canvas is clear and the backdrop shows. The run's screen holds the HUD, scroll and overlay layers.
 
 The ninjas creeping in "behind the scroll" during an ambush needs nothing special: they are in the 3D world, the scroll is DOM above the canvas, so they are always under it. Where the scroll is transparent (its torn edges, gaps around it) you see them coming.
 

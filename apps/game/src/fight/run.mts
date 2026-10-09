@@ -9,6 +9,7 @@
 
 import { component } from '@rooted/components'
 import { tickRun } from './flows/run.mts'
+import { commitAmbush } from './flows/ambush.mts'
 import { play } from '../canvas/loop.mts'
 import { show } from '../canvas/stage.mts'
 import type { RunGame } from './state/game.mts'
@@ -61,14 +62,9 @@ export const RunScreen = component<RunScreenOptions>({
 							ambush: game.ambush,
 							quiz: game.quiz,
 							label: 'AMBUSH',
+							commit: () => { commitAmbush(game) },
+							held: () => game.run.value.phase !== 'ambush' || game.run.value.countdown > 0,
 						}),
-					}),
-					element('div', {
-						'data-layer': 'swipe',
-						classes: [
-							styles.layer,
-							styles.swipe,
-						],
 					}),
 					element('div', {
 						'data-layer': 'overlays',
