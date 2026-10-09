@@ -58,6 +58,12 @@
 	outline-offset: 2px;
 }
 
+.stage:has(input:disabled) {
+	border-style: dashed;
+	color: var(--ink-soft);
+	cursor: not-allowed;
+}
+
 .stage input {
 	position: absolute;
 	opacity: 0;
@@ -68,6 +74,15 @@
 	font-family: var(--font-mono);
 	font-weight: 400;
 	color: var(--ink-soft);
+}
+
+.stageSoon {
+	margin-left: auto;
+	font-family: var(--font-mono);
+	font-size: 0.75rem;
+	font-weight: 400;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
 }
 
 .start {

@@ -1,7 +1,10 @@
-/** 2 · Stage: the five stages, one to choose ([2 Fight setup](../../../../../docs/design/screens.md#2-fight-setup)). */
+/**
+ * 2 · Stage: the five stages, one to choose ([2 Fight setup](../../../../../docs/design/screens.md#2-fight-setup)).
+ * The stages without a world yet are shown but can't be chosen.
+ */
 
 import { component } from '@rooted/components'
-import { selection, stageNames, stages } from '../../_shared/state/selection.mts'
+import { builtStages, selection, stageNames, stages } from '../../_shared/state/selection.mts'
 import styles from './select.css'
 
 export const StagePicker = component({
@@ -23,6 +26,7 @@ export const StagePicker = component({
 							name: 'stage',
 							value: stage,
 							checked: selection.value.stage === stage,
+							disabled: !builtStages.has(stage),
 							on: {
 								change() {
 									selection.value.chooseStage(stage)
@@ -34,6 +38,12 @@ export const StagePicker = component({
 							textContent: `${index + 1} ·`,
 						}),
 						stageNames[stage],
+						builtStages.has(stage)
+							? undefined
+							: element('span', {
+								classes: styles.stageSoon,
+								textContent: 'soon',
+							}),
 					],
 				})),
 			})
