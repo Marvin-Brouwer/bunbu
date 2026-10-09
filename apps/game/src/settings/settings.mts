@@ -73,7 +73,7 @@ export const Settings = component({
 										type: 'range',
 										min: '0',
 										max: '100',
-										step: '5',
+										step: '1',
 										value: String(Math.round(settings.value.volume * 100)),
 										aria: {
 											label: 'Volume',

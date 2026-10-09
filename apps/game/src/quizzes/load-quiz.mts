@@ -8,6 +8,11 @@ import { component } from '@rooted/components'
 import { readQuiz, type ReadQuiz } from '../_shared/quiz/read-quiz.mts'
 import styles from './quiz-shelf.css'
 
+/** A file the browser couldn't read, such as one moved or deleted after it was chosen. */
+const unreadable = (error: unknown): ReadQuiz => ({
+	problems: [`The file could not be read: ${error instanceof Error ? error.message : String(error)}`],
+})
+
 export type LoadQuizOptions = {
 	readonly read: (file: File, result: ReadQuiz) => void
 }
@@ -16,10 +21,16 @@ export const LoadQuiz = component<LoadQuizOptions>({
 	name: 'load-quiz',
 	styles,
 	onMount({ append, element, options }) {
-		// Handed on in the order they came, so the last file is the one chosen.
-		const readAll = async (files: Iterable<File>) => {
-			const read = await Promise.all([...files].map(async (file) => ({ file, result: await readQuiz(file) })))
-			for (const { file, result } of read) options.read(file, result)
+		// One file at a time, also across drops: a big batch doesn't hold every file in memory at once,
+		// and the file dropped or chosen last is always the one chosen in the end.
+		let queue = Promise.resolve()
+		const readAll = (files: Iterable<File>) => {
+			for (const file of files) {
+				queue = queue.then(async () => {
+					options.read(file, await readQuiz(file).catch(unreadable))
+				})
+			}
+			return queue
 		}
 
 		const area = append(
