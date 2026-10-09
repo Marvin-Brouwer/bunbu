@@ -38,6 +38,8 @@ export type Body = {
 
 /** How a side looks on its model. */
 export type Look = {
+	/** Optional scale for a character whose model should read larger than the standard figure. */
+	readonly scale?: number
 	/** Colours by the model's material names. */
 	readonly colours?: Readonly<Record<string, number>>
 	/** Dressed in the samurai's armour ({@link dress}), with the helmet that comes off when he falls. */
@@ -47,7 +49,7 @@ export type Look = {
 }
 
 /** The samurai: Quaternius's "Matt" in armour, cutting with `Slash`. */
-export const samuraiLook: Look = { armour: true, clips: { Weapon: 'Slash' } }
+export const samuraiLook: Look = { armour: true, scale: 1, clips: { Weapon: 'Slash' } }
 /** The ninjas: Quaternius's ninja in black with a red sash. */
 export const ninjaLook: Look = { colours: { Ninja_Main: 0x15161c, Ninja_Secondary: 0x3a3f4a, Belt: 0x8e1f1a } }
 
@@ -119,6 +121,9 @@ export function createCharacter(model: GLTF, look: Look): Body {
 	scene.scale.setScalar(height / Math.max(top, 1e-3))
 
 	const armour = look.armour === true ? dress(scene) : undefined
+	// Scale the complete dressed figure, rather than the model before dressing it. The armour is
+	// fitted in the model's normalized metres and must stay aligned with the body and its bones.
+	root.scale.setScalar(look.scale ?? 1)
 	// Fading takes the armour along; turning grey leaves the helmet in its colours, lying there.
 	const greying = [...materials, ...(armour?.body ?? [])]
 	const greys = greying.map((material) => material.color.clone())

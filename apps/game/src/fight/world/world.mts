@@ -150,7 +150,7 @@ export function createRunWorld(game: RunGame, viewport: Viewport): View {
 			samurai.grey(finish?.samurai.pose === 'fallen' ? Math.min(1, finish.samurai.time / poseSeconds.fallen) : 0)
 
 			// The ninjas first: they keep the mark each came from after the ambush's options are gone.
-			ninjas.draw(game.ninjas.value.active, ambush.options, run.distance, delta, worldDelta)
+			ninjas.draw(game.ninjas.value.active, ambush.options, run.distance, delta, worldDelta, ambush.openingLeft > 0, since)
 
 			// He runs along the path, and turns toward the ninja he strikes or blocks.
 			const aimed = shogun.target === undefined ? undefined : ninjas.markOf(shogun.target)

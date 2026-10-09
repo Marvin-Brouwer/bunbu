@@ -115,8 +115,11 @@ export const Scroll = component<ScrollOptions>({
 		let shown: AmbushState = noAmbush
 		const follow = (next: AmbushState) => {
 			const change = scrollChangeOf(shown, next)
+			const entranceFinished = shown.open && shown.openingLeft > 0 && next.openingLeft === 0
 			// Picks are followed by the options themselves.
-			if (change === 'unroll') unroll(next)
+			if (change === 'unroll' || entranceFinished) {
+				if (next.openingLeft === 0) unroll(next)
+			}
 			else if (change === 'slice') slice(next.open ? next : shown)
 			else if (change === 'roll-up') setStage('roll-up')
 			shown = next

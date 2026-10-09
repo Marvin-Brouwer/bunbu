@@ -29,10 +29,10 @@ const lacing = 0xc9a24a
 
 /** Where the model's bones are in the rest pose, in metres, facing `+z`: what the armour is fitted to. */
 const fit = {
-	head: { y: 1.62, z: -0.07, radius: 0.37 },
-	chest: { y: 0.87, z: -0.17, radius: 0.3 },
-	waist: { y: 0.6, z: -0.19, radius: 0.32 },
-	shoulder: { x: 0.42, y: 1.02, z: -0.2 },
+	head: { y: 1.62, z: -0.07, radius: 0.39 },
+	chest: { y: 0.87, z: -0.17, radius: 0.36 },
+	waist: { y: 0.6, z: -0.19, radius: 0.37 },
+	shoulder: { x: 0.47, y: 1.02, z: -0.2 },
 }
 
 type Point = readonly [x: number, y: number, z: number]
@@ -130,13 +130,13 @@ export function dress(scene: Object3D): Armour | undefined {
 	// Breastplate (dō): lacquered red with rows of gold lacing, a dark band at the top.
 	const breast = new Group()
 	const { chest: c } = fit
-	breast.add(part(shape(new CylinderGeometry(c.radius, c.radius * 0.95, 0.46, 12)), red, 0, c.y, c.z))
+	breast.add(part(shape(new CylinderGeometry(c.radius, c.radius * 0.95, 0.58, 12)), red, 0, c.y, c.z))
 	breast.add(part(shape(new CylinderGeometry(c.radius * 1.01, c.radius * 1.01, 0.08, 12)), dark, 0, c.y + 0.21, c.z))
 	for (const row of [-0.14, -0.05, 0.04, 0.13]) breast.add(part(shape(new CylinderGeometry(c.radius * 1.012, c.radius * 1.012, 0.015, 12)), cord, 0, c.y + row, c.z))
 	// The collar and shoulder straps (watagami) over the top of the breastplate.
 	breast.add(part(shape(new CylinderGeometry(c.radius * 0.75, c.radius * 1.05, 0.12, 12)), dark, 0, c.y + 0.29, c.z))
 	// Wider than deep, like the body it covers.
-	breast.scale.set(1.2, 1, 1)
+	breast.scale.set(1.3, 1.08, 1.18)
 
 	// Skirt (kusazuri): plates round the waist, each with a gilt hem.
 	const skirt = new Group()
@@ -147,8 +147,8 @@ export function dress(scene: Object3D): Armour | undefined {
 		at.position.set(Math.sin(angle) * w.radius, w.y - 0.1, w.z + Math.cos(angle) * w.radius)
 		at.rotation.y = angle
 		at.rotation.x = 0.18
-		at.add(part(shape(new BoxGeometry(0.22, 0.24, 0.035)), red, 0, 0, 0))
-		at.add(part(shape(new BoxGeometry(0.22, 0.03, 0.04)), gold, 0, -0.12, 0))
+		at.add(part(shape(new BoxGeometry(0.28, 0.3, 0.06)), red, 0, 0, 0))
+		at.add(part(shape(new BoxGeometry(0.28, 0.04, 0.065)), gold, 0, -0.15, 0))
 		skirt.add(at)
 	}
 
@@ -160,7 +160,7 @@ export function dress(scene: Object3D): Armour | undefined {
 		plate.position.set(side * s.x, s.y, s.z)
 		plate.rotation.z = side * 0.28
 		for (let lame = 0; lame < 3; lame++) {
-			plate.add(part(shape(new BoxGeometry(0.06, 0.11, 0.3)), lame === 2 ? gold : red, side * 0.012 * lame, -lame * 0.1, 0))
+			plate.add(part(shape(new BoxGeometry(0.09, 0.14, 0.36)), lame === 2 ? gold : red, side * 0.015 * lame, -lame * 0.12, 0))
 		}
 		return { bone, plate }
 	})

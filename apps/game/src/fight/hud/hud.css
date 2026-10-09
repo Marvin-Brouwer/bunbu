@@ -222,29 +222,101 @@
 	text-shadow: 0 1px 2px var(--night);
 }
 
-/* The red edge flash on a hit. */
-.flash {
+/* The ninja's katana crossing the screen on a hit. */
+.hit {
 	position: absolute;
 	inset: 0;
 	pointer-events: none;
-	box-shadow: inset 0 0 0 0.5rem var(--vermilion), inset 0 0 3rem 1rem var(--vermilion);
-	animation: flash 600ms ease-out forwards;
+	overflow: hidden;
 }
 
-@keyframes flash {
-	from {
-		opacity: 0.9;
-	}
+.slice {
+	position: absolute;
+	left: -18%;
+	top: 48%;
+	width: 136%;
+	height: 0.38rem;
+	background: linear-gradient(90deg, transparent 0 5%, #fff8df 12%, #d7e4e5 78%, transparent 96%);
+	box-shadow: 0 0 0.25rem #fff8df, 0 0 0.7rem rgb(255 235 188 / 70%);
+	transform: rotate(-28deg) translateX(-90%);
+	animation: slice 480ms cubic-bezier(0.2, 0.8, 0.25, 1) forwards;
+	animation-delay: 650ms;
+}
 
-	to {
+.slice::after {
+	content: '';
+	position: absolute;
+	left: 9%;
+	top: 0.38rem;
+	width: 68%;
+	height: 0.08rem;
+	background: #3d2020;
+}
+
+.handle {
+	position: absolute;
+	left: 2%;
+	top: -0.15rem;
+	width: 1.6rem;
+	height: 0.7rem;
+	border-radius: 0.12rem;
+	background: repeating-linear-gradient(135deg, #241b1b 0 0.16rem, #b48b4b 0.16rem 0.22rem);
+	box-shadow: 0 0 0.2rem #120d0d;
+}
+
+.blood {
+	position: absolute;
+	left: 57%;
+	top: 43%;
+	width: 7rem;
+	height: 9rem;
+	background:
+		radial-gradient(circle at 45% 18%, var(--vermilion) 0 0.22rem, transparent 0.25rem),
+		radial-gradient(circle at 72% 34%, var(--vermilion) 0 0.14rem, transparent 0.17rem),
+		radial-gradient(circle at 30% 52%, var(--vermilion) 0 0.3rem, transparent 0.34rem),
+		radial-gradient(ellipse at 48% 35%, rgb(150 24 22 / 85%) 0 12%, transparent 13%);
+	opacity: 0;
+	transform: rotate(-12deg) scale(0.65);
+	animation: blood 650ms ease-out forwards;
+	animation-delay: 800ms;
+}
+
+@keyframes slice {
+	0% {
 		opacity: 0;
+		transform: rotate(-28deg) translateX(-90%);
+	}
+	18% {
+		opacity: 1;
+	}
+	75% {
+		opacity: 1;
+	}
+	100% {
+		opacity: 0;
+		transform: rotate(-28deg) translateX(90%);
+	}
+}
+
+@keyframes blood {
+	0% {
+		opacity: 0;
+		transform: rotate(-12deg) scale(0.65);
+	}
+	25% {
+		opacity: 0.95;
+	}
+	100% {
+		opacity: 0;
+		transform: rotate(-12deg) scale(1.15) translateY(1rem);
 	}
 }
 
 @media (prefers-reduced-motion: reduce) {
 	.pop,
 	.lost,
-	.flash {
+	.slice,
+	.blood {
 		animation-duration: 400ms;
 	}
 

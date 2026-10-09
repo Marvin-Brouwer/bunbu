@@ -18,7 +18,9 @@ export const runFraming: Framing = { fov: 50, halfWidth: 3.8, closest: 8 }
 
 /** The camera's direction from the samurai: behind and above him, down the path. */
 const behind: Point = [0, 0.45, 1]
-const lookAhead: Point = [0, 1.1, -2.5]
+const lookAhead: Point = [0, 2.4, -4]
+const lookAheadPortrait: Point = [0, 4, -7]
+const lookAheadWide: Point = [0, 1.4, -2.8]
 /** Fallen, it comes in close to the samurai on his knee. */
 const fallenCloser = 0.55
 const lookFallen: Point = [0, 0.7, 0]
@@ -28,6 +30,8 @@ export function cameraOf(aspect: number, fallen: boolean, framing = runFraming):
 	const scale = distance / Math.hypot(...behind)
 	return {
 		position: [behind[0] * scale, behind[1] * scale, behind[2] * scale],
-		look: fallen ? lookFallen : lookAhead,
+		// On a narrow portrait screen the extra look-ahead leaves the samurai low in frame. Tablets
+		// use a gentler version so the lower ninja row remains visible.
+		look: fallen ? lookFallen : aspect > 1 ? lookAheadWide : aspect <= 0.7 ? lookAheadPortrait : lookAhead,
 	}
 }

@@ -63,7 +63,7 @@ export const RunScreen = component<RunScreenOptions>({
 							quiz: game.quiz,
 							label: 'AMBUSH',
 							commit: () => { commitAmbush(game) },
-							held: () => game.run.value.phase !== 'ambush' || game.run.value.countdown > 0,
+							held: () => game.run.value.phase !== 'ambush' || game.run.value.countdown > 0 || game.ambush.value.openingLeft > 0,
 						}),
 					}),
 					element('div', {
