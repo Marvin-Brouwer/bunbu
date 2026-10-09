@@ -23,8 +23,8 @@ Wireframe source: the project's design canvas (`design/wireframes/*.dc.html` and
 
 - 3D samurai idling under a torii, falling petals.
 - 文武 · **Bunbu** · Shogun Scholar.
-- High score for the chosen quiz: `2,480`, with `17 / 20 correct · 4:05`.
-- **Fight** (shows the chosen quiz; without one it leads to Quizzes), **Quizzes**, **Dojo**, **Settings**.
+- The chosen quiz: its title, and its high score `2,480` with `17 / 20 correct · 4:05` (or "No high score yet").
+- **Fight**, **Change quiz**, **Dojo**, **Settings**. Without a chosen quiz: **Fight** ("Choose a quiz first") and **Quizzes** both lead to Quizzes.
 
 ### 1b Quizzes
 
