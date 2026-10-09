@@ -1,6 +1,7 @@
 /**
- * The scroll that opens when Share can't hand the quiz to the share sheet: download the `.bunbu`
- * file to send on by hand, share the app itself, or close. When no file could be made it says why.
+ * How to share a quiz by hand, for when the share sheet can't take the quiz file: send the file and
+ * Bunbu itself, then the friend loads the file under Quizzes. Written as the way to share, not as
+ * a failure, since the player doesn't care why.
  */
 
 import { component } from '@rooted/components'
@@ -8,9 +9,9 @@ import { MenuButton } from '../_shared/menu/menu-button.mts'
 import { ScrollSheet } from '../_shared/scroll/scroll-sheet.mts'
 import styles from './title.css'
 
-/** The file to offer as a download, or why there is none. */
+/** The quiz file to offer as a download, or why there is none. */
 export type ShareFallbackReason =
-	| { readonly file: File }
+	| { readonly file: File; readonly title: string }
 	| { readonly problem: string }
 
 export type ShareFallbackOptions = {
@@ -57,6 +58,8 @@ export const ShareFallback = component<ShareFallbackOptions>({
 	styles,
 	onMount({ append, create, element, options }) {
 		const { reason } = options
+		// The reason is for whoever fixes it, not for the player.
+		if ('problem' in reason) console.error(`[bunbu] the quiz could not be shared: ${reason.problem}`)
 		const status = element('p', {
 			classes: styles.note,
 			role: 'status',
@@ -82,15 +85,33 @@ export const ShareFallback = component<ShareFallbackOptions>({
 					children: [
 						element('h2', {
 							classes: styles.shareTitle,
-							textContent: 'Share',
+							textContent: 'Share this quiz',
 						}),
-						'file' in reason
-							? element('p', {
-								textContent: `This device can't hand a quiz file to another app. Download ${reason.file.name} and send it on yourself, or share Bunbu so they can play it too.`,
-							})
-							: element('p', {
-								textContent: `The quiz could not be made into a file: ${reason.problem}`,
-							}),
+						...'file' in reason
+							? [
+								element('p', {
+									textContent: `To play ${reason.title}, a friend needs the quiz and Bunbu.`,
+								}),
+								element('ol', {
+									classes: styles.shareSteps,
+									children: [
+										element('li', {
+											textContent: 'Download the quiz and send it to them, in a chat or an email.',
+										}),
+										element('li', {
+											textContent: 'Share Bunbu with them.',
+										}),
+										element('li', {
+											textContent: 'They open Bunbu, go to Quizzes and load the file there.',
+										}),
+									],
+								}),
+							]
+							: [
+								element('p', {
+									textContent: 'Something went wrong while packing this quiz. Try again in a moment.',
+								}),
+							],
 						status,
 					],
 				}),
@@ -100,14 +121,14 @@ export const ShareFallback = component<ShareFallbackOptions>({
 						? [
 							create(MenuButton, {
 								kind: 'primary',
-								label: 'Download the .bunbu file',
+								label: 'Download the quiz',
 								note: reason.file.name,
 								action: () => {
 									download(reason.file)
 								},
 							}),
 							create(MenuButton, {
-								label: 'Share this app',
+								label: 'Share Bunbu',
 								action: () => {
 									void shareApp().then((said) => {
 										status.textContent = said ?? ''

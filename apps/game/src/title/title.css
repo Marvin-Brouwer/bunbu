@@ -156,6 +156,13 @@
 	margin: 0;
 }
 
+.shareSteps {
+	display: grid;
+	gap: 0.4rem;
+	margin: 0;
+	padding-left: 1.4rem;
+}
+
 .shareBody p:empty {
 	display: none;
 }

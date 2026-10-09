@@ -24,15 +24,19 @@ const share = async (quiz: BunbuData): Promise<ShareFallbackReason | undefined> 
 		files: [file],
 		title: quiz.title,
 	}
+	const byHand = {
+		file,
+		title: quiz.title,
+	}
 	// Not every browser can share files, and not every share sheet takes a type it doesn't know.
-	if (!('canShare' in navigator) || !navigator.canShare(shared)) return { file }
+	if (!('canShare' in navigator) || !navigator.canShare(shared)) return byHand
 	try {
 		await navigator.share(shared)
 		return undefined
 	} catch (error) {
 		// Closing the share sheet isn't a failure.
 		if (error instanceof DOMException && error.name === 'AbortError') return undefined
-		return { file }
+		return byHand
 	}
 }
 
