@@ -97,7 +97,7 @@ Owns `_shared/scroll/`, `_shared/markdown/`, `fight/hud/` and the theme in `appl
 
 ### E. 3D world (code)
 
-Owns `canvas/` and `fight/world/` (the run's world; `fight/world.mts` until it grows).
+Owns `canvas/` and `fight/world/` (the run's world).
 
 Builds against placeholder models (capsules and boxes) until F delivers, so it never waits on art.
 

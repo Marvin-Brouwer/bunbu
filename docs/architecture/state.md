@@ -182,7 +182,7 @@ apps/game/src/
 	fight/            /fight/: quiz select, then the run
 		state/        the run's stores and createRunGame
 		flows/        functions that span the run's stores
-		world.mts     the run's 3D world (reads state only)
+		world/        the run's 3D world: stage, samurai, ninjas, camera (reads state only)
 		_temp/        dev-only run states (fixtures.mts), through `/fight/?fixture=<name>`
 	dojo/             /dojo/, /dojo/study/, /dojo/practice/
 		state/        createPracticeGame, createStudyGame
