@@ -4,8 +4,9 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vite
 import { highScores } from '../../fight/state/highscores.mts'
 import { lastRun } from '../../fight/state/lastrun.mts'
 import { settings } from '../../settings/state/settings.mts'
+import { selection } from '../state/selection.mts'
 import { fileOf, library } from './library.mts'
-import { parseHighScores, parseLastRun, parseLibrary, parseSettings, persistApp } from './persistence.mts'
+import { parseHighScores, parseLastRun, parseLibrary, parseSelection, parseSettings, persistApp } from './persistence.mts'
 import { readQuizFiles, writeQuizFiles } from './quiz-files.mts'
 import { read, storedVersion, write } from './storage.mts'
 
@@ -68,6 +69,7 @@ beforeEach(() => {
 	highScores.value.reset()
 	lastRun.value.reset()
 	library.value.reset()
+	selection.value.reset()
 })
 
 afterEach(() => {
@@ -129,6 +131,12 @@ describe('parsing what was saved', () => {
 		expect(parseLastRun({ quiz: { id: 'a', version: '1' }, misses: [{ ...miss, outcome: 'correct' }] }))
 			.toEqual({ quiz: { id: 'a', version: '1' }, misses: [] })
 		expect(parseLastRun({ quiz: { id: 'a' }, misses: [] })).toBeUndefined()
+	})
+
+	it('keeps the chosen quiz and a stage that can still be chosen', () => {
+		expect(parseSelection({ quiz: { id: 'a', version: '1' }, stage: 'castle-town' })).toEqual({ quiz: { id: 'a', version: '1' }, stage: 'castle-town' })
+		expect(parseSelection({ stage: 'rice-fields' })).toEqual({ quiz: undefined, stage: undefined })
+		expect(parseSelection({ stage: 'moon' })).toEqual({ quiz: undefined, stage: undefined })
 	})
 
 	it('validates the saved quiz files again', async () => {
@@ -223,5 +231,37 @@ describe('persistApp', () => {
 		expect(library.value.entries).toHaveLength(1)
 		expect(library.value.entries[0]?.quiz).toMatchObject({ id: 'saved', version: '1' })
 		expect(fileOf(savedQuiz)).toEqual(savedFile)
+	})
+
+	it('chooses the saved quiz and stage again once the library has the quiz', async () => {
+		await writeQuizFiles([savedFile])
+		write('selection', { quiz: { id: 'saved', version: '1' }, stage: 'castle-town' })
+
+		await persistApp(stop.signal)
+
+		expect(selection.value.stage).toBe('castle-town')
+		expect(selection.value.quiz).toMatchObject({ id: 'saved', version: '1' })
+	})
+
+	it('saves the chosen quiz by id and version', async () => {
+		await persistApp(stop.signal)
+		selection.value.chooseQuiz(savedQuiz)
+		expect(read('selection')).toEqual({ quiz: { id: 'saved', version: '1' }, stage: 'castle-town' })
+	})
+
+	it('keeps a quiz chosen while the saved ones are still being validated', async () => {
+		await writeQuizFiles([savedFile])
+		write('selection', { quiz: { id: 'saved', version: '1' }, stage: 'castle-town' })
+		const loading = persistApp(stop.signal)
+		const other = await savedAs('Other')
+		selection.value.chooseQuiz({ ...other.quiz, id: 'other' })
+		await loading
+		expect(selection.value.quiz).toMatchObject({ id: 'other' })
+	})
+
+	it('chooses no quiz when the saved one is no longer loaded', async () => {
+		write('selection', { quiz: { id: 'gone', version: '1' }, stage: 'castle-town' })
+		await persistApp(stop.signal)
+		expect(selection.value.quiz).toBeUndefined()
 	})
 })
