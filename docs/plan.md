@@ -54,7 +54,7 @@ The heart of the game, all plain TypeScript and unit tests, no screen needed.
 
 - Turn every question type into ambushes: `yes-no`, `single`, `multiple`, `order`, one ambush per `solutions` entry, one `single`-style ambush per `match` row ([per question type](design/gameplay.md#per-question-type)).
 - Assign marks to options: shuffle, one of 8 directions per option, 1 to 5 ninjas (3 front, 2 behind), bundling for 6 to 8 options ([more than 3 options](design/gameplay.md#more-than-3-options)).
-- Picks: pick, unpick by picking again, order numbers for `order`, commit.
+- Picks: pick (a swipe is final, picking again does nothing), order numbers for `order`, commit.
 - Outcome: correct when every slash is on a correct option and every block on a wrong one. Correct, wrong and unanswered, including the half-swiped rule.
 - Time limit: `ambushSeconds` from word count (code counts double) and question type, times `timeScale`, minimum 5 s ([time limit](design/gameplay.md#time-limit)). All numbers in one config object.
 - Ninja approach as a function of time left, so the creeping ninjas are the timer.
@@ -81,7 +81,7 @@ Pure gesture logic with tests on recorded pointer sequences, plus the swipe zone
 - One continuous stroke can pick several marks (← → in one go); lifting between swipes is optional.
 - 0.8 s pause after lifting commits for `multiple` and `order`; a single swipe commits at once for `yes-no` and `single`.
 - Calls `ambush.pick()` and `ambush.commit()`, nothing else.
-- The swipe zone is the scroll's footer: a ruled paper-cutting target with a line on how to answer. Picks and order numbers show on the scroll's options.
+- The swipe zone is the scroll's footer: the answers picked so far, then a ruled paper-cutting target with a line on how to answer, the finger's trace and a red slash per pick. Picks and order numbers also show on the scroll's options.
 - Haptics through `navigator.vibrate`, behind the setting.
 - Test on a real phone early: iOS Safari edge swipes and pull-to-refresh are the usual traps (`touch-action`, `overscroll-behavior`).
 

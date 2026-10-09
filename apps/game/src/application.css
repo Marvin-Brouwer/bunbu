@@ -27,6 +27,7 @@
 	/* The white, ruled paper-cutting target of the swipe zone. */
 	--target: #fbfaf6;
 	--target-rule: #cfccc3;
+	--target-edge: #b4b1aa;
 	/* The wooden rods of the scroll. */
 	--wood: #5c3d24;
 	--wood-light: #8a6240;

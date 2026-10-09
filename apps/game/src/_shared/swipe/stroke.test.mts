@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { marks, type Mark } from '../state/ambush.mts'
-import { finish, follow, markToward, strikesAtOnce, strokeAt, type Point } from './stroke.mts'
+import { directionOf, finish, follow, markToward, strikesAtOnce, strokeAt, type Point } from './stroke.mts'
 
 /** Replays a pointer sequence, from the pointer going down to it lifting, as the swipe zone does. */
 function marksOf(points: readonly Point[], available: readonly Mark[] = marks): Mark[] {
@@ -60,6 +60,16 @@ describe('markToward', () => {
 	it('ignores a swipe close to none of the marks in play', () => {
 		expect(markToward(at(0, 50), ['left', 'up', 'right'])).toBeUndefined()
 		expect(markToward(at(-50, 0), ['up', 'down'])).toBeUndefined()
+	})
+})
+
+describe('directionOf', () => {
+	it('points each mark back the way markToward reads it', () => {
+		for (const mark of marks) {
+			const toward = directionOf(mark)
+			expect(Math.hypot(toward.x, toward.y)).toBeCloseTo(1)
+			expect(markToward({ x: toward.x * 50, y: toward.y * 50 }, marks)).toBe(mark)
+		}
 	})
 })
 

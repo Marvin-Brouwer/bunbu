@@ -44,6 +44,12 @@ const degreesOf: Readonly<Record<Mark, number>> = {
 	'down-right': 315,
 }
 
+/** A unit vector toward `mark`, in pointer coordinates: ↑ is `{ x: 0, y: -1 }`. */
+export function directionOf(mark: Mark): Point {
+	const radians = (degreesOf[mark] * Math.PI) / 180
+	return { x: Math.cos(radians), y: -Math.sin(radians) }
+}
+
 const between = (from: Point, to: Point): Point => ({ x: to.x - from.x, y: to.y - from.y })
 
 const lengthOf = (vector: Point) => Math.hypot(vector.x, vector.y)

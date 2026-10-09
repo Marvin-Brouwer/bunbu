@@ -1,6 +1,7 @@
 /**
  * The swipe area itself ([4 Ambush](../../../../../docs/design/screens.md#4-ambush)): a ruled
- * paper-cutting target, as kumdo practises cuts on (종이베기), with a line on how to answer. It is
+ * paper-cutting target, as kumdo practises cuts on (종이베기), grey along the top and bottom, with a
+ * line on how to answer. It is
  * abstract on purpose: the answers are on the scroll above it, and the ninjas only come in once
  * the player has answered.
  */
@@ -17,7 +18,7 @@ export type SwipePaperOptions = {
 function hintOf(kind: AmbushKind): string {
 	if (kind === 'yes-no') return 'swipe ↑ yes · ↓ no'
 	if (kind === 'single') return 'swipe toward your answer'
-	return 'swipe each answer · lift + pause = strike · swipe again to undo'
+	return 'swipe each answer · lift + pause = strike'
 }
 
 export const SwipePaper = component<SwipePaperOptions>({
@@ -29,14 +30,25 @@ export const SwipePaper = component<SwipePaperOptions>({
 				classes: styles.target,
 				children: [
 					element('div', {
-						classes: styles.band,
+						classes: styles.edge,
 					}),
 					element('div', {
-						classes: styles.ring,
+						classes: styles.field,
+						children: [
+							element('div', {
+								classes: styles.band,
+							}),
+							element('div', {
+								classes: styles.ring,
+							}),
+						],
 					}),
-					element('p', {
-						classes: styles.hint,
-						textContent: hintOf(options.kind),
+					element('div', {
+						classes: styles.edge,
+						children: element('p', {
+							classes: styles.hint,
+							textContent: hintOf(options.kind),
+						}),
 					}),
 				],
 			})

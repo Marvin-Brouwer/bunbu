@@ -1,7 +1,13 @@
 /*
  * The swipe zone (docs/design/screens.md#4-ambush): the footer of the scroll, under its text, a
- * ruled paper-cutting target, as in kumdo (종이베기), to swipe across.
+ * ruled paper-cutting target, as in kumdo (종이베기), to swipe across, with the answers picked so
+ * far above it.
  */
+
+.swipe {
+	display: grid;
+	gap: 0.6rem;
+}
 
 .zone {
 	display: grid;
@@ -22,19 +28,27 @@
 }
 
 .target {
-	position: relative;
+	grid-area: 1 / 1;
 	display: grid;
-	align-content: end;
-	justify-items: center;
+	grid-template-rows: 0.9rem 1fr auto;
 	box-sizing: border-box;
-	height: 8.5rem;
-	padding: 0.4rem 0.75rem;
+	height: 9rem;
 	border: 1px solid var(--target-rule);
-	/* Ruled like a paper-cutting target: fine lines all the way down. */
-	background:
-		repeating-linear-gradient(to bottom, transparent 0 0.6rem, var(--target-rule) 0.6rem calc(0.6rem + 1px)),
-		var(--target);
+	background: var(--target);
 	box-shadow: 0 1px 4px rgb(0 0 0 / 25%);
+}
+
+/* The grey strips along the top and bottom, as on a real target. */
+.edge {
+	display: grid;
+	place-items: center;
+	background: var(--target-edge);
+}
+
+/* Ruled like a paper-cutting target: fine lines all the way across the white. */
+.field {
+	position: relative;
+	background: repeating-linear-gradient(to bottom, transparent 0 0.6rem, var(--target-rule) 0.6rem calc(0.6rem + 1px));
 }
 
 /* The thick black bar across the middle, with the ring a cut aims for. */
@@ -60,12 +74,127 @@
 }
 
 .hint {
-	position: relative;
 	margin: 0;
-	padding: 0 0.4rem;
-	background: var(--target);
-	color: var(--ink-soft);
+	padding: 0.2rem 0.75rem;
+	color: var(--ink);
 	font-family: var(--font-mono);
 	font-size: 0.7rem;
 	text-align: center;
+}
+
+/* The pointer's trace, and the red cut of each pick, drawn over the paper. */
+
+.overlay {
+	grid-area: 1 / 1;
+	width: 100%;
+	height: 100%;
+	overflow: hidden;
+	pointer-events: none;
+}
+
+.trace {
+	fill: none;
+	stroke: var(--ink-faint);
+	stroke-width: 2;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+	opacity: 0.6;
+}
+
+.slash {
+	stroke: var(--vermilion);
+	stroke-width: 5;
+	stroke-linecap: round;
+	stroke-dasharray: 1;
+	animation: cut 140ms ease-out both;
+}
+
+@keyframes cut {
+	from {
+		stroke-dashoffset: 1;
+	}
+
+	to {
+		stroke-dashoffset: 0;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.slash {
+		animation: none;
+	}
+}
+
+/* The answers picked so far, in swipe order. */
+
+.choices {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.35rem;
+	/* Three rows; more scroll. */
+	max-height: 6rem;
+	margin: 0;
+	padding: 0;
+	overflow-y: auto;
+	list-style: none;
+}
+
+.choices[hidden],
+.choice[hidden] {
+	display: none;
+}
+
+.choice {
+	display: flex;
+	align-items: center;
+	gap: 0.35rem;
+	max-width: 100%;
+	box-sizing: border-box;
+	padding: 0.15rem 0.5rem 0.15rem 0.2rem;
+	border: 1px solid var(--vermilion);
+	border-radius: var(--radius);
+	background: var(--paper);
+	font-size: 0.85rem;
+}
+
+.place:empty {
+	display: none;
+}
+
+.place {
+	padding-left: 0.25rem;
+	color: var(--vermilion);
+	font-family: var(--font-mono);
+	font-weight: 700;
+}
+
+.arrow {
+	display: grid;
+	place-items: center;
+	width: 1.3rem;
+	height: 1.3rem;
+	border-radius: var(--radius);
+	background: var(--vermilion);
+	color: var(--paper);
+	line-height: 1;
+}
+
+.text {
+	min-width: 0;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+
+.text > * {
+	display: inline;
+	margin: 0;
+}
+
+.text code {
+	padding: 0 0.2em;
+	border-radius: var(--radius);
+	background: var(--paper-shade);
+	font-family: var(--font-mono);
+	font-size: 0.9em;
 }
