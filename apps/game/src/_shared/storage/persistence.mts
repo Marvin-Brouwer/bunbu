@@ -11,11 +11,11 @@ import { validate } from '@bunbu/data'
 import type { StateObject, Store } from '@rooted/store'
 import { highScores } from '../../fight/state/highscores.mts'
 import { lastRun, type LastRunState } from '../../fight/state/lastrun.mts'
-import type { HighScore } from '../../fight/state/score.mts'
+import { pointsPerCorrect, type HighScore } from '../../fight/state/score.mts'
 import { settings, timeScales, type Difficulty, type SettingsState } from '../../settings/state/settings.mts'
 import type { AnswerRecord, Outcome } from '../state/quiz.mts'
 import { library, type LibraryEntry } from './library.mts'
-import { arrayOf, count, flag, fraction, listOf, object, oneOf, partial, recordOf, seconds, text } from './schema.mts'
+import { arrayOf, count, flag, fraction, listOf, object, oneOf, partial, recordOf, seconds, text, where } from './schema.mts'
 import { read, write, type StoredKey } from './storage.mts'
 
 /** Settings are kept field by field: a field that is missing or invalid keeps its default. */
@@ -25,7 +25,11 @@ export const parseSettings = partial<SettingsState>({
 	volume: fraction,
 })
 
-const highScoreOf = object<HighScore>({ points: count, seconds, correct: count, answered: count })
+/** A score has to add up: edited points would otherwise become a high score nobody can beat. */
+const highScoreOf = where(
+	object<HighScore>({ points: count, seconds, correct: count, answered: count }),
+	(score) => score.points === score.correct * pointsPerCorrect && score.correct <= score.answered
+)
 
 export const parseHighScores = recordOf(highScoreOf)
 

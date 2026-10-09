@@ -48,7 +48,7 @@ beforeEach(() => {
 	settings.value.reset()
 	highScores.value.reset()
 	lastRun.value.reset()
-	library.value.restore([])
+	for (const { quiz } of library.value.entries) library.value.remove(quiz.id, quiz.version)
 })
 
 afterEach(() => {
@@ -95,6 +95,11 @@ describe('parsing what was saved', () => {
 		const good = { points: 300, seconds: 61.5, correct: 3, answered: 4 }
 		expect(parseHighScores({ a: good, b: { ...good, points: -1 }, c: 'x' })).toEqual({ a: good })
 		expect(parseHighScores([good])).toEqual({})
+	})
+
+	it('drops high scores that do not add up', () => {
+		const good = { points: 300, seconds: 61.5, correct: 3, answered: 4 }
+		expect(parseHighScores({ a: { ...good, points: 999_999 }, b: { ...good, answered: 2 }, c: good })).toEqual({ c: good })
 	})
 
 	it('keeps the misses that are valid', () => {
@@ -148,6 +153,16 @@ describe('persistApp', () => {
 		await persistApp(stop.signal)
 		expect(highScores.value.of('a', '1')).toMatchObject({ points: 300 })
 		expect(highScores.value.of('b', '1')).toMatchObject({ points: 100 })
+	})
+
+	it('keeps a quiz loaded while the saved ones are still being validated', async () => {
+		write('library', [source])
+		const loading = persistApp(stop.signal)
+		const newer = { ...fixtureQuiz, id: 'saved', version: '1', title: 'Newer' }
+		library.value.add('newer source', newer)
+		await loading
+		expect(library.value.entries).toHaveLength(1)
+		expect(library.value.entries[0]).toMatchObject({ source: 'newer source', quiz: { title: 'Newer' } })
 	})
 
 	it('starts from the defaults when nothing was saved', async () => {

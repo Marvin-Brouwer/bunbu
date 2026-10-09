@@ -17,6 +17,14 @@ export const count: Parser<number> = (data) => Number.isInteger(data) ? seconds(
 /** A number from `0` to `1`. */
 export const fraction: Parser<number> = (data) => typeof data === 'number' && data >= 0 && data <= 1 ? data : undefined
 
+/** `parse`, but only for values that also pass `valid`: for rules that span fields. */
+export function where<T>(parse: Parser<T>, valid: (value: T) => boolean): Parser<T> {
+	return (data) => {
+		const value = parse(data)
+		return value !== undefined && valid(value) ? value : undefined
+	}
+}
+
 /** One of `values`. */
 export function oneOf<const T extends string>(...values: readonly T[]): Parser<T> {
 	return (data) => values.find((value) => value === data)
