@@ -117,7 +117,9 @@ export function commitAmbush(game: RunGame) {
 		life.value.hit(missShare(game))
 		shogun.value.hurt()
 	}
-	if (life.value.empty()) run.value.fall()
+	// The samurai holds while the strike or the hit plays out; the run ends after that.
+	run.value.endAmbush(result.outcome === 'correct' ? runConfig.strikeSeconds : runConfig.hitSeconds)
+	if (runIsOver(game)) recordRun(game)
 }
 ```
 
@@ -128,7 +130,7 @@ Flows take the game mode's stores as an argument rather than importing them, so 
 One `requestAnimationFrame` loop drives everything. The `Application` starts it once; a route plugs its game mode into it with `play(mode, signal)`, which unplugs again when the route unmounts. Without a mode (on a menu) the loop only draws. Each frame, in a fixed order:
 
 1. **Time.** Take the real frame delta, clamp it (a tab coming back from the background must not jump the run forward by minutes), and multiply it by the run's speed scale. That is how slow motion during an ambush works. The mode gets the real delta as well: slow motion is only visual, so timers the player plays against, such as the ambush's time limit, count real time.
-2. **Update.** Call the time-based actions: `run.value.tick(worldDelta, realDelta)` first (distance by world time, capped at the next ambush; run time, countdown and the hold after an ambush by real time), so the run's clock has the frame in it when an ambush ends the run. Then `ambush.value.tick(realDelta)` with real time (held during the resume countdown) and `ninjas.value.advance(…)` from the time left. Last, once the samurai has recovered, the next ambush springs when he reaches it. Timeouts (the ambush running out) are decided here, by the stores, through flows.
+2. **Update.** Call the time-based actions: `run.value.tick(worldDelta, realDelta)` first (distance by world time, capped at the next ambush; run time, countdown and the hold after an ambush by real time), so the run's clock has the frame in it when the last answer comes in. Then `ambush.value.tick(realDelta)` with real time (held during the resume countdown) and `ninjas.value.advance(…)` from the time left. Last, once the samurai has recovered, the outcome settles (the ninjas he blocked flee, the ones that hit him vanish) and the run either ends, after its last answer or a hit too many, or springs the next ambush when he reaches it. The last answer gets the same hold as every other, so the strike or the hit plays out before the results or the fall; the high score and the misses are kept the moment it comes in, so a pause in that hold loses nothing. Timeouts (the ambush running out) are decided here, by the stores, through flows.
 3. **Render.** The renderer reads every store it needs through `value` and updates the scene: the shogun's position and animation clip, which ninjas exist and where they are, the camera. Then `renderer.render(scene, camera)`.
 
 While paused, step 2 is skipped. The loop stops entirely when the page is hidden (`visibilitychange`) and restarts when it is visible again.
