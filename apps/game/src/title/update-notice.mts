@@ -27,7 +27,7 @@ export const UpdateNotice = component({
 						}),
 						create(ApplyUpdateButton, {
 							label: 'Update',
-							classes: styles.apply,
+							classes: styles.panelButton,
 						}),
 					],
 				}),
