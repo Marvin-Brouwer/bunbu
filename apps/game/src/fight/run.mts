@@ -11,8 +11,10 @@ import { component } from '@rooted/components'
 import { tickRun } from './flows/run.mts'
 import { commitAmbush } from './flows/ambush.mts'
 import { play } from '../canvas/loop.mts'
+import { guardPlay } from '../_shared/play-guard.mts'
 import { show } from '../canvas/stage.mts'
 import type { RunGame } from './state/game.mts'
+import { pausable } from './state/run.mts'
 import { Hud } from './hud/hud.mts'
 import { Scroll } from '../_shared/scroll/scroll.mts'
 import { RunOverlays } from './overlays/overlays.mts'
@@ -38,6 +40,18 @@ export const RunScreen = component<RunScreenOptions>({
 			worldScale: () => game.run.value.worldScale,
 			pause: () => { game.run.value.pause() },
 		}, signal)
+
+		// Full screen on a phone, and Back pauses; both come back when the run resumes.
+		const guard = guardPlay({
+			pause: () => { game.run.value.pause() },
+			pausable: () => pausable.has(game.run.value.phase),
+		}, signal)
+		let wasPaused = false
+		game.run.on('change', signal, ({ detail }) => {
+			const paused = detail.state.phase === 'paused'
+			if (wasPaused && !paused) guard.resumed()
+			wasPaused = paused
+		})
 
 		// The run's layers over the canvas, back to front. The tracks mount here, one line each,
 		// handing their component `game` (and the overlays `leave`).

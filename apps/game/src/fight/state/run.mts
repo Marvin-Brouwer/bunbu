@@ -12,6 +12,9 @@ import { refuse } from '../../_shared/state/store.mts'
 
 export type RunPhase = 'idle' | 'intro' | 'running' | 'ambush' | 'paused' | 'finished' | 'fallen'
 
+/** The phases a run can be paused in; the rest are paused, over, or not started. */
+export const pausable: ReadonlySet<RunPhase> = new Set(['intro', 'running', 'ambush'])
+
 export type RunState = {
 	readonly phase: RunPhase
 	/** Run time in real seconds, slow motion included. Shown on the results and used as the high-score tiebreak. */
