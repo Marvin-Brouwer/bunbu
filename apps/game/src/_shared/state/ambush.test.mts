@@ -7,9 +7,9 @@
 import type { BunbuData, Markdown } from '@bunbu/data'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { fixtureQuiz } from '../../_temp/quiz.mts'
+import { seeded } from '../../_temp/random.mts'
 import { createAmbush, marks, yesNoMarks, type Ambush, type AmbushKind, type AmbushOption } from './ambush.mts'
 import { choicesOf, createQuiz, refsOf, type Quiz } from './quiz.mts'
-import { seeded } from './random.mts'
 
 const markdown = (text: string) => text as Markdown
 

@@ -35,10 +35,10 @@ export function endRun(game: RunGame): void {
 }
 
 /**
- * Ticks the stores that go by time, once per frame while the run is not paused. `dt` is world
- * time, slowed down during an ambush; `realDt` is the player's time.
+ * Ticks the stores that go by time, once per frame while the run is not paused. `worldDelta` is
+ * world time, slowed down during an ambush; `realDelta` is the player's time.
  */
-export function tickRun(game: RunGame, dt: number, realDt: number): void {
-	game.run.value.tick(dt)
-	tickAmbush(game, realDt)
+export function tickRun(game: RunGame, worldDelta: number, realDelta: number): void {
+	game.run.value.tick(worldDelta)
+	tickAmbush(game, realDelta)
 }

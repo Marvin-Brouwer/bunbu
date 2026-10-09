@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { marks } from '../../_shared/state/ambush.mts'
-import { seeded } from '../../_shared/state/random.mts'
 import { createRunGame, type RunGame } from '../state/game.mts'
 import { runConfig } from '../state/run.mts'
 import { fixtureQuiz } from '../../_temp/quiz.mts'
+import { seeded } from '../../_temp/random.mts'
 import { commitAmbush, missShare, openAmbush } from './ambush.mts'
 import { startRun, tickRun } from './run.mts'
 

@@ -118,15 +118,20 @@ export function openingOf(quiz: BunbuData, refs: readonly QuestionRef[], at: Que
  * How a question fits on the 8 marks in a fight, for warning about it when a quiz is loaded:
  *
  * - `fits`: every option gets a mark.
+ * - `one-option`: an ambush has only one option to choose, so the answer is given away (a
+ *   `match` row whose pool is just its own answer, for example).
  * - `truncated`: more than 8 options, so distractors are dropped at random.
  * - `unplayable`: more than 8 correct options (or `order` items); no fight can ask it.
+ *
+ * When a question has several of these, the worst one counts.
  */
-export type Fit = 'fits' | 'truncated' | 'unplayable'
+export type Fit = 'fits' | 'one-option' | 'truncated' | 'unplayable'
 
 export function fitOf(question: Question): Fit {
 	const ambushes = Array.from({ length: partsOf(question) }, (_, part) => choicesOf(question, part))
 	if (ambushes.some((choices) => choices.filter((choice) => choice.correct).length > maxOptions)) return 'unplayable'
 	if (ambushes.some((choices) => choices.length > maxOptions)) return 'truncated'
+	if (ambushes.some((choices) => choices.length < 2)) return 'one-option'
 	return 'fits'
 }
 

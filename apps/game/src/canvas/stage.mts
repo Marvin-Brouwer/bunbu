@@ -11,7 +11,7 @@ import type { Viewport } from './viewport.mts'
 export type View = {
 	readonly scene: Scene
 	/** Reads the stores and updates the scene. Never changes state. */
-	draw: (dt: number) => void
+	draw: (delta: number) => void
 	dispose?: () => void
 }
 
@@ -50,12 +50,12 @@ export function attachViewport(attached: Viewport, signal: AbortSignal): void {
 }
 
 /** Draws one frame of whatever is on the canvas, or clears it when nothing is. */
-export function drawFrame(dt: number): void {
+export function drawFrame(delta: number): void {
 	if (viewport === undefined) return
 	if (view === undefined) {
 		viewport.renderer.clear()
 		return
 	}
-	view.draw(dt)
+	view.draw(delta)
 	viewport.renderer.render(view.scene, viewport.camera)
 }

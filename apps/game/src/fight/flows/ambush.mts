@@ -48,13 +48,13 @@ export function openAmbush(game: RunGame, timeScale: number | undefined, random:
  * Counts the ambush down and lets the ninjas creep in, so they are the timer. When the time runs
  * out the ambush ends unanswered, whatever was half-swiped.
  *
- * `realDt` is real time, not the slowed-down world time: the slow motion is only visual, and the
+ * `realDelta` is real time, not the slowed-down world time: the slow motion is only visual, and the
  * time limit is the player's reading time.
  */
-export function tickAmbush(game: RunGame, realDt: number): void {
+export function tickAmbush(game: RunGame, realDelta: number): void {
 	const { ambush } = game
 	if (!ambush.value.open) return
-	ambush.value.tick(realDt)
+	ambush.value.tick(realDelta)
 	game.ninjas.value.advance(approachOf(ambush.value.seconds, ambush.value.secondsLeft))
 	if (ambush.value.unanswered()) commitAmbush(game)
 }

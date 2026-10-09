@@ -18,7 +18,7 @@ export const maximumDelta = 0.1
 /** A game mode the loop drives: the run, or dojo practice. */
 export type Mode = {
 	/** Time-based actions, with world time (slowed down) and real time. Skipped while `paused()`. */
-	update: (dt: number, realDt: number) => void
+	update: (worldDelta: number, realDelta: number) => void
 	paused: () => boolean
 	/** `1` normally, lower for slow motion. */
 	worldScale: () => number

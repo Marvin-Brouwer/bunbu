@@ -1,11 +1,11 @@
 import { validate, type BunbuData, type Markdown, type Option } from '@bunbu/data'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { fixtureQuiz, manyOptions } from '../../_temp/quiz.mts'
+import { seeded } from '../../_temp/random.mts'
 import { createAmbush, type AmbushOpening } from './ambush.mts'
 import { frontRow, maxNinjas, fitOf, openingOf } from './ambush-opening.mts'
 import { ambushConfig, ambushSeconds, approachOf, wordsIn } from './ambush-time.mts'
 import { refsOf } from './quiz.mts'
-import { seeded } from './random.mts'
 
 const markdown = (text: string) => text as Markdown
 const settings = (seed = 1) => ({ timeScale: 1, random: seeded(seed) })
@@ -81,6 +81,12 @@ describe('opening an ambush', () => {
 		expect(kept.size).toBe(12)
 		expect(fitOf(withOptions(options).questions[0]!)).toBe('truncated')
 		expect(fitOf(withOptions(options.slice(0, 8)).questions[0]!)).toBe('fits')
+	})
+
+	it('gives the answer away when there is only one option to choose', () => {
+		const single = withOptions([{ answer: markdown('only'), correct: true }])
+		expect(fitOf(single.questions[0]!)).toBe('one-option')
+		expect(open(single).options.map((option) => option.mark)).toEqual(['up'])
 	})
 
 	it('cannot fight more than 8 correct options', () => {

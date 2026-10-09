@@ -9,6 +9,7 @@
  */
 
 import { createStore, type Store } from '@rooted/store'
+import { sortDistinct } from './arrays.mts'
 import { refuse } from './store.mts'
 import type { Outcome, QuestionRef } from './quiz.mts'
 
@@ -82,7 +83,7 @@ export type AmbushActions = {
 	 */
 	pick: (mark: Mark) => void
 	/** Counts down the time left. */
-	tick: (dt: number) => void
+	tick: (delta: number) => void
 	/** Whether the time limit has run out. */
 	unanswered: () => boolean
 	/**
@@ -162,10 +163,10 @@ export function createAmbush(initial: AmbushState = noAmbush): Ambush {
 			store.update(() => ({ options }))
 		},
 
-		tick(dt) {
+		tick(delta) {
 			const state = store.value
 			if (!state.open || state.seconds === 0) return
-			store.update(() => ({ secondsLeft: Math.max(0, state.secondsLeft - dt) }))
+			store.update(() => ({ secondsLeft: Math.max(0, state.secondsLeft - delta) }))
 		},
 
 		unanswered() {
@@ -192,7 +193,7 @@ export function createAmbush(initial: AmbushState = noAmbush): Ambush {
 			// A bundled ninja is slain when one of its options is slashed, and handled right only
 			// when all of them are, which `correct` already covers.
 			const slashed = (ninja: number) => state.options.some((option) => option.ninja === ninja && slashes(state.kind, option))
-			const ninjas = [...new Set(state.options.map((option) => option.ninja))]
+			const ninjas = sortDistinct(state.options.map((option) => option.ninja))
 
 			store.update(() => noAmbush)
 			return {

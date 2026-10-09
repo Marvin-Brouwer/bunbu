@@ -29,8 +29,8 @@ export type RunState = {
 
 export type RunActions = {
 	start: (stageLength: number) => void
-	/** Advances run time and distance. `dt` is already scaled by `worldScale`; see [loop.mts](../../loop.mts). */
-	tick: (dt: number) => void
+	/** Advances run time and distance. `delta` is already scaled by `worldScale`; see [loop.mts](../../loop.mts). */
+	tick: (delta: number) => void
 	beginAmbush: () => void
 	endAmbush: () => void
 	pause: () => void
@@ -81,22 +81,22 @@ export function createRun(initial: RunState = notRunning): Run {
 			store.update(() => ({ ...notRunning, phase: 'intro', stageLength }))
 		},
 
-		tick(dt) {
+		tick(delta) {
 			const state = store.value
 			if (over(state.phase)) return
 
 			if (state.countdown > 0) {
-				const countdown = Math.max(0, state.countdown - dt)
+				const countdown = Math.max(0, state.countdown - delta)
 				store.update(() => ({ countdown, phase: countdown === 0 ? state.resumeTo : state.phase }))
 				return
 			}
 			if (state.phase === 'intro') {
-				const elapsed = state.elapsed + dt
+				const elapsed = state.elapsed + delta
 				store.update(() => ({ elapsed, phase: elapsed >= runConfig.introSeconds ? 'running' : 'intro' }))
 				return
 			}
-			const distance = state.phase === 'running' ? state.distance + runConfig.pace * dt : state.distance
-			store.update(() => ({ elapsed: state.elapsed + dt, distance: Math.min(distance, state.stageLength) }))
+			const distance = state.phase === 'running' ? state.distance + runConfig.pace * delta : state.distance
+			store.update(() => ({ elapsed: state.elapsed + delta, distance: Math.min(distance, state.stageLength) }))
 		},
 
 		beginAmbush() {

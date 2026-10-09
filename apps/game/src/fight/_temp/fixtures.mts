@@ -11,13 +11,13 @@
 import type { BunbuData } from '@bunbu/data'
 import { openingOf } from '../../_shared/state/ambush-opening.mts'
 import { loaded } from '../../_shared/state/quiz.mts'
-import { seeded } from '../../_shared/state/random.mts'
 import { newRun, type RunGameState } from '../state/game.mts'
 import { spawnsOf, type Ninja } from '../state/ninjas.mts'
 import { runConfig } from '../state/run.mts'
 import { pointsPerCorrect } from '../state/score.mts'
 import { metresPerAmbush } from '../flows/run.mts'
 import { fixtureQuiz, manyOptions } from '../../_temp/quiz.mts'
+import { seeded } from '../../_temp/random.mts'
 
 type Fixture = Partial<RunGameState>
 
@@ -26,7 +26,11 @@ const quiz = loaded(fixtureQuiz)
 /** The fixture quiz with seven options on the `multiple` question, for bundling. */
 const manyQuiz: BunbuData = {
 	...fixtureQuiz,
-	questions: fixtureQuiz.questions.map((question) => (question.type === 'multiple' ? { ...question, options: manyOptions } : question)),
+	questions: fixtureQuiz.questions
+		.map((question) => (question.type === 'multiple'
+			? { ...question, options: manyOptions }
+			: question)
+		),
 }
 
 /** Running, with `answered` questions behind the samurai, all of them right. */

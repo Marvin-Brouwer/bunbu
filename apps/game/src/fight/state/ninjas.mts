@@ -6,6 +6,7 @@
 
 import { createStore, type Store } from '@rooted/store'
 import { frontRow } from '../../_shared/state/ambush-opening.mts'
+import { sortDistinct } from '../../_shared/state/arrays.mts'
 import { refuse } from '../../_shared/state/store.mts'
 
 export type NinjaPose = 'approach' | 'strike' | 'slain' | 'blocked' | 'fleeing'
@@ -31,8 +32,7 @@ export type NinjaSpawn = Pick<Ninja, 'id' | 'wave' | 'options'>
  * rest behind.
  */
 export function spawnsOf(options: readonly { readonly ninja: number }[]): NinjaSpawn[] {
-	const ids = [...new Set(options.map((option) => option.ninja))].toSorted((first, second) => first - second)
-	return ids.map((id) => ({
+	return sortDistinct(options.map((option) => option.ninja)).map((id) => ({
 		id,
 		wave: id < frontRow ? 0 : 1,
 		options: options.flatMap((option, index) => (option.ninja === id ? [index] : [])),
