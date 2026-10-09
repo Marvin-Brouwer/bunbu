@@ -146,6 +146,7 @@ describe('camera', () => {
 
 	for (const [shape, aspect] of Object.entries(shapes)) {
 		it(`keeps every ninja in view on a ${shape}, from where they start to within reach`, () => {
+			const offScreen: string[] = []
 			for (const mark of marks) {
 				for (const wave of [0, 1]) {
 					for (const approach of [0, 0.25, 0.5, 0.75, 1]) {
@@ -153,14 +154,14 @@ describe('camera', () => {
 						// The whole ninja: feet and head, either side of its body.
 						for (const [side, height] of [[-0.4, 0], [0.4, 0], [-0.4, 1.9], [0.4, 1.9]] as const) {
 							const seen = onScreen(aspect, new Vector3(spot.x + side, height, spot.z))
-							const where = `${mark} wave ${wave} at ${approach}, ${height === 0 ? 'feet' : 'head'}`
-							expect(Math.abs(seen.x), where).toBeLessThan(0.95)
-							expect(Math.abs(seen.y), where).toBeLessThan(0.95)
-							expect(seen.z, where).toBeLessThan(1)
+							if (Math.abs(seen.x) >= 0.95 || Math.abs(seen.y) >= 0.95 || seen.z >= 1) {
+								offScreen.push(`${mark} wave ${wave} at ${approach}, ${height === 0 ? 'feet' : 'head'}`)
+							}
 						}
 					}
 				}
 			}
+			expect(offScreen).toEqual([])
 		})
 	}
 })
