@@ -32,7 +32,7 @@ export type ScoreActions = {
 	addMiss: () => void
 	/** Ends the run, with whether it set the high score. */
 	settle: (newBest: boolean) => void
-	/** Starts a run, keeping the high score to beat. */
+	/** Starts a run against `best`, the quiz's high score, or against none when it has no high score yet. */
 	reset: (best?: HighScore) => void
 }
 
@@ -70,7 +70,7 @@ export function createScore(initial: ScoreState = noScore): Score {
 		},
 
 		reset(best) {
-			store.update((state) => ({ ...noScore, best: best ?? state.best }))
+			store.update(() => ({ ...noScore, best }))
 		},
 	})
 	return store

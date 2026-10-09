@@ -121,6 +121,15 @@ describe('high score', () => {
 		expect(highScores.value.of('fixture', '1')?.seconds).toBe(1)
 	})
 
+	it('does not carry over to a run of a quiz without one', () => {
+		highScores.value.submit('fixture', '1', { points: 400, seconds: 1, correct: 4, answered: 4 })
+		startRun(game, fixtureQuiz)
+		expect(game.score.value.best).toBeDefined()
+
+		startRun(game, { ...fixtureQuiz, version: '2' })
+		expect(game.score.value.best).toBeUndefined()
+	})
+
 	it('is per quiz version', () => {
 		highScores.value.submit('fixture', '1', { points: 400, seconds: 1, correct: 4, answered: 4 })
 		expect(highScores.value.of('fixture', '2')).toBeUndefined()
