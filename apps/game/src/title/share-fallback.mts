@@ -25,7 +25,10 @@ const download = (file: File) => {
 	link.href = url
 	link.download = file.name
 	link.click()
-	URL.revokeObjectURL(url)
+	// Revoked a moment later: Firefox and Safari can lose the download when it goes right away.
+	setTimeout(() => {
+		URL.revokeObjectURL(url)
+	}, 0)
 }
 
 const appUrl = () => new URL(import.meta.env.BASE_URL, window.location.origin).href
