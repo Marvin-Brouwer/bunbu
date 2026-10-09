@@ -8,30 +8,29 @@
  * Temporary: these go once the run can be played to every screen for real.
  */
 
-import type { AmbushOption, AmbushState } from '../../_shared/state/ambush.mts'
-import { marks } from '../../_shared/state/ambush.mts'
+import type { BunbuData } from '@bunbu/data'
+import { openingOf } from '../../_shared/state/ambush-opening.mts'
 import { loaded } from '../../_shared/state/quiz.mts'
 import { newRun, type RunGameState } from '../state/game.mts'
-import type { Ninja } from '../state/ninjas.mts'
+import { spawnsOf, type Ninja } from '../state/ninjas.mts'
 import { runConfig } from '../state/run.mts'
 import { pointsPerCorrect } from '../state/score.mts'
 import { metresPerAmbush } from '../flows/run.mts'
 import { fixtureQuiz, manyOptions } from '../../_temp/quiz.mts'
-
-type Options = readonly { answer: string; correct: boolean }[]
+import { seeded } from '../../_temp/random.mts'
 
 type Fixture = Partial<RunGameState>
 
 const quiz = loaded(fixtureQuiz)
 
-function optionsWithMarks(options: Options, ninjaCount: number): AmbushOption[] {
-	return options.map((option, index) => ({
-		...option,
-		mark: marks[index % marks.length]!,
-		// With 6 to 8 options several of them share a ninja (gameplay.md#more-than-3-options).
-		ninja: index % ninjaCount,
-		pick: 0,
-	}))
+/** The fixture quiz with seven options on the `multiple` question, for bundling. */
+const manyQuiz: BunbuData = {
+	...fixtureQuiz,
+	questions: fixtureQuiz.questions
+		.map((question) => (question.type === 'multiple'
+			? { ...question, options: manyOptions }
+			: question)
+		),
 }
 
 /** Running, with `answered` questions behind the samurai, all of them right. */
@@ -56,25 +55,13 @@ function midRun(answered: number): RunGameState {
 	}
 }
 
-/** An open ambush on `question`, with its ninjas creeping in. */
-function ambush(question: number, options: Options, choose: number, ninjaCount = Math.min(options.length, 5)): RunGameState {
-	const asked = fixtureQuiz.questions[question]!
-	const withMarks = optionsWithMarks(options, ninjaCount)
+/** An open ambush on `question`, opened by the real rules (with a fixed shuffle), its ninjas creeping in. */
+function ambush(question: number, data = fixtureQuiz): RunGameState {
+	const at = { question, part: 0 }
+	const opening = openingOf(data, quiz.refs, at, { timeScale: 1, random: seeded(question) })
 	const state = midRun(question)
-	const opened: AmbushState = {
-		open: true,
-		kind: asked.type === 'match' || asked.type === 'solutions' ? 'single' : asked.type,
-		at: { question, part: 0 },
-		query: asked.query,
-		options: withMarks,
-		choose,
-		seconds: 12,
-		secondsLeft: 7.5,
-	}
-	const ninjas: Ninja[] = Array.from({ length: ninjaCount }, (_, id) => ({
-		id,
-		wave: id < 3 ? 0 : 1,
-		options: withMarks.flatMap((option, index) => (option.ninja === id ? [index] : [])),
+	const ninjas: Ninja[] = spawnsOf(opening.options).map((ninja) => ({
+		...ninja,
 		approach: 0.4,
 		pose: 'approach',
 		sequence: 0,
@@ -82,34 +69,30 @@ function ambush(question: number, options: Options, choose: number, ninjaCount =
 	return {
 		...state,
 		run: { ...state.run, phase: 'ambush', worldScale: runConfig.ambushWorldScale },
-		ambush: opened,
+		ambush: { ...opening, open: true, secondsLeft: opening.seconds * 0.6 },
 		ninjas: { active: ninjas },
 	}
 }
 
-function optionsOf(question: number): Options {
-	const asked = fixtureQuiz.questions[question]!
-	return 'options' in asked ? asked.options : []
-}
-
-const single = () => ambush(1, optionsOf(1), 1)
+const single = () => ambush(1)
 
 /** Every fixture, by the name that goes in `?fixture=`. */
 export const fixtures: Readonly<Record<string, () => Fixture>> = {
 	running: () => midRun(2),
-	'ambush-yes-no': () => ambush(0, [{ answer: 'Yes', correct: true }, { answer: 'No', correct: false }], 1, 1),
+	'ambush-yes-no': () => ambush(0),
 	'ambush-single': single,
-	'ambush-multiple': () => ambush(2, optionsOf(2), 2),
-	'ambush-order': () => ambush(3, optionsOf(3), 3),
-	'ambush-many': () => ambush(2, manyOptions, 3, 5),
+	'ambush-multiple': () => ambush(2),
+	'ambush-order': () => ambush(3),
+	'ambush-many': () => ambush(2, manyQuiz),
 	'outcome-correct': () => {
 		const state = single()
+		const slain = state.ambush.options.find((option) => option.correct)?.ninja ?? 0
 		return {
 			...state,
 			ambush: { ...state.ambush, open: false },
 			score: { ...state.score, points: state.score.points + pointsPerCorrect, correct: state.score.correct + 1 },
-			shogun: { pose: 'strike', target: 0, sequence: 2 },
-			ninjas: { active: state.ninjas.active.map((ninja) => ({ ...ninja, pose: ninja.id === 0 ? 'slain' : 'blocked', sequence: 1 })) },
+			shogun: { pose: 'strike', target: slain, sequence: 2 },
+			ninjas: { active: state.ninjas.active.map((ninja) => ({ ...ninja, pose: ninja.id === slain ? 'slain' : 'blocked', sequence: 1 })) },
 		}
 	},
 	'outcome-wrong': () => {
@@ -123,7 +106,7 @@ export const fixtures: Readonly<Record<string, () => Fixture>> = {
 		}
 	},
 	'outcome-unanswered': () => {
-		const state = ambush(2, optionsOf(2), 2)
+		const state = ambush(2)
 		return {
 			...state,
 			ambush: { ...state.ambush, secondsLeft: 0 },

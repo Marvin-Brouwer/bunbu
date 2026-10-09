@@ -5,7 +5,8 @@
  * The `Application` starts it once for the whole app. The game mode that is playing plugs into it with
  * `play()`; the canvas draws whatever a route put on the stage. The delta is clamped, so a tab
  * that comes back from the background cannot jump a run forward by minutes, and multiplied by the
- * mode's world scale, which is how slow motion works. While the mode is paused its update is
+ * mode's world scale, which is how slow motion works. The mode gets the real delta too: slow motion is
+ * only visual, and timers the player plays against (the ambush) run on real time. While the mode is paused its update is
  * skipped; while the page is hidden the loop stops entirely and the mode is asked to pause.
  */
 
@@ -16,8 +17,8 @@ export const maximumDelta = 0.1
 
 /** A game mode the loop drives: the run, or dojo practice. */
 export type Mode = {
-	/** Time-based actions. Skipped while `paused()`. */
-	update: (dt: number) => void
+	/** Time-based actions, with world time (slowed down) and real time. Skipped while `paused()`. */
+	update: (worldDelta: number, realDelta: number) => void
 	paused: () => boolean
 	/** `1` normally, lower for slow motion. */
 	worldScale: () => number
@@ -43,7 +44,7 @@ export function startLoop(signal: AbortSignal): void {
 	const tick = (now: number) => {
 		const delta = Math.min((now - last) / 1000, maximumDelta)
 		last = now
-		if (mode !== undefined && !mode.paused()) mode.update(delta * mode.worldScale())
+		if (mode !== undefined && !mode.paused()) mode.update(delta * mode.worldScale(), delta)
 		drawFrame(delta)
 		frame = requestAnimationFrame(tick)
 	}

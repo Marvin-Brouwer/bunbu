@@ -31,13 +31,13 @@ The run's stores:
 
 | Store      | Holds                                                                                                                 | Example actions                                                    |
 | ---------- | --------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| `run`      | Phase (`intro`, `running`, `ambush`, `paused`, `finished`, `fallen`), run time, world speed scale (slow-mo), distance | `start()`, `pause()`, `resume()`, `finish()`, `fall()`, `tick(dt)` |
+| `run`      | Phase (`intro`, `running`, `ambush`, `paused`, `finished`, `fallen`), run time, world speed scale (slow-mo), distance | `start()`, `pause()`, `resume()`, `finish()`, `fall()`, `tick(delta)` |
 | `quiz`     | The loaded quiz, question order, current index, answers given                                                         | `load(quiz)`, `next()`, `record(answer)`                           |
-| `ambush`   | Current question, options with their marks, picks so far, time left                                                   | `open(question)`, `pick(mark)`, `commit()`, `tick(dt)`             |
+| `ambush`   | Current question, options with their marks, picks so far, time left                                                   | `open(question)`, `pick(mark)`, `commit()`, `tick(delta)`             |
 | `score`    | Points, correct count, answered count, high score for this quiz                                                       | `addCorrect()`, `addMiss()`, `reset()`                             |
 | `life`     | Life as a fraction of the error margin (see [life bar](../design/gameplay.md#life-bar))                               | `hit(share)`, `reset()`                                            |
 | `shogun`   | Pose (`run`, `strike`, `block`, `hurt`, `fallen`), the target of a strike, when it started                            | `strike(ninjaId)`, `block(ninjaId)`, `hurt()`                      |
-| `ninjas`   | Active ninjas: id, carried options, mark, position along the approach, pose                                           | `spawn(wave)`, `advance(dt)`, `slay(id)`, `clear()`                |
+| `ninjas`   | Active ninjas: id, carried options, mark, position along the approach, pose                                           | `spawn(wave)`, `advance(approach)`, `slay(id)`, `clear()`                |
 
 `createRunGame()` creates all of these together as one `RunGame`. Each store is a factory (`createLife(initial)`), so a test or a fixture can start it from any state.
 
@@ -125,8 +125,8 @@ Flows take the game mode's stores as an argument rather than importing them, so 
 
 One `requestAnimationFrame` loop drives everything. The `Application` starts it once; a route plugs its game mode into it with `play(mode, signal)`, which unplugs again when the route unmounts. Without a mode (on a menu) the loop only draws. Each frame, in a fixed order:
 
-1. **Time.** Take the real frame delta, clamp it (a tab coming back from the background must not jump the run forward by minutes), and multiply it by the run's speed scale. That is how slow motion during an ambush works.
-2. **Update.** Call the time-based actions: `run.value.tick(dt)`, `ambush.value.tick(dt)`, `ninjas.value.advance(dt)`. Timeouts (the ambush running out) are decided here, by the stores, through flows.
+1. **Time.** Take the real frame delta, clamp it (a tab coming back from the background must not jump the run forward by minutes), and multiply it by the run's speed scale. That is how slow motion during an ambush works. The mode gets the real delta as well: slow motion is only visual, so timers the player plays against, such as the ambush's time limit, count real time.
+2. **Update.** Call the time-based actions: `ambush.value.tick(realDelta)` with real time (held during the resume countdown), `run.value.tick(worldDelta, realDelta)` (distance by world time, run time and countdown by real time), then `ninjas.value.advance(…)` from the time left. Timeouts (the ambush running out) are decided here, by the stores, through flows.
 3. **Render.** The renderer reads every store it needs through `value` and updates the scene: the shogun's position and animation clip, which ninjas exist and where they are, the camera. Then `renderer.render(scene, camera)`.
 
 While paused, step 2 is skipped. The loop stops entirely when the page is hidden (`visibilitychange`) and restarts when it is visible again.

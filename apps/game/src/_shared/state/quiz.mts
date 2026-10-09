@@ -8,8 +8,9 @@
  * ([life bar](../../../../../docs/design/gameplay.md#life-bar)).
  */
 
-import type { BunbuData, Question } from '@bunbu/data'
+import type { BunbuData, Markdown, Option, Question } from '@bunbu/data'
 import { createStore, type Store } from '@rooted/store'
+import { shuffle, type Random } from './random.mts'
 import { refuse, snapshot } from './store.mts'
 
 /** One ambush: a question, plus which solution or row of it is being asked. */
@@ -25,7 +26,7 @@ export type Outcome = 'correct' | 'wrong' | 'unanswered'
 export type AnswerRecord = {
 	readonly at: QuestionRef
 	readonly outcome: Outcome
-	/** Indices into the question's options, in the order they were picked. */
+	/** Indices into the ambush's {@link choicesOf}, in the order they were picked. */
 	readonly picked: readonly number[]
 }
 
@@ -41,8 +42,11 @@ export type QuizState = {
 }
 
 export type QuizActions = {
-	/** Loads a quiz. `order` defaults to the questions in file order; the app shuffles it. */
-	load: (data: BunbuData, order?: readonly number[]) => void
+	/**
+	 * Loads a quiz. `order` defaults to the questions in file order; the app shuffles it. With
+	 * `random`, the solutions and match rows of each question are asked in random order too.
+	 */
+	load: (data: BunbuData, order?: readonly number[], random?: Random) => void
 	/** The ambush that is up next, or `undefined` when the quiz is done. */
 	current: () => QuestionRef | undefined
 	/** The question a ref points at. */
@@ -67,18 +71,59 @@ export function partsOf(question: Question): number {
 	return 1
 }
 
-/** Every ambush of the quiz, in the order the questions are asked. Each one is worth a point. */
-export function refsOf(quiz: BunbuData, order: readonly number[]): QuestionRef[] {
+/**
+ * Every ambush of the quiz, in the order the questions are asked. Each one is worth a point.
+ * With `random` the solutions and rows of a question are shuffled, as the data format asks;
+ * without it they are asked in file order.
+ */
+export function refsOf(quiz: BunbuData, order: readonly number[], random?: Random): QuestionRef[] {
 	return order.flatMap((question) => {
-		const parts = partsOf(quiz.questions[question]!)
-		return Array.from({ length: parts }, (_, part) => ({ question, part }))
+		const parts = Array.from({ length: partsOf(quiz.questions[question]!) }, (_, part) => part)
+		const asked = random === undefined ? parts : shuffle(parts, random)
+		return asked.map((part) => ({ question, part }))
 	})
 }
 
 /** A loaded quiz, ready to be asked in `order`. */
-export function loaded(data: BunbuData, order?: readonly number[]): QuizState {
+export function loaded(data: BunbuData, order?: readonly number[], random?: Random): QuizState {
 	const asked = order ?? data.questions.map((_, index) => index)
-	return { ...noQuiz, quiz: data, order: asked, refs: refsOf(data, asked) }
+	return { ...noQuiz, quiz: data, order: asked, refs: refsOf(data, asked, random) }
+}
+
+const yesNo = (yes: boolean): Option[] => [
+	{ answer: 'Yes' as Markdown, correct: yes },
+	{ answer: 'No' as Markdown, correct: !yes },
+]
+
+/**
+ * The options one ambush chooses from, in file order. `AnswerRecord.picked` points into these,
+ * so the review can show what was picked.
+ *
+ * - `yes-no` and each `solutions` entry: *Yes* and *No*, in that order.
+ * - `match`: the row's own options, or else the pool of every row's answer plus the distractors.
+ * - The other types: the question's options.
+ */
+export function choicesOf(question: Question, part: number): readonly Option[] {
+	switch (question.type) {
+		case 'yes-no':
+			return yesNo(question.answer === 'yes')
+		case 'solutions':
+			return yesNo(question.options[part]?.correct ?? false)
+		case 'match': {
+			const row = question.rows[part]
+			if (row === undefined) return []
+			if ('options' in row) return row.options
+			const pool = [
+				...new Set([
+					...question.rows.flatMap((each) => ('answer' in each ? [each.answer] : [])),
+					...(question.distractors ?? []),
+				]),
+			]
+			return pool.map((answer) => ({ answer, correct: answer === row.answer }))
+		}
+		default:
+			return question.options
+	}
 }
 
 export function createQuiz(initial: QuizState = noQuiz): Quiz {
@@ -88,8 +133,8 @@ export function createQuiz(initial: QuizState = noQuiz): Quiz {
 	const store: Quiz = createStore<QuizState & QuizActions>({
 		...initial,
 
-		load(data, order) {
-			store.update(() => loaded(data, order))
+		load(data, order, random) {
+			store.update(() => loaded(data, order, random))
 		},
 
 		current() {
@@ -115,8 +160,9 @@ export function createQuiz(initial: QuizState = noQuiz): Quiz {
 		},
 
 		reset() {
-			const { quiz, order } = state()
-			store.update(() => quiz === undefined ? noQuiz : loaded(quiz, order))
+			const { quiz, order, refs } = state()
+			// The same order as before, solutions and rows included.
+			store.update(() => quiz === undefined ? noQuiz : { ...noQuiz, quiz, order, refs })
 		},
 	})
 	return store
