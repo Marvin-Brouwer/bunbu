@@ -9,11 +9,13 @@
 
 import { component } from '@rooted/components'
 import { tickRun } from './flows/run.mts'
+import { commitAmbush } from './flows/ambush.mts'
 import { play } from '../canvas/loop.mts'
 import { show } from '../canvas/stage.mts'
 import type { RunGame } from './state/game.mts'
 import { Hud } from './hud/hud.mts'
 import { Scroll } from '../_shared/scroll/scroll.mts'
+import { SwipeZone } from '../_shared/swipe/swipe-zone.mts'
 import styles from './run.css'
 
 export type RunScreenOptions = {
@@ -69,6 +71,11 @@ export const RunScreen = component<RunScreenOptions>({
 							styles.layer,
 							styles.swipe,
 						],
+						children: create(SwipeZone, {
+							ambush: game.ambush,
+							commit: () => { commitAmbush(game) },
+							held: () => game.run.value.phase !== 'ambush' || game.run.value.countdown > 0,
+						}),
 					}),
 					element('div', {
 						'data-layer': 'overlays',

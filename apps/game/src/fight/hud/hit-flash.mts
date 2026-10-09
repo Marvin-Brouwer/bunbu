@@ -1,6 +1,10 @@
-/** The red flash round the edge of the screen when the samurai is hit ([5B](../../../../../docs/design/screens.md#5-outcome)). */
+/**
+ * The red flash round the edge of the screen when the samurai is hit, with the haptic buzz
+ * ([5B](../../../../../docs/design/screens.md#5-outcome)).
+ */
 
 import { component } from '@rooted/components'
+import { buzz, buzzes } from '../../_shared/haptics.mts'
 import type { Life } from '../state/life.mts'
 import styles from './hud.css'
 
@@ -17,6 +21,7 @@ export const HitFlash = component<HitFlashOptions>({
 		let hits = life.value.hits
 		life.on('change', signal, ({ detail }) => {
 			if (detail.state.hits > hits) {
+				buzz(buzzes.hit)
 				append(
 					element('div', {
 						classes: styles.flash,

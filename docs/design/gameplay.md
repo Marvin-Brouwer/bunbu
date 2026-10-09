@@ -121,3 +121,4 @@ There is no speaker button in the main game. Reading aloud is a learning aid and
 ## To tune
 
 - **Playtest defaults:** the timer numbers, `timeScale` values and the 0.8 s commit pause.
+- **On a real phone:** how far a swipe has to go and how sharp a turn starts the next one (`swipeConfig` in the swipe zone).

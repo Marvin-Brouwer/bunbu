@@ -30,7 +30,7 @@ no top-level `components/`, `state/` or `ui/` tree.
 apps/game/src/
   application.mts  the Application: the canvas, the game loop and the router
   canvas/          the game loop (play() plugs a mode in), the viewport, show() for a world
-  _shared/         what several slices use: state (quiz, ambush, selection), Placeholder
+  _shared/         what several slices use: state (quiz, ambush, selection), the scroll, the swipe zone, Placeholder
   _temp/           stand-ins until the real thing lands: the fixture quiz
   title/           the title menu (the router's home) and not-found
   fight/           /fight/: quiz select, then the run; state/, flows/, world; _temp/ fixtures
