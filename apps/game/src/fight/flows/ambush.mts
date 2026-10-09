@@ -15,13 +15,14 @@ import type { RunGame } from '../state/game.mts'
 import { shareOfOnePoint } from '../state/life.mts'
 import { spawnsOf } from '../state/ninjas.mts'
 import { runConfig } from '../state/run.mts'
-import { endRun } from './run.mts'
+import { pointsIn } from '../state/score.mts'
+import { endRun, scoreAnswer } from './run.mts'
 
 /** What one miss costs the life bar, for the quiz that is loaded. */
 export function missShare(game: RunGame): number {
-	const { quiz, refs } = game.quiz.value
+	const { quiz, refs } = snapshot<QuizState & QuizActions>(game.quiz)
 	if (quiz === undefined) return 1
-	return shareOfOnePoint(refs.length, quiz.passingScore)
+	return shareOfOnePoint(pointsIn(quiz, refs), quiz.passingScore)
 }
 
 /**
@@ -68,16 +69,15 @@ export function commitAmbush(game: RunGame): void {
 
 	game.quiz.value.record({ at: result.at, outcome: result.outcome, picked: result.picked })
 
+	scoreAnswer(game, result.at, result.outcome)
+
 	if (result.outcome === 'correct') {
-		game.score.value.addCorrect()
 		for (const ninja of result.slain) game.ninjas.value.slay(ninja)
 		for (const ninja of result.blocked) game.ninjas.value.block(ninja)
 		const [first] = result.slain
 		if (first === undefined) game.shogun.value.block(result.blocked[0] ?? 0)
 		else game.shogun.value.strike(first)
 	} else {
-		game.score.value.addMiss()
-		game.life.value.hit(missShare(game))
 		game.shogun.value.hurt()
 		for (const ninja of game.ninjas.value.active) game.ninjas.value.strike(ninja.id)
 	}

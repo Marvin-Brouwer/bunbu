@@ -8,14 +8,14 @@
 
 import type { BunbuData } from '@bunbu/data'
 import { snapshot } from '../../_shared/state/store.mts'
-import type { QuizActions, QuizState } from '../../_shared/state/quiz.mts'
+import type { Outcome, QuestionRef, QuizActions, QuizState } from '../../_shared/state/quiz.mts'
 import { settings } from '../../settings/state/settings.mts'
 import type { RunGame } from '../state/game.mts'
 import { highScores } from '../state/highscores.mts'
 import { lastRun } from '../state/lastrun.mts'
 import { runConfig } from '../state/run.mts'
-import type { HighScore } from '../state/score.mts'
-import { openAmbush, tickAmbush } from './ambush.mts'
+import { pointOf, type HighScore } from '../state/score.mts'
+import { missShare, openAmbush, tickAmbush } from './ambush.mts'
 
 /** Metres of path per ambush, until stage length and question count are decided (docs/plan.md). */
 export const metresPerAmbush = 120
@@ -37,6 +37,30 @@ export function startRun(game: RunGame, data: BunbuData, best: HighScore | undef
 	game.ninjas.value.clear()
 	game.shogun.value.run()
 	game.run.value.start(game.quiz.value.refs.length * metresPerAmbush)
+}
+
+/**
+ * Scores an ambush that has just been recorded, by the point it counts toward
+ * ([life bar](../../../../../docs/design/gameplay.md#life-bar)). A question that takes several
+ * ambushes, such as the rows of a `match`, is one point: it scores once all of them are right,
+ * and its first miss takes its whole share of the life bar, the misses after that nothing.
+ */
+export function scoreAnswer(game: RunGame, at: QuestionRef, outcome: Outcome): void {
+	const { quiz, refs, records } = snapshot<QuizState & QuizActions>(game.quiz)
+	if (quiz === undefined) return
+
+	const point = pointOf(quiz, at)
+	const answered = records.filter((record) => pointOf(quiz, record.at) === point)
+	const missedBefore = answered.slice(0, -1).some((record) => record.outcome !== 'correct')
+	if (missedBefore) return
+
+	if (outcome !== 'correct') {
+		game.score.value.addMiss()
+		game.life.value.hit(missShare(game))
+		return
+	}
+	const parts = refs.filter((ref) => pointOf(quiz, ref) === point).length
+	if (answered.length === parts) game.score.value.addCorrect()
 }
 
 /**

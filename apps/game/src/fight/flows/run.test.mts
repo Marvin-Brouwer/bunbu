@@ -1,9 +1,11 @@
+import type { BunbuData, Markdown } from '@bunbu/data'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { fixtureQuiz } from '../../_temp/quiz.mts'
 import { settings } from '../../settings/state/settings.mts'
 import { createRunGame, type RunGame } from '../state/game.mts'
 import { highScores } from '../state/highscores.mts'
 import { lastRun } from '../state/lastrun.mts'
+import { shareOfOnePoint } from '../state/life.mts'
 import { runConfig } from '../state/run.mts'
 import { commitAmbush } from './ambush.mts'
 import { ambushAt, endRun, metresPerAmbush, startRun, tickRun } from './run.mts'
@@ -150,6 +152,64 @@ describe('the last run', () => {
 		startRun(game, fixtureQuiz)
 		play([true, true, true, true])
 		expect(lastRun.value.missesOf('fixture', '1')).toEqual([])
+	})
+})
+
+describe('questions of several ambushes', () => {
+	const markdown = (text: string) => text as Markdown
+	// One `match` question of two rows (1 point) and one `solutions` question of two entries (2 points).
+	const quiz: BunbuData = {
+		...fixtureQuiz,
+		passingScore: 30,
+		questions: [
+			{
+				type: 'match',
+				query: markdown('Match the status codes.'),
+				rows: [
+					{ text: markdown('`200`'), answer: markdown('Success') },
+					{ text: markdown('`404`'), answer: markdown('Not found') },
+				],
+			},
+			{
+				type: 'solutions',
+				query: markdown('Does it meet the goal?'),
+				scenario: markdown('A page must load fast.'),
+				options: [
+					{ answer: markdown('Cache it'), correct: true },
+					{ answer: markdown('Add a spinner'), correct: false },
+				],
+			},
+		],
+	}
+
+	beforeEach(() => {
+		startRun(game, quiz)
+	})
+
+	it('scores a match question once, when all its rows are right', () => {
+		play([true])
+		expect(game.score.value).toMatchObject({ points: 0, correct: 0, answered: 0 })
+		play([true])
+		expect(game.score.value).toMatchObject({ points: 100, correct: 1, answered: 1 })
+	})
+
+	it('takes a match question\'s share of the life bar once, however many rows are missed', () => {
+		play([false, false])
+		expect(game.life.value.hits).toBe(1)
+		expect(game.life.value.value).toBeCloseTo(1 - shareOfOnePoint(3, 30))
+		expect(game.score.value).toMatchObject({ points: 0, correct: 0, answered: 1 })
+	})
+
+	it('does not score a match question with a row missed', () => {
+		play([false, true])
+		expect(game.score.value).toMatchObject({ points: 0, correct: 0, answered: 1 })
+	})
+
+	it('scores every solutions entry on its own', () => {
+		play([true, true, true, false])
+		expect(game.run.value.phase).toBe('finished')
+		expect(game.score.value).toMatchObject({ points: 200, correct: 2, answered: 3 })
+		expect(game.life.value.hits).toBe(1)
 	})
 })
 

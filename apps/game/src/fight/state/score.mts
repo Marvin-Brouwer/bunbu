@@ -3,10 +3,26 @@
  * ([score](../../../../../docs/design/gameplay.md#score)). There is no per-question time bonus.
  */
 
+import type { BunbuData } from '@bunbu/data'
 import { createStore, type Store } from '@rooted/store'
+import type { QuestionRef } from '../../_shared/state/quiz.mts'
 
 /** Points for a correct answer. Wrong and unanswered score nothing. */
 export const pointsPerCorrect = 100
+
+/**
+ * The point an ambush counts toward ([data format](../../../../../docs/design/data-format.md)):
+ * every `solutions` entry is a point of its own, any other question is one point, however many
+ * ambushes it takes. So the rows of a `match` question share one.
+ */
+export function pointOf(quiz: BunbuData, at: QuestionRef): string {
+	return quiz.questions[at.question]?.type === 'solutions' ? `${at.question}.${at.part}` : `${at.question}`
+}
+
+/** How many points the ambushes in `refs` are worth together. */
+export function pointsIn(quiz: BunbuData, refs: readonly QuestionRef[]): number {
+	return new Set(refs.map((at) => pointOf(quiz, at))).size
+}
 
 /** A high score is kept per quiz `id` + `version`; with equal points the shorter run time wins. */
 export type HighScore = {
