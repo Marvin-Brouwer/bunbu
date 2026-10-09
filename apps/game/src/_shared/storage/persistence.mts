@@ -9,14 +9,14 @@
 
 import { uncompress } from '@bunbu/data'
 import { type, type Type } from 'arktype'
-import type { StateObject, Store } from '@rooted/store'
+import { Immutable, type StateObject, type Store } from '@rooted/store'
 import { highScores } from '../../fight/state/highscores.mts'
 import { lastRun, type LastRunState } from '../../fight/state/lastrun.mts'
 import { pointsPerCorrect, type HighScore } from '../../fight/state/score.mts'
 import { settings, type SettingsState } from '../../settings/state/settings.mts'
 import { builtStages, selection, stages, type Stage } from '../state/selection.mts'
 import { snapshot } from '../state/store.mts'
-import { fileOf, library, type LibraryActions, type LibraryState, type QuizFile } from './library.mts'
+import { library, type LibraryActions, type LibraryEntry, type LibraryState } from './library.mts'
 import { readQuizFiles, writeQuizFiles } from './quiz-files.mts'
 import { read, write, type StoredKey } from './storage.mts'
 
@@ -107,10 +107,10 @@ function chooseSaved(quiz: SavedSelection['quiz']): void {
 const isObject = (data: unknown): data is Readonly<Record<string, unknown>> => typeof data === 'object' && data !== null && !Array.isArray(data)
 
 /** The kept `.bunbu` files, validated again: what is in storage is not trusted to still be a quiz. */
-export async function parseLibrary(files: readonly Uint8Array[]): Promise<QuizFile[]> {
+export async function parseLibrary(files: readonly Uint8Array[]): Promise<LibraryEntry[]> {
 	const parsed = await Promise.all(files.map(async (file) => {
 		try {
-			return [{ quiz: await uncompress(file), file }]
+			return [{ quiz: await uncompress(file), file: Immutable.from(file) }]
 		} catch {
 			return []
 		}
@@ -141,8 +141,7 @@ export function persistApp(signal: AbortSignal): Promise<void> {
 	save(lastRun, 'last-run', signal, ({ quiz, misses }) => ({ quiz, misses }))
 	save(selection, 'selection', signal, ({ quiz, stage }) => ({ quiz: quiz && { id: quiz.id, version: quiz.version }, stage }))
 	library.on('change', signal, ({ detail }) => {
-		const files = detail.state.entries.map(({ quiz }) => fileOf(quiz)).filter((file) => file !== undefined)
-		void writeQuizFiles(files)
+		void writeQuizFiles(detail.state.entries.map(({ file }) => file.value))
 	})
 
 	return readQuizFiles().then(parseLibrary).then((entries) => {

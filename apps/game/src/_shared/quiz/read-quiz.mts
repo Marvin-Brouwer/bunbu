@@ -14,13 +14,14 @@ import {
 	type BunbuData,
 	type ValidationIssue,
 } from '@bunbu/data'
+import { Immutable } from '@rooted/store'
 import { fitOf, type Fit } from '../state/ambush-opening.mts'
 
 export type ReadQuiz =
 	| {
 		readonly quiz: BunbuData
 		/** The quiz as a `.bunbu` file, which the library keeps and validates again when the app starts. */
-		readonly file: Uint8Array
+		readonly file: Immutable<Uint8Array>
 	}
 	| {
 		/** What is wrong with the file, one line each. */
@@ -38,7 +39,7 @@ export async function readQuiz(file: File): Promise<ReadQuiz> {
 	if (file.name.toLowerCase().endsWith(fileExtension)) {
 		try {
 			const bytes = new Uint8Array(await file.arrayBuffer())
-			return { quiz: await uncompress(bytes), file: bytes }
+			return { quiz: await uncompress(bytes), file: Immutable.from(bytes) }
 		} catch (error) {
 			if (error instanceof BunbuValidationError) return { problems: error.issues.map(describeIssue) }
 			if (error instanceof BunbuShareError) return { problems: [error.message] }
@@ -50,7 +51,7 @@ export async function readQuiz(file: File): Promise<ReadQuiz> {
 	const quiz = await validate(source)
 	if (quiz instanceof BunbuValidationError) return { problems: quiz.issues.map(describeIssue) }
 	// Kept as a `.bunbu` file: smaller, and the same bytes a share sends on.
-	return { quiz, file: await compress(quiz) }
+	return { quiz, file: Immutable.from(await compress(quiz)) }
 }
 
 /** A question that won't play as written in a fight, by its place in the file (from `0`). */

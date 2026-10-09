@@ -6,7 +6,8 @@
 
 import { compress, fileExtension, mimeType, type BunbuData } from '@bunbu/data'
 import { component } from '@rooted/components'
-import { fileOf } from '../_shared/storage/library.mts'
+import { snapshot } from '../_shared/state/store.mts'
+import { library, type LibraryActions, type LibraryState } from '../_shared/storage/library.mts'
 import { ShareFallback, type ShareFallbackReason } from './share-fallback.mts'
 import styles from './title.css'
 
@@ -18,7 +19,8 @@ export type ShareQuizButtonOptions = {
 const share = async (quiz: BunbuData): Promise<ShareFallbackReason | undefined> => {
 	// The file the library keeps, or packed now for a quiz it doesn't have, such as the dev fixture.
 	// A copy on its own ArrayBuffer, which is what a File takes.
-	const bytes = new Uint8Array(fileOf(quiz) ?? await compress(quiz))
+	const kept = snapshot<LibraryState & LibraryActions>(library).entries.find((entry) => entry.quiz.id === quiz.id && entry.quiz.version === quiz.version)
+	const bytes = new Uint8Array(kept?.file.value ?? await compress(quiz))
 	const file = new File([bytes], `${quiz.id}${fileExtension}`, {
 		type: mimeType,
 	})

@@ -1,11 +1,12 @@
 import { compress, validate, type BunbuData } from '@bunbu/data'
+import { Immutable } from '@rooted/store'
 import { IDBFactory } from 'fake-indexeddb'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { highScores } from '../../fight/state/highscores.mts'
 import { lastRun } from '../../fight/state/lastrun.mts'
 import { settings } from '../../settings/state/settings.mts'
 import { selection } from '../state/selection.mts'
-import { fileOf, library } from './library.mts'
+import { library } from './library.mts'
 import { parseHighScores, parseLastRun, parseLibrary, parseSelection, parseSettings, persistApp } from './persistence.mts'
 import { readQuizFiles, writeQuizFiles } from './quiz-files.mts'
 import { read, storedVersion, write } from './storage.mts'
@@ -39,7 +40,7 @@ let savedFile: Uint8Array
 /** The quiz `saved` with another title, and its `.bunbu` file. */
 async function savedAs(title: string) {
 	const quiz = { ...savedQuiz, title }
-	return { quiz, file: await compress(quiz) }
+	return { quiz, file: Immutable.from(await compress(quiz)) }
 }
 
 beforeAll(async () => {
@@ -143,6 +144,7 @@ describe('parsing what was saved', () => {
 		const entries = await parseLibrary([savedFile, new Uint8Array([1, 2, 3])])
 		expect(entries).toHaveLength(1)
 		expect(entries[0]?.quiz).toMatchObject({ id: 'saved', version: '1' })
+		expect(entries[0]?.file.value).toBe(savedFile)
 	})
 })
 
@@ -193,7 +195,7 @@ describe('persistApp', () => {
 		await loading
 		expect(library.value.entries).toHaveLength(1)
 		expect(library.value.entries[0]?.quiz.title).toBe('Newer')
-		expect(fileOf(newer.quiz)).toBe(newer.file)
+		expect(library.value.entries[0]?.file).toBe(newer.file)
 	})
 
 	it('does not bring back a quiz that was removed while the saved ones were validated', async () => {
@@ -207,7 +209,7 @@ describe('persistApp', () => {
 
 	it('keeps one saved quiz per id and version, the last', async () => {
 		const [first, last] = await Promise.all([savedAs('First'), savedAs('Last')])
-		await writeQuizFiles([first.file, last.file])
+		await writeQuizFiles([first.file.value, last.file.value])
 		await persistApp(stop.signal)
 		expect(library.value.entries).toHaveLength(1)
 		expect(library.value.entries[0]?.quiz.title).toBe('Last')
@@ -221,7 +223,7 @@ describe('persistApp', () => {
 
 	it('keeps the loaded quizzes and brings them back validated', async () => {
 		await persistApp(stop.signal)
-		library.value.add({ quiz: savedQuiz, file: savedFile })
+		library.value.add({ quiz: savedQuiz, file: Immutable.from(savedFile) })
 		await vi.waitFor(async () => { expect(await readQuizFiles()).toEqual([savedFile]) })
 		stop.abort()
 
@@ -230,7 +232,7 @@ describe('persistApp', () => {
 		await persistApp(session())
 		expect(library.value.entries).toHaveLength(1)
 		expect(library.value.entries[0]?.quiz).toMatchObject({ id: 'saved', version: '1' })
-		expect(fileOf(savedQuiz)).toEqual(savedFile)
+		expect(library.value.entries[0]?.file.value).toEqual(savedFile)
 	})
 
 	it('chooses the saved quiz and stage again once the library has the quiz', async () => {

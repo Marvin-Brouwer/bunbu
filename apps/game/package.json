@@ -21,7 +21,7 @@
     "@rooted/pwa": "1.0.0-alpha.6",
     "@rooted/router": "1.0.0-alpha.32",
     "@rooted/storage": "1.0.0-alpha.13",
-    "@rooted/store": "1.0.0-alpha.13",
+    "@rooted/store": "1.0.0-alpha.14",
     "arktype": "^2.2.8",
     "dompurify": "^3.4.16",
     "highlight.js": "^11.12.0",
