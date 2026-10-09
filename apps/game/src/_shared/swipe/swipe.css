@@ -10,6 +10,7 @@
 }
 
 .zone {
+	position: relative;
 	display: grid;
 	/*
 	 * Every gesture here is a swipe: no browser panning, zooming, pull-to-refresh or overscroll
@@ -32,7 +33,7 @@
 	grid-area: 1 / 1;
 	display: grid;
 	grid-template-rows: 0.9rem 1fr 0.9rem;
-	height: 8.5rem;
+	height: 10rem;
 }
 
 .edge {
@@ -69,15 +70,18 @@
 .hint {
 	margin: 0;
 	padding-inline: 1rem;
-	color: var(--ink-soft);
-	font-family: var(--font-mono);
-	font-size: 0.7rem;
+	color: var(--ink);
+	font-family: var(--font-brush);
+	font-size: 1.05rem;
+	line-height: 1.2;
 }
 
 /* The pointer's trace, and the red cut of each pick, drawn over the paper. */
 
 .overlay {
-	grid-area: 1 / 1;
+	/* Out of the flow: an SVG sized by the grid would take its default 150 px height. */
+	position: absolute;
+	inset: 0;
 	width: 100%;
 	height: 100%;
 	overflow: hidden;

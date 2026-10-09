@@ -14,6 +14,7 @@ import { router } from '@rooted/router/application'
 import { startLoop } from './canvas/loop.mts'
 import { attachViewport } from './canvas/stage.mts'
 import { appRoutes } from './_routes.g.mts'
+import { addFonts } from './_shared/fonts.mts'
 import { persistApp } from './_shared/storage/persistence.mts'
 import styles from './application.css'
 import { NotFound, Title } from './title/title.mts'
@@ -53,6 +54,7 @@ export const Application = component({
 		// screens, and the canvas comes alive when the app loads in a browser. three.js is only
 		// imported then, so the pre-render never loads it.
 		if (environment.is('preRenderer')) return
+		addFonts()
 		const { createViewport } = await import('./canvas/viewport.mts')
 		if (signal.aborted) return
 		attachViewport(createViewport(canvas, container, signal), signal)

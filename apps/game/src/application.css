@@ -6,8 +6,8 @@
  * (docs/design/gameplay.md#platform).
  *
  * The theme is set on the container as custom properties, so every screen and component reads
- * the same papyrus, ink and fonts. The fonts are the player's own: nothing to download, and the
- * game works offline.
+ * the same papyrus, ink and fonts. The fonts are the player's own, except for one small brush
+ * face bundled with the game for lettering (_shared/fonts.mts).
  */
 
 .container {
@@ -35,6 +35,7 @@
 
 	--font-body: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 	--font-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace;
+	--font-brush: 'Kaushan Script', var(--font-display);
 	--font-display: 'Hiragino Mincho ProN', 'Yu Mincho', 'Noto Serif JP', Georgia, serif;
 
 	--radius: 3px;

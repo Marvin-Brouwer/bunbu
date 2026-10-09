@@ -10,10 +10,6 @@
 .scroll {
 	position: relative;
 	color: var(--ink);
-	/* Swipes and long presses on the scroll are play, not text selection. */
-	user-select: none;
-	-webkit-user-select: none;
-	-webkit-touch-callout: none;
 }
 
 .scroll[data-stage='hidden'] {
