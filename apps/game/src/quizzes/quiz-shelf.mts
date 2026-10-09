@@ -1,7 +1,6 @@
 /**
- * The quizzes on the title: the loaded quizzes as cards in a row that swipes sideways, and under it
- * the area to drop or choose a quiz file. Under that, why the last file didn't load, and what won't
- * fit in a fight of the chosen quiz.
+ * The area to drop or choose a quiz file, then why the last file didn't load and what won't fit in
+ * a fight of the chosen quiz, then the loaded quizzes as cards, one to choose.
  */
 
 import type { BunbuData } from '@bunbu/data'
@@ -55,15 +54,14 @@ export const QuizShelf = component({
 		}
 
 		append(
-			shelf,
 			create(LoadQuiz, {
 				read,
 			}),
 			notices,
+			shelf,
 		)
 
-		// Only a change of the library refills the row: choosing a card checks its radio, and refilling
-		// would scroll the row back to the start under the player's thumb.
+		// Only a change of the library refills the list: choosing a card checks its radio already.
 		const showShelf = (state: LibraryState) => {
 			const { quiz: chosen } = snapshot<SelectionState>(selection)
 			shelf.replaceChildren(
@@ -73,7 +71,6 @@ export const QuizShelf = component({
 					choose: () => { selection.value.chooseQuiz(quiz) },
 				})),
 			)
-			shelf.querySelector('input:checked')?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
 		}
 
 		const showNotices = () => {

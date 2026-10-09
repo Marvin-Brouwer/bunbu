@@ -1,4 +1,4 @@
-/** One quiz on the title's shelf: its title, version, pass mark and high score, or `new`. */
+/** One quiz on the quizzes screen: its title, version, pass mark and high score, or `new`. */
 
 import type { BunbuData } from '@bunbu/data'
 import { component } from '@rooted/components'

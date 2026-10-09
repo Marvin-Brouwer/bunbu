@@ -23,15 +23,22 @@ Wireframe source: the project's design canvas (`design/wireframes/*.dc.html` and
 
 - 3D samurai idling under a torii, falling petals.
 - 文武 · **Bunbu** · Shogun Scholar.
-- **Quiz:** cards in a row that swipes sideways, with title, `version`, pass mark and best score (`v3 · pass 70% · best 2,480`, or `new`). Under them an area to drop a `.yaml` or `.bunbu` file on, or tap to choose one. Under that, why a file didn't load, and which questions of the chosen quiz won't fit in a fight.
 - High score for the chosen quiz: `2,480`, with `17 / 20 correct · 4:05`.
-- **Fight** (shows the chosen quiz), **Dojo**, **Settings**.
+- **Fight** (shows the chosen quiz; without one it leads to Quizzes), **Quizzes**, **Dojo**, **Settings**.
+
+### 1b Quizzes
+
+A screen of its own, so the title stays calm:
+
+- An area to drop a `.yaml` or `.bunbu` file on, or tap to choose one.
+- Why a file didn't load (by line), and which questions of the chosen quiz won't fit in a fight.
+- The loaded quizzes as cards, one under the other, with title, `version`, pass mark and best score (`v3 · pass 70% · best 2,480`, or `new`). Tapping one chooses it.
 
 ### 2 Fight setup
 
 <img src="screens/2-quiz-stage.png" alt="Fight setup" width="195">
 
-"Choose your path". The quiz is chosen on the title; the stage and the difficulty only matter to a fight, so they are chosen here:
+"Choose your path". The quiz is chosen on Quizzes (1b); the stage and the difficulty only matter to a fight, so they are chosen here:
 
 1. **Quiz:** the chosen quiz, and which of its questions won't fit in a fight.
 2. **Stage:** Rice fields, Bamboo forest, Mountain temple, Castle town, Edo castle. Each shows its best distance and whether it was cleared.

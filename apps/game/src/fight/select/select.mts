@@ -1,6 +1,6 @@
 /**
  * 2 Fight ([screens.md](../../../../../docs/design/screens.md#2-fight-setup)): "Choose your path".
- * The quiz chosen on the title and how it fits in a fight, then the stage and the difficulty, which
+ * The chosen quiz and how it fits in a fight, then the stage and the difficulty, which
  * only a fight needs, then **Start run**.
  */
 
@@ -16,6 +16,7 @@ import { fightable, fitNotesOf } from '../../_shared/quiz/read-quiz.mts'
 import { selection, type SelectionState } from '../../_shared/state/selection.mts'
 import { snapshot } from '../../_shared/state/store.mts'
 import { fixtureQuiz } from '../../_temp/quiz.mts'
+import { QuizzesRoute } from '../../quizzes/_routes.mts'
 import { highScores } from '../state/highscores.mts'
 import { StagePicker } from './stage-picker.mts'
 import styles from './select.css'
@@ -35,7 +36,7 @@ export const Select = component<SelectOptions>({
 		const { quiz } = snapshot<SelectionState>(selection)
 		const title = href.path('/')
 
-		// The quiz is chosen on the title; a fight opened without one is sent back there.
+		// A fight opened without a quiz sends the player to choose one.
 		if (quiz === undefined) {
 			append(
 				create(MenuScreen, {
@@ -46,12 +47,12 @@ export const Select = component<SelectOptions>({
 						children: [
 							element('p', {
 								classes: styles.quizNote,
-								textContent: 'Choose a quiz on the title first.',
+								textContent: 'Choose a quiz first.',
 							}),
 							create(MenuButton, {
 								kind: 'primary',
 								label: 'Choose a quiz',
-								href: title,
+								href: href.for(QuizzesRoute),
 							}),
 						],
 					}),
