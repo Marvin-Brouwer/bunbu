@@ -26,6 +26,12 @@ export default rootedManifest({
 			},
 		},
 	],
+	codeSplitting: {
+		groups: [
+			// three.js changes far less often than the game, so it keeps its own cached chunk.
+			{ name: 'vendor/three', test: /[\\/]node_modules[\\/]three[\\/]/ },
+		],
+	},
 	plugins: [
 		// The game's own pages (how to play, credits) are Markdown, rendered to HTML at build time.
 		// Quiz Markdown arrives at runtime and goes through _shared/markdown/render.mts instead.
