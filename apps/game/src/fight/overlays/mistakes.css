@@ -1,28 +1,13 @@
 /*
- * The mistakes scroll on the results (docs/design/screens.md#7-finished-results-and-mistakes):
- * the scroll's rods and papyrus, one entry per miss.
+ * The mistakes on the results scroll (docs/design/screens.md#7-finished-results-and-mistakes):
+ * one entry per miss.
  */
 
 .mistakes {
 	display: grid;
-	grid-template-rows: auto minmax(0, 1fr) auto;
-	filter: drop-shadow(var(--shadow));
-}
-
-.rod {
-	height: 0.85rem;
-	margin: 0 -0.35rem;
-	border-radius: 999px;
-	background: linear-gradient(var(--wood-light), var(--wood) 60%, var(--ink));
-}
-
-.sheet {
-	display: grid;
 	gap: 0.25rem;
-	padding: 0.9rem 1rem 0.6rem;
-	background: linear-gradient(90deg, var(--paper-shade), var(--paper) 5%, var(--paper) 95%, var(--paper-shade));
-	border-inline: 1px solid var(--paper-edge);
-	color: var(--ink);
+	padding-top: 0.75rem;
+	border-top: 1px dashed var(--paper-edge);
 }
 
 .top {
@@ -77,15 +62,15 @@
 	color: var(--ink-soft);
 }
 
-.markdown > :first-child {
+.prose > :first-child {
 	margin-top: 0;
 }
 
-.markdown > :last-child {
+.prose > :last-child {
 	margin-bottom: 0;
 }
 
-.markdown pre {
+.prose pre {
 	overflow-x: auto;
 	padding: 0.5rem 0.6rem;
 	border-radius: var(--radius);
@@ -93,15 +78,18 @@
 	font-size: 0.85rem;
 }
 
-.markdown code {
+.prose code {
+	padding: 0 0.25rem;
+	border-radius: var(--radius);
+	background: var(--paper-shade);
 	font-family: var(--font-mono);
 }
 
-.markdown img {
+.prose img {
 	max-width: 100%;
 }
 
-.markdown a,
+.prose a,
 .references a {
 	color: var(--vermilion);
 }
@@ -117,18 +105,18 @@
 	font-size: 0.9rem;
 }
 
-.answer {
+.side {
 	display: flex;
 	flex-wrap: wrap;
 	align-items: baseline;
 	gap: 0.25rem;
 }
 
-.answer[data-kind='picked'] {
+.side[data-kind='picked'] {
 	color: var(--vermilion);
 }
 
-.answer[data-kind='right'] {
+.side[data-kind='right'] {
 	color: var(--moss);
 }
 
@@ -136,12 +124,20 @@
 	font-weight: 700;
 }
 
-.choice + .choice::before {
-	content: ', ';
+/*
+ * A flex box, so the line break the markdown ends with doesn't show as a space before the comma.
+ * Flex drops plain spaces at the edges too, hence the no-break spaces in the separators.
+ */
+.choice {
+	display: inline-flex;
 }
 
-.answer[data-ordered='true'] .choice + .choice::before {
-	content: ' → ';
+.choice + .choice::before {
+	content: ',\00a0';
+}
+
+.side[data-ordered='true'] .choice + .choice::before {
+	content: '\00a0→\00a0';
 }
 
 .choice p {

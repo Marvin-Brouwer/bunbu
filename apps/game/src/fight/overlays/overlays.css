@@ -1,38 +1,32 @@
 /*
  * The run's overlays over its world: the pause menu (docs/design/screens.md#6-pause), the 3-2-1
- * after resuming, and the results of a finished (7) or fallen (8) run.
+ * after resuming, and the results of a finished (7) or fallen (8) run. Pause and results are
+ * written on a scroll, like an ambush.
  */
 
-/* Pause: the world dims behind the run so far and the menu. */
+/* Pause and results: a scroll over the dimmed world. */
 
-.pause {
+.pause,
+.results {
 	position: absolute;
 	inset: 0;
 	display: grid;
-	grid-template-rows: auto 1fr auto;
-	gap: 1rem;
-	padding: max(1.25rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) max(1.25rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
+	align-content: center;
+	padding: max(2rem, env(safe-area-inset-top)) max(0.75rem, env(safe-area-inset-right)) max(2rem, env(safe-area-inset-bottom)) max(0.75rem, env(safe-area-inset-left));
 	background: rgb(27 26 24 / 55%);
-	overflow-y: auto;
-}
-
-.panel {
-	display: grid;
-	gap: 0.75rem;
-	width: 100%;
-	max-width: 34rem;
-	margin-inline: auto;
-	padding: 1rem 1.1rem;
-	box-sizing: border-box;
-	border: var(--frame);
-	border-radius: var(--radius);
-	background: var(--paper);
 	color: var(--ink);
-	box-shadow: var(--shadow);
 }
 
-.menu {
-	grid-row: 3;
+.results[data-outcome='fallen'] {
+	/* Darker: the samurai has fallen. */
+	background: rgb(27 26 24 / 75%);
+}
+
+/* What is written on the scroll, above the buttons at its foot. */
+.sheetBody {
+	display: grid;
+	align-content: start;
+	gap: 1rem;
 }
 
 .label {
@@ -44,7 +38,7 @@
 	color: var(--ink-soft);
 }
 
-.heading {
+.pauseTitle {
 	margin: 0;
 	font-family: var(--font-display);
 	font-size: 1.75rem;
@@ -124,32 +118,7 @@
 	}
 }
 
-/* Results: finished or fallen, a page of its own over the world. */
-
-.results {
-	position: absolute;
-	inset: 0;
-	overflow-y: auto;
-	overscroll-behavior: contain;
-	background: rgb(241 232 211 / 94%);
-	color: var(--ink);
-}
-
-.results[data-outcome='fallen'] {
-	/* Ink-wash grey: the samurai has fallen. */
-	background: rgb(214 210 202 / 95%);
-}
-
-.page {
-	display: grid;
-	align-content: start;
-	gap: 1rem;
-	max-width: 34rem;
-	min-height: 100%;
-	margin-inline: auto;
-	padding: max(1.25rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) max(1.25rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
-	box-sizing: border-box;
-}
+/* Results: finished or fallen. */
 
 .header {
 	display: flex;
@@ -211,7 +180,7 @@
 	color: var(--ink-soft);
 }
 
-/* Fallen: the kanji and the name over the world, the reason in vermilion. */
+/* Fallen: the kanji and the name, the reason in vermilion. */
 
 .fallen {
 	display: grid;
@@ -279,5 +248,5 @@
 .actions {
 	display: grid;
 	gap: 0.75rem;
-	margin-top: 0.25rem;
+	padding: 0 1rem 1rem;
 }

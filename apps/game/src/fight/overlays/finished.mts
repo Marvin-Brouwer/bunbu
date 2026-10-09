@@ -1,12 +1,13 @@
 /**
  * 7 Finished ([screens.md](../../../../../docs/design/screens.md#7-finished-results-and-mistakes)):
  * the quiz is passed. The score, and the high score it beat; correct, time and distance; the
- * mistakes scroll; then Next stage.
+ * mistakes; then Next stage, all on one scroll over the world.
  */
 
 import { component } from '@rooted/components'
 import { formatDuration, formatWhole } from '../../_shared/numbers.mts'
 import { selection, stageNames, stages } from '../../_shared/state/selection.mts'
+import { ScrollSheet } from '../../_shared/scroll/scroll-sheet.mts'
 import { snapshot } from '../../_shared/state/store.mts'
 import type { QuizActions, QuizState } from '../../_shared/state/quiz.mts'
 import type { RunGame } from '../state/game.mts'
@@ -40,90 +41,94 @@ export const Finished = component<FinishedOptions>({
 			element('section', {
 				classes: styles.results,
 				'data-outcome': 'finished',
-				children: element('div', {
-					classes: styles.page,
-					children: [
-						element('header', {
-							classes: styles.header,
-							children: [
-								element('span', {
-									classes: styles.seal,
-									lang: 'ja',
-									textContent: '勝',
-									aria: {
-										hidden: 'true',
-									},
-								}),
-								element('div', {
-									classes: styles.headline,
+				children: create(ScrollSheet, {
+					fill: true,
+					unroll: true,
+					children: element('div', {
+						classes: styles.sheetBody,
+						children: [
+								element('header', {
+									classes: styles.header,
 									children: [
-										element('h1', {
-											classes: styles.verdict,
-											textContent: newBest ? 'Quiz passed · new high score' : 'Quiz passed',
-										}),
 										element('span', {
-											classes: styles.total,
+											classes: styles.seal,
+											lang: 'ja',
+											textContent: '勝',
+											aria: {
+												hidden: 'true',
+											},
+										}),
+										element('div', {
+											classes: styles.headline,
 											children: [
-												formatWhole(points),
-												best === undefined
-													? undefined
-													: element('span', {
-														classes: styles.was,
-														textContent: newBest ? `was ${formatWhole(best.points)}` : `best ${formatWhole(best.points)}`,
-													}),
+												element('h1', {
+													classes: styles.verdict,
+													textContent: newBest ? 'Quiz passed · new high score' : 'Quiz passed',
+												}),
+												element('span', {
+													classes: styles.total,
+													children: [
+														formatWhole(points),
+														best === undefined
+															? undefined
+															: element('span', {
+																classes: styles.was,
+																textContent: newBest ? `was ${formatWhole(best.points)}` : `best ${formatWhole(best.points)}`,
+															}),
+													],
+												}),
+												element('span', {
+													classes: styles.summary,
+													textContent: `${correct} / ${total} correct (${Math.round((correct / total) * 100)}%) · ${formatDuration(elapsed)}`,
+												}),
 											],
-										}),
-										element('span', {
-											classes: styles.summary,
-											textContent: `${correct} / ${total} correct (${Math.round((correct / total) * 100)}%) · ${formatDuration(elapsed)}`,
 										}),
 									],
 								}),
-							],
-						}),
-						element('div', {
-							classes: styles.tiles,
-							children: [
-								create(StatTile, {
-									label: 'Correct',
-									value: formatWhole(points),
-									note: `${correct} × ${pointsPerCorrect}`,
+								element('div', {
+									classes: styles.tiles,
+									children: [
+										create(StatTile, {
+											label: 'Correct',
+											value: formatWhole(points),
+											note: `${correct} × ${pointsPerCorrect}`,
+										}),
+										create(StatTile, {
+											label: 'Time',
+											value: formatDuration(elapsed),
+											note: 'breaks a tie',
+										}),
+										create(StatTile, {
+											label: 'Distance',
+											value: `${formatWhole(stageLength)} m`,
+											note: 'stage cleared',
+										}),
+									],
 								}),
-								create(StatTile, {
-									label: 'Time',
-									value: formatDuration(elapsed),
-									note: 'breaks a tie',
+								create(Mistakes, {
+									title: 'Mistakes',
+									quiz,
+									misses,
+									open: true,
 								}),
-								create(StatTile, {
-									label: 'Distance',
-									value: `${formatWhole(stageLength)} m`,
-									note: 'stage cleared',
-								}),
-							],
-						}),
-						create(Mistakes, {
-							title: 'Mistakes',
-							quiz,
-							misses,
-							open: true,
-						}),
-						create(AfterRun, {
-							misses: misses.length,
-							next: next === undefined
-								? {
-									label: 'Run again',
-									action: options.restart,
-								}
-								: {
-									label: 'Next stage',
-									note: stageNames[next],
-									action: () => {
-										selection.value.chooseStage(next)
-										options.restart()
-									},
+						],
+					}),
+					footer: create(AfterRun, {
+						misses: misses.length,
+						next: next === undefined
+							? {
+								label: 'Run again',
+								action: options.restart,
+							}
+							: {
+								label: 'Next stage',
+								note: stageNames[next],
+								action: () => {
+									selection.value.chooseStage(next)
+									options.restart()
 								},
-						}),
-					],
+							},
+					}),
 				}),
 			})
 		)

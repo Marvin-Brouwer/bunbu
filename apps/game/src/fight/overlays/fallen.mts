@@ -7,6 +7,7 @@
 import { component } from '@rooted/components'
 import { formatDuration, formatWhole } from '../../_shared/numbers.mts'
 import { selection, stageNames } from '../../_shared/state/selection.mts'
+import { ScrollSheet } from '../../_shared/scroll/scroll-sheet.mts'
 import { snapshot } from '../../_shared/state/store.mts'
 import type { QuizActions, QuizState } from '../../_shared/state/quiz.mts'
 import type { RunGame } from '../state/game.mts'
@@ -40,68 +41,72 @@ export const Fallen = component<FallenOptions>({
 			element('section', {
 				classes: styles.results,
 				'data-outcome': 'fallen',
-				children: element('div', {
-					classes: styles.page,
-					children: [
-						element('header', {
-							classes: styles.fallen,
-							children: [
-								element('span', {
-									classes: styles.fallenKanji,
-									lang: 'ja',
-									textContent: '散',
-									aria: {
-										hidden: 'true',
-									},
+				children: create(ScrollSheet, {
+					fill: true,
+					unroll: true,
+					children: element('div', {
+						classes: styles.sheetBody,
+						children: [
+								element('header', {
+									classes: styles.fallen,
+									children: [
+										element('span', {
+											classes: styles.fallenKanji,
+											lang: 'ja',
+											textContent: '散',
+											aria: {
+												hidden: 'true',
+											},
+										}),
+										element('h1', {
+											classes: styles.fallenTitle,
+											textContent: 'Fallen',
+										}),
+										element('span', {
+											classes: styles.where,
+											textContent: `${stageNames[selection.value.stage]} · ${formatWhole(Math.floor(distance))} of ${formatWhole(stageLength)} m`,
+										}),
+										element('span', {
+											classes: styles.why,
+											textContent: `life bar empty: ${quiz.passingScore}% is out of reach`,
+										}),
+									],
 								}),
-								element('h1', {
-									classes: styles.fallenTitle,
-									textContent: 'Fallen',
+								element('div', {
+									classes: styles.tiles,
+									children: [
+										create(StatTile, {
+											label: 'Correct',
+											value: `${correct} / ${answered}`,
+											note: `best possible ${bestPossible}%`,
+										}),
+										create(StatTile, {
+											label: 'Run score',
+											value: formatWhole(points),
+											note: 'not a high score',
+										}),
+										create(StatTile, {
+											label: 'Time',
+											value: formatDuration(elapsed),
+											note: `${answered} answered`,
+										}),
+									],
 								}),
-								element('span', {
-									classes: styles.where,
-									textContent: `${stageNames[selection.value.stage]} · ${formatWhole(Math.floor(distance))} of ${formatWhole(stageLength)} m`,
+								create(Mistakes, {
+									title: 'What cut you down',
+									quiz,
+									misses,
+									open: false,
 								}),
-								element('span', {
-									classes: styles.why,
-									textContent: `life bar empty: ${quiz.passingScore}% is out of reach`,
-								}),
-							],
-						}),
-						element('div', {
-							classes: styles.tiles,
-							children: [
-								create(StatTile, {
-									label: 'Correct',
-									value: `${correct} / ${answered}`,
-									note: `best possible ${bestPossible}%`,
-								}),
-								create(StatTile, {
-									label: 'Run score',
-									value: formatWhole(points),
-									note: 'not a high score',
-								}),
-								create(StatTile, {
-									label: 'Time',
-									value: formatDuration(elapsed),
-									note: `${answered} answered`,
-								}),
-							],
-						}),
-						create(Mistakes, {
-							title: 'What cut you down',
-							quiz,
-							misses,
-							open: false,
-						}),
-						create(AfterRun, {
-							misses: misses.length,
-							next: {
-								label: 'Rise again',
-								action: options.restart,
-							},
-						}),
-					],
+						],
+					}),
+					footer: create(AfterRun, {
+						misses: misses.length,
+						next: {
+							label: 'Rise again',
+							action: options.restart,
+						},
+					}),
 				}),
 			})
 		)

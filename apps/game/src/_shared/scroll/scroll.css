@@ -18,6 +18,7 @@
 
 .paper {
 	display: grid;
+	width: 100%;
 	max-width: 34rem;
 	margin-inline: auto;
 	grid-template-rows: auto 1fr auto;
@@ -27,7 +28,7 @@
 	filter: drop-shadow(var(--shadow));
 }
 
-.paper[data-footer='true'] {
+.paper[data-fill='true'] {
 	height: calc(100dvh - 4rem);
 }
 
@@ -106,6 +107,11 @@
 
 .scroll[data-stage='roll-up'] .paper {
 	animation: unroll 360ms ease-in reverse forwards;
+}
+
+/* A sheet shown on its own, such as the pause menu or the results, unrolls once. */
+.paper[data-unroll='true'] {
+	animation: unroll 420ms ease-out;
 }
 
 /* Sliced: a cut across the scroll, then the halves fall apart. */
@@ -191,6 +197,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+	.paper[data-unroll='true'],
 	.scroll[data-stage],
 	.scroll[data-stage] * {
 		animation-duration: 1ms !important;

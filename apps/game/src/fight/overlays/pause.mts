@@ -1,13 +1,14 @@
 /**
- * 6 Pause ([screens.md](../../../../../docs/design/screens.md#6-pause)): this run so far, then
- * Resume, Restart stage, Settings and Quit over the dimmed world. The settings open in place, so
- * changing one doesn't end the run.
+ * 6 Pause ([screens.md](../../../../../docs/design/screens.md#6-pause)): a scroll over the dimmed
+ * world with this run so far, and Resume, Restart stage, Settings and Quit at its foot. The
+ * settings open in place on the scroll, so changing one doesn't end the run.
  */
 
 import { component } from '@rooted/components'
 import { MenuButton } from '../../_shared/menu/menu-button.mts'
 import { SettingsForm } from '../../_shared/menu/settings-form.mts'
 import { formatWhole } from '../../_shared/numbers.mts'
+import { ScrollSheet } from '../../_shared/scroll/scroll-sheet.mts'
 import { selection, stageNames } from '../../_shared/state/selection.mts'
 import type { RunGame } from '../state/game.mts'
 import styles from './overlays.css'
@@ -37,19 +38,39 @@ export const Pause = component<PauseOptions>({
 			],
 		})
 
-		const menu = element('div', {
-			classes: [
-				styles.panel,
-				styles.menu,
+		const run = element('div', {
+			classes: styles.sheetBody,
+			children: [
+				element('h2', {
+					classes: styles.label,
+					textContent: 'This run',
+				}),
+				element('dl', {
+					classes: styles.facts,
+					children: [
+						fact('Quiz', quiz?.title ?? ''),
+						fact('Stage', stageNames[selection.value.stage]),
+						fact('Answered', `${answered} / ${refs.length}`),
+						fact('Distance', `${formatWhole(Math.floor(game.run.value.distance))} m`),
+					],
+				}),
 			],
+		})
+		const heading = element('h2', {
+			classes: styles.pauseTitle,
+			textContent: 'Paused',
+		})
+		const body = element('div', {
+			classes: styles.sheetBody,
+		})
+		const menu = element('div', {
+			classes: styles.actions,
 		})
 
 		const showMenu = () => {
+			heading.textContent = 'Paused'
+			body.replaceChildren(run)
 			menu.replaceChildren(
-				element('h2', {
-					classes: styles.heading,
-					textContent: 'Paused',
-				}),
 				create(MenuButton, {
 					kind: 'primary',
 					label: 'Resume',
@@ -80,12 +101,11 @@ export const Pause = component<PauseOptions>({
 		}
 
 		const showSettings = () => {
-			menu.replaceChildren(
-				element('h2', {
-					classes: styles.heading,
-					textContent: 'Settings',
-				}),
+			heading.textContent = 'Settings'
+			body.replaceChildren(
 				create(SettingsForm),
+			)
+			menu.replaceChildren(
 				create(MenuButton, {
 					label: 'Back',
 					action: showMenu,
@@ -101,27 +121,17 @@ export const Pause = component<PauseOptions>({
 					label: 'Paused',
 					modal: 'true',
 				},
-				children: [
-					element('section', {
-						classes: styles.panel,
+				children: create(ScrollSheet, {
+					unroll: true,
+					children: element('div', {
+						classes: styles.sheetBody,
 						children: [
-							element('h2', {
-								classes: styles.label,
-								textContent: 'This run',
-							}),
-							element('dl', {
-								classes: styles.facts,
-								children: [
-									fact('Quiz', quiz?.title ?? ''),
-									fact('Stage', stageNames[selection.value.stage]),
-									fact('Answered', `${answered} / ${refs.length}`),
-									fact('Distance', `${formatWhole(Math.floor(game.run.value.distance))} m`),
-								],
-							}),
+							heading,
+							body,
 						],
 					}),
-					menu,
-				],
+					footer: menu,
+				}),
 			})
 		)
 		showMenu()

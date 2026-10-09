@@ -1,5 +1,5 @@
 /**
- * The mistakes scroll ([7 Finished](../../../../../docs/design/screens.md#7-finished-results-and-mistakes),
+ * The mistakes on the results scroll ([7 Finished](../../../../../docs/design/screens.md#7-finished-results-and-mistakes),
  * [8 Fallen](../../../../../docs/design/screens.md#8-fallen)): each missed ambush with ✗ the pick,
  * ✓ the right answer, the explanations and the references. On the fallen screen the entries start
  * closed, a tap opens one.
@@ -35,7 +35,7 @@ export const MistakeAnswer = component<MistakeAnswerOptions>({
 		const { kind, choices } = options
 		append(
 			element('span', {
-				classes: styles.answer,
+				classes: styles.side,
 				'data-kind': kind,
 				'data-ordered': String(options.ordered),
 				children: [
@@ -83,7 +83,7 @@ export const Mistake = component<MistakeOptions>({
 						children: [
 							...review.asked.map((text) => create(Markdown, {
 								source: renderMarkdown(text),
-								classes: styles.markdown,
+								classes: styles.prose,
 							})),
 							element('span', {
 								classes: styles.answers,
@@ -107,7 +107,7 @@ export const Mistake = component<MistakeOptions>({
 						children: [
 							...review.explanations.map((text) => create(Markdown, {
 								source: renderMarkdown(text),
-								classes: styles.markdown,
+								classes: styles.prose,
 							})),
 							review.references.length === 0
 								? undefined
@@ -141,40 +141,29 @@ export const Mistakes = component<MistakesOptions>({
 				classes: styles.mistakes,
 				children: [
 					element('div', {
-						classes: styles.rod,
-					}),
-					element('div', {
-						classes: styles.sheet,
+						classes: styles.top,
 						children: [
-							element('div', {
-								classes: styles.top,
-								children: [
-									element('h2', {
-										classes: styles.title,
-										textContent: `${options.title} (${reviews.length})`,
-									}),
-									reviews.length === 0 || options.open
-										? undefined
-										: element('span', {
-											classes: styles.hint,
-											textContent: 'tap to expand',
-										}),
-								],
+							element('h2', {
+								classes: styles.title,
+								textContent: `${options.title} (${reviews.length})`,
 							}),
-							...reviews.length === 0
-								? [element('p', {
-									classes: styles.none,
-									textContent: 'Not one. A clean run.',
-								})]
-								: reviews.map((review) => create(Mistake, {
-									review,
-									open: options.open,
-								})),
+							reviews.length === 0 || options.open
+								? undefined
+								: element('span', {
+									classes: styles.hint,
+									textContent: 'tap to expand',
+								}),
 						],
 					}),
-					element('div', {
-						classes: styles.rod,
-					}),
+					...reviews.length === 0
+						? [element('p', {
+							classes: styles.none,
+							textContent: 'Not one. A clean run.',
+						})]
+						: reviews.map((review) => create(Mistake, {
+							review,
+							open: options.open,
+						})),
 				],
 			})
 		)
