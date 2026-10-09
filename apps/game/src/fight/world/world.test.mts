@@ -10,7 +10,7 @@ import { distanceFor } from '../../canvas/framing.mts'
 import { cameraOf, runFraming } from './camera.mts'
 import { markOf } from './ninjas.mts'
 import { headingOf, lungeOf, placementConfig, spotOf } from './placement.mts'
-import { poseSeconds, rigOf } from './poses.mts'
+import { clipPlays, clipTimeOf, poseSeconds, rigOf } from './poses.mts'
 
 describe('placement', () => {
 	it('puts a ninja where its mark points on screen', () => {
@@ -114,6 +114,33 @@ describe('poses', () => {
 		expect(rigOf('blocked', poseSeconds.blocked).shift).toBeLessThan(0)
 		expect(rigOf('fleeing', 0.6).turn).toBeCloseTo(Math.PI)
 		expect(rigOf('fleeing', poseSeconds.fleeing).fade).toBe(0)
+	})
+})
+
+describe('clips on the real model', () => {
+	it('fits a one-off clip to the pose, whatever the clip\'s own length, and holds its end', () => {
+		const duration = 0.83
+		expect(clipTimeOf('strike', 0, 0, duration)).toBe(0)
+		expect(clipTimeOf('strike', poseSeconds.strike / 2, 0, duration)).toBeCloseTo(duration / 2, 2)
+		expect(clipTimeOf('strike', poseSeconds.strike, 0, duration)).toBeCloseTo(duration, 3)
+		expect(clipTimeOf('strike', 10, 0, duration)).toBeLessThan(duration)
+		expect(clipTimeOf('strike', 10, 0, duration)).toBe(clipTimeOf('strike', poseSeconds.strike, 0, duration))
+	})
+
+	it('runs in step with the cycle, which goes by distance, not the clock', () => {
+		const duration = 0.54
+		expect(clipTimeOf('run', 0, 0, duration)).toBe(0)
+		expect(clipTimeOf('run', 0, Math.PI, duration)).toBeCloseTo(duration / 2)
+		expect(clipTimeOf('run', 5, Math.PI * 4 + 1, duration)).toBeCloseTo(clipTimeOf('run', 0, 1, duration))
+	})
+
+	it('stops a block partway into its clip', () => {
+		expect(clipTimeOf('block', 10, 0, 1)).toBeCloseTo(clipPlays.block.until ?? 1, 3)
+	})
+
+	it('has a clip for every pose, from the clips the model has', () => {
+		const clips = new Set(['Death', 'Duck', 'HitReact', 'Idle', 'Run', 'Weapon'])
+		for (const play of Object.values(clipPlays)) expect(clips).toContain(play.clip)
 	})
 })
 

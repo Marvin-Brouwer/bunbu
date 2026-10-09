@@ -84,6 +84,6 @@ export const RunScreen = component<RunScreenOptions>({
 		// The world needs three.js, which is only loaded once a run starts in the browser.
 		const { createRunWorld } = await import('./world/world.mts')
 		if (signal.aborted) return
-		show((camera) => createRunWorld(game, camera), signal)
+		show((viewport) => createRunWorld(game, viewport), signal)
 	},
 })

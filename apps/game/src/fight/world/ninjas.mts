@@ -3,6 +3,9 @@
  * its mark and its `approach` ([placement](./placement.mts)); its pose from the store, timed from
  * when the store last changed it.
  *
+ * Placement is around the samurai, measured along the path: ahead of him is farther along it, so the
+ * ninjas come round its corners and stay in the street.
+ *
  * The figures and their timers are visual state: derived from the store, never fed back.
  */
 
@@ -10,11 +13,10 @@ import type { Group } from 'three'
 import type { AmbushOption, Mark } from '../../_shared/state/ambush.mts'
 import { marks } from '../../_shared/state/ambush.mts'
 import type { Ninja } from '../state/ninjas.mts'
-import { createFigure, type Figure, type FigureParts } from './figure.mts'
+import type { Body } from './character.mts'
+import { beside, type PathPoint } from './path.mts'
 import { lungeOf, spotOf } from './placement.mts'
-import { poseSeconds, rigOf } from './poses.mts'
-
-const colours = { body: 0x2e2d38, skin: 0x2e2d38, band: 0xa3322a, blade: 0xb8bcc4 }
+import { poseSeconds } from './poses.mts'
 
 /** The back row is drawn faded ([more than 3 options](../../../../../docs/design/gameplay.md#more-than-3-options)). */
 const backRowOpacity = 0.5
@@ -23,7 +25,7 @@ const backRowOpacity = 0.5
 const creepCycle = 9
 
 type Shown = {
-	readonly figure: Figure
+	body: Body
 	/**
 	 * The mark it closes in from. Kept, because committing an ambush clears its options while the
 	 * ninjas are still being slain or blocked where the player swiped.
@@ -54,19 +56,26 @@ export type NinjasView = {
 	 * how far the samurai has run.
 	 */
 	draw: (active: readonly Ninja[], options: readonly AmbushOption[], distance: number, delta: number, worldDelta: number) => void
+	/** Swaps every figure's body for one made by `make`, for when the real model has loaded. */
+	remake: (make: () => Body) => void
 	/** The mark the ninja with `id` was last drawn at, for the samurai to turn toward. */
 	markOf: (id: number) => Mark | undefined
 	dispose: () => void
 }
 
-export function createNinjasView(parent: Group, parts: FigureParts): NinjasView {
+/**
+ * `parent` is in world space; `frameAt` is where the path has the samurai at a distance, and `make`
+ * makes a ninja's body.
+ */
+export function createNinjasView(parent: Group, frameAt: (distance: number) => PathPoint, make: () => Body): NinjasView {
 	// Ninja id to its figure.
 	const shown = new Map<number, Shown>()
 	let cycle = 0
+	let maker = make
 
 	const drop = (id: number, entry: Shown) => {
-		parent.remove(entry.figure.root)
-		entry.figure.dispose()
+		parent.remove(entry.body.root)
+		entry.body.dispose()
 		shown.delete(id)
 	}
 
@@ -77,9 +86,9 @@ export function createNinjasView(parent: Group, parts: FigureParts): NinjasView 
 			for (const ninja of active) {
 				let entry = shown.get(ninja.id)
 				if (entry === undefined) {
-					entry = { figure: createFigure(parts, colours), mark: markById(ninja.id), sequence: ninja.sequence, time: 0, beatenAt: undefined }
+					entry = { body: maker(), mark: markById(ninja.id), sequence: ninja.sequence, time: 0, beatenAt: undefined }
 					shown.set(ninja.id, entry)
-					parent.add(entry.figure.root)
+					parent.add(entry.body.root)
 				}
 				if (entry.sequence === ninja.sequence) {
 					entry.time += delta
@@ -95,16 +104,34 @@ export function createNinjasView(parent: Group, parts: FigureParts): NinjasView 
 				// A striker closes in during the wind-up, so the cut lands on the samurai.
 				const approach = ninja.pose === 'strike' ? lungeOf(ninja.approach, entry.time, poseSeconds.strike * 0.4) : ninja.approach
 				const spot = spotOf(entry.mark, ninja.wave, approach)
-				const { root } = entry.figure
-				// The path comes toward the camera as the samurai runs on.
-				root.position.set(spot.x, 0, spot.z + distance - (entry.beatenAt ?? distance))
-				root.rotation.y = spot.facing
+				// Around the samurai where he is, or where he was when this ninja was beaten: it stays on
+				// that spot of the path as he runs on. Ahead and behind follow the path's bends, so a ninja
+				// coming round a corner stays in the street; to the side is square to the path there.
+				const base = entry.beatenAt ?? distance
+				const samurai = frameAt(base)
+				const at = beside(frameAt(base - spot.z), spot.x, 0)
+				const { root } = entry.body
+				root.position.set(at.x, 0, at.z)
+				// Facing the samurai: a figure faces -z when not turned.
+				const toX = samurai.x - at.x
+				const toZ = samurai.z - at.z
+				root.rotation.y = Math.hypot(toX, toZ) > 1e-6 ? Math.atan2(-toX, -toZ) : samurai.heading
 				// Out of step with each other, so they don't run as one.
-				entry.figure.pose(rigOf(ninja.pose, entry.time, cycle + ninja.id * 1.7), ninja.wave > 0 ? backRowOpacity : 1)
+				entry.body.show(ninja.pose, entry.time, cycle + ninja.id * 1.7, ninja.wave > 0 ? backRowOpacity : 1)
 			}
 
 			for (const [id, entry] of shown) {
 				if (!active.some((ninja) => ninja.id === id)) drop(id, entry)
+			}
+		},
+
+		remake(next) {
+			maker = next
+			for (const entry of shown.values()) {
+				parent.remove(entry.body.root)
+				entry.body.dispose()
+				entry.body = next()
+				parent.add(entry.body.root)
 			}
 		},
 

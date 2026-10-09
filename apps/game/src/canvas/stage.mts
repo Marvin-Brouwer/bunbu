@@ -4,7 +4,7 @@
  * with `show()` while it is mounted, and takes it off again when it unmounts.
  */
 
-import type { PerspectiveCamera, Scene } from 'three'
+import type { Scene } from 'three'
 import type { Viewport } from './viewport.mts'
 
 /** A world on the canvas: a scene, and a function that makes it match the state every frame. */
@@ -15,8 +15,8 @@ export type View = {
 	dispose?: () => void
 }
 
-/** Builds a view for the shared camera. */
-export type ViewFactory = (camera: PerspectiveCamera) => View
+/** Builds a view for the shared renderer and camera. */
+export type ViewFactory = (viewport: Viewport) => View
 
 let viewport: Viewport | undefined
 let factory: ViewFactory | undefined
@@ -24,7 +24,7 @@ let view: View | undefined
 
 function build(): void {
 	view?.dispose?.()
-	view = viewport !== undefined && factory !== undefined ? factory(viewport.camera) : undefined
+	view = viewport !== undefined && factory !== undefined ? factory(viewport) : undefined
 }
 
 /** Shows a world on the canvas until `signal` aborts, usually the route component's own signal. */

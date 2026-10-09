@@ -159,3 +159,49 @@ const rigs: Readonly<Record<FigurePose, (time: number, cycle: number) => Rig>> =
 export function rigOf(pose: FigurePose, time: number, cycle = 0): Rig {
 	return rigs[pose](time, cycle)
 }
+
+/** A clip of the real models (track F's, Quaternius's for now) and how a pose plays it. */
+export type ClipPlay = {
+	readonly clip: string
+	/** Loops go by the running cycle or the clock; the rest play once, fitted to the pose, and hold. */
+	readonly loop: 'cycle' | 'clock' | false
+	/** How far into the clip a one-off pose ends, `1` the whole clip. */
+	readonly until?: number
+}
+
+/** The clip each pose plays on the real models. */
+export const clipPlays: Readonly<Record<FigurePose, ClipPlay>> = {
+	idle: { clip: 'Idle', loop: 'clock' },
+	run: { clip: 'Run', loop: 'cycle' },
+	approach: { clip: 'Run', loop: 'cycle' },
+	strike: { clip: 'Weapon', loop: false },
+	block: { clip: 'Duck', loop: false, until: 0.4 },
+	hurt: { clip: 'HitReact', loop: false },
+	fallen: { clip: 'Death', loop: false },
+	slain: { clip: 'Death', loop: false },
+	blocked: { clip: 'HitReact', loop: false },
+	fleeing: { clip: 'Run', loop: 'cycle' },
+}
+
+/** Seconds a one-off pose takes to play its clip: its own duration, or the strike's for the rest. */
+const playSeconds = (pose: FigurePose): number => {
+	if (pose in poseSeconds) return poseSeconds[pose as keyof typeof poseSeconds]
+	return poseSeconds.strike
+}
+
+/**
+ * Where in its clip `pose` is, `time` seconds after the pose began: the store's timing, never the
+ * clip's. A clip of `duration` seconds is stretched or squeezed to fit the pose and then holds its
+ * last frame; a loop follows the running `cycle` (radians) or the clock.
+ */
+export function clipTimeOf(pose: FigurePose, time: number, cycle: number, duration: number): number {
+	const play = clipPlays[pose]
+	if (play.loop === 'cycle') {
+		const turns = cycle / (Math.PI * 2)
+		return (turns - Math.floor(turns)) * duration
+	}
+	if (play.loop === 'clock') return time % duration
+	// Just short of the end, so a clip that is not set to clamp still shows its last frame.
+	const end = duration * (play.until ?? 1) - 1e-4
+	return Math.min(1, Math.max(0, time / playSeconds(pose))) * end
+}

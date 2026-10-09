@@ -117,6 +117,11 @@ const single = () => ambush(1)
 /** Every fixture, by the name that goes in `?fixture=`. */
 export const fixtures: Readonly<Record<string, () => Fixture>> = {
 	running: () => midRun(2),
+	// Running round the first street corner, for the camera and the houses at the turn.
+	'running-corner': () => {
+		const state = midRun(0)
+		return { ...state, run: { ...state.run, distance: 78 } }
+	},
 	'ambush-yes-no': () => ambush(0),
 	'ambush-single': single,
 	'ambush-multiple': () => ambush(2),

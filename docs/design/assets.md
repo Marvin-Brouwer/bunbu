@@ -24,6 +24,23 @@ This is the pick "for now". No free pack ships a samurai and a ninja together in
 
 The samurai's run, attack and hit animations come from the [Universal Animation Library](https://quaternius.com/packs/universalanimationlibrary.html) (Quaternius, CC0, 120+ animations including run and sword attacks). Retarget in Blender and export one GLB with all clips, rather than retargeting at runtime.
 
+### In the game now
+
+Until the retargeted samurai lands, **both sides use the Quaternius ninja**: the samurai in crimson and gold, the ninjas in black with a red sash. One rig, one set of clips, one style. The world plays these clips, fitted to the state's timing (`fight/world/poses.mts`):
+
+| Pose                     | Clip       |
+| ------------------------ | ---------- |
+| run, approach, fleeing   | `Run`      |
+| idle                     | `Idle`     |
+| strike                   | `Weapon`   |
+| block                    | `Duck` (first 40%) |
+| hurt, blocked            | `HitReact` |
+| fallen, slain            | `Death`    |
+
+A replacement model needs clips with these names, or a change to that table.
+
+The **Castle town** stage uses, from Quaternius on Poly Pizza (CC0): the [maple trees](https://poly.pizza/m/iGFtQd0PJO) (five variants in one file), [bamboo](https://poly.pizza/m/xBPj13w3JQ) and the [torii gate](https://poly.pizza/m/7SyXZ62xR5). The town houses (machiya), stone lanterns, the bridge, the pagoda and the castle keep are built in code from simple shapes (`fight/world/castle-town.mts`): no free CC0 pack of Japanese town buildings turned up. The models are in `apps/game/public/models/` as downloaded; they are not compressed yet.
+
 ## Sources
 
 Ranked by usefulness for this game.
@@ -44,9 +61,10 @@ Ranked by usefulness for this game.
 Old-school Japan props found on Poly Pizza, all from Quaternius (CC0) unless noted:
 
 - [Torii gate](https://poly.pizza/m/7SyXZ62xR5) (300 triangles)
-- [Temple](https://poly.pizza/m/CE2Mn7lh6A) (3.6k triangles)
+- [Temple](https://poly.pizza/m/CE2Mn7lh6A) (3.6k triangles): looks like a European castle tower, not a Japanese temple; not used.
 - Bamboo: [1](https://poly.pizza/m/xBPj13w3JQ), [2](https://poly.pizza/m/FUgtfvqgMx), [mid](https://poly.pizza/m/z0d6CbNtrz). Instance these for bamboo forest stretches.
 - [Japanese door](https://poly.pizza/m/t4otyljz8K)
+- [Japanese Stone Lamp by Flopsi](https://poly.pizza/m/5gZfOZIW92k): **CC-BY 3.0**, not CC0; not used, the stone lanterns are built in code.
 - [Maple trees](https://poly.pizza/m/iGFtQd0PJO): recolour the leaves pink for cherry blossoms.
 - [Stylized Nature MegaKit](https://quaternius.com/packs/stylizednaturemegakit.html): 116 trees, plants and rocks.
 - Pagodas from Google Poly: [1](https://poly.pizza/m/1zS7ucaAd4J), [2](https://poly.pizza/m/d1M5ncMBUDi), [3](https://poly.pizza/m/eHOI2VgW1ol). **CC-BY 3.0**, credit "Poly by Google".
