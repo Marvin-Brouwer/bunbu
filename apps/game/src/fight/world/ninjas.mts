@@ -11,15 +11,15 @@ import type { AmbushOption, Mark } from '../../_shared/state/ambush.mts'
 import { marks } from '../../_shared/state/ambush.mts'
 import type { Ninja } from '../state/ninjas.mts'
 import { createFigure, type Figure, type FigureParts } from './figure.mts'
-import { spotOf } from './placement.mts'
-import { rigOf } from './poses.mts'
+import { lungeOf, spotOf } from './placement.mts'
+import { poseSeconds, rigOf } from './poses.mts'
 
 const colours = { body: 0x2e2d38, skin: 0x2e2d38, band: 0xa3322a, blade: 0xb8bcc4 }
 
 /** The back row is drawn faded ([more than 3 options](../../../../../docs/design/gameplay.md#more-than-3-options)). */
 const backRowOpacity = 0.5
 
-/** Running cycles per second while creeping in, in world time so slow motion slows them. */
+/** Radians of the running cycle per world second while creeping in, so slow motion slows them. */
 const creepCycle = 9
 
 type Shown = {
@@ -92,7 +92,9 @@ export function createNinjasView(parent: Group, parts: FigureParts): NinjasView 
 				else entry.beatenAt ??= distance
 
 				entry.mark = markOf(ninja, options) ?? entry.mark
-				const spot = spotOf(entry.mark, ninja.wave, ninja.approach)
+				// A striker closes in during the wind-up, so the cut lands on the samurai.
+				const approach = ninja.pose === 'strike' ? lungeOf(ninja.approach, entry.time, poseSeconds.strike * 0.4) : ninja.approach
+				const spot = spotOf(entry.mark, ninja.wave, approach)
 				const { root } = entry.figure
 				// The path comes toward the camera as the samurai runs on.
 				root.position.set(spot.x, 0, spot.z + distance - (entry.beatenAt ?? distance))

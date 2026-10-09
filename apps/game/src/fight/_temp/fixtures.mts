@@ -146,6 +146,17 @@ export const fixtures: Readonly<Record<string, () => Fixture>> = {
 			ninjas: { active: state.ninjas.active.map((ninja) => ({ ...ninja, pose: 'strike', approach: 1, sequence: 1 })) },
 		}
 	},
+	// A wrong answer swiped early, with the ninjas still far off: they lunge in to land the hit.
+	'outcome-wrong-early': () => {
+		const state = single()
+		return {
+			...state,
+			ambush: { ...state.ambush, open: false },
+			life: { value: 0.66, lastLoss: 1 / 6, hits: 2 },
+			shogun: { pose: 'hurt', target: 0, sequence: 4 },
+			ninjas: { active: state.ninjas.active.map((ninja) => ({ ...ninja, pose: 'strike', approach: 0.15, sequence: 1 })) },
+		}
+	},
 	'outcome-unanswered': () => {
 		const state = ambush(2)
 		return {

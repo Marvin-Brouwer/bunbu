@@ -9,7 +9,7 @@ import { marks } from '../../_shared/state/ambush.mts'
 import { distanceFor } from '../../canvas/framing.mts'
 import { cameraOf, runFraming } from './camera.mts'
 import { markOf } from './ninjas.mts'
-import { headingOf, placementConfig, spotOf } from './placement.mts'
+import { headingOf, lungeOf, placementConfig, spotOf } from './placement.mts'
 import { poseSeconds, rigOf } from './poses.mts'
 
 describe('placement', () => {
@@ -38,9 +38,19 @@ describe('placement', () => {
 	})
 
 	it('keeps the ninjas from behind between the samurai and the camera', () => {
-		// The camera stands at least 8 m back, most of that behind him.
-		expect(spotOf('down', 1, 0).z).toBeLessThan(5)
-		expect(spotOf('down', 0, 0).z).toBeLessThan(-spotOf('up', 0, 0).z)
+		for (const aspect of [9 / 19.5, 3 / 4, 16 / 9]) {
+			const [, , cameraZ] = cameraOf(aspect, false).position
+			for (const mark of ['down-left', 'down', 'down-right'] as const) {
+				for (const wave of [0, 1]) expect(spotOf(mark, wave, 0).z).toBeLessThan(cameraZ - 2)
+			}
+		}
+	})
+
+	it('has a striking ninja lunge in to land the hit, wherever the answer caught it', () => {
+		expect(lungeOf(0.1, 0, 0.12)).toBeCloseTo(0.1)
+		expect(lungeOf(0.1, 0.12, 0.12)).toBe(1)
+		expect(lungeOf(0, 5, 0.12)).toBe(1)
+		expect(lungeOf(0.1, 0.06, 0.12)).toBeGreaterThan(0.1)
 	})
 
 	it('stands the back row farther away', () => {
@@ -140,11 +150,14 @@ describe('camera', () => {
 				for (const wave of [0, 1]) {
 					for (const approach of [0, 0.25, 0.5, 0.75, 1]) {
 						const spot = spotOf(mark, wave, approach)
-						// Their middle, with a margin, so a ninja is on screen and not cut in half.
-						const seen = onScreen(aspect, new Vector3(spot.x, 1, spot.z))
-						expect(Math.abs(seen.x), `${mark} wave ${wave} at ${approach}`).toBeLessThan(0.9)
-						expect(Math.abs(seen.y), `${mark} wave ${wave} at ${approach}`).toBeLessThan(0.9)
-						expect(seen.z, `${mark} wave ${wave} at ${approach}`).toBeLessThan(1)
+						// The whole ninja: feet and head, either side of its body.
+						for (const [side, height] of [[-0.4, 0], [0.4, 0], [-0.4, 1.9], [0.4, 1.9]] as const) {
+							const seen = onScreen(aspect, new Vector3(spot.x + side, height, spot.z))
+							const where = `${mark} wave ${wave} at ${approach}, ${height === 0 ? 'feet' : 'head'}`
+							expect(Math.abs(seen.x), where).toBeLessThan(0.95)
+							expect(Math.abs(seen.y), where).toBeLessThan(0.95)
+							expect(seen.z, where).toBeLessThan(1)
+						}
 					}
 				}
 			}

@@ -78,7 +78,7 @@ function instanced(geometry: BufferGeometry, material: MeshStandardMaterial, pla
 		mesh.setMatrixAt(index, matrix)
 	})
 	mesh.instanceMatrix.needsUpdate = true
-	// The instances span the whole stage; the bounding sphere of one would cull them all.
+	// The instances span the whole stage, so it is always in view: culling would only cost time.
 	mesh.frustumCulled = false
 	return mesh
 }

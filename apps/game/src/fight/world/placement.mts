@@ -58,7 +58,8 @@ export const placementConfig = {
 export function spotOf(mark: Mark, wave: number, approach: number, config = placementConfig): Spot {
 	const [x, z] = directions[mark]
 	const near = Math.min(1, Math.max(0, approach))
-	const back = wave * config.backRow
+	// The back row stands farther out, except from below: there farther out is off the screen's bottom.
+	const back = z > 0 ? 0 : wave * config.backRow
 	// From below they come straight in from a little farther out, with the camera at their back.
 	const startX = z > 0 ? x * (config.reach + back + config.behind) : x * (config.wide + back)
 	const startZ = z > 0
@@ -74,6 +75,16 @@ export function spotOf(mark: Mark, wave: number, approach: number, config = plac
 		// Facing the samurai at the origin: a figure faces `-z` when not rotated.
 		facing: Math.atan2(spotX, spotZ),
 	}
+}
+
+/**
+ * How close a striking ninja is, `time` seconds into its strike. The store stops moving a ninja
+ * once it strikes, wherever the answer caught it, so it lunges in to land the hit
+ * ([outcome](../../../../../docs/design/gameplay.md#outcome)) over `seconds`.
+ */
+export function lungeOf(approach: number, time: number, seconds: number): number {
+	const done = Math.min(1, Math.max(0, time / seconds))
+	return approach + (1 - approach) * (1 - (1 - done) ** 2)
 }
 
 /** The heading from the samurai toward a mark, for turning to strike or block. */

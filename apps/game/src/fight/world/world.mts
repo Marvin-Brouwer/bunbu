@@ -25,7 +25,7 @@ const stepLength = 1.4
 /** How quickly the camera and the samurai's heading settle, per second. */
 const settle = 4
 
-/** Moves `from` toward `to` by a frame's share of `rate` per second, the same at any frame rate. */
+/** How far to move toward a target this frame, for `rate` per second, the same at any frame rate. */
 const damp = (delta: number, rate = settle) => 1 - Math.exp(-rate * delta)
 
 export function createRunWorld(game: RunGame, camera: PerspectiveCamera): View {
@@ -49,6 +49,8 @@ export function createRunWorld(game: RunGame, camera: PerspectiveCamera): View {
 	const look = new Vector3()
 	const lookAt = new Vector3()
 
+	// The camera is the viewport's, shared by every world: put it back as it was when this one goes.
+	const before = { fov: camera.fov, position: camera.position.clone(), quaternion: camera.quaternion.clone() }
 	if (camera.fov !== runFraming.fov) {
 		camera.fov = runFraming.fov
 		camera.updateProjectionMatrix()
@@ -112,6 +114,10 @@ export function createRunWorld(game: RunGame, camera: PerspectiveCamera): View {
 			parts.dispose()
 			stage.dispose()
 			scene.clear()
+			camera.fov = before.fov
+			camera.position.copy(before.position)
+			camera.quaternion.copy(before.quaternion)
+			camera.updateProjectionMatrix()
 		},
 	}
 }

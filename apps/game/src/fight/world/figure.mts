@@ -121,6 +121,8 @@ export function createFigure(parts: FigureParts, colours: FigureColours): Figure
 
 		pose(rig, faded = 1) {
 			hips.position.set(0, hipHeight + rig.rise, -rig.shift)
+			// The shadow goes where the body goes, knocked back or running off.
+			ground.position.z = -rig.shift
 			hips.rotation.set(-rig.lean, rig.turn, rig.roll, 'YXZ')
 			// Kneeling: the left knee forward and up, the right shin on the ground behind.
 			leftLeg.rotation.x = rig.stride * (1 - rig.kneel) + rig.kneel
