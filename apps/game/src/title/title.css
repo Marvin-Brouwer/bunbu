@@ -132,6 +132,46 @@
 	font-variant-numeric: tabular-nums;
 }
 
+/* When Share can't reach the share sheet: a scroll over the dimmed title. */
+.shareDialog {
+	width: min(100% - 1.5rem, 28rem);
+	max-width: none;
+	padding: 0;
+	border: none;
+	background: none;
+	color: var(--ink);
+	overflow: visible;
+}
+
+.shareDialog::backdrop {
+	background: rgb(27 26 24 / 55%);
+}
+
+.shareBody {
+	display: grid;
+	gap: 0.75rem;
+}
+
+.shareBody p {
+	margin: 0;
+}
+
+.shareBody p:empty {
+	display: none;
+}
+
+.shareTitle {
+	margin: 0;
+	font-family: var(--font-display);
+	font-size: 1.75rem;
+}
+
+.shareActions {
+	display: grid;
+	gap: 0.75rem;
+	padding: 0 1rem 1rem;
+}
+
 /* The new version waiting, above the menu. */
 
 .update {

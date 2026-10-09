@@ -1,27 +1,20 @@
 /**
  * Shares the chosen quiz as a `.bunbu` file
  * ([sharing](../../../../docs/design/data-format.md#sharing)): through the phone's share sheet
- * where it takes the file, and as a download everywhere else.
+ * where it takes the file. Where it doesn't, a {@link ShareFallback} scroll offers the download.
  */
 
 import { compress, fileExtension, mimeType, type BunbuData } from '@bunbu/data'
 import { component } from '@rooted/components'
+import { ShareFallback, type ShareFallbackReason } from './share-fallback.mts'
 import styles from './title.css'
 
 export type ShareQuizButtonOptions = {
 	readonly quiz: BunbuData
 }
 
-const download = (file: File) => {
-	const url = URL.createObjectURL(file)
-	const link = document.createElement('a')
-	link.href = url
-	link.download = file.name
-	link.click()
-	URL.revokeObjectURL(url)
-}
-
-const share = async (quiz: BunbuData) => {
+/** Hands the quiz to the share sheet, or says what to offer instead. */
+const share = async (quiz: BunbuData): Promise<ShareFallbackReason | undefined> => {
 	// A copy on its own ArrayBuffer, which is what a File takes.
 	const bytes = new Uint8Array(await compress(quiz))
 	const file = new File([bytes], `${quiz.id}${fileExtension}`, {
@@ -32,23 +25,25 @@ const share = async (quiz: BunbuData) => {
 		title: quiz.title,
 	}
 	// Not every browser can share files, and not every share sheet takes a type it doesn't know.
-	if (!('canShare' in navigator) || !navigator.canShare(shared)) {
-		download(file)
-		return
-	}
+	if (!('canShare' in navigator) || !navigator.canShare(shared)) return { file }
 	try {
 		await navigator.share(shared)
+		return undefined
 	} catch (error) {
 		// Closing the share sheet isn't a failure.
-		if (error instanceof DOMException && error.name === 'AbortError') return
-		download(file)
+		if (error instanceof DOMException && error.name === 'AbortError') return undefined
+		return { file }
 	}
 }
+
+const problemOf = (error: unknown): ShareFallbackReason => ({
+	problem: error instanceof Error ? error.message : String(error),
+})
 
 export const ShareQuizButton = component<ShareQuizButtonOptions>({
 	name: 'share-quiz-button',
 	styles,
-	onMount({ append, element, options }) {
+	onMount({ append, create, element, options }) {
 		const button = element('button', {
 			type: 'button',
 			classes: styles.panelButton,
@@ -60,11 +55,18 @@ export const ShareQuizButton = component<ShareQuizButtonOptions>({
 				async click() {
 					// Compressing a large quiz takes a moment; one file per press.
 					button.disabled = true
-					try {
-						await share(options.quiz)
-					} finally {
-						button.disabled = false
-					}
+					const reason = await share(options.quiz).catch(problemOf)
+					button.disabled = false
+					if (reason === undefined) return
+					const scroll: Element = create(ShareFallback, {
+						reason,
+						close: () => {
+							scroll.remove()
+						},
+					})
+					append(
+						scroll
+					)
 				},
 			},
 		})
