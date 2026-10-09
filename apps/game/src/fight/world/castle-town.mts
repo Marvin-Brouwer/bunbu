@@ -83,11 +83,11 @@ export type StageView = {
 }
 
 /** The models the town uses; it is built without them first and gets them when they are in. */
-export type TownModels = {
+export type TownModels = Partial<{
 	readonly maple: GLTF
 	readonly torii: GLTF
 	readonly bamboo: GLTF
-}
+}>
 
 /** What this town made on the GPU, so it can be freed when the world goes. */
 type Owned = { geometries: BufferGeometry[]; materials: Material[]; textures: Texture[] }
@@ -643,6 +643,9 @@ function stamp(template: Object3D, plantings: readonly Planting[], height: numbe
 }
 
 export function createCastleTown(scene: Scene, path: Path, from: number, to: number, models: Promise<TownModels>): StageView {
+	// Keep the visual layout bounded for very large quizzes. The path itself continues so the
+	// run rules remain correct; beyond this window the fog and ground provide the backdrop.
+	const visualTo = Math.min(to, 2400)
 	scene.background = new Color(palette.fog)
 	scene.fog = new Fog(palette.fog, 30, fogFar)
 
@@ -676,7 +679,7 @@ export function createCastleTown(scene: Scene, path: Path, from: number, to: num
 	const gardenness = (distance: number) => [-4, -2, 0, 2, 4].filter((offset) => path.at(distance + offset).zone === 'garden').length / 5
 	const street = new Color(palette.street)
 	const gardenPath = new Color(palette.gardenPath)
-	scene.add(strip(path, from, to, owned, {
+	scene.add(strip(path, from, visualTo, owned, {
 		half: (distance) => streetHalfWidth + (gardenHalfWidth - streetHalfWidth) * gardenness(distance),
 		colour: (distance) => street.clone().lerp(gardenPath, gardenness(distance)),
 		y: 0.02,
@@ -690,7 +693,7 @@ export function createCastleTown(scene: Scene, path: Path, from: number, to: num
 		runs: (distance) => path.at(distance).zone === 'garden',
 	}))
 
-	const laid = lay(path, from, to)
+	const laid = lay(path, from, visualTo)
 	owned.geometries.push(...laid.owned.geometries)
 	owned.materials.push(...laid.owned.materials)
 	owned.textures.push(...laid.owned.textures)
@@ -713,20 +716,22 @@ export function createCastleTown(scene: Scene, path: Path, from: number, to: num
 	let disposed = false
 	void models.then((loaded) => {
 		if (disposed) return
-		// The maple file holds five trees side by side; each is a variant.
-		const named = /^MapleTree_\d+$/
-		const meshes = loaded.maple.scene.getObjectsByProperty('type', 'Mesh')
-		const trees = [...new Set(meshes.map((mesh) => (named.test(mesh.parent?.name ?? '') ? mesh.parent : mesh)))]
-			.filter((tree): tree is Object3D => tree !== null && named.test(tree.name))
-		const variants = trees.length > 0 ? trees : [loaded.maple.scene]
-		variants.forEach((variant, which) => {
-			const mine = laid.pending.maples.filter((_, index) => index % variants.length === which)
-			modelled.add(...stamp(variant, mine, 7, true, owned))
-		})
-		modelled.add(...stamp(loaded.bamboo.scene, laid.pending.bamboo, 7, false, owned))
-		modelled.add(...stamp(loaded.torii.scene, laid.pending.torii, 6.2, true, owned))
+		if (loaded.maple !== undefined) {
+			// The maple file holds five trees side by side; each is a variant.
+			const named = /^MapleTree_\d+$/
+			const meshes = loaded.maple.scene.getObjectsByProperty('type', 'Mesh')
+			const trees = [...new Set(meshes.map((mesh) => (named.test(mesh.parent?.name ?? '') ? mesh.parent : mesh)))]
+				.filter((tree): tree is Object3D => tree !== null && named.test(tree.name))
+			const variants = trees.length > 0 ? trees : [loaded.maple.scene]
+			variants.forEach((variant, which) => {
+				const mine = laid.pending.maples.filter((_, index) => index % variants.length === which)
+				modelled.add(...stamp(variant, mine, 7, true, owned))
+			})
+		}
+		if (loaded.bamboo !== undefined) modelled.add(...stamp(loaded.bamboo.scene, laid.pending.bamboo, 7, false, owned))
+		if (loaded.torii !== undefined) modelled.add(...stamp(loaded.torii.scene, laid.pending.torii, 6.2, true, owned))
 	}).catch((error: unknown) => {
-		console.warn('[bunbu] the town models did not load; the town stands without trees', error)
+		console.warn('[bunbu] the town models could not be read; the town stands without optional foliage', error)
 	})
 
 	return {

@@ -94,7 +94,9 @@ export function createCharacter(model: GLTF, look: Look): Body {
 
 	// Every figure gets its own materials, so one can fade or turn grey on its own.
 	const materials: MeshStandardMaterial[] = []
+	const weaponParts: Object3D[] = []
 	scene.traverse((object: Object3D) => {
+		if (/weapon|sword|katana|blade/i.test(object.name)) weaponParts.push(object)
 		if (!(object instanceof Mesh)) return
 		object.castShadow = true
 		// Skinned meshes move away from their bind-pose bounds; culling them would make them blink.
@@ -177,6 +179,9 @@ export function createCharacter(model: GLTF, look: Look): Body {
 
 		show(pose, time, cycle, faded = 1) {
 			const rig = rigOf(pose, time, cycle)
+			// The GLB sword is part of the animated scene rather than the procedural
+			// placeholder, so mirror the pose's drop explicitly when the samurai falls.
+			for (const weapon of weaponParts) weapon.visible = rig.drop === 0
 			body.position.z = -rig.shift
 			body.rotation.y = rig.turn
 

@@ -311,7 +311,7 @@ describe('frames', () => {
 		runToAmbush()
 		const before = game.run.value.elapsed
 		// The ambush times out on this frame, which is the last answer of the run.
-		game.ambush.value.tick(game.ambush.value.seconds)
+		game.ambush.value.tick(game.ambush.value.seconds + game.ambush.value.openingLeft)
 		tickRun(game, 0.1, 0.1)
 		expect(game.run.value.phase).toBe('running')
 		// The hit plays out, then the run is finished: 3 of 4 still passes.
@@ -324,7 +324,7 @@ describe('frames', () => {
 
 	it('does not take the frame that times an ambush out off the recovery', () => {
 		runToAmbush()
-		game.ambush.value.tick(game.ambush.value.seconds)
+		game.ambush.value.tick(game.ambush.value.seconds + game.ambush.value.openingLeft)
 		tickRun(game, 0.1, 0.1)
 		expect(game.run.value.recovery).toBe(runConfig.hitSeconds)
 	})

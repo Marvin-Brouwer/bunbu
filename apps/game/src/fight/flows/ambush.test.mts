@@ -164,8 +164,8 @@ describe('tickRun', () => {
 	it('lets the ninjas creep in as the ambush time runs out', () => {
 		openSingle()
 		tickReal(5)
-		expect(game.ambush.value.secondsLeft).toBeCloseTo(5)
-		expect(game.ninjas.value.active[0]?.approach).toBeCloseTo(0.5)
+		expect(game.ambush.value.secondsLeft).toBeCloseTo(7)
+		expect(game.ninjas.value.active[0]?.approach).toBeCloseTo(0.3)
 	})
 
 	it('holds the time limit during the countdown after resuming', () => {
@@ -180,7 +180,7 @@ describe('tickRun', () => {
 	it('ends the ambush unanswered when the time runs out, half-swiped or not', () => {
 		openSingle()
 		game.ambush.value.pick(marks[0]!)
-		tickReal(10)
+		tickReal(12)
 
 		expect(game.ambush.value.open).toBe(false)
 		expect(game.quiz.value.records).toEqual([{ at: { question: 0, part: 0 }, outcome: 'unanswered', picked: [0] }])

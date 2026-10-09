@@ -22,26 +22,26 @@ export const HitFlash = component<HitFlashOptions>({
 		life.on('change', signal, ({ detail }) => {
 			if (detail.state.hits > hits) {
 				buzz(buzzes.hit)
+				let hit: HTMLElement | undefined
+				const remove = () => { hit?.remove() }
+				const blood = element('div', {
+					classes: styles.blood,
+					on: { animationend: remove },
+				})
+				hit = element('div', {
+					classes: styles.hit,
+					children: [
+						element('div', {
+							classes: styles.slice,
+							children: element('div', { classes: styles.handle }),
+						}),
+						blood,
+					],
+				})
+				const fallback = window.setTimeout(remove, 1700)
+				blood.addEventListener('animationend', () => { window.clearTimeout(fallback) }, { once: true })
 				append(
-					element('div', {
-						classes: styles.hit,
-						children: [
-							element('div', {
-								classes: styles.slice,
-								children: element('div', {
-									classes: styles.handle,
-								}),
-								on: {
-									animationend(event) {
-										event.currentTarget.parentElement?.remove()
-									},
-								},
-							}),
-							element('div', {
-								classes: styles.blood,
-							}),
-						],
-					})
+					hit,
 				)
 			}
 			hits = detail.state.hits

@@ -205,14 +205,14 @@ describe('ambush', () => {
 		open('multiple', safeMethods())
 		ambush.value.pick(marks[0]!)
 		ambush.value.pick(marks[1]!)
-		ambush.value.tick(10)
+		ambush.value.tick(12)
 		expect(ambush.value.unanswered()).toBe(true)
 		expect(ambush.value.commit()?.outcome).toBe('unanswered')
 	})
 
 	it('takes no more picks once the time is up', () => {
 		open('multiple', safeMethods())
-		ambush.value.tick(10)
+		ambush.value.tick(12)
 		ambush.value.pick(marks[0]!)
 		expect(ambush.value.options.every((item) => item.pick === 0)).toBe(true)
 	})

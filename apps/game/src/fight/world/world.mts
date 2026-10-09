@@ -47,9 +47,11 @@ export function createRunWorld(game: RunGame, viewport: Viewport): View {
 	// The figures first, which the run waits on to look right; the town's trees after them.
 	const samuraiModel = loadModel('samurai')
 	const ninjaModel = loadModel('ninja')
-	const townModels = Promise.allSettled([samuraiModel, ninjaModel])
-		.then(() => Promise.all([loadModel('maple'), loadModel('torii'), loadModel('bamboo')]))
-		.then(([maple, torii, bamboo]) => ({ maple, torii, bamboo }))
+	const townModels = Promise.allSettled([loadModel('maple'), loadModel('torii'), loadModel('bamboo')]).then(([maple, torii, bamboo]) => ({
+		...(maple.status === 'fulfilled' ? { maple: maple.value } : {}),
+		...(torii.status === 'fulfilled' ? { torii: torii.value } : {}),
+		...(bamboo.status === 'fulfilled' ? { bamboo: bamboo.value } : {}),
+	}))
 	const stage = createCastleTown(scene, path, -60, length, townModels)
 
 	const parts = createFigureParts()

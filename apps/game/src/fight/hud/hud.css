@@ -320,7 +320,24 @@
 		animation-duration: 400ms;
 	}
 
+	.slice {
+		animation-name: static-hit;
+		animation-delay: 0ms;
+		transform: rotate(-28deg);
+	}
+
+	.blood {
+		animation-name: static-hit;
+		animation-delay: 0ms;
+		transform: none;
+	}
+
 	.fill {
 		transition: none;
 	}
+}
+
+@keyframes static-hit {
+	from { opacity: 0; }
+	to { opacity: 1; }
 }

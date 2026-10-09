@@ -119,7 +119,10 @@ export function createNinjasView(parent: Group, frameAt: (distance: number) => P
 				// change since the previous state update in world time, so the ninja visibly runs in.
 				const approachDelta = ninja.approach - entry.targetApproach
 				if (approachDelta !== 0) {
-					entry.approach += approachDelta * (delta > 0 ? Math.min(1, worldDelta / delta) : 0)
+					// `approach` is already the visual position reported by the store. Only the
+					// running cycle is slowed down; scaling this delta makes a striking ninja
+					// jump when the store advances in real time but the world is in slow motion.
+					entry.approach = Math.min(1, Math.max(0, entry.approach + approachDelta))
 					entry.targetApproach = ninja.approach
 				}
 				const entranceDelta = delta > 0 ? Math.min(worldDelta, delta * entranceScale) : 0
@@ -137,7 +140,7 @@ export function createNinjasView(parent: Group, frameAt: (distance: number) => P
 				entry.mark = markOf(ninja, options) ?? entry.mark
 				// A striker closes in during the wind-up, so the cut lands on the samurai.
 				const strikeTime = ninja.pose === 'strike' ? Math.max(0, outcomeTime - strikeDelaySeconds) : 0
-				const approach = ninja.pose === 'strike' ? lungeOf(ninja.approach, strikeTime, poseSeconds.strike * 0.4) : entry.approach
+				const approach = ninja.pose === 'strike' ? lungeOf(entry.approach, strikeTime, poseSeconds.strike * 0.4) : entry.approach
 				const spot = spotOf(entry.mark, ninja.wave, approach)
 				// Enter from farther along the same path. It can disappear behind a tree or house and
 				// then run out into view, instead of appearing at the ambush's first visible position.

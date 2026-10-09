@@ -169,7 +169,10 @@ export function createAmbush(initial: AmbushState = noAmbush): Ambush {
 			const state = store.value
 			if (!state.open) return
 			const openingLeft = Math.max(0, state.openingLeft - delta)
-			const secondsLeft = state.seconds === 0 ? state.secondsLeft : Math.max(0, state.secondsLeft - delta)
+			// The scroll entrance is a presentation pause. Only time after it has
+			// finished belongs to the player's answer window.
+			const answerDelta = Math.max(0, delta - state.openingLeft)
+			const secondsLeft = state.seconds === 0 ? state.secondsLeft : Math.max(0, state.secondsLeft - answerDelta)
 			store.update(() => ({ openingLeft, secondsLeft }))
 		},
 
