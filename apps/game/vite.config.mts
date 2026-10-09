@@ -1,5 +1,6 @@
 import { rootedManifest } from '@rooted/application'
 import { githubPagesAdapter } from '@rooted-adapters/github-pages'
+import { rootedMarkdown } from '@rooted/markdown/vite'
 import { generateRouteManifest } from '@rooted/router/manifest'
 
 import packageJson from './package.json' with { type: 'json' }
@@ -26,6 +27,9 @@ export default rootedManifest({
 		},
 	],
 	plugins: [
+		// The game's own pages (how to play, credits) are Markdown, rendered to HTML at build time.
+		// Quiz Markdown arrives at runtime and goes through _shared/markdown/render.mts instead.
+		rootedMarkdown(),
 		// Collects every `_routes.mts` under src/ into `_routes.g.mts`, so each screen registers its own routes.
 		generateRouteManifest({
 			glob: './src/**/_routes.mts',

@@ -18,6 +18,7 @@
     "@rooted/components": "1.0.0-alpha.25",
     "@rooted/markdown": "1.0.0-alpha.13",
     "@rooted/observers": "1.0.0-alpha.1",
+    "@rooted/pwa": "1.0.0-alpha.6",
     "@rooted/router": "1.0.0-alpha.32",
     "@rooted/storage": "1.0.0-alpha.13",
     "@rooted/store": "1.0.0-alpha.13",
