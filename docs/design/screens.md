@@ -81,7 +81,7 @@ The scroll's heading is the label, the question type, `2 OF 3` for the rounds of
 All on a scroll over the dimmed world, like an ambush:
 
 - This run: quiz, stage, answered (`11 / 13`), distance.
-- **Resume**, **Restart stage**, **Settings**, **Quit** at the foot of the scroll. Settings open in place on the scroll.
+- **Resume**, **Restart stage**, **Settings**, **Quit** at the foot of the scroll. Settings open in place on the scroll; the difficulty only shows there, since it can't change halfway through a run.
 - Auto-pauses when the app goes to the background or a call comes in. 3-2-1 countdown on resume.
 
 ### 7 Finished: results and mistakes

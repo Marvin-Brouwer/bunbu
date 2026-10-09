@@ -158,6 +158,18 @@
 	color: var(--paper-light);
 }
 
+.segment:has(input:disabled) {
+	cursor: default;
+}
+
+.segments:has(input:disabled) {
+	border-style: dashed;
+}
+
+.segment:has(input:disabled:not(:checked)) {
+	color: var(--ink-soft);
+}
+
 .segment:has(input:focus-visible) {
 	outline: 3px solid var(--indigo);
 	outline-offset: -5px;

@@ -103,7 +103,9 @@ export const Pause = component<PauseOptions>({
 		const showSettings = () => {
 			heading.textContent = 'Settings'
 			body.replaceChildren(
-				create(SettingsForm),
+				create(SettingsForm, {
+					running: true,
+				}),
 			)
 			menu.replaceChildren(
 				create(MenuButton, {

@@ -61,9 +61,15 @@
 	min-height: 0;
 	overflow-y: auto;
 	overscroll-behavior: contain;
-	/* Room for the scrollbar either way, so the text doesn't shift when it shows up after an animation. */
-	scrollbar-gutter: stable;
 	padding: 0.9rem 1rem 1rem;
+}
+
+/*
+ * An ambush keeps room for the scrollbar either way, so the text doesn't shift when it shows up
+ * after an animation. A sheet on its own uses the full width, so its text lines up with its buttons.
+ */
+.scroll .body {
+	scrollbar-gutter: stable;
 }
 
 /* No scrollbar while the scroll moves. */
