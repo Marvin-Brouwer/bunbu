@@ -47,7 +47,7 @@ A Novice / Adept / Master selector (sets `timeScale`, see [time limit](gameplay.
 
 ### 4 Ambush
 
-All variants: the scroll down to the bottom of the screen, with the swipe zone (plain hanji, a line on how to answer) as its footer, slow motion, no timer bar. See [ambush](gameplay.md#ambush).
+All variants: the scroll down to the bottom of the screen, with the swipe zone (a ruled paper-cutting target, a line on how to answer) as its footer, slow motion, no timer bar. See [ambush](gameplay.md#ambush).
 
 The scroll's heading is the label, the question type, `2 OF 3` for the rounds of `solutions` and `match`, `CHOOSE n` for `multiple`, and the ninjas (`7 OPTIONS · 5 NINJAS` when some carry two). `yes-no` is always one ninja and doesn't say so.
 

@@ -81,7 +81,7 @@ Pure gesture logic with tests on recorded pointer sequences, plus the swipe zone
 - One continuous stroke can pick several marks (← → in one go); lifting between swipes is optional.
 - 0.8 s pause after lifting commits for `multiple` and `order`; a single swipe commits at once for `yes-no` and `single`.
 - Calls `ambush.pick()` and `ambush.commit()`, nothing else.
-- The swipe zone is the scroll's footer: a plain sheet of hanji with a line on how to answer. Picks and order numbers show on the scroll's options.
+- The swipe zone is the scroll's footer: a ruled paper-cutting target with a line on how to answer. Picks and order numbers show on the scroll's options.
 - Haptics through `navigator.vibrate`, behind the setting.
 - Test on a real phone early: iOS Safari edge swipes and pull-to-refresh are the usual traps (`touch-action`, `overscroll-behavior`).
 

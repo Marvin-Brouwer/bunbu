@@ -24,8 +24,9 @@
 	--vermilion-light: #d9765f;
 	--moss: #4f6b2f;
 	--indigo: #2f4a7a;
-	/* Hanji, the pale fibrous mulberry paper of the swipe zone. */
-	--hanji: #f8f3e7;
+	/* The white, ruled paper-cutting target of the swipe zone. */
+	--target: #fbfaf6;
+	--target-rule: #cfccc3;
 	/* The wooden rods of the scroll. */
 	--wood: #5c3d24;
 	--wood-light: #8a6240;

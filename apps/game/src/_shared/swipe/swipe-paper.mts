@@ -1,7 +1,8 @@
 /**
- * The swipe area itself ([4 Ambush](../../../../../docs/design/screens.md#4-ambush)): a plain sheet
- * of hanji, the fibrous mulberry paper, with a line on how to answer. It is abstract on purpose:
- * the answers are on the scroll above it, and the ninjas only come in once the player has answered.
+ * The swipe area itself ([4 Ambush](../../../../../docs/design/screens.md#4-ambush)): a ruled
+ * paper-cutting target, as kumdo practises cuts on (종이베기), with a line on how to answer. It is
+ * abstract on purpose: the answers are on the scroll above it, and the ninjas only come in once
+ * the player has answered.
  */
 
 import { component } from '@rooted/components'
@@ -25,11 +26,19 @@ export const SwipePaper = component<SwipePaperOptions>({
 	onMount({ append, element, options }) {
 		append(
 			element('div', {
-				classes: styles.hanji,
-				children: element('p', {
-					classes: styles.hint,
-					textContent: hintOf(options.kind),
-				}),
+				classes: styles.target,
+				children: [
+					element('div', {
+						classes: styles.band,
+					}),
+					element('div', {
+						classes: styles.ring,
+					}),
+					element('p', {
+						classes: styles.hint,
+						textContent: hintOf(options.kind),
+					}),
+				],
 			})
 		)
 	},
