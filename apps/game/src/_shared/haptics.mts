@@ -7,7 +7,7 @@ import { settings } from '../settings/state/settings.mts'
 
 /** How long each buzz lasts, in milliseconds. */
 export const buzzes = {
-	/** A swipe picked or unpicked a mark. */
+	/** A swipe picked a mark. */
 	pick: 12,
 	/** The samurai is hit. */
 	hit: 150,
