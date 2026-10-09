@@ -133,7 +133,8 @@ export function createRun(initial: RunState = notRunning): Run {
 
 		endAmbush(recovery = 0) {
 			if (!expect('run.endAmbush', 'ambush')) return
-			store.update(() => ({ phase: 'running', worldScale: 1, recovery }))
+			// Back to running for good: a countdown that was still going belonged to the ambush.
+			store.update(() => ({ phase: 'running', worldScale: 1, recovery, countdown: 0, resumeTo: 'running' }))
 		},
 
 		pause() {

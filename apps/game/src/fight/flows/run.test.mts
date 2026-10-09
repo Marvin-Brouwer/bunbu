@@ -76,6 +76,26 @@ describe('the run', () => {
 		expect(game.run.value.distance).toBeGreaterThan(distance)
 	})
 
+	it('cannot be paused before it has started', () => {
+		game.run.value.reset()
+		game.run.value.pause()
+		expect(game.run.value.phase).toBe('idle')
+	})
+
+	it('keeps the hold after an ambush through a pause and its countdown', () => {
+		runToAmbush()
+		answer(false)
+		tickRun(game, 0.4, 0.4)
+		game.run.value.pause()
+		game.run.value.resume()
+		tickRun(game, runConfig.countdownSeconds, runConfig.countdownSeconds)
+		expect(game.run.value.recovery).toBeCloseTo(runConfig.hitSeconds - 0.4)
+		expect(game.shogun.value.pose).toBe('hurt')
+
+		tickRun(game, 1, 1)
+		expect(game.shogun.value.pose).toBe('run')
+	})
+
 	it('finishes after the last answer, with the time of the whole run', () => {
 		play([true, true, true, true])
 		expect(game.run.value.phase).toBe('finished')

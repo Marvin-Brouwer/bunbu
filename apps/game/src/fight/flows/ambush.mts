@@ -64,6 +64,12 @@ export function tickAmbush(game: RunGame, realDelta: number): void {
 
 /** Commits the open ambush and spreads the result over the run's stores. */
 export function commitAmbush(game: RunGame): void {
+	// Paused, or in the 3-2-1 after a pause: the player can't answer until the run is back.
+	const { phase, countdown } = game.run.value
+	if (phase !== 'ambush' || countdown > 0) {
+		refuse('commitAmbush', phase === 'ambush' ? 'the run is counting down' : `phase is ${phase}`)
+		return
+	}
 	const result = game.ambush.value.commit()
 	if (result === undefined) return
 

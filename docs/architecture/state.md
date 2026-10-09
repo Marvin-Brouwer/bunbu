@@ -31,7 +31,7 @@ The run's stores:
 
 | Store      | Holds                                                                                                                 | Example actions                                                    |
 | ---------- | --------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| `run`      | Phase (`intro`, `running`, `ambush`, `paused`, `finished`, `fallen`), run time, world speed scale (slow-mo), distance | `start()`, `pause()`, `resume()`, `finish()`, `fall()`, `tick(delta)` |
+| `run`      | Phase (`intro`, `running`, `ambush`, `paused`, `finished`, `fallen`), run time, world speed scale (slow-mo), distance, hold after an ambush | `start()`, `pause()`, `resume()`, `finish()`, `fall()`, `tick(delta)` |
 | `quiz`     | The loaded quiz, question order, current index, answers given                                                         | `load(quiz)`, `next()`, `record(answer)`                           |
 | `ambush`   | Current question, options with their marks, picks so far, time left                                                   | `open(question)`, `pick(mark)`, `commit()`, `tick(delta)`             |
 | `score`    | Points, correct count, answered count, high score for this quiz                                                       | `addCorrect()`, `addMiss()`, `reset()`                             |
@@ -128,7 +128,7 @@ Flows take the game mode's stores as an argument rather than importing them, so 
 One `requestAnimationFrame` loop drives everything. The `Application` starts it once; a route plugs its game mode into it with `play(mode, signal)`, which unplugs again when the route unmounts. Without a mode (on a menu) the loop only draws. Each frame, in a fixed order:
 
 1. **Time.** Take the real frame delta, clamp it (a tab coming back from the background must not jump the run forward by minutes), and multiply it by the run's speed scale. That is how slow motion during an ambush works. The mode gets the real delta as well: slow motion is only visual, so timers the player plays against, such as the ambush's time limit, count real time.
-2. **Update.** Call the time-based actions: `ambush.value.tick(realDelta)` with real time (held during the resume countdown), `run.value.tick(worldDelta, realDelta)` (distance by world time, run time and countdown by real time), then `ninjas.value.advance(…)` from the time left. Timeouts (the ambush running out) are decided here, by the stores, through flows.
+2. **Update.** Call the time-based actions: `run.value.tick(worldDelta, realDelta)` first (distance by world time, capped at the next ambush; run time, countdown and the hold after an ambush by real time), so the run's clock has the frame in it when an ambush ends the run. Then `ambush.value.tick(realDelta)` with real time (held during the resume countdown) and `ninjas.value.advance(…)` from the time left. Last, once the samurai has recovered, the next ambush springs when he reaches it. Timeouts (the ambush running out) are decided here, by the stores, through flows.
 3. **Render.** The renderer reads every store it needs through `value` and updates the scene: the shogun's position and animation clip, which ninjas exist and where they are, the camera. Then `renderer.render(scene, camera)`.
 
 While paused, step 2 is skipped. The loop stops entirely when the page is hidden (`visibilitychange`) and restarts when it is visible again.
