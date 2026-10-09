@@ -1,6 +1,6 @@
 /*
- * The swipe zone and its mark legend (docs/design/screens.md#4-ambush): the footer of the scroll,
- * under its text, with a ninja figure where each ninja behind the scroll stands.
+ * The swipe zone (docs/design/screens.md#4-ambush): the footer of the scroll, under its text, a
+ * plain sheet of hanji to swipe on.
  */
 
 .zone {
@@ -16,145 +16,34 @@
 	-webkit-touch-callout: none;
 }
 
-/* Once the ambush is answered the legend stays as it was while the scroll rolls up. */
+/* Once the ambush is answered the paper stays while the scroll rolls up, but no longer takes swipes. */
 .zone[data-open='false'] {
 	pointer-events: none;
 }
 
-.legend {
+.hanji {
 	display: grid;
-	align-content: center;
-	justify-items: center;
-	gap: 0.2rem;
+	align-content: end;
 	box-sizing: border-box;
-	/* The same height for every ambush, with or without a back row, so the text above doesn't jump. */
-	height: 9.5rem;
-	padding: 0.4rem 0.75rem;
-	border: 2px dashed var(--ink-soft);
+	height: 8.5rem;
+	padding: 0.5rem 0.75rem;
+	border: 1px solid var(--paper-edge);
 	border-radius: var(--radius);
-	background: var(--paper-shade);
+	/*
+	 * Hanji: short mulberry fibres laid mostly along the sheet, over a faint mottle. Both are SVG
+	 * noise, tiled seamlessly (stitchTiles); tune the colour matrices to make them stronger.
+	 */
+	background:
+		url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.05 0.5' numOctaves='2' seed='5' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.5 0 0 0 0 0.43 0 0 0 0 0.32 0 0 0 3 -1.75'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url%28%23f%29'/%3E%3C/svg%3E"),
+		url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.02' numOctaves='3' seed='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.6 0 0 0 0 0.53 0 0 0 0 0.4 0 0 0 0.5 -0.15'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url%28%23f%29'/%3E%3C/svg%3E"),
+		var(--hanji);
+	box-shadow: inset 0 0 0.75rem rgb(91 83 72 / 18%);
 }
 
-/*
- * The ninjas stand on a grid of half steps: the front row on every other pair of columns, the back
- * row (ninjas D and E) on the pairs in between, behind the gaps of the front row, as in the world.
- */
-.ninjas {
-	display: grid;
-	grid-template-columns: repeat(6, 2.4rem);
-	grid-template-rows: auto auto;
-	justify-items: center;
-	margin-bottom: 0.2rem;
-}
-
-.ninjas[data-front='1'] {
-	grid-template-columns: repeat(2, 2.4rem);
-}
-
-.ninjas[data-front='2'] {
-	grid-template-columns: repeat(4, 2.4rem);
-}
-
-.figure[data-ninja='0'] {
-	grid-area: 2 / 1 / 3 / 3;
-}
-
-.figure[data-ninja='1'] {
-	grid-area: 2 / 3 / 3 / 5;
-}
-
-.figure[data-ninja='2'] {
-	grid-area: 2 / 5 / 3 / 7;
-}
-
-.figure[data-ninja='3'] {
-	grid-area: 1 / 2 / 2 / 4;
-}
-
-.figure[data-ninja='4'] {
-	grid-area: 1 / 4 / 2 / 6;
-}
-
-/* The front row steps up in front of the back row. */
-.figure[data-row='front'] {
-	z-index: 1;
-}
-
-.ninjas[data-back='true'] .figure[data-row='front'] {
-	margin-top: -1.9rem;
-}
-
-.figure {
-	display: grid;
-	justify-items: center;
-}
-
-.figure[data-row='back'] {
-	opacity: 0.55;
-	scale: 0.8;
-}
-
-.head {
-	position: relative;
-	width: 1.5rem;
-	height: 1.5rem;
-	margin-bottom: -0.2rem;
-	border: var(--frame);
-	border-radius: 50%;
-	background: var(--paper);
-}
-
-.body {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	gap: 0.15rem;
-	box-sizing: border-box;
-	min-width: 2.6rem;
-	height: 2.6rem;
-	padding: 0 0.45rem;
-	border-radius: 0.6rem 0.6rem 0.35rem 0.35rem;
-	background: var(--ink);
-	color: var(--paper);
-	font-size: 1.15rem;
-	line-height: 1;
-	transition: box-shadow 120ms;
-}
-
-.figure[data-picked='true'] .body {
-	box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px var(--vermilion);
-}
-
-.arrow {
-	transition: color 120ms;
-}
-
-.arrow[data-picked='true'] {
-	color: var(--vermilion-light);
-}
-
-/* For `order`: the place the mark was swiped in. */
-.place {
-	margin-left: 0.05rem;
-	font-family: var(--font-mono);
-	font-size: 0.7rem;
-	font-weight: 700;
-}
-
-.call,
 .hint {
 	margin: 0;
+	color: var(--ink-faint);
 	font-family: var(--font-mono);
-	text-align: center;
-}
-
-.call {
-	font-size: 0.85rem;
-	font-weight: 700;
-	letter-spacing: 0.05em;
-}
-
-.hint {
-	color: var(--ink-soft);
 	font-size: 0.7rem;
+	text-align: center;
 }

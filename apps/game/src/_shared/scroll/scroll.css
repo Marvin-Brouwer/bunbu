@@ -55,7 +55,9 @@
 }
 
 .footer {
-	padding: 0 1rem 0.9rem;
+	/* A clear gap between the text, which scrolls, and the swipe zone. */
+	padding: 1rem 1rem 0.9rem;
+	border-top: 1px dashed var(--paper-edge);
 }
 
 .body {
@@ -244,7 +246,6 @@
 .notes {
 	display: grid;
 	justify-items: end;
-	gap: 0.1rem;
 	font-family: var(--font-mono);
 	font-size: 0.75rem;
 	letter-spacing: 0.05em;
@@ -257,10 +258,6 @@
 
 .picked:empty {
 	display: none;
-}
-
-.ninja {
-	color: var(--ink-soft);
 }
 
 /* For `order`: the place the option was swiped in. */

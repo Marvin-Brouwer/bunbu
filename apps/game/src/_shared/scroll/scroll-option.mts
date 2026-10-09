@@ -1,20 +1,18 @@
 /**
  * One option on the scroll: its mark, its text, and what the player did with it: `MARKED`, or the
- * place it was swiped in for `order`. With more options than ninjas it also says which ninja carries it.
+ * place it was swiped in for `order`.
  */
 
-import { component, optional } from '@rooted/components'
+import { component } from '@rooted/components'
 import { Markdown } from '@rooted/markdown'
 import type { Ambush, AmbushKind, AmbushOption } from '../state/ambush.mts'
 import { renderMarkdown } from '../markdown/render.mts'
-import { arrows, ninjaName } from './heading.mts'
+import { arrows } from './heading.mts'
 import styles from './scroll.css'
 
 export type ScrollOptionOptions = {
 	readonly option: AmbushOption
 	readonly kind: AmbushKind
-	/** Whether to say which ninja carries the option. */
-	readonly bundled: boolean
 	/** The open ambush, to follow the picks; left out for a scroll that no longer changes. */
 	readonly ambush?: Ambush
 }
@@ -23,7 +21,7 @@ export const ScrollOption = component<ScrollOptionOptions>({
 	name: 'scroll-option',
 	styles,
 	onMount({ append, create, element, options, signal }) {
-		const { option, kind, bundled, ambush } = options
+		const { option, kind, ambush } = options
 
 		const picked = element('span', {
 			classes: styles.picked,
@@ -49,15 +47,7 @@ export const ScrollOption = component<ScrollOptionOptions>({
 					}),
 					element('span', {
 						classes: styles.notes,
-						children: [
-							picked,
-							optional(bundled,
-								element('span', {
-									classes: styles.ninja,
-									textContent: `ninja ${ninjaName(option.ninja)}`,
-								})
-							),
-						],
+						children: picked,
 					}),
 				],
 			})

@@ -15,7 +15,7 @@ import type { Quiz } from '../state/quiz.mts'
 import { headingOf } from './heading.mts'
 import { scrollChangeOf } from './scroll-change.mts'
 import { ScrollPaper } from './scroll-paper.mts'
-import { MarkLegend } from '../swipe/mark-legend.mts'
+import { SwipePaper } from '../swipe/swipe-paper.mts'
 import { SwipeZone } from '../swipe/swipe-zone.mts'
 import styles from './scroll.css'
 
@@ -99,8 +99,8 @@ export const Scroll = component<ScrollOptions>({
 					heading: heading(state),
 					footer: commit === undefined
 						? undefined
-						: create(MarkLegend, {
-							state,
+						: create(SwipePaper, {
+							kind: state.kind,
 						}),
 				}),
 			})

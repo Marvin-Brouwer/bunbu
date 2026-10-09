@@ -8,7 +8,6 @@ import { component, optional, type GenericComponent } from '@rooted/components'
 import { Markdown } from '@rooted/markdown'
 import type { Ambush, AmbushState } from '../state/ambush.mts'
 import { renderMarkdown } from '../markdown/render.mts'
-import { bundled } from './heading.mts'
 import { ScrollOption } from './scroll-option.mts'
 import styles from './scroll.css'
 
@@ -58,7 +57,6 @@ export const ScrollPaper = component<ScrollPaperOptions>({
 										children: state.options.map((option) => create(ScrollOption, {
 											option,
 											kind: state.kind,
-											bundled: bundled(state),
 											ambush,
 										})),
 									}),

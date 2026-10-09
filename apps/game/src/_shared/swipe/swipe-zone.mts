@@ -1,7 +1,7 @@
 /**
  * The swipe zone ([ambush](../../../../../docs/design/gameplay.md#ambush)): the footer of the
- * scroll, where swipes answer the open ambush, with the mark legend in it. Only swipes here count,
- * so the text above keeps its own native scrolling.
+ * scroll, a sheet of paper where swipes answer the open ambush. Only swipes here count, so the
+ * text above keeps its own native scrolling.
  *
  * A swipe toward a mark picks it. `yes-no` and `single` strike at once; `multiple` and `order`
  * strike once the pointer has been lifted for the commit pause, and touching down again before
@@ -17,7 +17,7 @@ import { component } from '@rooted/components'
 import { buzz, buzzes } from '../haptics.mts'
 import { ambushConfig } from '../state/ambush-time.mts'
 import { timeUp, type Ambush, type AmbushState, type Mark } from '../state/ambush.mts'
-import { MarkLegend } from './mark-legend.mts'
+import { SwipePaper } from './swipe-paper.mts'
 import { finish, follow, strikesAtOnce, strokeAt, type Point, type Stroke } from './stroke.mts'
 import styles from './swipe.css'
 
@@ -125,27 +125,17 @@ export const SwipeZone = component<SwipeZoneOptions>({
 						lift(event, false)
 					},
 				},
+				children: create(SwipePaper, {
+					kind: ambush.value.kind,
+				}),
 			})
 		)
 
-		// The ambush changes every frame while its time runs down; the legend only when the picks do.
-		// Once the ambush closes the legend stays as it was while the scroll rolls up.
-		let drawn = ''
 		const show = (state: AmbushState) => {
 			zone.dataset.open = String(state.open)
-			if (!state.open) {
-				cancelStrike()
-				forgetStroke()
-				return
-			}
-			const picks = `${state.kind} ${state.options.map((option) => `${option.mark}:${option.ninja}:${option.pick}`).join(' ')}`
-			if (picks === drawn) return
-			drawn = picks
-			zone.replaceChildren(
-				create(MarkLegend, {
-					state,
-				})
-			)
+			if (state.open) return
+			cancelStrike()
+			forgetStroke()
 		}
 
 		show(ambush.value)

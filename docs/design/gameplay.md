@@ -31,7 +31,7 @@ One screen, no Draw or Submit button: **the swipe is the answer**.
 3. The foot of the scroll is the **swipe zone**: the scroll reaches down to the bottom of the screen, and its text scrolls above the zone. Swiping toward a mark picks that option. Only swipes in this zone count, so the text above can be scrolled freely.
 4. The scroll rolls up, slow motion snaps back to full speed, and the slashes and blocks play.
 
-The ninja figures in the swipe zone are only a legend for the marks. The real ninjas creep in, in 3D, behind the scroll (see [time limit](#time-limit)).
+The swipe zone is an abstract sheet of hanji (mulberry paper) with one line on how to answer; it shows no ninjas. The ambush is about the answers: the real ninjas creep in, in 3D, behind the scroll (see [time limit](#time-limit)), and what happens to them follows the answer.
 
 <img src="screens/4a-single.png" alt="Single-answer ambush" width="195"> <img src="screens/4c-multiple.png" alt="Multiple-answer ambush" width="195">
 
