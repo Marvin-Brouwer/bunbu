@@ -19,7 +19,7 @@
 	display: flex;
 	align-items: flex-end;
 	gap: 0.9rem;
-	justify-self: start;
+	justify-self: stretch;
 	margin: 0;
 	padding: 0.8rem 1.1rem;
 	box-shadow: var(--shadow);
