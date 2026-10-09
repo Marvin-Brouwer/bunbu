@@ -29,7 +29,7 @@ export const RunScreen = component<RunScreenOptions>({
 
 		show((camera) => createRunWorld(game, camera), signal)
 		play({
-			update: (dt) => { tickRun(game, dt) },
+			update: (dt, realDt) => { tickRun(game, dt, realDt) },
 			paused: () => game.run.value.phase === 'paused',
 			worldScale: () => game.run.value.worldScale,
 			pause: () => { game.run.value.pause() },

@@ -37,7 +37,7 @@ function answer(mark: number) {
 beforeEach(() => {
 	game = createRunGame()
 	startRun(game, fixtureQuiz)
-	tickRun(game, 2)
+	tickRun(game, 2, 2)
 })
 
 describe('commitAmbush', () => {
@@ -110,12 +110,12 @@ describe('openAmbush', () => {
 })
 
 describe('tickRun', () => {
-	// The loop hands the run world time, which an ambush slows down; the time limit runs on real time.
-	const realSeconds = (seconds: number) => seconds * runConfig.ambushWorldScale
+	// An ambush slows the world down, but its time limit runs on real time.
+	const tickReal = (seconds: number) => { tickRun(game, seconds * runConfig.ambushWorldScale, seconds) }
 
 	it('lets the ninjas creep in as the ambush time runs out', () => {
 		openSingle()
-		tickRun(game, realSeconds(5))
+		tickReal(5)
 		expect(game.ambush.value.secondsLeft).toBeCloseTo(5)
 		expect(game.ninjas.value.active[0]?.approach).toBeCloseTo(0.5)
 	})
@@ -123,7 +123,7 @@ describe('tickRun', () => {
 	it('ends the ambush unanswered when the time runs out, half-swiped or not', () => {
 		openSingle()
 		game.ambush.value.pick(marks[0]!)
-		tickRun(game, realSeconds(10))
+		tickReal(10)
 
 		expect(game.ambush.value.open).toBe(false)
 		expect(game.quiz.value.records).toEqual([{ at: { question: 0, part: 0 }, outcome: 'unanswered', picked: [0] }])
