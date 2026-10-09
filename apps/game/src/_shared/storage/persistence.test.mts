@@ -48,7 +48,7 @@ beforeEach(() => {
 	settings.value.reset()
 	highScores.value.reset()
 	lastRun.value.reset()
-	for (const { quiz } of library.value.entries) library.value.remove(quiz.id, quiz.version)
+	library.value.reset()
 })
 
 afterEach(() => {
@@ -166,6 +166,16 @@ describe('persistApp', () => {
 		await loading
 		expect(library.value.entries).toHaveLength(1)
 		expect(library.value.entries[0]).toMatchObject({ source: 'newer source', quiz: { title: 'Newer' } })
+	})
+
+	it('does not bring back a quiz that was removed while the saved ones were validated', async () => {
+		write('library', [source])
+		const loading = persistApp(stop.signal)
+		const same = { ...fixtureQuiz, id: 'saved', version: '1' }
+		library.value.add('newer source', same)
+		library.value.remove('saved', '1')
+		await loading
+		expect(library.value.entries).toHaveLength(0)
 	})
 
 	it('keeps one saved quiz per id and version, the last', async () => {

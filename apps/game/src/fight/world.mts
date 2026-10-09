@@ -54,11 +54,11 @@ export function createRunWorld(game: RunGame, camera: PerspectiveCamera): View {
 		scene,
 
 		draw(delta) {
-			const { distance, phase, worldScale } = game.run.value
+			const { distance, phase, worldScale, recovery } = game.run.value
 			// The path scrolls toward the camera; the samurai stays centred.
 			floor.position.z = -(distance % tileLength)
 
-			bob += delta * worldScale * (phase === 'running' || phase === 'intro' ? 8 : 0)
+			bob += delta * worldScale * ((phase === 'running' && recovery === 0) || phase === 'intro' ? 8 : 0)
 			samurai.position.y = 0.8 + Math.abs(Math.sin(bob)) * 0.08
 			samurai.rotation.z = game.shogun.value.pose === 'fallen' ? Math.PI / 2.5 : 0
 
