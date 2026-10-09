@@ -6,7 +6,8 @@
  */
 
 import { component } from '@rooted/components'
-import { href } from '@rooted/router'
+import { href, Link } from '@rooted/router'
+import { CreditsRoute, HowToPlayRoute } from '../about/_routes.mts'
 import { DojoRoute } from '../dojo/_routes.mts'
 import { FightRoute } from '../fight/_routes.mts'
 import { QuizzesRoute } from '../quizzes/_routes.mts'
@@ -16,6 +17,7 @@ import { Placeholder } from '../_shared/placeholder.mts'
 import { selection, type SelectionState } from '../_shared/state/selection.mts'
 import { snapshot } from '../_shared/state/store.mts'
 import { ChosenQuizCard } from './chosen-quiz-card.mts'
+import { UpdateNotice } from './update-notice.mts'
 import styles from './title.css'
 
 export const Title = component({
@@ -93,6 +95,7 @@ export const Title = component({
 					element('nav', {
 						classes: styles.menu,
 						children: [
+							create(UpdateNotice),
 							chosen,
 							element('div', {
 								classes: styles.pair,
@@ -104,6 +107,19 @@ export const Title = component({
 									create(MenuButton, {
 										label: 'Settings',
 										href: href.for(SettingsRoute),
+									}),
+								],
+							}),
+							element('div', {
+								classes: styles.pages,
+								children: [
+									create(Link, {
+										href: href.for(HowToPlayRoute),
+										children: 'How to play',
+									}),
+									create(Link, {
+										href: href.for(CreditsRoute),
+										children: 'Credits',
 									}),
 								],
 							}),
