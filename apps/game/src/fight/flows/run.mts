@@ -39,6 +39,7 @@ export function endRun(game: RunGame): void {
  * world time, slowed down during an ambush; `realDelta` is the player's time.
  */
 export function tickRun(game: RunGame, worldDelta: number, realDelta: number): void {
-	game.run.value.tick(worldDelta)
+	// The ambush first: a frame that ends the resume countdown is still part of the pause.
 	tickAmbush(game, realDelta)
+	game.run.value.tick(worldDelta, realDelta)
 }

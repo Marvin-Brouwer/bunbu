@@ -14,7 +14,7 @@ export type RunPhase = 'idle' | 'intro' | 'running' | 'ambush' | 'paused' | 'fin
 
 export type RunState = {
 	readonly phase: RunPhase
-	/** Run time in seconds. Shown on the results and used as the high-score tiebreak. */
+	/** Run time in real seconds, slow motion included. Shown on the results and used as the high-score tiebreak. */
 	readonly elapsed: number
 	/** Metres covered of `stageLength`. */
 	readonly distance: number
@@ -29,8 +29,11 @@ export type RunState = {
 
 export type RunActions = {
 	start: (stageLength: number) => void
-	/** Advances run time and distance. `delta` is already scaled by `worldScale`; see [loop.mts](../../loop.mts). */
-	tick: (delta: number) => void
+	/**
+	 * Advances the run. Distance goes by `worldDelta`, which the loop has scaled by `worldScale`;
+	 * the run time and the resume countdown go by `realDelta`, the player's own time.
+	 */
+	tick: (worldDelta: number, realDelta: number) => void
 	beginAmbush: () => void
 	endAmbush: () => void
 	pause: () => void
@@ -81,22 +84,22 @@ export function createRun(initial: RunState = notRunning): Run {
 			store.update(() => ({ ...notRunning, phase: 'intro', stageLength }))
 		},
 
-		tick(delta) {
+		tick(worldDelta, realDelta) {
 			const state = store.value
 			if (over(state.phase)) return
 
 			if (state.countdown > 0) {
-				const countdown = Math.max(0, state.countdown - delta)
+				const countdown = Math.max(0, state.countdown - realDelta)
 				store.update(() => ({ countdown, phase: countdown === 0 ? state.resumeTo : state.phase }))
 				return
 			}
 			if (state.phase === 'intro') {
-				const elapsed = state.elapsed + delta
+				const elapsed = state.elapsed + realDelta
 				store.update(() => ({ elapsed, phase: elapsed >= runConfig.introSeconds ? 'running' : 'intro' }))
 				return
 			}
-			const distance = state.phase === 'running' ? state.distance + runConfig.pace * delta : state.distance
-			store.update(() => ({ elapsed: state.elapsed + delta, distance: Math.min(distance, state.stageLength) }))
+			const distance = state.phase === 'running' ? state.distance + runConfig.pace * worldDelta : state.distance
+			store.update(() => ({ elapsed: state.elapsed + realDelta, distance: Math.min(distance, state.stageLength) }))
 		},
 
 		beginAmbush() {

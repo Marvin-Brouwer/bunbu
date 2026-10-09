@@ -53,7 +53,8 @@ export function openAmbush(game: RunGame, timeScale: number | undefined, random:
  */
 export function tickAmbush(game: RunGame, realDelta: number): void {
 	const { ambush } = game
-	if (!ambush.value.open) return
+	// The 3-2-1 countdown after resuming is part of the pause, not of the time to answer.
+	if (!ambush.value.open || game.run.value.countdown > 0) return
 	ambush.value.tick(realDelta)
 	game.ninjas.value.advance(approachOf(ambush.value.seconds, ambush.value.secondsLeft))
 	if (ambush.value.unanswered()) commitAmbush(game)

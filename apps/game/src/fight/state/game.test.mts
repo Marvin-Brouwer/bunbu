@@ -24,38 +24,52 @@ beforeEach(() => {
 describe('run', () => {
 	it('runs through intro into running', () => {
 		run.value.start(600)
-		run.value.tick(runConfig.introSeconds)
+		run.value.tick(runConfig.introSeconds, runConfig.introSeconds)
 		expect(run.value.phase).toBe('running')
 	})
 
 	it('covers ground at a constant pace while running', () => {
 		run.value.start(600)
-		run.value.tick(runConfig.introSeconds)
-		run.value.tick(1)
+		run.value.tick(runConfig.introSeconds, runConfig.introSeconds)
+		run.value.tick(1, 1)
 		expect(run.value.distance).toBeCloseTo(runConfig.pace)
 	})
 
 	it('slows the world down during an ambush and does not cover ground', () => {
 		run.value.start(600)
-		run.value.tick(runConfig.introSeconds)
+		run.value.tick(runConfig.introSeconds, runConfig.introSeconds)
 		run.value.beginAmbush()
 		const { distance } = run.value
-		run.value.tick(1)
+		run.value.tick(1, 1)
 		expect(run.value.worldScale).toBe(runConfig.ambushWorldScale)
 		expect(run.value.distance).toBe(distance)
 	})
 
 	it('counts the run down from 3 when resuming, then returns to the phase it paused in', () => {
 		run.value.start(600)
-		run.value.tick(runConfig.introSeconds)
+		run.value.tick(runConfig.introSeconds, runConfig.introSeconds)
 		run.value.pause()
-		run.value.tick(5)
+		run.value.tick(5, 5)
 		expect(run.value.elapsed).toBeCloseTo(runConfig.introSeconds)
 
 		run.value.resume()
 		expect(run.value.countdown).toBe(runConfig.countdownSeconds)
-		run.value.tick(runConfig.countdownSeconds)
+		run.value.tick(runConfig.countdownSeconds, runConfig.countdownSeconds)
 		expect(run.value.phase).toBe('running')
+	})
+
+	it('counts the run time and the countdown in real time, also in an ambush\'s slow motion', () => {
+		run.value.start(600)
+		run.value.tick(runConfig.introSeconds, runConfig.introSeconds)
+		run.value.beginAmbush()
+		run.value.pause()
+		run.value.resume()
+		run.value.tick(runConfig.countdownSeconds * runConfig.ambushWorldScale, runConfig.countdownSeconds)
+		expect(run.value.phase).toBe('ambush')
+		expect(run.value.countdown).toBe(0)
+
+		run.value.tick(runConfig.ambushWorldScale, 1)
+		expect(run.value.elapsed).toBeCloseTo(runConfig.introSeconds + 1)
 	})
 
 	it('refuses to resume a run that is not paused', () => {

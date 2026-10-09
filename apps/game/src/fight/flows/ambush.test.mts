@@ -120,6 +120,15 @@ describe('tickRun', () => {
 		expect(game.ninjas.value.active[0]?.approach).toBeCloseTo(0.5)
 	})
 
+	it('holds the time limit during the countdown after resuming', () => {
+		openSingle()
+		game.run.value.pause()
+		game.run.value.resume()
+		tickReal(runConfig.countdownSeconds)
+		expect(game.run.value.phase).toBe('ambush')
+		expect(game.ambush.value.secondsLeft).toBe(10)
+	})
+
 	it('ends the ambush unanswered when the time runs out, half-swiped or not', () => {
 		openSingle()
 		game.ambush.value.pick(marks[0]!)
