@@ -7,7 +7,7 @@
  * storage; this is the only place that does.
  */
 
-import { compress, uncompress, validate } from '@bunbu/data'
+import { uncompress } from '@bunbu/data'
 import { type, type Type } from 'arktype'
 import type { StateObject, Store } from '@rooted/store'
 import { highScores } from '../../fight/state/highscores.mts'
@@ -16,7 +16,7 @@ import { pointsPerCorrect, type HighScore } from '../../fight/state/score.mts'
 import { settings, type SettingsState } from '../../settings/state/settings.mts'
 import { fileOf, library, type QuizFile } from './library.mts'
 import { readQuizFiles, writeQuizFiles } from './quiz-files.mts'
-import { forget, read, write, type StoredKey } from './storage.mts'
+import { read, write, type StoredKey } from './storage.mts'
 
 // What is in local storage can be edited from DevTools or come from an older build, so it is
 // checked before it is used: https://arktype.io. `'+': 'delete'` drops keys that are not ours.
@@ -89,29 +89,6 @@ export async function parseLibrary(files: readonly Uint8Array[]): Promise<QuizFi
 	return parsed.flat()
 }
 
-/**
- * The quizzes an older build kept in local storage as YAML, validated and packed as `.bunbu` files
- * to move them to IndexedDB.
- */
-export async function parseOlderLibrary(data: unknown): Promise<QuizFile[]> {
-	if (!Array.isArray(data)) return []
-	const sources = data.filter((source) => typeof source === 'string')
-	const parsed = await Promise.all(sources.map(async (source) => {
-		const quiz = await validate(source)
-		return 'questions' in quiz ? [{ quiz, file: await compress(quiz) }] : []
-	}))
-	return parsed.flat()
-}
-
-/** The kept quizzes, the ones an older build kept first so a newer file of the same quiz wins. */
-async function restoreLibrary(): Promise<QuizFile[]> {
-	const [older, kept] = await Promise.all([
-		parseOlderLibrary(read('library')),
-		readQuizFiles().then(parseLibrary),
-	])
-	return [...older, ...kept]
-}
-
 /** Saves `pick(state)` on every change of `store`. */
 function save<TState extends StateObject>(store: Store<TState>, key: StoredKey, signal: AbortSignal, pick: (state: TState) => unknown): void {
 	store.on('change', signal, ({ detail }) => { write(key, pick(detail.state as TState)) })
@@ -136,10 +113,7 @@ export function persistApp(signal: AbortSignal): Promise<void> {
 		void writeQuizFiles(files)
 	})
 
-	return restoreLibrary().then((entries) => {
-		if (signal.aborted) return
-		library.value.restore(entries)
-		// Restoring saved them in IndexedDB, so the older copy can go.
-		forget('library')
+	return readQuizFiles().then(parseLibrary).then((entries) => {
+		if (!signal.aborted) library.value.restore(entries)
 	})
 }

@@ -5,7 +5,7 @@ import { highScores } from '../../fight/state/highscores.mts'
 import { lastRun } from '../../fight/state/lastrun.mts'
 import { settings } from '../../settings/state/settings.mts'
 import { fileOf, library } from './library.mts'
-import { parseHighScores, parseLastRun, parseLibrary, parseOlderLibrary, parseSettings, persistApp } from './persistence.mts'
+import { parseHighScores, parseLastRun, parseLibrary, parseSettings, persistApp } from './persistence.mts'
 import { readQuizFiles, writeQuizFiles } from './quiz-files.mts'
 import { read, storedVersion, write } from './storage.mts'
 
@@ -136,12 +136,6 @@ describe('parsing what was saved', () => {
 		expect(entries).toHaveLength(1)
 		expect(entries[0]?.quiz).toMatchObject({ id: 'saved', version: '1' })
 	})
-
-	it('packs the quizzes an older build kept as YAML', async () => {
-		const entries = await parseOlderLibrary([source, 'id: broken', 7])
-		expect(entries).toHaveLength(1)
-		expect(entries[0]?.file).toEqual(savedFile)
-	})
 })
 
 describe('persistApp', () => {
@@ -209,14 +203,6 @@ describe('persistApp', () => {
 		await persistApp(stop.signal)
 		expect(library.value.entries).toHaveLength(1)
 		expect(library.value.entries[0]?.quiz.title).toBe('Last')
-	})
-
-	it('moves the quizzes an older build kept in local storage to IndexedDB', async () => {
-		write('library', [source])
-		await persistApp(stop.signal)
-		expect(library.value.entries[0]?.quiz).toMatchObject({ id: 'saved', version: '1' })
-		expect(read('library')).toBeUndefined()
-		await vi.waitFor(async () => { expect(await readQuizFiles()).toEqual([savedFile]) })
 	})
 
 	it('starts from the defaults when nothing was saved', async () => {

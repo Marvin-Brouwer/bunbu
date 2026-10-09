@@ -14,8 +14,7 @@ import { localStorage } from '@rooted/storage/web'
 /** The version of the stored shapes. Raise it when one changes, and migrate in `read` if it is worth keeping. */
 export const storedVersion = 1
 
-/** `library` is only read, once: the quizzes an older build kept here move to IndexedDB (`quiz-files.mts`). */
-export type StoredKey = 'settings' | 'high-scores' | 'last-run' | 'library'
+export type StoredKey = 'settings' | 'high-scores' | 'last-run'
 
 const keyOf = (key: StoredKey) => `bunbu:${key}`
 
@@ -37,14 +36,5 @@ export function write(key: StoredKey, data: unknown): void {
 		localStorage.set(keyOf(key), { version: storedVersion, data })
 	} catch (error) {
 		console.warn(`[bunbu] could not save ${key}`, error)
-	}
-}
-
-/** Removes a saved value. */
-export function forget(key: StoredKey): void {
-	try {
-		localStorage.removeItem(keyOf(key))
-	} catch (error) {
-		console.warn(`[bunbu] could not remove ${key}`, error)
 	}
 }
