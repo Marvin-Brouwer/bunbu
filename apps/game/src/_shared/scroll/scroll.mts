@@ -99,9 +99,7 @@ export const Scroll = component<ScrollOptions>({
 					heading: heading(state),
 					footer: commit === undefined
 						? undefined
-						: create(SwipePaper, {
-							kind: state.kind,
-						}),
+						: create(SwipePaper),
 				}),
 			})
 			scroll.replaceChildren(

@@ -24,9 +24,7 @@
 	--vermilion-light: #d9765f;
 	--moss: #4f6b2f;
 	--indigo: #2f4a7a;
-	/* The white, ruled paper-cutting target of the swipe zone. */
-	--target: #fbfaf6;
-	--target-rule: #cfccc3;
+	/* The grey strips of the paper-cutting target in the swipe zone. */
 	--target-edge: #b4b1aa;
 	/* The wooden rods of the scroll. */
 	--wood: #5c3d24;

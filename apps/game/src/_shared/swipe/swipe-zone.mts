@@ -1,10 +1,12 @@
 /**
  * The swipe zone ([ambush](../../../../../docs/design/gameplay.md#ambush)): the footer of the
- * scroll, a sheet of paper where swipes answer the open ambush, with the answers picked so far
- * above it. Only swipes on the paper count, so the text above keeps its own native scrolling.
+ * scroll. A line on how to answer, the marks swiped so far, and under them a sheet of paper where
+ * swipes answer the open ambush. Only swipes on the paper count, so the text above keeps its own
+ * native scrolling.
  *
  * The pointer leaves a faint trace on the paper, and each pick cuts it with a red slash in the
- * direction of its mark, through the middle of the swipe.
+ * direction of its mark, through the middle of the swipe. Only the last cut matters, so the one
+ * before it fades.
  *
  * A swipe toward a mark picks it. `yes-no` and `single` strike at once; `multiple` and `order`
  * strike once the pointer has been lifted for the commit pause, and touching down again before
@@ -19,7 +21,7 @@
 import { component } from '@rooted/components'
 import { buzz, buzzes } from '../haptics.mts'
 import { ambushConfig } from '../state/ambush-time.mts'
-import { timeUp, type Ambush, type AmbushState, type Mark } from '../state/ambush.mts'
+import { timeUp, type Ambush, type AmbushKind, type AmbushState, type Mark } from '../state/ambush.mts'
 import { SwipePaper } from './swipe-paper.mts'
 import { SwipePicks } from './swipe-picks.mts'
 import { directionOf, finish, follow, strikesAtOnce, strokeAt, type Point, type Stroke } from './stroke.mts'
@@ -47,6 +49,13 @@ const isPicked = (state: AmbushState, mark: Mark) =>
 type Swipe = {
 	readonly from: Point
 	readonly to: Point
+}
+
+/** How to answer. One short line. */
+function hintOf(kind: AmbushKind): string {
+	if (kind === 'yes-no') return 'swipe ↑ yes · ↓ no'
+	if (kind === 'single') return 'swipe toward your answer'
+	return 'swipe each answer · lift + pause = strike'
 }
 
 /** The shortest slash drawn, in CSS pixels, so a swipe just past the dead zone still shows. */
@@ -103,6 +112,7 @@ export const SwipeZone = component<SwipeZoneOptions>({
 			children: trace,
 		})
 		let traced: Point[] = []
+		let lastSlash: SVGLineElement | undefined
 
 		/** `point` on the paper, from the pointer's coordinates. */
 		const onPaper = (point: Point): Point => {
@@ -120,6 +130,11 @@ export const SwipeZone = component<SwipeZoneOptions>({
 			trace.setAttribute('points', '')
 		}
 
+		const fade = (line: SVGLineElement) => {
+			line.addEventListener('transitionend', () => { line.remove() }, { once: true, signal })
+			line.dataset.faded = 'true'
+		}
+
 		/** Cuts the paper along `mark`, through the middle of the swipe. */
 		const slash = (mark: Mark, swipe: Swipe) => {
 			const from = onPaper(swipe.from)
@@ -127,7 +142,8 @@ export const SwipeZone = component<SwipeZoneOptions>({
 			const middle = { x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 }
 			const half = Math.max(shortestSlash, Math.hypot(to.x - from.x, to.y - from.y)) / 2
 			const toward = directionOf(mark)
-			overlay.append(element('svg:line', {
+			if (lastSlash !== undefined) fade(lastSlash)
+			lastSlash = overlay.appendChild(element('svg:line', {
 				classes: styles.slash,
 				x1: middle.x - toward.x * half,
 				y1: middle.y - toward.y * half,
@@ -193,9 +209,7 @@ export const SwipeZone = component<SwipeZoneOptions>({
 				},
 			},
 			children: [
-				create(SwipePaper, {
-					kind: ambush.value.kind,
-				}),
+				create(SwipePaper),
 				overlay,
 			],
 		})
@@ -204,6 +218,10 @@ export const SwipeZone = component<SwipeZoneOptions>({
 			element('div', {
 				classes: styles.swipe,
 				children: [
+					element('p', {
+						classes: styles.hint,
+						textContent: hintOf(ambush.value.kind),
+					}),
 					create(SwipePicks, {
 						ambush,
 					}),

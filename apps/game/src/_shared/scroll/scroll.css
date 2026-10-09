@@ -55,8 +55,8 @@
 }
 
 .footer {
-	/* A clear gap between the text, which scrolls, and the swipe zone. */
-	padding: 1rem 1rem 0.9rem;
+	/* A clear gap between the text, which scrolls, and the swipe zone, whose paper runs to the edges. */
+	padding-top: 1rem;
 	border-top: 1px dashed var(--paper-edge);
 }
 
