@@ -686,7 +686,7 @@ export function createCastleTown(scene: Scene, path: Path, from: number, to: num
 	}))
 	// The gardens' grass, a wide strip under them that breaks off where the streets begin.
 	const grass = new Color(palette.grass)
-	scene.add(strip(path, from, to, owned, {
+	scene.add(strip(path, from, visualTo, owned, {
 		half: () => 18,
 		colour: () => grass,
 		y: 0.008,
