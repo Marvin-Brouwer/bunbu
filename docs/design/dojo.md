@@ -24,6 +24,7 @@ The ambush without the risk.
 - The card is shown. Reading aloud is a button press, not automatic.
 - A miss shows the right answer and the explanation; the speaker button reads them aloud. The dummy swings back. **Continue** moves on.
 - No life bar, no death and no timer.
+- It can pause, and plays full screen on a phone like a run: Back or leaving full screen pauses, resuming goes full screen again, and Back while paused leaves practice ([pause](screens.md#6-pause)).
 - A running right vs wrong percentage is shown, so you can see how you're doing. It is not a score and isn't stored.
 
 <img src="screens/d3-practice-start.png" alt="Practice start" width="195"> <img src="screens/d4-practice.png" alt="Practice ambush" width="195"> <img src="screens/d5-practice-miss.png" alt="Practice miss" width="195">

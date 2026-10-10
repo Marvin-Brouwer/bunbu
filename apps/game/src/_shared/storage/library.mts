@@ -1,18 +1,18 @@
 /**
  * The quizzes the player has loaded, so they are there again next time. App-wide.
  *
- * What is kept is each quiz's file, not the parsed quiz: the file is validated again when it is
- * read back, as quiz files are untrusted input, and it stays valid if the format moves on.
+ * What is kept is each quiz's `.bunbu` file, not the parsed quiz: the file is validated again when
+ * it is read back, as quiz files are untrusted input, and it stays valid if the format moves on.
  */
 
 import type { BunbuData } from '@bunbu/data'
-import { createStore, type Store } from '@rooted/store'
+import { createStore, type Immutable, type Store } from '@rooted/store'
 import { snapshot } from '../state/store.mts'
 
+/** A quiz with its `.bunbu` file, as it is loaded and kept. The file doesn't change once loaded. */
 export type LibraryEntry = {
-	/** The quiz file as the player loaded it. */
-	readonly source: string
 	readonly quiz: BunbuData
+	readonly file: Immutable<Uint8Array>
 }
 
 export type LibraryState = {
@@ -23,7 +23,7 @@ export type LibraryState = {
 
 export type LibraryActions = {
 	/** Adds a loaded quiz, replacing the one with the same `id` and `version`. */
-	add: (source: string, quiz: BunbuData) => void
+	add: (loaded: LibraryEntry) => void
 	remove: (id: string, version: string) => void
 	/** Puts back saved quizzes, except those added or removed since the app started. */
 	restore: (saved: readonly LibraryEntry[]) => void
@@ -40,11 +40,11 @@ export const library: Library = createStore<LibraryState & LibraryActions>({
 	entries: [],
 	touched: [],
 
-	add(source, quiz) {
+	add(loaded) {
 		const { entries, touched } = snapshot<LibraryState & LibraryActions>(library)
-		const key = keyOf(quiz.id, quiz.version)
+		const key = keyOf(loaded.quiz.id, loaded.quiz.version)
 		library.update(() => ({
-			entries: [...entries.filter((entry) => keyOf(entry.quiz.id, entry.quiz.version) !== key), { source, quiz }],
+			entries: [...entries.filter((entry) => keyOf(entry.quiz.id, entry.quiz.version) !== key), loaded],
 			touched: [...touched, key],
 		}))
 	},
@@ -63,8 +63,8 @@ export const library: Library = createStore<LibraryState & LibraryActions>({
 		// One quiz per `id` + `version`, as in `add`: the last saved wins.
 		const older = new Map<string, LibraryEntry>()
 		for (const each of saved) older.set(keyOf(each.quiz.id, each.quiz.version), each)
-		const restored = [...older].filter(([key]) => !touched.includes(key)).map(([, entry]) => entry)
-		library.update(() => ({ entries: [...restored, ...entries] }))
+		const restored = [...older].filter(([key]) => !touched.includes(key))
+		library.update(() => ({ entries: [...restored.map(([, entry]) => entry), ...entries] }))
 	},
 
 	reset() {

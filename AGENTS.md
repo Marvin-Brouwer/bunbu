@@ -37,6 +37,7 @@ apps/game/src/
   fight/           /fight/: stage and difficulty, then the run; state/, flows/, world; _temp/ fixtures
   dojo/            /dojo/: study and practice, each with its own game state
   settings/        /settings/ and the settings store
+  about/           the game's own pages in Markdown: /how-to-play/, /credits/
 docs/testdata/            sample quizzes every track develops against (local/ is git-ignored, for your own)
 packages/data/            @bunbu/data: reading, validating and sharing quizzes
 schema/                   the JSON Schema per format version

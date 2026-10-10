@@ -14,14 +14,14 @@ const percentOf = (volume: number) => `${Math.round(volume * 100)}%`
 
 export type SettingsFormOptions = {
 	/** In the pause menu: the run's difficulty is shown but can't change halfway through. */
-	readonly running?: boolean
+	readonly running: boolean
 }
 
 export const SettingsForm = component<SettingsFormOptions>({
 	name: 'settings-form',
 	styles,
 	onMount({ append, create, element, options }) {
-		const running = options.running ?? false
+		const { running } = options
 
 		const percent = element('span', {
 			classes: styles.percent,

@@ -12,7 +12,9 @@ export const Settings = component({
 			create(MenuScreen, {
 				title: 'Settings',
 				back: href.path('/'),
-				children: create(SettingsForm),
+				children: create(SettingsForm, {
+					running: false,
+				}),
 			})
 		)
 	},

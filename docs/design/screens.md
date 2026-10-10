@@ -23,7 +23,7 @@ Wireframe source: the project's design canvas (`design/wireframes/*.dc.html` and
 
 - 3D samurai idling under a torii, falling petals.
 - 文武 · **Bunbu** · Shogun Scholar.
-- The chosen quiz: its title, and its high score `2,480` with `17 / 20 correct · 4:05` (or "No high score yet").
+- The chosen quiz: its title, and its high score `2,480` with `17 / 20 correct · 4:05` (or "No high score yet"), and **Share**, which sends the quiz on as a `.bunbu` file ([sharing](data-format.md#sharing)): the share sheet where the browser says it takes the file (`navigator.canShare`). Otherwise a scroll explains how to share by hand, without saying why: a friend needs the quiz and Bunbu, so **Download the quiz**, **Share Bunbu** (a link to the game; copied where there is no share sheet), and they load the file under Quizzes. **Close** leaves it.
 - **Fight**, **Change quiz**, **Dojo**, **Settings**. Without a chosen quiz: **Fight** ("Choose a quiz first") and **Quizzes** both lead to Quizzes.
 
 ### 1b Quizzes
@@ -83,6 +83,7 @@ All on a scroll over the dimmed world, like an ambush:
 - This run: quiz, stage, answered (`11 / 13`), distance.
 - **Resume**, **Restart stage**, **Settings**, **Quit** at the foot of the scroll. Settings open in place on the scroll; the difficulty only shows there, since it can't change halfway through a run.
 - Auto-pauses when the app goes to the background or a call comes in. 3-2-1 countdown on resume.
+- Also pauses on **Back** and when the player leaves full screen. On a phone (a touch screen without a mouse or trackpad) a run, and [practice](dojo.md#practice), plays full screen; resuming goes full screen again, and **Back** while paused leaves the run.
 
 ### 7 Finished: results and mistakes
 

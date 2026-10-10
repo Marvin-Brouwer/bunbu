@@ -1,15 +1,12 @@
 /** The only control while running ([3 Running](../../../../../docs/design/screens.md#3-running)). */
 
 import { component } from '@rooted/components'
-import type { Run, RunPhase } from '../state/run.mts'
+import { pausable, type Run, type RunPhase } from '../state/run.mts'
 import styles from './hud.css'
 
 export type PauseButtonOptions = {
 	readonly run: Run
 }
-
-/** The phases a run can be paused in; the rest are paused, over, or not started. */
-const pausable: ReadonlySet<RunPhase> = new Set(['intro', 'running', 'ambush'])
 
 export const PauseButton = component<PauseButtonOptions>({
 	name: 'pause-button',

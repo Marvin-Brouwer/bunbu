@@ -1,0 +1,31 @@
+/* The game's own pages, such as how to play and the credits: Markdown on the menus' papyrus. */
+
+.prose {
+	display: grid;
+	gap: 0.75rem;
+	line-height: 1.5;
+}
+
+.prose h2 {
+	margin: 0.75rem 0 0;
+	font-family: var(--font-mono);
+	font-size: 0.8rem;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	color: var(--ink-soft);
+}
+
+.prose p,
+.prose ul {
+	margin: 0;
+}
+
+.prose ul {
+	display: grid;
+	gap: 0.4rem;
+	padding-left: 1.2rem;
+}
+
+.prose a {
+	color: var(--vermilion);
+}
