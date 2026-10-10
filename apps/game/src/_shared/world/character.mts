@@ -17,6 +17,7 @@ import {
 	SkinnedMesh,
 	Vector3,
 	type AnimationAction,
+	type BufferGeometry,
 	type Material,
 	type Object3D,
 } from 'three'
@@ -82,6 +83,42 @@ function recolour(material: Material, look: Look): void {
 	if (colour !== undefined) material.color.setHex(colour)
 }
 
+/**
+ * Copies of the weapons in hand, for when the figure lets go: each stands upright on its own centre
+ * in a group beside the figure, so turning the group by a quarter lays it flat on the ground.
+ * `root` must stand at the origin, unturned, as it does before the figure is placed.
+ */
+function droppedWeapons(weapons: readonly Object3D[], root: Group): Group {
+	const group = new Group()
+	group.position.set(0.5, 0, -0.3)
+	group.rotation.y = 0.4
+	group.visible = false
+	root.add(group)
+	root.updateMatrixWorld(true)
+	const rootScale = root.getWorldScale(new Vector3())
+	for (const weapon of weapons) {
+		if (!(weapon instanceof Mesh)) continue
+		const geometry = weapon.geometry as BufferGeometry
+		geometry.computeBoundingBox()
+		const bounds = geometry.boundingBox
+		if (bounds === null) continue
+		const scale = weapon.getWorldScale(new Vector3()).divide(rootScale)
+		const size = bounds.getSize(new Vector3()).multiply(scale)
+		const centre = bounds.getCenter(new Vector3())
+		// Its longest side upright, whichever axis that is in the model.
+		const longest = size.x >= size.y && size.x >= size.z ? new Vector3(1, 0, 0) : size.z >= size.y ? new Vector3(0, 0, 1) : new Vector3(0, 1, 0)
+		const copy = new Mesh(geometry, weapon.material)
+		copy.castShadow = true
+		copy.scale.copy(scale)
+		copy.quaternion.setFromUnitVectors(longest, new Vector3(0, 1, 0))
+		copy.position.copy(centre.multiply(scale).applyQuaternion(copy.quaternion).negate())
+		const holder = new Group()
+		holder.add(copy)
+		group.add(holder)
+	}
+	return group
+}
+
 export function createCharacter(model: GLTF, look: Look): Body {
 	const scene = clone(model.scene)
 	const root = new Group()
@@ -96,7 +133,7 @@ export function createCharacter(model: GLTF, look: Look): Body {
 	const materials: MeshStandardMaterial[] = []
 	const weaponParts: Object3D[] = []
 	scene.traverse((object: Object3D) => {
-		if (/weapon|sword|katana|blade/i.test(object.name)) weaponParts.push(object)
+		if (/weapon|sword|katana|blade|knife/i.test(object.name)) weaponParts.push(object)
 		if (!(object instanceof Mesh)) return
 		object.castShadow = true
 		// Skinned meshes move away from their bind-pose bounds; culling them would make them blink.
@@ -126,6 +163,8 @@ export function createCharacter(model: GLTF, look: Look): Body {
 	// Scale the complete dressed figure, rather than the model before dressing it. The armour is
 	// fitted in the model's normalized metres and must stay aligned with the body and its bones.
 	root.scale.setScalar(look.scale ?? 1)
+	// The blade once he lets go of it: a copy that falls beside him and lies there.
+	const dropped = droppedWeapons(weaponParts, root)
 	// Fading takes the armour along; turning grey leaves the helmet in its colours, lying there.
 	const greying = [...materials, ...(armour?.body ?? [])]
 	const greys = greying.map((material) => material.color.clone())
@@ -182,6 +221,10 @@ export function createCharacter(model: GLTF, look: Look): Body {
 			// The GLB sword is part of the animated scene rather than the procedural
 			// placeholder, so mirror the pose's drop explicitly when the samurai falls.
 			for (const weapon of weaponParts) weapon.visible = rig.drop === 0
+			dropped.visible = rig.drop > 0
+			// From about hand height down to the ground, turning from upright to flat, as the placeholder's does.
+			dropped.position.y = 0.05 + 0.9 * (1 - rig.drop)
+			dropped.rotation.z = (Math.PI / 2) * rig.drop
 			body.position.z = -rig.shift
 			body.rotation.y = rig.turn
 
