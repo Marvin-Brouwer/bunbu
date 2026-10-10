@@ -10,6 +10,7 @@ import {
 	ACESFilmicToneMapping,
 	BackSide,
 	Box3,
+	BoxGeometry,
 	CanvasTexture,
 	CircleGeometry,
 	Color,
@@ -119,6 +120,28 @@ function blossomOf(map: Texture): CanvasTexture | undefined {
 	return texture
 }
 
+/** A torii from boxes, the model's size: two posts, the curved top beam as a flat one, and the tie beam. */
+function toriiPlaceholder(owned: Owned): Group {
+	const gate = new Group()
+	const geometry = new BoxGeometry(1, 1, 1)
+	const lacquer = new MeshStandardMaterial({ color: 0xa8261c, roughness: 0.6 })
+	const black = new MeshStandardMaterial({ color: 0x1f1c18, roughness: 0.7 })
+	owned.geometries.push(geometry)
+	owned.materials.push(lacquer, black)
+	const piece = (material: Material, x: number, y: number, sx: number, sy: number, sz: number) => {
+		const mesh = new Mesh(geometry, material)
+		mesh.position.set(x, y, 0)
+		mesh.scale.set(sx, sy, sz)
+		mesh.castShadow = true
+		gate.add(mesh)
+	}
+	for (const side of [-1, 1]) piece(lacquer, side * 1.7, 2.3, 0.35, 4.6, 0.35)
+	piece(lacquer, 0, 3.75, 4.4, 0.3, 0.3)
+	piece(lacquer, 0, 4.8, 5.6, 0.35, 0.45)
+	piece(black, 0, 5.1, 6, 0.25, 0.5)
+	return gate
+}
+
 /** `model` scaled to `height` metres, standing on the ground and centred. */
 function standing(model: Object3D, height: number): Group {
 	model.updateMatrixWorld(true)
@@ -182,8 +205,12 @@ export function createTitleWorld(viewport: Viewport): View {
 	const torii = new Group()
 	torii.position.z = -toriiBehind
 	scene.add(torii)
+	// A plain red gate stands in until the model is in, and stays if it never comes.
+	const placeholderGate = toriiPlaceholder(owned)
+	torii.add(placeholderGate)
 	void loadModel('torii').then((model) => {
 		if (disposed) return
+		torii.remove(placeholderGate)
 		const gate = standing(model.scene.clone(), toriiHeight)
 		gate.traverse((object) => {
 			if (object instanceof Mesh) object.castShadow = true
@@ -290,6 +317,7 @@ export function createTitleWorld(viewport: Viewport): View {
 			parts.dispose()
 			petals.dispose()
 			groundGeometry.dispose()
+			scenery.dispose()
 			for (const made of owned.geometries) made.dispose()
 			for (const made of owned.materials) made.dispose()
 			for (const made of owned.textures) made.dispose()

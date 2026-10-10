@@ -15,13 +15,17 @@ import {
 	ConeGeometry,
 	CylinderGeometry,
 	Group,
+	InstancedMesh,
+	Matrix4,
 	Mesh,
 	MeshBasicMaterial,
 	MeshStandardMaterial,
+	Quaternion,
 	SphereGeometry,
 	SRGBColorSpace,
 	Sprite,
 	SpriteMaterial,
+	Vector3,
 	type BufferGeometry,
 	type Material,
 } from 'three'
@@ -49,9 +53,12 @@ export type Owned = { geometries: BufferGeometry[]; materials: Material[]; textu
 
 export type Scenery = {
 	readonly group: Group
+	dispose: () => void
 	/** Moves what moves on its own: the clouds drifting, the lanterns flickering. */
 	draw: (time: number) => void
 }
+
+const up = new Vector3(0, 1, 0)
 
 /** A number from `0` to `1` for `seed`, the same every time. */
 function scatter(seed: number): number {
@@ -81,6 +88,7 @@ function glowTexture(): CanvasTexture {
 
 export function createScenery(owned: Owned): Scenery {
 	const group = new Group()
+	const instanced: InstancedMesh[] = []
 	const materials = new Map<string, Material>()
 	/** One material per colour and kind, shared by every piece in it. */
 	const lit = (colour: number, roughness = 0.85, flat = false) => {
@@ -112,14 +120,17 @@ export function createScenery(owned: Owned): Scenery {
 	// A square hip roof: a pyramid turned so its edges run along x and z, one unit across at the base.
 	const hip = shape(new ConeGeometry(Math.SQRT1_2, 1, 4, 1, false, Math.PI / 4).translate(0, 0.5, 0))
 
-	const add = (geometry: BufferGeometry, material: Material, x: number, y: number, z: number, sx = 1, sy = 1, sz = 1, shadows = true) => {
-		const mesh = new Mesh(geometry, material)
-		mesh.position.set(x, y, z)
-		mesh.scale.set(sx, sy, sz)
-		mesh.castShadow = shadows
-		mesh.receiveShadow = shadows
-		group.add(mesh)
-		return mesh
+	// Everything that stands still is gathered by shape, material and shadows, and drawn as one
+	// `InstancedMesh` per batch, so the temple and its lanterns are a handful of draw calls.
+	const batches = new Map<string, { geometry: BufferGeometry; material: Material; cast: boolean; receive: boolean; matrices: Matrix4[] }>()
+	const add = (geometry: BufferGeometry, material: Material, x: number, y: number, z: number, sx = 1, sy = 1, sz = 1, cast = true, receive = cast, turn = 0) => {
+		const key = `${geometry.uuid}:${material.uuid}:${cast}:${receive}`
+		let batch = batches.get(key)
+		if (batch === undefined) {
+			batch = { geometry, material, cast, receive, matrices: [] }
+			batches.set(key, batch)
+		}
+		batch.matrices.push(new Matrix4().compose(new Vector3(x, y, z), new Quaternion().setFromAxisAngle(up, turn), new Vector3(sx, sy, sz)))
 	}
 
 	/** A roof with eaves that reach out past the walls: a thin wide slab, then the hip above it. */
@@ -129,7 +140,7 @@ export function createScenery(owned: Owned): Scenery {
 	}
 
 	// The stone path from the samurai to the temple's steps.
-	add(cube, lit(sceneryPalette.path, 1), 0, 0.03, -36, 2.6, 0.06, 74, false).receiveShadow = true
+	add(cube, lit(sceneryPalette.path, 1), 0, 0.03, -36, 2.6, 0.06, 74, false, true)
 	for (let index = 0; index < 34; index++) {
 		add(cube, lit(sceneryPalette.stoneDark, 1), 0, 0.065, 0.5 - index * 2.1, 2.7, 0.02, 0.08, false)
 	}
@@ -201,12 +212,22 @@ export function createScenery(owned: Owned): Scenery {
 		const angle = (scatter(index + 50) - 0.5) * Math.PI * 1.15
 		const height = 12 + scatter(index + 100) * 16 + layer * 5
 		const width = height * (1.4 + scatter(index + 150) * 0.8)
-		const mountain = add(peak, lit(sceneryPalette.mountains[layer] ?? 0x5a465a, 1, true), Math.sin(angle) * distance, -1, -Math.cos(angle) * distance, width, height, width * 0.8, false)
-		mountain.rotation.y = scatter(index + 200) * Math.PI
+		add(peak, lit(sceneryPalette.mountains[layer] ?? 0x5a465a, 1, true), Math.sin(angle) * distance, -1, -Math.cos(angle) * distance, width, height, width * 0.8, false, false, scatter(index + 200) * Math.PI)
 	}
 	const fuji = { z: -360, height: 72, width: 150 }
 	add(peak, lit(sceneryPalette.mountains[3] ?? 0x9a6e72, 1, true), 0, -2, fuji.z, fuji.width, fuji.height, fuji.width * 0.6, false)
 	add(peak, lit(sceneryPalette.snow, 0.9, true), 0, fuji.height * 0.62 - 2, fuji.z + 1, fuji.width * 0.38, fuji.height * 0.38, fuji.width * 0.6 * 0.38, false)
+
+	for (const { geometry, material, cast, receive, matrices } of batches.values()) {
+		const mesh = new InstancedMesh(geometry, material, matrices.length)
+		matrices.forEach((matrix, index) => { mesh.setMatrixAt(index, matrix) })
+		mesh.instanceMatrix.needsUpdate = true
+		mesh.castShadow = cast
+		mesh.receiveShadow = receive
+		mesh.computeBoundingSphere()
+		group.add(mesh)
+		instanced.push(mesh)
+	}
 
 	// The sun, low and red, with a halo, and long clouds drifting across it. Not in the fog.
 	const sun = new Mesh(shape(new CircleGeometry(16, 40)), new MeshBasicMaterial({ color: sceneryPalette.sun, fog: false }))
@@ -233,6 +254,10 @@ export function createScenery(owned: Owned): Scenery {
 
 	return {
 		group,
+
+		dispose() {
+			for (const mesh of instanced) mesh.dispose()
+		},
 
 		draw(time) {
 			for (const { cloud, start, speed } of clouds) {

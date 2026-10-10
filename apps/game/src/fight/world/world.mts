@@ -173,16 +173,6 @@ export function createRunWorld(game: RunGame, viewport: Viewport): View {
 			samurai.root.position.set(here.x, 0, here.z)
 			samurai.root.rotation.y = here.heading + turnedTo
 
-			const side = aimed === undefined ? 0 : Math.sign(Math.round(Math.sin(-headingOf(aimed)) * 10))
-			effects.draw({
-				x: here.x,
-				z: here.z,
-				heading: samurai.root.rotation.y,
-				time: shogun.pose === 'strike' ? since : undefined,
-				side,
-			}, ninjas.slain(), camera)
-			// Around where the camera looks, a little ahead of him; they drift on in slow motion too.
-			petals.draw(worldDelta, { x: view.look[0], z: view.look[2] })
 
 			if (finish === undefined) {
 				dropFinisher()
@@ -214,6 +204,18 @@ export function createRunWorld(game: RunGame, viewport: Viewport): View {
 			}
 			camera.position.copy(position)
 			camera.lookAt(look)
+
+			// After the camera has turned, so the slash is square to the camera this frame is drawn with.
+			const side = aimed === undefined ? 0 : Math.sign(Math.round(Math.sin(-headingOf(aimed)) * 10))
+			effects.draw({
+				x: here.x,
+				z: here.z,
+				heading: samurai.root.rotation.y,
+				time: shogun.pose === 'strike' ? since : undefined,
+				side,
+			}, ninjas.slain(), camera)
+			// Around where the camera looks, a little ahead of him; they drift on in slow motion too.
+			petals.draw(worldDelta, { x: view.look[0], z: view.look[2] })
 		},
 
 		dispose() {
