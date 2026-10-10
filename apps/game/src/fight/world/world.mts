@@ -16,12 +16,14 @@ import type { Viewport } from '../../canvas/viewport.mts'
 import type { RunGame } from '../state/game.mts'
 import { runFraming, viewOnPath } from './camera.mts'
 import { createCastleTown, skyRadius } from './castle-town.mts'
-import { createCharacter, ninjaLook, placeholderBody, samuraiLook, type Body } from './character.mts'
-import { createFigureParts } from './figure.mts'
+import { createEffects } from './effects.mts'
+import { createPetals } from '../../_shared/world/petals.mts'
+import { createCharacter, ninjaLook, placeholderBody, samuraiLook, type Body } from '../../_shared/world/character.mts'
+import { createFigureParts } from '../../_shared/world/figure.mts'
 import { createNinjasView } from './ninjas.mts'
 import { createPath } from './path.mts'
 import { headingOf } from './placement.mts'
-import { finishingOf, poseSeconds } from './poses.mts'
+import { finishingOf, poseSeconds } from '../../_shared/world/poses.mts'
 
 /** Metres per half a running cycle: one step, matched to the run clip at the run's pace. */
 const stepLength = 2.1
@@ -41,6 +43,7 @@ const shortWay = (from: number, to: number) => Math.atan2(Math.sin(to - from), M
 export function createRunWorld(game: RunGame, viewport: Viewport): View {
 	const { renderer, camera } = viewport
 	const scene = new Scene()
+	const overlay = new Scene()
 
 	const length = Math.max(game.run.value.stageLength, 300) + beyond
 	const path = createPath(length)
@@ -61,6 +64,10 @@ export function createRunWorld(game: RunGame, viewport: Viewport): View {
 	fighters.add(samurai.root)
 	let makeNinja = (): Body => placeholderBody(parts, { body: 0x2e2d38, skin: 0x2e2d38, band: 0xa3322a, blade: 0xb8bcc4 })
 	const ninjas = createNinjasView(fighters, makeNinja)
+	const effects = createEffects(scene, overlay)
+	// A light fall of petals round the samurai, all along the run.
+	const petals = createPetals(140, { width: 26, height: 9, depth: 26 })
+	scene.add(petals.mesh)
 	// The ninja that comes for the samurai when he falls: only there while he is down.
 	let finisher: Body | undefined
 	const dropFinisher = () => {
@@ -122,6 +129,7 @@ export function createRunWorld(game: RunGame, viewport: Viewport): View {
 
 	return {
 		scene,
+		overlay,
 
 		draw(realDelta) {
 			const run = game.run.value
@@ -165,6 +173,17 @@ export function createRunWorld(game: RunGame, viewport: Viewport): View {
 			samurai.root.position.set(here.x, 0, here.z)
 			samurai.root.rotation.y = here.heading + turnedTo
 
+			const side = aimed === undefined ? 0 : Math.sign(Math.round(Math.sin(-headingOf(aimed)) * 10))
+			effects.draw({
+				x: here.x,
+				z: here.z,
+				heading: samurai.root.rotation.y,
+				time: shogun.pose === 'strike' ? since : undefined,
+				side,
+			}, ninjas.slain(), camera)
+			// Around where the camera looks, a little ahead of him; they drift on in slow motion too.
+			petals.draw(worldDelta, { x: view.look[0], z: view.look[2] })
+
 			if (finish === undefined) {
 				dropFinisher()
 			} else {
@@ -201,11 +220,14 @@ export function createRunWorld(game: RunGame, viewport: Viewport): View {
 			// Routes come and go, so free what this world uploaded to the GPU.
 			disposed = true
 			ninjas.dispose()
+			effects.dispose()
+			petals.dispose()
 			dropFinisher()
 			samurai.dispose()
 			parts.dispose()
 			stage.dispose()
 			scene.clear()
+			overlay.clear()
 			camera.fov = before.fov
 			camera.far = before.far
 			camera.position.copy(before.position)

@@ -28,10 +28,10 @@ The samurai's run, attack and hit animations come from the [Universal Animation 
 
 Until a samurai model of our own lands, both sides come from one Quaternius pack ([Ultimate Animated Character Pack](https://quaternius.com/), CC0), so they share one rig, one set of clips and one style:
 
-- **Samurai:** ["Matt"](https://poly.pizza/m/66kQ4dBBC7) in armour built in code (`fight/world/armour.mts`). The armour is a kabuto helmet with gilt horns and a neck guard, a laced breastplate, shoulder and hip plates, sleeves and hakama, hung on the bones. His long blade serves as the katana. The helmet comes off when he falls.
+- **Samurai:** ["Matt"](https://poly.pizza/m/66kQ4dBBC7) in armour built in code (`_shared/world/armour.mts`). The armour is a kabuto helmet with gilt horns and a neck guard, a laced breastplate, shoulder and hip plates, sleeves and hakama, hung on the bones. His long blade serves as the katana. The helmet comes off when he falls.
 - **Ninjas:** the [ninja](https://poly.pizza/m/xGYmeDpfTu) in black with a red sash.
 
-The world plays these clips, fitted to the state's timing (`fight/world/poses.mts`):
+The world plays these clips, fitted to the state's timing (`_shared/world/poses.mts`):
 
 | Pose                     | Clip       |
 | ------------------------ | ---------- |
