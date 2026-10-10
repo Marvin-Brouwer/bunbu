@@ -3,8 +3,9 @@
  * its mark and its `approach` ([placement](./placement.mts)); its pose from the store, timed from
  * when the store last changed it.
  *
- * Placement is around the samurai, measured along the path: ahead of him is farther along it, so the
- * ninjas come round its corners and stay in the street.
+ * Placement is around the samurai, square to the way the camera looks
+ * ([viewOnPath](./camera.mts)), so round a corner they stay on screen where they would be on a
+ * straight path.
  *
  * The figures and their timers are visual state: derived from the store, never fed back.
  */
@@ -14,7 +15,8 @@ import type { AmbushOption, Mark } from '../../_shared/state/ambush.mts'
 import { marks } from '../../_shared/state/ambush.mts'
 import type { Ninja } from '../state/ninjas.mts'
 import type { Body } from './character.mts'
-import { beside, type PathPoint } from './path.mts'
+import type { ViewFrame } from './camera.mts'
+import { beside } from './path.mts'
 import { lungeOf, spotOf } from './placement.mts'
 import { poseSeconds } from './poses.mts'
 
@@ -49,8 +51,8 @@ type Shown = {
 	entrance: number
 	/** Seconds since the store last changed this ninja's pose. */
 	time: number
-	/** How far the samurai had run when this ninja was beaten, so it stays on that spot of the path. */
-	beatenAt: number | undefined
+	/** Where the samurai was when this ninja was beaten, so it stays on that spot as he runs on. */
+	beatenAt: ViewFrame | undefined
 }
 
 /** Poses after the fight: the ninja stays on the path where it was beaten, and the run passes it by. */
@@ -67,11 +69,11 @@ const markById = (id: number): Mark => marks[(id * 2) % marks.length] ?? 'up'
 
 export type NinjasView = {
 	/**
-	 * Makes the figures match `active`. `delta` is real time, `worldDelta` slowed down, `distance`
-	 * how far the samurai has run, whether the pre-scroll telegraph is playing, and how long the
+	 * Makes the figures match `active`. `delta` is real time, `worldDelta` slowed down, `frame`
+	 * where the samurai is and the way ahead, whether the pre-scroll telegraph is playing, and how long the
 	 * scroll has been rolling away before a strike may become visible.
 	 */
-	draw: (active: readonly Ninja[], options: readonly AmbushOption[], distance: number, delta: number, worldDelta: number, telegraph: boolean, outcomeTime: number) => void
+	draw: (active: readonly Ninja[], options: readonly AmbushOption[], frame: ViewFrame, delta: number, worldDelta: number, telegraph: boolean, outcomeTime: number) => void
 	/** Swaps every figure's body for one made by `make`, for when the real model has loaded. */
 	remake: (make: () => Body) => void
 	/** The mark the ninja with `id` was last drawn at, for the samurai to turn toward. */
@@ -79,11 +81,8 @@ export type NinjasView = {
 	dispose: () => void
 }
 
-/**
- * `parent` is in world space; `frameAt` is where the path has the samurai at a distance, and `make`
- * makes a ninja's body.
- */
-export function createNinjasView(parent: Group, frameAt: (distance: number) => PathPoint, make: () => Body): NinjasView {
+/** `parent` is in world space, and `make` makes a ninja's body. */
+export function createNinjasView(parent: Group, make: () => Body): NinjasView {
 	// Ninja id to its figure.
 	const shown = new Map<number, Shown>()
 	let cycle = 0
@@ -96,7 +95,7 @@ export function createNinjasView(parent: Group, frameAt: (distance: number) => P
 	}
 
 	return {
-		draw(active, options, distance, delta, worldDelta, telegraph, outcomeTime) {
+		draw(active, options, frame, delta, worldDelta, telegraph, outcomeTime) {
 			cycle += worldDelta * creepCycle
 
 			for (const ninja of active) {
@@ -135,15 +134,15 @@ export function createNinjasView(parent: Group, frameAt: (distance: number) => P
 				}
 
 				if (!beaten.has(ninja.pose)) entry.beatenAt = undefined
-				else entry.beatenAt ??= distance
+				else entry.beatenAt ??= frame
 
 				entry.mark = markOf(ninja, options) ?? entry.mark
 				// A striker closes in during the wind-up, so the cut lands on the samurai.
 				const strikeTime = ninja.pose === 'strike' ? Math.max(0, outcomeTime - strikeDelaySeconds) : 0
 				const approach = ninja.pose === 'strike' ? lungeOf(entry.approach, strikeTime, poseSeconds.strike * 0.4) : entry.approach
 				const spot = spotOf(entry.mark, ninja.wave, approach)
-				// Enter from farther along the same path. It can disappear behind a tree or house and
-				// then run out into view, instead of appearing at the ambush's first visible position.
+				// Enter from farther out the same way. It can disappear behind a tree or house and then
+				// run out into view, instead of appearing at the ambush's first visible position.
 				const far = spotOf(entry.mark, ninja.wave, 0)
 				const length = Math.hypot(far.x, far.z)
 				const entrance = length > 0
@@ -154,11 +153,9 @@ export function createNinjasView(parent: Group, frameAt: (distance: number) => P
 					z: entrance.z + (spot.z - entrance.z) * entry.entrance,
 				}
 				// Around the samurai where he is, or where he was when this ninja was beaten: it stays on
-				// that spot of the path as he runs on. Ahead and behind follow the path's bends, so a ninja
-				// coming round a corner stays in the street; to the side is square to the path there.
-				const base = entry.beatenAt ?? distance
-				const samurai = frameAt(base)
-				const at = beside(frameAt(base - visible.z), visible.x, 0)
+				// that spot as he runs on.
+				const samurai = entry.beatenAt ?? frame
+				const at = beside(samurai, visible.x, -visible.z)
 				const { root } = entry.body
 				root.position.set(at.x, 0, at.z)
 				// Facing the samurai: a figure faces -z when not turned.

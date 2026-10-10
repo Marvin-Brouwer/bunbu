@@ -14,7 +14,7 @@ import { loadModel } from '../../canvas/models.mts'
 import type { View } from '../../canvas/stage.mts'
 import type { Viewport } from '../../canvas/viewport.mts'
 import type { RunGame } from '../state/game.mts'
-import { cameraOf, runFraming } from './camera.mts'
+import { runFraming, viewOnPath } from './camera.mts'
 import { createCastleTown, skyRadius } from './castle-town.mts'
 import { createCharacter, ninjaLook, placeholderBody, samuraiLook, type Body } from './character.mts'
 import { createFigureParts } from './figure.mts'
@@ -60,7 +60,7 @@ export function createRunWorld(game: RunGame, viewport: Viewport): View {
 	let samurai: Body = placeholderBody(parts, { body: 0x7a2a22, skin: 0xe2c4a0, band: 0x1f1c18, blade: 0xdfe3ea })
 	fighters.add(samurai.root)
 	let makeNinja = (): Body => placeholderBody(parts, { body: 0x2e2d38, skin: 0x2e2d38, band: 0xa3322a, blade: 0xb8bcc4 })
-	const ninjas = createNinjasView(fighters, (distance) => path.at(distance), makeNinja)
+	const ninjas = createNinjasView(fighters, makeNinja)
 	// The ninja that comes for the samurai when he falls: only there while he is down.
 	let finisher: Body | undefined
 	const dropFinisher = () => {
@@ -114,7 +114,6 @@ export function createRunWorld(game: RunGame, viewport: Viewport): View {
 	let seen = -1
 	let since = 0
 	let turnedTo = 0
-	let pathHeading = 0
 	let first = true
 	const position = new Vector3()
 	const target = new Vector3()
@@ -151,12 +150,17 @@ export function createRunWorld(game: RunGame, viewport: Viewport): View {
 			else samurai.show(finish.samurai.pose, finish.samurai.time, cycle)
 			samurai.grey(finish?.samurai.pose === 'fallen' ? Math.min(1, finish.samurai.time / poseSeconds.fallen) : 0)
 
-			// The ninjas first: they keep the mark each came from after the ambush's options are gone.
-			ninjas.draw(game.ninjas.value.active, ambush.options, run.distance, delta, worldDelta, ambush.openingLeft > 0, since)
+			const view = viewOnPath(path, run.distance, camera.aspect, fallen)
 
-			// He runs along the path, and turns toward the ninja he strikes or blocks.
+			// The ninjas first: they keep the mark each came from after the ambush's options are gone.
+			ninjas.draw(game.ninjas.value.active, ambush.options, view.frame, delta, worldDelta, ambush.openingLeft > 0, since)
+
+			// He runs along the path, and turns toward the ninja he strikes or blocks, who stands square
+			// to the camera's way ahead.
 			const aimed = shogun.target === undefined ? undefined : ninjas.markOf(shogun.target)
-			const turnTo = (shogun.pose === 'strike' || shogun.pose === 'block') && aimed !== undefined ? headingOf(aimed) : 0
+			const turnTo = (shogun.pose === 'strike' || shogun.pose === 'block') && aimed !== undefined
+				? shortWay(here.heading, view.frame.heading + headingOf(aimed))
+				: 0
 			turnedTo += shortWay(turnedTo, turnTo) * damp(delta, 14)
 			samurai.root.position.set(here.x, 0, here.z)
 			samurai.root.rotation.y = here.heading + turnedTo
@@ -178,14 +182,8 @@ export function createRunWorld(game: RunGame, viewport: Viewport): View {
 
 			// The camera follows down the path behind him, so it never cuts through a house at a
 			// corner, and it swings round the corners smoothly.
-			pathHeading += shortWay(pathHeading, here.heading) * (first ? 1 : damp(delta, 3))
-			const spot = cameraOf(camera.aspect, fallen)
-			const [, height, back] = spot.position
-			const ground = path.at(run.distance - back)
-			target.set(ground.x, height, ground.z)
-			const [, lookHeight, lookZ] = spot.look
-			// `lookZ` is negative: that far ahead of him, along the way he is heading.
-			lookAt.set(here.x + Math.sin(pathHeading) * lookZ, lookHeight, here.z + Math.cos(pathHeading) * lookZ)
+			target.set(...view.position)
+			lookAt.set(...view.look)
 			if (first) {
 				position.copy(target)
 				look.copy(lookAt)

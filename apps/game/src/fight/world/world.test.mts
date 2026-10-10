@@ -7,8 +7,9 @@ import { PerspectiveCamera, Vector3 } from 'three'
 import { describe, expect, it } from 'vitest'
 import { marks } from '../../_shared/state/ambush.mts'
 import { distanceFor } from '../../canvas/framing.mts'
-import { cameraOf, runFraming } from './camera.mts'
+import { cameraOf, runFraming, viewOnPath } from './camera.mts'
 import { markOf } from './ninjas.mts'
+import { beside, createPath, roundLength } from './path.mts'
 import { headingOf, lungeOf, placementConfig, spotOf } from './placement.mts'
 import { clipPlays, clipTimeOf, finishing, finishingOf, helmetFlight, helmetRest, helmetSeconds, poseSeconds, rigOf } from './poses.mts'
 
@@ -224,5 +225,45 @@ describe('camera', () => {
 			}
 			expect(offScreen).toEqual([])
 		})
+
+		it(`keeps every ninja in view on a ${shape} round the path's corners too`, () => {
+			const path = createPath(roundLength * 2)
+			const offScreen = new Set<string>()
+			for (let distance = 0; distance < roundLength; distance++) {
+				const view = viewOnPath(path, distance, aspect, false)
+				const camera = new PerspectiveCamera(runFraming.fov, aspect, 0.1, 200)
+				camera.position.set(...view.position)
+				camera.lookAt(new Vector3(...view.look))
+				camera.updateMatrixWorld()
+				for (const mark of marks) {
+					for (const wave of [0, 1]) {
+						for (const approach of [0, 0.5, 1]) {
+							const spot = spotOf(mark, wave, approach)
+							for (const [side, height] of [[-0.4, 0], [0.4, 0], [-0.4, 1.9], [0.4, 1.9]] as const) {
+								const at = beside(view.frame, spot.x + side, -spot.z)
+								const seen = new Vector3(at.x, height, at.z).project(camera)
+								if (Math.abs(seen.x) >= 0.95 || Math.abs(seen.y) >= 0.95 || seen.z >= 1) {
+									offScreen.add(`${mark} wave ${wave} at ${approach}, ${distance} m in`)
+								}
+							}
+						}
+					}
+				}
+			}
+			expect([...offScreen]).toEqual([])
+		})
 	}
+
+	it('looks along the path on a straight, and stays behind the samurai round a corner', () => {
+		const path = createPath(roundLength)
+		const [, height, back] = cameraOf(9 / 19.5, false).position
+		const straight = viewOnPath(path, 40, 9 / 19.5, false)
+		expect(straight.frame.heading).toBeCloseTo(0)
+		expect(straight.position[1]).toBe(height)
+		expect(straight.position[2]).toBeCloseTo(-40 + back)
+		// Coming out of the first corner, the camera's way ahead is between the two streets'.
+		const corner = viewOnPath(path, 80, 9 / 19.5, false)
+		expect(corner.frame.heading).toBeGreaterThan(0)
+		expect(corner.frame.heading).toBeLessThan(path.at(80).heading)
+	})
 })

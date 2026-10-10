@@ -2,9 +2,13 @@
  * Where the run's camera stands and looks: behind and above the samurai, far enough back that the
  * ninjas are in view on a narrow phone, and close in when he has fallen. Plain numbers, so the
  * framing can be tested against where the ninjas actually stand.
+ *
+ * `cameraOf` is the camera around the samurai, the way ahead along `-z`; `viewOnPath` sets that
+ * down where he is on the path.
  */
 
 import { distanceFor, type Framing } from '../../canvas/framing.mts'
+import { beside, type Path } from './path.mts'
 
 type Point = readonly [x: number, y: number, z: number]
 
@@ -34,4 +38,38 @@ export function cameraOf(aspect: number, fallen: boolean, framing = runFraming):
 		// use a gentler version so the lower ninja row remains visible.
 		look: fallen ? lookFallen : aspect > 1 ? lookAheadWide : aspect <= 0.7 ? lookAheadPortrait : lookAhead,
 	}
+}
+
+/** Where the samurai is, and the way ahead the camera and the ninjas around him go by. */
+export type ViewFrame = {
+	readonly x: number
+	readonly z: number
+	/** The rotation about `y` that faces ahead. */
+	readonly heading: number
+}
+
+export type PathView = {
+	readonly frame: ViewFrame
+	readonly position: Point
+	readonly look: Point
+}
+
+/**
+ * The camera with the samurai `distance` metres along `path`. Ahead is the way from where the
+ * path was the camera's distance back to him, so the camera stays over the path round a corner
+ * and never cuts through a house. The ninjas stand around him square to that same way, so on
+ * screen they stand where they would on a straight path, even round a corner.
+ */
+export function viewOnPath(path: Path, distance: number, aspect: number, fallen: boolean): PathView {
+	const here = path.at(distance)
+	// The way ahead goes by the running camera's distance, so the ninjas don't move when he falls.
+	const [, , back] = cameraOf(aspect, false).position
+	const from = path.at(distance - back)
+	const frame = { x: here.x, z: here.z, heading: Math.atan2(from.x - here.x, from.z - here.z) }
+	const spot = cameraOf(aspect, fallen)
+	const at = ([x, y, z]: Point): Point => {
+		const ground = beside(frame, x, -z)
+		return [ground.x, y, ground.z]
+	}
+	return { frame, position: at(spot.position), look: at(spot.look) }
 }

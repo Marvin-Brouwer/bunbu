@@ -134,6 +134,11 @@ export const fixtures: Readonly<Record<string, () => Fixture>> = {
 	'ambush-yes-no': () => ambush(0),
 	'ambush-single': single,
 	'ambush-multiple': () => ambush(2),
+	// The same, coming out of the first street corner, where the camera and the path part ways.
+	'ambush-corner': () => {
+		const state = ambush(2)
+		return { ...state, run: { ...state.run, distance: 78 } }
+	},
 	'ambush-order': () => ambush(3),
 	'ambush-many': () => ambush(2, manyQuiz),
 	'ambush-marked': () => picking(ambush(2), [0]),
