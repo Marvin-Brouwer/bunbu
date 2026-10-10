@@ -83,7 +83,13 @@ export function createNinjas(initial: NinjasState = noNinjas): Ninjas {
 		advance(approach) {
 			const next = Math.min(1, Math.max(0, approach))
 			store.update(() => ({
-				active: store.value.active.map((ninja) => (ninja.pose === 'approach' ? { ...ninja, approach: next } : ninja)),
+				active: store.value.active.map((ninja) => {
+					if (ninja.pose !== 'approach') return ninja
+					// The rear wave enters just after the front wave, making the source of
+					// the ambush readable instead of making every ninja move as one block.
+					const delayed = ninja.wave > 0 ? Math.max(0, next - 0.12) : next
+					return { ...ninja, approach: delayed }
+				}),
 			}))
 		},
 

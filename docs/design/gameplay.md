@@ -26,10 +26,11 @@ The run ends when the stage is cleared ([results](screens.md#7-finished-results-
 
 One screen, no Draw or Submit button: **the swipe is the answer**.
 
-1. The world freezes into slow motion. The scroll opens and fills the top of the screen with the query, any code, and the options.
-2. Every option is tagged with a **mark**: the swipe direction (← ↑ → …) of the ninja carrying it.
-3. The foot of the scroll is the **swipe zone**: the scroll reaches down to the bottom of the screen, and its text scrolls above the zone. Swiping toward a mark picks that option. Only swipes in this zone count, so the text above can be scrolled freely.
-4. The scroll rolls up, slow motion snaps back to full speed, and the slashes and blocks play.
+1. The world freezes into slow motion. The ninjas run into view, one briefly winding up for a cut before the answer appears.
+2. The scroll opens and fills the top of the screen with the query, any code, and the options.
+3. Every option is tagged with a **mark**: the swipe direction (← ↑ → …) of the ninja carrying it.
+4. The foot of the scroll is the **swipe zone**: the scroll reaches down to the bottom of the screen, and its text scrolls above the zone. Swiping toward a mark picks that option. Only swipes in this zone count, so the text above can be scrolled freely.
+5. The scroll rolls up, slow motion snaps back to full speed, and the slashes and blocks play.
 
 The swipe zone is an abstract paper-cutting target, as in kumdo (종이베기): the scroll's own paper, edge to edge, ruled between grey strips, with a black band and ring; it shows no ninjas. Only the swipe zone blocks text selection; the scroll's text can be selected. Above it are one brush-lettered line on how to answer and the marks swiped so far, as small arrows in swipe order, since the options above may have scrolled away. The finger leaves a faint trace on the paper, and each pick cuts it with a red slash in the direction of its mark; only the last cut matters, so the one before fades. The ambush is about the answers: the real ninjas creep in, in 3D, behind the scroll (see [time limit](#time-limit)), and what happens to them follows the answer.
 
@@ -51,7 +52,7 @@ The swipe zone is an abstract paper-cutting target, as in kumdo (종이베기): 
 Each ninja carries one option. A **slash** means "this option is picked", a **block** means "not picked". The answer is correct when every slash lands on a correct option and every block on an incorrect one. The same rule covers `yes-no` and `solutions`.
 
 - **Correct:** picked ninjas are slain, the others are blocked, knocked back and flee. `+100` pops up (see [score](#score)). The samurai holds for about half a second for the strike, then runs on.
-- **Wrong:** a ninja lands the hit and all of them vanish. The lost chunk flashes and drops off the life bar, with a red edge flash and a haptic buzz (haptics can be turned off in the settings). No answer is shown and nothing needs tapping: after about 1 s the run resumes. The miss is saved for the review at the end.
+- **Wrong:** a ninja lands the hit with a katana slice and blood spray, and all of them vanish. The lost chunk flashes and drops off the life bar, with a haptic buzz (haptics can be turned off in the settings). No answer is shown and nothing needs tapping: after about 1 s the run resumes. The miss is saved for the review at the end.
 - **Unanswered:** time ran out. The front ninja slices through the scroll, then all of them hit, which still counts as one hit. Costs the same as a wrong answer. Half-swiped answers do not count. Saved for the review as "unanswered".
 
 ### More than 3 options
