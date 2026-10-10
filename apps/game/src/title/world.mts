@@ -217,7 +217,7 @@ export function createTitleWorld(viewport: Viewport): View {
 		})
 		torii.add(gate)
 	}).catch((error: unknown) => {
-		console.warn('[bunbu] the torii did not load; the samurai stands alone', error)
+		console.warn('[bunbu] the torii model did not load; the placeholder gate stays', error)
 	})
 	// Cherry trees: the maples with their leaves in blossom. Their own materials, so the shared model keeps its colours.
 	const grove = new Group()
