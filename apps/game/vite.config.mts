@@ -15,9 +15,17 @@ export default rootedManifest({
 		background_color: '#ffffff',
 		display: 'standalone',
 	},
-	// The service worker only precaches scripts, styles and pages; the bundled brush font is kept the
-	// first time it loads, so it is there offline after that.
+	// The service worker only precaches scripts, styles and pages; the bundled brush font and the 3D
+	// models are kept the first time they load, so they are there offline after that.
 	runtimeCaching: [
+		{
+			// A model keeps its name when it changes, so the kept copy is refreshed in the background.
+			urlPattern: ({ url }) => url.pathname.endsWith('.glb'),
+			handler: 'StaleWhileRevalidate',
+			options: {
+				cacheName: 'models',
+			},
+		},
 		{
 			urlPattern: ({ request }) => request.destination === 'font',
 			handler: 'CacheFirst',
