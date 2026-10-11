@@ -11,6 +11,7 @@ import type { Stage } from '../../_shared/state/selection.mts'
 import { createCastleTown } from './castle-town.mts'
 import type { StageView } from './landscape.mts'
 import { createPath, townRound, type Path } from './path.mts'
+import { bambooRound, createBambooForest } from './bamboo-forest.mts'
 import { createRiceFields, riceRound } from './rice-fields.mts'
 
 export type StageWorld = {
@@ -36,6 +37,10 @@ export function createStageWorld(stage: Stage, scene: Scene, length: number): St
 	if (stage === 'rice-fields') {
 		const path = createPath(length, riceRound)
 		return { path, view: createRiceFields(scene, path, -60, length, loadSome({ maple: 'maple', kit: 'stage-kit' })) }
+	}
+	if (stage === 'bamboo-forest') {
+		const path = createPath(length, bambooRound)
+		return { path, view: createBambooForest(scene, path, -60, length, loadSome({ kit: 'stage-kit', temple: 'temple-kit' })) }
 	}
 	const path = createPath(length, townRound)
 	return { path, view: createCastleTown(scene, path, -60, length, loadSome({ maple: 'maple', torii: 'torii', bamboo: 'bamboo', kit: 'town-kit' })) }

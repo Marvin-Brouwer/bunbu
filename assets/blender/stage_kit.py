@@ -9,6 +9,8 @@ the stages share one style with the temple. Each piece is a root named for it, i
 
 - Rice fields: `Farmhouse`, a farmhouse (minka) under a thick thatched roof, and `Scarecrow`, a
   scarecrow (kakashi) in a straw coat and hat.
+- Bamboo forest: `BambooClump`, a few tall stalks with leaves at the top, light enough to stand by
+  the thousand; `Shrine`, a small wayside shrine (hokora); and `Jizo`, a stone Jizō in a red bib.
 """
 
 import math
@@ -32,6 +34,11 @@ def stage_materials():
         'Cloth': kit.material('Cloth', kit.srgb(0xE6DCC4), 0.95),
         'Indigo': kit.material('Indigo', kit.srgb(0x2F4A7A), 0.9),
         'Earth': kit.material('Earth', kit.srgb(0x7A6448), 1.0),
+        'Bamboo': kit.material('Bamboo', kit.srgb(0x7FA046), 0.6),
+        'BambooNode': kit.material('BambooNode', kit.srgb(0x5E7A32), 0.7),
+        'BambooLeaf': kit.material('BambooLeaf', kit.srgb(0x7AA848), 0.8),
+        'Bib': kit.material('Bib', kit.srgb(0xC0281E), 0.9),
+        'Moss': kit.material('Moss', kit.srgb(0x5A6E34), 1.0),
     })
 
 
@@ -89,6 +96,57 @@ def scarecrow():
     return figure
 
 
+def bamboo_clump():
+    """A few tall stalks, leaning a little apart, each ringed at its nodes and tufted with leaves up top."""
+    clump = root('BambooClump')
+    stalks = [(0.0, 0.0, 11.0, 0.0), (0.45, 0.3, 9.5, 0.05), (-0.35, 0.4, 10.2, -0.04), (0.15, -0.45, 8.6, 0.03)]
+    for x, z, tall, lean in stalks:
+        stalk = cylinder(clump, 'Bamboo', (0, 0, 0), 0.07, tall, sides=6, top_radius=0.045)
+        stalk.location = kit.at(x, 0, z)
+        stalk.rotation_euler = (lean, lean * 0.6, 0)
+        for node in range(1, int(tall / 2.0)):
+            ring = cylinder(clump, 'BambooNode', (0, 0, 0), 0.08 - node * 0.004, 0.06, sides=6)
+            ring.location = kit.at(x + math.sin(lean * 0.6) * node * 2.0, node * 2.0, z - math.sin(lean) * node * 2.0)
+        # Leaves: a few flat sprays near the top, pointing out and drooping.
+        for leaf in range(5):
+            angle = leaf * 2 * math.pi / 5 + x
+            height = tall * (0.72 + 0.05 * leaf)
+            spray = box(clump, 'BambooLeaf', (0, 0, 0), (1.0, 0.02, 0.24))
+            spray.location = kit.at(x + math.cos(angle) * 0.65, height, z + math.sin(angle) * 0.65)
+            spray.rotation_euler = (0.0, 0.35, -angle)
+    return clump
+
+
+def shrine():
+    """A small wayside shrine (hokora): a stone base, a wooden house with a gable roof, a red cloth."""
+    house = root('Shrine')
+    box(house, 'Stone', (0, 0.25, 0), (1.2, 0.5, 1.0))
+    box(house, 'Stone', (0, 0.55, 0), (1.0, 0.1, 0.85))
+    box(house, 'Timber', (0, 1.0, 0), (0.75, 0.8, 0.6))
+    box(house, 'Black', (0, 0.95, 0.31), (0.4, 0.55, 0.02))
+    box(house, 'Gold', (0, 1.25, 0.32), (0.18, 0.12, 0.02))
+    # A gable roof of two boards, steep, overhanging front and back.
+    for side in (-1, 1):
+        board = box(house, 'Timber', (0, 0, 0), (1.05, 0.06, 0.62))
+        board.location = kit.at(0, 1.58, side * 0.24)
+        board.rotation_euler = (side * 0.75, 0, 0)
+    box(house, 'Timber', (0, 1.8, 0), (1.1, 0.08, 0.08))
+    box(house, 'Bib', (0, 1.38, 0.33), (0.6, 0.12, 0.02))
+    return house
+
+
+def jizo():
+    """A stone Jizō: a round-headed figure in a red bib and cap, on a lotus base, hands together."""
+    figure = root('Jizo')
+    cylinder(figure, 'Stone', (0, 0, 0), 0.32, 0.18, sides=10)
+    cylinder(figure, 'Stone', (0, 0.18, 0), 0.2, 0.55, sides=10, top_radius=0.17)
+    box(figure, 'Bib', (0, 0.62, 0.12), (0.34, 0.24, 0.08))
+    sphere(figure, 'Stone', (0, 0.88, 0), 0.15)
+    cylinder(figure, 'Bib', (0, 0.94, 0), 0.155, 0.12, sides=10, top_radius=0.1)
+    box(figure, 'Stone', (0, 0.5, 0.18), (0.1, 0.14, 0.06))
+    return figure
+
+
 def main():
     argv = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else []
     out = argv[0] if argv else 'stage-kit.glb'
@@ -96,7 +154,7 @@ def main():
 
     bpy.ops.wm.read_factory_settings(use_empty=True)
     stage_materials()
-    pieces = [farmhouse(), scarecrow()]
+    pieces = [farmhouse(), scarecrow(), bamboo_clump(), shrine(), jizo()]
     for piece in pieces:
         kit.join_children(piece)
     bpy.ops.export_scene.gltf(filepath=out, export_format='GLB', export_apply=True, export_yup=True,
@@ -106,7 +164,7 @@ def main():
 
 
 def render_preview(pieces, path):
-    for piece, x in zip(pieces, (0, 10)):
+    for piece, x in zip(pieces, (0, 10, 13, 15, 17)):
         piece.location = kit.at(x, 0, 0)
     sun = bpy.data.objects.new('Sun', bpy.data.lights.new('Sun', 'SUN'))
     sun.data.energy = 4
