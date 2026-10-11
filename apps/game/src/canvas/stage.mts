@@ -10,6 +10,11 @@ import type { Viewport } from './viewport.mts'
 /** A world on the canvas: a scene, and a function that makes it match the state every frame. */
 export type View = {
 	readonly scene: Scene
+	/**
+	 * Effects drawn over the world whatever its depth, such as a slash across the screen: a second
+	 * pass with the same camera ([layering](../../../../docs/architecture/rendering.md#layering-inside-the-canvas)).
+	 */
+	readonly overlay?: Scene
 	/** Reads the stores and updates the scene. Never changes state. */
 	draw: (delta: number) => void
 	dispose?: () => void
@@ -57,5 +62,11 @@ export function drawFrame(delta: number): void {
 		return
 	}
 	view.draw(delta)
-	viewport.renderer.render(view.scene, viewport.camera)
+	const { renderer, camera } = viewport
+	renderer.render(view.scene, camera)
+	if (view.overlay === undefined) return
+	renderer.autoClear = false
+	renderer.clearDepth()
+	renderer.render(view.overlay, camera)
+	renderer.autoClear = true
 }

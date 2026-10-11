@@ -28,10 +28,10 @@ The samurai's run, attack and hit animations come from the [Universal Animation 
 
 Until a samurai model of our own lands, both sides come from one Quaternius pack ([Ultimate Animated Character Pack](https://quaternius.com/), CC0), so they share one rig, one set of clips and one style:
 
-- **Samurai:** ["Matt"](https://poly.pizza/m/66kQ4dBBC7) in armour built in code (`fight/world/armour.mts`). The armour is a kabuto helmet with gilt horns and a neck guard, a laced breastplate, shoulder and hip plates, sleeves and hakama, hung on the bones. His long blade serves as the katana. The helmet comes off when he falls.
+- **Samurai:** ["Matt"](https://poly.pizza/m/66kQ4dBBC7) in armour built in code (`_shared/world/armour.mts`). The armour is a kabuto helmet with gilt horns and a neck guard, a laced breastplate, shoulder and hip plates, sleeves and hakama, hung on the bones. His long blade serves as the katana. The helmet comes off when he falls.
 - **Ninjas:** the [ninja](https://poly.pizza/m/xGYmeDpfTu) in black with a red sash.
 
-The world plays these clips, fitted to the state's timing (`fight/world/poses.mts`):
+The world plays these clips, fitted to the state's timing (`_shared/world/poses.mts`):
 
 | Pose                     | Clip       |
 | ------------------------ | ---------- |
@@ -44,7 +44,7 @@ The world plays these clips, fitted to the state's timing (`fight/world/poses.mt
 
 A replacement model needs clips with these names, or a change to that table.
 
-The **Castle town** stage uses, from Quaternius on Poly Pizza (CC0): the [maple trees](https://poly.pizza/m/iGFtQd0PJO) (five variants in one file), [bamboo](https://poly.pizza/m/xBPj13w3JQ) and the [torii gate](https://poly.pizza/m/7SyXZ62xR5). The town houses (machiya), stone lanterns, the bridge, the pagoda and the castle keep are built in code from simple shapes (`fight/world/castle-town.mts`): no free CC0 pack of Japanese town buildings turned up. The models are in `apps/game/public/models/` as downloaded; they are not compressed yet.
+The **Castle town** stage uses, from Quaternius on Poly Pizza (CC0): the [maple trees](https://poly.pizza/m/iGFtQd0PJO) (five variants in one file), [bamboo](https://poly.pizza/m/xBPj13w3JQ) and the [torii gate](https://poly.pizza/m/7SyXZ62xR5). The town houses (machiya), stone lanterns, the bridge, the pagoda and the castle keep are built in code from simple shapes (`fight/world/castle-town.mts`): no free CC0 pack of Japanese town buildings turned up. The models are in `apps/game/public/models/`, compressed as the [web pipeline](#web-pipeline) says.
 
 ## Sources
 
@@ -83,7 +83,16 @@ Old-school Japan props found on Poly Pizza, all from Quaternius (CC0) unless not
 
 ## Web pipeline
 
-- Compress every GLB with [gltf-transform](https://gltf-transform.dev/) (`optimize`, meshopt geometry, KTX2 or WebP textures).
+- Compress every GLB with [gltf-transform](https://gltf-transform.dev/): WebP textures at 512 px at most, then meshopt geometry. `canvas/models.mts` decodes meshopt; the browser decodes WebP itself. KTX2 isn't used: the models have six small textures between them, and KTX2 would mean shipping the Basis transcoder for them.
+
+  ```sh
+  npx @gltf-transform/cli resize in.glb resized.glb --width 512 --height 512
+  npx @gltf-transform/cli webp resized.glb webp.glb
+  npx @gltf-transform/cli meshopt webp.glb out.glb --level medium
+  ```
+
+  Don't use `optimize`: it joins and flattens meshes, which renames the nodes the world looks up by name (the bones, `MapleTree_1` and so on).
+- The service worker keeps each model the first time it loads, so the world has its models offline after that.
 - Use `InstancedMesh` for repeated props such as bamboo and trees.
 
 ## Attribution

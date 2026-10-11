@@ -74,7 +74,7 @@ To avoid it:
 When something in the world must be drawn in a fixed order, do it inside the one canvas:
 
 - **`renderOrder`** on meshes or groups, for transparent things that sort wrongly (smoke, slash trails, the ink splash).
-- **Two passes** when something must always be on top of the world regardless of depth, such as a slash effect across the screen: set `renderer.autoClear = false`, render the world scene, call `renderer.clearDepth()`, then render the effects scene with the same camera.
+- **Two passes** when something must always be on top of the world regardless of depth, such as a slash effect across the screen: set `renderer.autoClear = false`, render the world scene, call `renderer.clearDepth()`, then render the effects scene with the same camera. A view gives that scene as its `overlay` (`canvas/stage.mts`); the run's slash trail is drawn there.
 - **Layers** (`Object3D.layers`) to include or exclude objects from a pass, rather than keeping separate scenes in sync.
 
 All of these share the same context, camera and assets.

@@ -8,8 +8,8 @@
  * When the real models land (track F), the same poses pick a clip and fit it to these durations.
  */
 
-import type { NinjaPose } from '../state/ninjas.mts'
-import type { Pose } from '../state/shogun.mts'
+import type { NinjaPose } from '../../fight/state/ninjas.mts'
+import type { Pose } from '../../fight/state/shogun.mts'
 
 /** Every pose a figure in the run can be in: the samurai's and the ninjas'. */
 export type FigurePose = Pose | NinjaPose

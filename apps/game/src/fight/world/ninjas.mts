@@ -14,11 +14,12 @@ import type { Group } from 'three'
 import type { AmbushOption, Mark } from '../../_shared/state/ambush.mts'
 import { marks } from '../../_shared/state/ambush.mts'
 import type { Ninja } from '../state/ninjas.mts'
-import type { Body } from './character.mts'
+import type { Body } from '../../_shared/world/character.mts'
 import type { ViewFrame } from './camera.mts'
+import type { SlainSpot } from './effects.mts'
 import { beside } from './path.mts'
 import { lungeOf, spotOf } from './placement.mts'
-import { poseSeconds } from './poses.mts'
+import { poseSeconds } from '../../_shared/world/poses.mts'
 
 /** The back row is drawn faded ([more than 3 options](../../../../../docs/design/gameplay.md#more-than-3-options)). */
 const backRowOpacity = 0.5
@@ -37,6 +38,7 @@ const creepCycle = 9
 
 type Shown = {
 	body: Body
+	pose: Ninja['pose']
 	/**
 	 * The mark it closes in from. Kept, because committing an ambush clears its options while the
 	 * ninjas are still being slain or blocked where the player swiped.
@@ -78,6 +80,8 @@ export type NinjasView = {
 	remake: (make: () => Body) => void
 	/** The mark the ninja with `id` was last drawn at, for the samurai to turn toward. */
 	markOf: (id: number) => Mark | undefined
+	/** Where each slain ninja lies, and for how long, for his ink splash. */
+	slain: () => SlainSpot[]
 	dispose: () => void
 }
 
@@ -103,6 +107,7 @@ export function createNinjasView(parent: Group, make: () => Body): NinjasView {
 				if (entry === undefined) {
 					entry = {
 						body: maker(),
+						pose: ninja.pose,
 						mark: markById(ninja.id),
 						sequence: ninja.sequence,
 						time: 0,
@@ -132,6 +137,7 @@ export function createNinjasView(parent: Group, make: () => Body): NinjasView {
 					entry.sequence = ninja.sequence
 					entry.time = 0
 				}
+				entry.pose = ninja.pose
 
 				if (!beaten.has(ninja.pose)) entry.beatenAt = undefined
 				else entry.beatenAt ??= frame
@@ -185,6 +191,10 @@ export function createNinjasView(parent: Group, make: () => Body): NinjasView {
 		},
 
 		markOf: (id) => shown.get(id)?.mark,
+
+		slain: () => [...shown]
+			.filter(([, entry]) => entry.pose === 'slain')
+			.map(([id, entry]) => ({ id, x: entry.body.root.position.x, z: entry.body.root.position.z, time: entry.time })),
 
 		dispose() {
 			for (const [id, entry] of shown) drop(id, entry)

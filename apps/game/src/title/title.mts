@@ -16,8 +16,10 @@ import { MenuButton } from '../_shared/menu/menu-button.mts'
 import { Placeholder } from '../_shared/placeholder.mts'
 import { selection, type SelectionState } from '../_shared/state/selection.mts'
 import { snapshot } from '../_shared/state/store.mts'
+import { show } from '../canvas/stage.mts'
 import { ChosenQuizCard } from './chosen-quiz-card.mts'
 import { UpdateNotice } from './update-notice.mts'
+import { createTitleWorld } from './world.mts'
 import styles from './title.css'
 
 export const Title = component({
@@ -131,6 +133,7 @@ export const Title = component({
 
 		showChosen()
 		selection.on('change', signal, showChosen)
+		show(createTitleWorld, signal)
 	},
 })
 

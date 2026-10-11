@@ -8,10 +8,12 @@ import { createPracticeGame } from './state/practice.mts'
 import { selection } from '../_shared/state/selection.mts'
 import { snapshot } from '../_shared/state/store.mts'
 import { back, Placeholder } from '../_shared/placeholder.mts'
+import { show } from '../canvas/stage.mts'
+import { createDojoWorld } from './world.mts'
 
 export const Practice = component({
 	name: 'practice',
-	onMount({ append, create }) {
+	onMount({ append, create, signal }) {
 		const game = createPracticeGame()
 		const { quiz } = snapshot(selection)
 		if (quiz !== undefined) game.quiz.value.load(quiz)
@@ -23,5 +25,7 @@ export const Practice = component({
 				links: [back],
 			})
 		)
+
+		show((viewport) => createDojoWorld(viewport, game.tally), signal)
 	},
 })

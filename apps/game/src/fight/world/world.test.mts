@@ -11,7 +11,7 @@ import { cameraOf, runFraming, viewOnPath } from './camera.mts'
 import { markOf } from './ninjas.mts'
 import { beside, createPath, roundLength } from './path.mts'
 import { headingOf, lungeOf, placementConfig, spotOf } from './placement.mts'
-import { clipPlays, clipTimeOf, finishing, finishingOf, helmetFlight, helmetRest, helmetSeconds, poseSeconds, rigOf } from './poses.mts'
+import { clipPlays, clipTimeOf, finishing, finishingOf, helmetFlight, helmetRest, helmetSeconds, poseSeconds, rigOf } from '../../_shared/world/poses.mts'
 
 describe('placement', () => {
 	it('puts a ninja where its mark points on screen', () => {

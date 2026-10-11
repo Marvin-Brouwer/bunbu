@@ -4,11 +4,15 @@
  *
  * Loading is the one thing in the canvas that takes time, so callers get a promise and show a
  * stand-in until it resolves.
+ *
+ * The files are compressed ([web pipeline](../../../../docs/design/assets.md#web-pipeline)):
+ * meshopt geometry, decoded here, and WebP textures, which the browser decodes itself.
  */
 
 import { GLTFLoader, type GLTF } from 'three/addons/loaders/GLTFLoader.js'
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js'
 
-const loader = new GLTFLoader()
+const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder)
 const loaded = new Map<string, Promise<GLTF>>()
 
 /** The model `name`, from `public/models/<name>.glb`. */

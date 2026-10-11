@@ -97,7 +97,7 @@ Owns `_shared/scroll/`, `_shared/markdown/`, `fight/hud/` and the theme in `appl
 
 ### E. 3D world (code)
 
-Owns `canvas/` and `fight/world/` (the run's world).
+Owns `canvas/`, `fight/world/` (the run's world), `_shared/world/` (the figures and the petals), and the title's and the dojo's worlds (`title/world.mts`, `dojo/world.mts`).
 
 Builds against placeholder models (capsules and boxes) until F delivers, so it never waits on art.
 
@@ -108,7 +108,7 @@ Builds against placeholder models (capsules and boxes) until F delivers, so it n
 - Ninjas: one mesh per ninja in the store, approach position from `ninjas` state (they are the timer), slain, blocked and flee, landing the hit, front then back waves.
 - Effects: slash trail, ink splash, petals. Second pass for effects that must sit on top.
 - Title screen samurai under a torii, fallen samurai in ink-wash grey, the training dummy for the dojo.
-- Asset loading with GLTFLoader, meshopt and KTX2, with a loading state.
+- Asset loading with GLTFLoader and meshopt (WebP textures rather than KTX2, see [web pipeline](design/assets.md#web-pipeline)), with placeholders while loading.
 
 ### F. 3D assets (Blender, little code)
 
