@@ -12,6 +12,10 @@ the stages share one style with the temple. Each piece is a root named for it, i
 - Bamboo forest: `BambooClump`, a few tall stalks with leaves at the top, light enough to stand by
   the thousand; `Shrine`, a small wayside shrine (hokora); and `Jizo`, a stone Jizō in a red bib.
 - Mountain temple: `Pine`, a Japanese black pine with a twisting trunk and flat pads of needles.
+- Edo castle: `CastleWall`, six metres of curving stone wall (ishigaki) under a white plastered wall
+  with a tiled cap, its face toward +z; `CastleGate`, a gatehouse (yaguramon) over an eight-metre
+  passage; and `CastleKeep`, the keep (tenshu): five storeys of white walls under curved roofs on a
+  sloping stone base, with gilt fish-tigers (shachihoko) on the top ridge.
 """
 
 import math
@@ -23,7 +27,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import bpy  # noqa: E402
 
 import temple_kit as kit  # noqa: E402
-from temple_kit import box, curved_roof, cylinder, root, sphere  # noqa: E402
+from temple_kit import box, curved_roof, cylinder, ridge_cap, root, sphere  # noqa: E402
 
 
 def stage_materials():
@@ -42,6 +46,8 @@ def stage_materials():
         'Moss': kit.material('Moss', kit.srgb(0x5A6E34), 1.0),
         'Bark': kit.material('Bark', kit.srgb(0x4A3A30), 1.0),
         'Needles': kit.material('Needles', kit.srgb(0x2F5230), 0.9),
+        'WallStone': kit.material('WallStone', kit.srgb(0x8C877C), 1.0),
+        'Iron': kit.material('Iron', kit.srgb(0x2A2A2E), 0.5, metallic=0.6),
     })
 
 
@@ -172,6 +178,111 @@ def pine():
     return tree
 
 
+def _extrude(parent, material_name, profile, length):
+    """A shape from `profile` (z, y points, wound round) pushed along x for `length` metres, centred."""
+    import bmesh
+    mesh = bpy.data.meshes.new('extruded')
+    built = bmesh.new()
+    ends = []
+    for x in (-length / 2, length / 2):
+        ends.append([built.verts.new(kit.at(x, y, z)) for z, y in profile])
+    count = len(profile)
+    for index in range(count):
+        a, b = index, (index + 1) % count
+        built.faces.new([ends[0][a], ends[0][b], ends[1][b], ends[1][a]])
+    built.faces.new(list(reversed(ends[0])))
+    built.faces.new(ends[1])
+    bmesh.ops.recalc_face_normals(built, faces=built.faces)
+    built.to_mesh(mesh)
+    built.free()
+    return kit.new_object('extruded', mesh, [material_name], parent)
+
+
+# The stone wall's face: a concave batter, wide at the foot and rising nearly upright (ōgi-kōbai).
+WALL_FACE = [(1.6, 0.0), (1.0, 1.1), (0.55, 2.2), (0.22, 3.3), (0.05, 4.3), (0.0, 4.8)]
+
+
+def castle_wall():
+    """Six metres of stone wall: the curving stone face, a white wall on top, a tiled cap."""
+    wall = root('CastleWall')
+    length = 6.0
+    profile = WALL_FACE + [(-2.0, 4.8), (-2.0, 0.0)]
+    _extrude(wall, 'WallStone', profile, length)
+    # Courses of stone: darker bands across the face.
+    for z, y in WALL_FACE[1:-1]:
+        _extrude(wall, 'StoneDark', [(z + 0.06, y - 0.06), (z + 0.06, y + 0.06), (z - 0.1, y + 0.06), (z - 0.1, y - 0.06)], length + 0.02)
+    box(wall, 'Plaster', (0, 5.55, -0.7), (length + 0.02, 1.5, 0.45))
+    box(wall, 'Timber', (0, 4.95, -0.7), (length + 0.03, 0.3, 0.5))
+    # A cap of tiles: two sloping boards meeting over the wall, and the ridge on top.
+    for side in (-1, 1):
+        board = box(wall, 'RoofTile', (0, 0, 0), (length + 0.04, 0.12, 0.75))
+        board.location = kit.at(0, 6.45, -0.7 + side * 0.3)
+        board.rotation_euler = (side * 0.45, 0, 0)
+    box(wall, 'RoofEdge', (0, 6.62, -0.7), (length + 0.06, 0.16, 0.2))
+    return wall
+
+
+def castle_gate():
+    """A gatehouse (yaguramon): stone footings either side of the passage, a white storey across it, a roof."""
+    gate = root('CastleGate')
+    passage = 8.0
+    for side in (-1, 1):
+        footing = _extrude(gate, 'WallStone', WALL_FACE + [(-6.0, 4.8), (-6.0, 0.0)], 5.0)
+        footing.location = kit.at(side * (passage / 2 + 2.5), 0, 3.0)
+        # Doors swung open against the footings: dark timber studded with iron.
+        box(gate, 'Timber', (side * (passage / 2 - 0.15), 2.3, -0.4), (0.25, 4.6, 3.6))
+        for row in range(4):
+            box(gate, 'Iron', (side * (passage / 2 - 0.3), 0.8 + row * 1.1, -0.4), (0.06, 0.12, 3.2))
+    width = passage + 10.4
+    box(gate, 'Timber', (0, 5.0, 0.4), (width, 0.4, 6.4))
+    box(gate, 'Plaster', (0, 6.6, 0.4), (width - 0.4, 2.8, 5.8))
+    box(gate, 'Timber', (0, 5.5, 3.32), (width - 0.3, 0.6, 0.06))
+    # Arrow slits and a row of latticed windows in the white wall.
+    for index in range(6):
+        x = -width / 2 + 1.8 + index * (width - 3.6) / 5
+        box(gate, 'Black', (x, 6.9, 3.33), (1.2, 0.9, 0.04))
+        for bar in range(-2, 3):
+            box(gate, 'Timber', (x + bar * 0.24, 6.9, 3.36), (0.05, 0.9, 0.04))
+    curved_roof(gate, (0, 7.9, 0.4), width + 2.6, 8.4, 3.2, 0.7)
+    ridge_cap(gate, (0, 11.1, 0.4), width + 2.6 - 8.4)
+    return gate
+
+
+def castle_keep():
+    """The keep (tenshu): a sloping stone base, then five white storeys, each under its own curved roof."""
+    keep = root('CastleKeep')
+    base = cylinder(keep, 'WallStone', (0, 0, 0), 17.0, 9.0, sides=4, top_radius=14.2)
+    base.rotation_euler = (0, 0, math.pi / 4)
+    y = 9.0
+    for storey in range(5):
+        width = 18.0 - storey * 2.8
+        depth = 14.0 - storey * 2.2
+        tall = 4.2 if storey < 4 else 3.6
+        box(keep, 'Plaster', (0, y + tall / 2, 0), (width, tall, depth))
+        box(keep, 'Black', (0, y + 0.3, 0), (width + 0.1, 0.6, depth + 0.1))
+        # Windows in a row along each long side.
+        windows = max(2, int(width / 3))
+        for index in range(windows):
+            x = -width / 2 + (index + 0.5) * width / windows
+            for z in (depth / 2 + 0.02, -depth / 2 - 0.02):
+                box(keep, 'Black', (x, y + tall * 0.55, z), (1.0, 1.1, 0.04))
+        roof_y = y + tall - 0.1
+        curved_roof(keep, (0, roof_y, 0), width + 3.4, depth + 3.4, 2.6 if storey < 4 else 4.0, 1.0, steps=4, run=8)
+        # A small gable (chidori-hafu) on the front of the middle roofs.
+        if 0 < storey < 4:
+            gable = cylinder(keep, 'RoofTile', (0, 0, 0), 2.4, 1.8, sides=3)
+            gable.location = kit.at(0, roof_y + 0.4, depth / 2 + 1.0)
+            gable.rotation_euler = (math.pi / 2, 0, 0)
+        y += tall + (1.8 if storey < 4 else 0)
+    top = y + 4.0
+    ridge = (18.0 - 4 * 2.8 + 3.4) - (14.0 - 4 * 2.2 + 3.4)
+    ridge_cap(keep, (0, top - 0.3, 0), ridge)
+    for side in (-1, 1):
+        box(keep, 'Gold', (side * (ridge / 2 + 0.3), top + 0.9, 0), (0.5, 1.6, 0.5))
+        box(keep, 'Gold', (side * (ridge / 2 + 0.6), top + 1.6, 0), (0.7, 0.35, 0.4))
+    return keep
+
+
 def main():
     argv = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else []
     out = argv[0] if argv else 'stage-kit.glb'
@@ -179,7 +290,7 @@ def main():
 
     bpy.ops.wm.read_factory_settings(use_empty=True)
     stage_materials()
-    pieces = [farmhouse(), scarecrow(), bamboo_clump(), shrine(), jizo(), pine()]
+    pieces = [farmhouse(), scarecrow(), bamboo_clump(), shrine(), jizo(), pine(), castle_wall(), castle_gate(), castle_keep()]
     for piece in pieces:
         kit.join_children(piece)
     bpy.ops.export_scene.gltf(filepath=out, export_format='GLB', export_apply=True, export_yup=True,
@@ -189,7 +300,7 @@ def main():
 
 
 def render_preview(pieces, path):
-    for piece, x in zip(pieces, (0, 10, 13, 15, 17, 20)):
+    for piece, x in zip(pieces, (0, 10, 13, 15, 17, 20, -12, -30, -60)):
         piece.location = kit.at(x, 0, 0)
     sun = bpy.data.objects.new('Sun', bpy.data.lights.new('Sun', 'SUN'))
     sun.data.energy = 4
@@ -200,8 +311,8 @@ def render_preview(pieces, path):
     bpy.context.scene.world = world
     camera = bpy.data.objects.new('Camera', bpy.data.cameras.new('Camera'))
     bpy.context.collection.objects.link(camera)
-    camera.location = kit.at(5, 6, 20)
-    camera.rotation_euler = (kit.at(5, 2.5, 0) - camera.location).to_track_quat('-Z', 'Y').to_euler()
+    camera.location = kit.at(-28, 14, 60)
+    camera.rotation_euler = (kit.at(-28, 10, 0) - camera.location).to_track_quat('-Z', 'Y').to_euler()
     scene = bpy.context.scene
     scene.camera = camera
     scene.render.engine = 'BLENDER_EEVEE'

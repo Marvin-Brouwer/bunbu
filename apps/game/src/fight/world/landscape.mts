@@ -183,3 +183,22 @@ export function stamp(template: Object3D, plantings: readonly Planting[], height
 	return meshes
 }
 
+/**
+ * Cuts away whatever of `material` is nearer the camera than `cut.value`, in view depth: what the camera
+ * passes through or under (a tunnel of torii, a gatehouse) would otherwise fill the screen. Its shadow stays.
+ */
+export function cutAway(material: Material, cut: { value: number }): void {
+	material.onBeforeCompile = (shader) => {
+		shader.uniforms.cutDepth = cut
+		shader.vertexShader = `varying float vViewDepth;\n${shader.vertexShader}`.replace(
+			'#include <project_vertex>',
+			'#include <project_vertex>\n\tvViewDepth = -mvPosition.z;',
+		)
+		shader.fragmentShader = `uniform float cutDepth;\nvarying float vViewDepth;\n${shader.fragmentShader}`.replace(
+			'void main() {',
+			'void main() {\n\tif (vViewDepth < cutDepth) discard;',
+		)
+	}
+	material.customProgramCacheKey = () => 'cut-away'
+	material.needsUpdate = true
+}

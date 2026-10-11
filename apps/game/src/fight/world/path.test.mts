@@ -5,6 +5,7 @@
 import { describe, expect, it } from 'vitest'
 import { beside, cornerRadius, createPath, roundLength, townRound } from './path.mts'
 import { bambooRound } from './bamboo-forest.mts'
+import { castleRound } from './edo-castle.mts'
 import { mountainRound } from './mountain-temple.mts'
 import { riceRound } from './rice-fields.mts'
 
@@ -65,7 +66,7 @@ describe('path', () => {
 
 describe('stage rounds', () => {
 	it('turns as much left as right on every stage, so the path keeps its way', () => {
-		for (const round of [townRound, riceRound, bambooRound, mountainRound]) {
+		for (const round of [townRound, riceRound, bambooRound, mountainRound, castleRound]) {
 			expect(round.reduce((sum, leg) => sum + leg.turn, 0)).toBeCloseTo(0)
 			const laid = createPath(4 * round.reduce((sum, leg) => sum + leg.length, 0), round)
 			expect(laid.at(laid.length - 1).heading).toBeCloseTo(0, 1)

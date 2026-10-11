@@ -137,8 +137,7 @@ describe('parsing what was saved', () => {
 	it('keeps the chosen quiz and a stage that can still be chosen', () => {
 		expect(parseSelection({ quiz: { id: 'a', version: '1' }, stage: 'castle-town' })).toEqual({ quiz: { id: 'a', version: '1' }, stage: 'castle-town' })
 		expect(parseSelection({ stage: 'rice-fields' })).toEqual({ quiz: undefined, stage: 'rice-fields' })
-		// Not built yet, so it can't be chosen.
-		expect(parseSelection({ stage: 'edo-castle' })).toEqual({ quiz: undefined, stage: undefined })
+		expect(parseSelection({ stage: 'edo-castle' })).toEqual({ quiz: undefined, stage: 'edo-castle' })
 		expect(parseSelection({ stage: 'moon' })).toEqual({ quiz: undefined, stage: undefined })
 	})
 

@@ -1,0 +1,247 @@
+/**
+ * Edo castle ([stages](../../../../../docs/design/screens.md#2-fight-setup)) at sunset: a gravel way
+ * between curving stone walls under white plastered walls, through gatehouses, along a moat, with
+ * pines behind the walls and the keep rising over everything. The last stage, and the grandest.
+ *
+ * Laid out once, when the run starts, in stretches of path that are each their own `InstancedMesh`.
+ * The walls, gates, keep and pines are from our stage kit (`assets/blender/stage_kit.py`), the
+ * lanterns from the temple kit; the grounds stand without them until they are in.
+ */
+
+import {
+	Box3,
+	BoxGeometry,
+	CircleGeometry,
+	Color,
+	DirectionalLight,
+	Fog,
+	Group,
+	HemisphereLight,
+	InstancedMesh,
+	Mesh,
+	MeshStandardMaterial,
+	Vector3,
+	type Material,
+	type Object3D,
+	type Scene,
+} from 'three'
+import type { GLTF } from 'three/addons/loaders/GLTFLoader.js'
+import { Batch, chunkOf, placed, scatter, type Cursor } from './kit.mts'
+import { clearanceOf, cutAway, facingPath, fogFar, isFree, sky, skyRadius, stamp, strip, type Owned, type Planting, type StageView, type Taken } from './landscape.mts'
+import { beside, type Leg, type Path } from './path.mts'
+
+const palette = {
+	skyTop: 0x2c2458,
+	skyHorizon: 0xf28c56,
+	fog: 0xb07a70,
+	lawn: 0x56603a,
+	gravel: 0xb8ad98,
+	water: 0x2d4a5a,
+}
+
+/** Straight ways between the walls, joined by turns as much left as right. */
+export const castleRound: readonly Leg[] = [
+	{ length: 60, turn: 0, zone: 'street' },
+	{ length: 25, turn: 0.8, zone: 'street' },
+	{ length: 50, turn: 0, zone: 'street' },
+	{ length: 25, turn: -1.6, zone: 'street' },
+	{ length: 50, turn: 0, zone: 'street' },
+	{ length: 25, turn: 0.8, zone: 'street' },
+	{ length: 40, turn: 0, zone: 'street' },
+]
+
+const roundLength = castleRound.reduce((sum, leg) => sum + leg.length, 0)
+
+/** Half the width of the gravel way, and how far from its middle the stone walls' feet stand. */
+const pathHalfWidth = 3
+const wallFoot = 6
+/** The wall's foot is this far in front of its root (`CastleWall` faces `+z`). */
+const wallFront = 1.6
+/** How long one wall piece is, and how far apart they are laid, a little less so they overlap. */
+const wallEvery = 5.8
+/** How far into a round the gatehouse stands. */
+const gateAt = 6
+
+/** Which side the moat is on at `distance`: `1` right, `-1` left, `0` none. Down two straights a round. */
+export function moatSide(distance: number): -1 | 0 | 1 {
+	const along = ((distance % roundLength) + roundLength) % roundLength
+	if (along > 88 && along < 132) return 1
+	if (along > 163 && along < 207) return -1
+	return 0
+}
+
+export type CastleModels = Partial<{
+	/** Our stage kit: `CastleWall`, `CastleGate`, `CastleKeep`, `Pine`. */
+	readonly kit: GLTF
+	/** The temple kit: `StoneLantern`. */
+	readonly temple: GLTF
+}>
+
+/** How tall `model` stands, so a model made to size is stamped at its own size. */
+function heightOf(model: Object3D): number {
+	model.updateMatrixWorld(true)
+	const bounds = new Box3().setFromObject(model)
+	return bounds.max.y - bounds.min.y
+}
+
+export function createEdoCastle(scene: Scene, path: Path, from: number, to: number, models: Promise<CastleModels>): StageView {
+	const visualTo = Math.min(to, 2400)
+	scene.background = new Color(palette.fog)
+	scene.fog = new Fog(palette.fog, 30, fogFar)
+	const owned: Owned = { geometries: [], materials: [], textures: [] }
+	const backdrop = sky(owned, palette.skyTop, palette.skyHorizon)
+	scene.add(backdrop)
+
+	scene.add(new HemisphereLight(0xc0b0e0, 0x4a3a30, 2.2))
+	// A low sun, warm and long-shadowed.
+	const sun = new DirectionalLight(0xffa070, 2.8)
+	sun.castShadow = true
+	sun.shadow.mapSize.set(1024, 1024)
+	for (const side of ['left', 'bottom'] as const) sun.shadow.camera[side] = -18
+	for (const side of ['right', 'top'] as const) sun.shadow.camera[side] = 18
+	sun.shadow.camera.near = 1
+	sun.shadow.camera.far = 80
+	sun.shadow.bias = -0.0008
+	scene.add(sun, sun.target)
+	const sunFrom = { x: -26, y: 22, z: 10 }
+
+	const groundGeometry = new CircleGeometry(skyRadius, 32).rotateX(-Math.PI / 2)
+	const groundMaterial = new MeshStandardMaterial({ color: palette.lawn, roughness: 1 })
+	owned.geometries.push(groundGeometry)
+	owned.materials.push(groundMaterial)
+	const ground = new Mesh(groundGeometry, groundMaterial)
+	ground.receiveShadow = true
+	scene.add(ground)
+
+	const gravel = new Color(palette.gravel)
+	scene.add(strip(path, from, visualTo, owned, { half: () => pathHalfWidth, colour: () => gravel, y: 0.03 }))
+
+	const cursor: Cursor = { chunk: 0 }
+	const clear = clearanceOf(path, from, visualTo)
+	const taken: Taken = []
+
+	// A gatehouse across the way at the start of every round.
+	const gates: Planting[] = []
+	const gateDistances: number[] = []
+	for (let distance = gateAt; distance < visualTo; distance += roundLength) {
+		if (distance < from) continue
+		const point = path.at(distance)
+		gates.push({ matrix: placed(point.x, 0, point.z, point.heading), chunk: chunkOf(distance) })
+		gateDistances.push(distance)
+	}
+	const nearGate = (distance: number) => gateDistances.some((gate) => Math.abs(gate - distance) < 7)
+
+	// Walls either side, but along a moat the near wall gives way to water, with a wall beyond it.
+	const walls: Planting[] = []
+	const water = new BoxGeometry(1, 1, 1)
+	const waterMaterial = new MeshStandardMaterial({ color: palette.water, roughness: 0.15, metalness: 0.4 })
+	owned.geometries.push(water)
+	owned.materials.push(waterMaterial)
+	const moat = new Batch(water, waterMaterial, cursor, { receive: true })
+	for (let distance = from; distance < visualTo; distance += wallEvery) {
+		if (nearGate(distance)) continue
+		const point = path.at(distance)
+		cursor.chunk = chunkOf(distance)
+		const moatOn = moatSide(distance)
+		for (const side of [-1, 1]) {
+			const foot = side === moatOn ? wallFoot + 9 : wallFoot
+			const at = beside(point, side * (foot + wallFront))
+			if (!clear(at.x, at.z, distance, foot + wallFront - 0.5, 20)) continue
+			walls.push({ matrix: placed(at.x, 0, at.z, facingPath(point, side)), chunk: cursor.chunk })
+			if (side === moatOn) {
+				const middle = beside(point, side * (wallFoot + 4))
+				moat.add(placed(middle.x, 0.02, middle.z, point.heading, 8.6, 0.05, wallEvery + 0.4))
+			}
+		}
+	}
+
+	// The keep, once a round, rising over the walls off to one side ahead; pines behind the walls.
+	const keeps: Planting[] = []
+	for (let distance = Math.max(from, 0) + 75, index = 0; distance < visualTo; distance += roundLength, index++) {
+		const point = path.at(distance)
+		const side = index % 2 === 0 ? 1 : -1
+		const at = beside(point, side * 48)
+		if (!clear(at.x, at.z, distance, 30, 80)) continue
+		keeps.push({ matrix: placed(at.x, 0, at.z, facingPath(point, side)), chunk: chunkOf(distance) })
+		taken.push({ x: at.x, z: at.z, radius: 22 })
+	}
+	const pines: Planting[] = []
+	for (let distance = from, index = 0; distance < visualTo; distance += 9, index++) {
+		const point = path.at(distance)
+		for (const side of [-1, 1]) {
+			const seed = index * 13 + side
+			if (scatter(seed) < 0.45) continue
+			const out = (side === moatSide(distance) ? wallFoot + 14 : wallFoot + 5) + scatter(seed + 1) * 10
+			const at = beside(point, side * out, (scatter(seed + 2) - 0.5) * 5)
+			if (!clear(at.x, at.z, distance, wallFoot + 4, 24) || !isFree(taken, at.x, at.z, 2)) continue
+			pines.push({ matrix: placed(at.x, 0, at.z, scatter(seed + 3) * 6.28, 0.9 + scatter(seed + 4) * 0.5), chunk: chunkOf(distance) })
+			taken.push({ x: at.x, z: at.z, radius: 2 })
+		}
+	}
+
+	// Stone lanterns in pairs along the way, now and then.
+	const lanterns: Planting[] = []
+	for (let distance = Math.max(from, 30); distance < visualTo; distance += 45) {
+		if (nearGate(distance)) continue
+		const point = path.at(distance)
+		for (const side of [-1, 1]) {
+			const at = beside(point, side * (pathHalfWidth + 1.2))
+			lanterns.push({ matrix: placed(at.x, 0, at.z, facingPath(point, side)), chunk: chunkOf(distance) })
+		}
+	}
+
+	const laid = new Group()
+	laid.add(...moat.build())
+	scene.add(laid)
+
+	// How near the camera the gatehouses are cut away, in view depth; set every frame.
+	const cut = { value: 0 }
+	const samurai = new Vector3()
+
+	const modelled = new Group()
+	scene.add(modelled)
+	let disposed = false
+	void models.then((loaded) => {
+		if (disposed) return
+		const kit = loaded.kit?.scene
+		const wall = kit?.getObjectByName('CastleWall')
+		if (wall !== undefined) modelled.add(...stamp(wall, walls, heightOf(wall), true, owned))
+		const gate = kit?.getObjectByName('CastleGate')
+		if (gate !== undefined) {
+			const made = stamp(gate, gates, heightOf(gate), true, owned)
+			for (const mesh of made) cutAway(mesh.material as Material, cut)
+			modelled.add(...made)
+		}
+		const keep = kit?.getObjectByName('CastleKeep')
+		if (keep !== undefined) modelled.add(...stamp(keep, keeps, heightOf(keep), false, owned))
+		const pine = kit?.getObjectByName('Pine')
+		if (pine !== undefined) modelled.add(...stamp(pine, pines, heightOf(pine), true, owned))
+		const lantern = loaded.temple?.scene.getObjectByName('StoneLantern')
+		if (lantern !== undefined) modelled.add(...stamp(lantern, lanterns, heightOf(lantern), true, owned))
+	}).catch((error: unknown) => {
+		console.warn('[bunbu] Edo castle\'s models could not be read; the grounds stand without them', error)
+	})
+
+	return {
+		frame(camera, x, z) {
+			// The samurai's depth in view, less a little, so the gate he is passing under still shows.
+			cut.value = Math.max(0, -samurai.set(x, 1, z).applyMatrix4(camera.matrixWorldInverse).z - 3)
+		},
+
+		follow(x, z) {
+			ground.position.set(x, 0, z)
+			backdrop.position.set(x, 0, z)
+			sun.position.set(x + sunFrom.x, sunFrom.y, z + sunFrom.z)
+			sun.target.position.set(x, 0, z)
+		},
+
+		dispose() {
+			disposed = true
+			for (const made of owned.geometries) made.dispose()
+			for (const made of owned.materials) made.dispose()
+			for (const made of owned.textures) made.dispose()
+			for (const child of [...laid.children, ...modelled.children]) if (child instanceof InstancedMesh) child.dispose()
+			sun.dispose()
+		},
+	}
+}

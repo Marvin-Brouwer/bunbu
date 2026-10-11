@@ -28,7 +28,7 @@ import {
 } from 'three'
 import type { GLTF } from 'three/addons/loaders/GLTFLoader.js'
 import { Batch, chunkOf, placed, scatter, type Cursor } from './kit.mts'
-import { clearanceOf, facingPath, fogFar, isFree, sky, skyRadius, stamp, strip, type Owned, type Planting, type StageView, type Taken } from './landscape.mts'
+import { clearanceOf, cutAway, facingPath, fogFar, isFree, sky, skyRadius, stamp, strip, type Owned, type Planting, type StageView, type Taken } from './landscape.mts'
 import { beside, type Leg, type Path } from './path.mts'
 
 const palette = {
@@ -75,26 +75,6 @@ export type MountainModels = Partial<{
 	/** Our stage kit: `Pine`. */
 	readonly kit: GLTF
 }>
-
-/**
- * Cuts away whatever of `material` is nearer the camera than `cut.value`, in view depth: the torii
- * between the camera and the samurai would otherwise fill the screen in a tunnel. Their shadows stay.
- */
-function cutAway(material: Material, cut: { value: number }): void {
-	material.onBeforeCompile = (shader) => {
-		shader.uniforms.cutDepth = cut
-		shader.vertexShader = `varying float vViewDepth;\n${shader.vertexShader}`.replace(
-			'#include <project_vertex>',
-			'#include <project_vertex>\n\tvViewDepth = -mvPosition.z;',
-		)
-		shader.fragmentShader = `uniform float cutDepth;\nvarying float vViewDepth;\n${shader.fragmentShader}`.replace(
-			'void main() {',
-			'void main() {\n\tif (vViewDepth < cutDepth) discard;',
-		)
-	}
-	material.customProgramCacheKey = () => 'cut-away'
-	material.needsUpdate = true
-}
 
 /** How tall `model` stands, so a model made to size is stamped at its own size. */
 function heightOf(model: Object3D): number {
