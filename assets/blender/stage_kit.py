@@ -11,6 +11,7 @@ the stages share one style with the temple. Each piece is a root named for it, i
   scarecrow (kakashi) in a straw coat and hat.
 - Bamboo forest: `BambooClump`, a few tall stalks with leaves at the top, light enough to stand by
   the thousand; `Shrine`, a small wayside shrine (hokora); and `Jizo`, a stone Jizō in a red bib.
+- Mountain temple: `Pine`, a Japanese black pine with a twisting trunk and flat pads of needles.
 """
 
 import math
@@ -39,6 +40,8 @@ def stage_materials():
         'BambooLeaf': kit.material('BambooLeaf', kit.srgb(0x7AA848), 0.8),
         'Bib': kit.material('Bib', kit.srgb(0xC0281E), 0.9),
         'Moss': kit.material('Moss', kit.srgb(0x5A6E34), 1.0),
+        'Bark': kit.material('Bark', kit.srgb(0x4A3A30), 1.0),
+        'Needles': kit.material('Needles', kit.srgb(0x2F5230), 0.9),
     })
 
 
@@ -147,6 +150,28 @@ def jizo():
     return figure
 
 
+def pine():
+    """A black pine (kuromatsu): a trunk that twists up in three bends, and flat pads of needles on its branches."""
+    tree = root('Pine')
+    # The trunk in three bends, each leaning a little more than the one below.
+    bends = [(0.0, 0.0, 0.0, 0.32, 2.6, 0.12), (0.3, 2.5, 0.1, 0.26, 2.4, -0.25), (-0.25, 4.8, -0.15, 0.2, 2.2, 0.3)]
+    for x, y, z, radius, tall, lean in bends:
+        part = cylinder(tree, 'Bark', (0, 0, 0), radius, tall, sides=7, top_radius=radius * 0.78)
+        part.location = kit.at(x, y, z)
+        part.rotation_euler = (lean * 0.5, lean, 0)
+    # Pads of needles: wide, flat and dark, layered up the tree and out on its branches.
+    pads = [(1.4, 3.4, 0.4, 1.5), (-1.3, 4.3, -0.3, 1.3), (0.9, 5.6, -0.6, 1.2), (-0.6, 6.6, 0.5, 1.1), (0.1, 7.4, 0.0, 0.9), (-1.6, 2.6, 0.7, 1.0)]
+    for x, y, z, size in pads:
+        branch = cylinder(tree, 'Bark', (0, 0, 0), 0.07, abs(x) + 0.2, sides=5)
+        branch.location = kit.at(0, y - 0.2, z * 0.5)
+        branch.rotation_euler = (0, math.copysign(math.pi / 2, -x), 0)
+        # Made at the origin and then moved, so flattening it doesn't move it.
+        pad = sphere(tree, 'Needles', (0, 0, 0), size)
+        pad.location = kit.at(x, y, z)
+        pad.scale = (1.0, 1.0, 0.32)
+    return tree
+
+
 def main():
     argv = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else []
     out = argv[0] if argv else 'stage-kit.glb'
@@ -154,7 +179,7 @@ def main():
 
     bpy.ops.wm.read_factory_settings(use_empty=True)
     stage_materials()
-    pieces = [farmhouse(), scarecrow(), bamboo_clump(), shrine(), jizo()]
+    pieces = [farmhouse(), scarecrow(), bamboo_clump(), shrine(), jizo(), pine()]
     for piece in pieces:
         kit.join_children(piece)
     bpy.ops.export_scene.gltf(filepath=out, export_format='GLB', export_apply=True, export_yup=True,
@@ -164,7 +189,7 @@ def main():
 
 
 def render_preview(pieces, path):
-    for piece, x in zip(pieces, (0, 10, 13, 15, 17)):
+    for piece, x in zip(pieces, (0, 10, 13, 15, 17, 20)):
         piece.location = kit.at(x, 0, 0)
     sun = bpy.data.objects.new('Sun', bpy.data.lights.new('Sun', 'SUN'))
     sun.data.energy = 4

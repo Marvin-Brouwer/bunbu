@@ -200,6 +200,8 @@ export function createRunWorld(game: RunGame, viewport: Viewport): View {
 			}
 			camera.position.copy(position)
 			camera.lookAt(look)
+			camera.updateMatrixWorld()
+			stage.frame?.(camera, here.x, here.z)
 
 			// After the camera has turned, so the slash is square to the camera this frame is drawn with.
 			const side = aimed === undefined ? 0 : Math.sign(Math.round(Math.sin(-headingOf(aimed)) * 10))

@@ -17,6 +17,7 @@ import {
 	ShaderMaterial,
 	SphereGeometry,
 	Vector3,
+	type Camera,
 	type Material,
 	type Object3D,
 	type Texture,
@@ -32,6 +33,8 @@ export const skyRadius = 190
 export type StageView = {
 	/** Keeps what follows the samurai around him: the ground under him, the light that casts shadows. */
 	follow: (x: number, z: number) => void
+	/** Once the camera has moved this frame, with the samurai at `x, z`: for what depends on the view. */
+	frame?: (camera: Camera, x: number, z: number) => void
 	dispose: () => void
 }
 
