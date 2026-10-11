@@ -40,7 +40,7 @@ import {
 	type Texture,
 } from 'three'
 import type { GLTF } from 'three/addons/loaders/GLTFLoader.js'
-import { Batch, chunkOf, gableGeometry, glowTexture, placed, scatter, slatsTexture, within, type Cursor } from './kit.mts'
+import { Batch, chunkOf, gableGeometry, glowTexture, partOf, placed, scatter, slatsTexture, within, type Cursor } from './kit.mts'
 import { beside, type Path, type PathPoint } from './path.mts'
 
 /** Half the width of the street, and of the garden path, in metres. */
@@ -87,6 +87,8 @@ export type TownModels = Partial<{
 	readonly maple: GLTF
 	readonly torii: GLTF
 	readonly bamboo: GLTF
+	/** Our own parts for the houses (`assets/blender/town_kit.py`): roofs, pent roofs, lanterns, barrels. */
+	readonly kit: GLTF
 }>
 
 /** What this town made on the GPU, so it can be freed when the world goes. */
@@ -730,6 +732,16 @@ export function createCastleTown(scene: Scene, path: Path, from: number, to: num
 		}
 		if (loaded.bamboo !== undefined) modelled.add(...stamp(loaded.bamboo.scene, laid.pending.bamboo, 7, false, owned))
 		if (loaded.torii !== undefined) modelled.add(...stamp(loaded.torii.scene, laid.pending.torii, 6.2, true, owned))
+		if (loaded.kit !== undefined) {
+			// Each part has the size of the shape it replaces, so every copy keeps its place and colour.
+			const parts = [['GableRoof', laid.town.roofs], ['PentRoof', laid.town.eaves], ['Lantern', laid.town.lanterns], ['Barrel', laid.town.barrels]] as const
+			for (const [name, batch] of parts) {
+				const geometry = partOf(loaded.kit.scene, name)
+				if (geometry === undefined) continue
+				owned.geometries.push(geometry)
+				batch.reshape(geometry)
+			}
+		}
 	}).catch((error: unknown) => {
 		console.warn('[bunbu] the town models could not be read; the town stands without optional foliage', error)
 	})

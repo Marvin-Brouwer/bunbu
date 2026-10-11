@@ -50,10 +50,11 @@ export function createRunWorld(game: RunGame, viewport: Viewport): View {
 	// The figures first, which the run waits on to look right; the town's trees after them.
 	const samuraiModel = loadModel('samurai')
 	const ninjaModel = loadModel('ninja')
-	const townModels = Promise.allSettled([loadModel('maple'), loadModel('torii'), loadModel('bamboo')]).then(([maple, torii, bamboo]) => ({
+	const townModels = Promise.allSettled([loadModel('maple'), loadModel('torii'), loadModel('bamboo'), loadModel('town-kit')]).then(([maple, torii, bamboo, kit]) => ({
 		...(maple.status === 'fulfilled' ? { maple: maple.value } : {}),
 		...(torii.status === 'fulfilled' ? { torii: torii.value } : {}),
 		...(bamboo.status === 'fulfilled' ? { bamboo: bamboo.value } : {}),
+		...(kit.status === 'fulfilled' ? { kit: kit.value } : {}),
 	}))
 	const stage = createCastleTown(scene, path, -60, length, townModels)
 

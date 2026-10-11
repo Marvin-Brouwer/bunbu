@@ -57,6 +57,8 @@ npx @gltf-transform/cli meshopt kit.glb apps/game/public/models/temple-kit.glb -
 
 The script writes the pieces in the game's own frame (metres, y up, the front toward +z, standing at the origin) and gives them plain colours rather than textures. The roofs are what code-built boxes can't do: they sweep up from low eaves to the ridge, and the corners lift. Each piece stays under 5k triangles. The title screen uses the kit, with its code-built buildings as the placeholders until the kit has loaded.
 
+The **town kit** (`town-kit.glb`, from `assets/blender/town_kit.py`) holds the parts castle town builds its houses from: a tiled gable roof with a round ridge and end tiles (`GableRoof`), a tiled pent roof (`PentRoof`), a paper lantern (`Lantern`) and a barrel with hoops (`Barrel`). Each has exactly the size of the code-built shape it replaces, so the town still places, stretches and colours every copy itself; the parts are white, and what should stay darker (grooves, ridge, caps, hoops) is darkened in their vertex colours. The code-built shapes stand in until the kit has loaded (`Batch.reshape` in `fight/world/kit.mts`).
+
 ## Sources
 
 Ranked by usefulness for this game.

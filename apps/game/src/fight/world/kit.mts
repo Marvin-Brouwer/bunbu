@@ -4,17 +4,21 @@
  */
 
 import {
+	BufferAttribute,
 	BufferGeometry,
 	CanvasTexture,
 	Color,
 	Float32BufferAttribute,
 	InstancedMesh,
+	Mesh,
 	Matrix4,
 	Quaternion,
 	RepeatWrapping,
 	SRGBColorSpace,
 	Vector3,
+	type InterleavedBufferAttribute,
 	type Material,
+	type Object3D,
 } from 'three'
 
 /**
@@ -32,6 +36,7 @@ export const chunkOf = (distance: number): number => Math.floor(distance / chunk
 /** A shape stamped out many times: add each copy, then build one `InstancedMesh` per stretch. */
 export class Batch {
 	private readonly chunks = new Map<number, { readonly matrices: Matrix4[]; readonly colours: Color[] }>()
+	private readonly built: InstancedMesh[] = []
 
 	constructor(
 		private readonly geometry: BufferGeometry,
@@ -56,8 +61,23 @@ export class Batch {
 		return count
 	}
 
+	/**
+	 * Swaps the shape of every copy for `geometry`, the same size as the one it replaces, with its
+	 * vertex colours shading each copy's own: for a part of the town kit, once it has loaded.
+	 */
+	reshape(geometry: BufferGeometry): void {
+		for (const mesh of this.built) {
+			mesh.geometry = geometry
+			mesh.computeBoundingSphere()
+		}
+		if (geometry.hasAttribute('color') && 'vertexColors' in this.material) {
+			this.material.vertexColors = true
+			this.material.needsUpdate = true
+		}
+	}
+
 	build(): InstancedMesh[] {
-		return [...this.chunks.values()].map(({ matrices, colours }) => {
+		const meshes = [...this.chunks.values()].map(({ matrices, colours }) => {
 			const mesh = new InstancedMesh(this.geometry, this.material, matrices.length)
 			matrices.forEach((matrix, index) => {
 				mesh.setMatrixAt(index, matrix)
@@ -71,10 +91,39 @@ export class Batch {
 			mesh.computeBoundingSphere()
 			return mesh
 		})
+		this.built.push(...meshes)
+		return meshes
 	}
 }
 
 const up = new Vector3(0, 1, 0)
+
+/**
+ * The part `name` of a loaded kit as a geometry of its own: plain floats, with the node's place in
+ * the file baked in. A compressed file keeps its positions packed and scaled by the node, which a
+ * part stamped out on its own would otherwise lose.
+ */
+export function partOf(kit: Object3D, name: string): BufferGeometry | undefined {
+	const found = kit.getObjectByName(name)
+	if (!(found instanceof Mesh)) return undefined
+	found.updateWorldMatrix(true, false)
+	const source = found.geometry as BufferGeometry
+	const geometry = new BufferGeometry()
+	for (const attributeName of ['position', 'normal', 'color']) {
+		const attribute = source.getAttribute(attributeName) as BufferAttribute | InterleavedBufferAttribute | undefined
+		if (attribute === undefined) continue
+		const values = new Float32Array(attribute.count * attribute.itemSize)
+		for (let index = 0; index < attribute.count; index++) {
+			for (let component = 0; component < attribute.itemSize; component++) {
+				values[index * attribute.itemSize + component] = attribute.getComponent(index, component)
+			}
+		}
+		geometry.setAttribute(attributeName, new BufferAttribute(values, attribute.itemSize))
+	}
+	if (source.index !== null) geometry.setIndex(Array.from(source.index.array))
+	geometry.applyMatrix4(found.matrixWorld)
+	return geometry
+}
 
 /** A matrix that places a shape at `x, y, z`, turned `yaw` about `y`, scaled `sx, sy, sz`. */
 export function placed(x: number, y: number, z: number, yaw = 0, sx = 1, sy = sx, sz = sx): Matrix4 {
