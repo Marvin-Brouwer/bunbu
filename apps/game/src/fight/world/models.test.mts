@@ -29,6 +29,11 @@ describe('models', () => {
 		for (const piece of ['Hall', 'Pagoda', 'StoneLantern', 'Torii']) expect(names).toContain(piece)
 	})
 
+	it('has every part of the town kit castle town reshapes its houses with', () => {
+		const names = nodeNames('town-kit.glb')
+		for (const part of ['GableRoof', 'PentRoof', 'Lantern', 'Barrel']) expect(names).toContain(part)
+	})
+
 	it('has a head on every figure, for its marker', () => {
 		for (const file of ['samurai.glb', 'ninja.glb']) expect(nodeNames(file)).toContain('Head')
 	})
