@@ -46,6 +46,17 @@ A replacement model needs clips with these names, or a change to that table.
 
 The **Castle town** stage uses, from Quaternius on Poly Pizza (CC0): the [maple trees](https://poly.pizza/m/iGFtQd0PJO) (five variants in one file), [bamboo](https://poly.pizza/m/xBPj13w3JQ) and the [torii gate](https://poly.pizza/m/7SyXZ62xR5). The town houses (machiya), stone lanterns, the bridge, the pagoda and the castle keep are built in code from simple shapes (`fight/world/castle-town.mts`): no free CC0 pack of Japanese town buildings turned up. The models are in `apps/game/public/models/`, compressed as the [web pipeline](#web-pipeline) says.
 
+### Our own models
+
+The **temple kit** (`temple-kit.glb`) is ours: a temple hall, a five-storey pagoda, a stone lantern and a torii, in one file with one node per piece (`Hall`, `Pagoda`, `StoneLantern`, `Torii`). It is made in Blender by a script, `assets/blender/temple_kit.py`, so it can be changed and made again rather than edited by hand:
+
+```sh
+blender -b -P assets/blender/temple_kit.py -- kit.glb preview.png
+npx @gltf-transform/cli meshopt kit.glb apps/game/public/models/temple-kit.glb --level medium
+```
+
+The script writes the pieces in the game's own frame (metres, y up, the front toward +z, standing at the origin) and gives them plain colours rather than textures. The roofs are what code-built boxes can't do: they sweep up from low eaves to the ridge, and the corners lift. Each piece stays under 5k triangles. The title screen uses the kit, with its code-built buildings as the placeholders until the kit has loaded.
+
 ## Sources
 
 Ranked by usefulness for this game.

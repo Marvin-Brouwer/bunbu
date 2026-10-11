@@ -24,6 +24,11 @@ describe('models', () => {
 		for (const bone of ['Head', 'Torso', 'Hips', ...limbs]) expect(names).toContain(bone)
 	})
 
+	it('has every piece of the temple kit the title looks up', () => {
+		const names = nodeNames('temple-kit.glb')
+		for (const piece of ['Hall', 'Pagoda', 'StoneLantern', 'Torii']) expect(names).toContain(piece)
+	})
+
 	it('has a head on every figure, for its marker', () => {
 		for (const file of ['samurai.glb', 'ninja.glb']) expect(nodeNames(file)).toContain('Head')
 	})

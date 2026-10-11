@@ -28,6 +28,7 @@ import {
 	Vector3,
 	type BufferGeometry,
 	type Material,
+	type Object3D,
 } from 'three'
 
 export const sceneryPalette = {
@@ -53,12 +54,37 @@ export type Owned = { geometries: BufferGeometry[]; materials: Material[]; textu
 
 export type Scenery = {
 	readonly group: Group
+	/** Swaps the buildings made here for the temple kit's (`temple-kit.glb`), once it has loaded. */
+	useKit: (kit: Object3D) => void
 	dispose: () => void
 	/** Moves what moves on its own: the clouds drifting, the lanterns flickering. */
 	draw: (time: number) => void
 }
 
 const up = new Vector3(0, 1, 0)
+
+/**
+ * `piece` from a loaded model, once at each of `matrices`: one `InstancedMesh` per mesh in it. The
+ * geometry and materials stay the shared model's, so there is nothing of its own to free.
+ */
+function instancesOf(piece: Object3D, matrices: readonly Matrix4[]): InstancedMesh[] {
+	piece.updateWorldMatrix(false, true)
+	const base = piece.matrixWorld.clone().invert()
+	const meshes: InstancedMesh[] = []
+	piece.traverse((object) => {
+		if (!(object instanceof Mesh)) return
+		// The mesh where it sits in the piece, whatever the piece's own place in the file.
+		const local = base.clone().multiply(object.matrixWorld)
+		const mesh = new InstancedMesh(object.geometry as BufferGeometry, object.material as Material, matrices.length)
+		matrices.forEach((matrix, index) => { mesh.setMatrixAt(index, matrix.clone().multiply(local)) })
+		mesh.instanceMatrix.needsUpdate = true
+		mesh.castShadow = true
+		mesh.receiveShadow = true
+		mesh.computeBoundingSphere()
+		meshes.push(mesh)
+	})
+	return meshes
+}
 
 /** A number from `0` to `1` for `seed`, the same every time. */
 function scatter(seed: number): number {
@@ -122,12 +148,16 @@ export function createScenery(owned: Owned): Scenery {
 
 	// Everything that stands still is gathered by shape, material and shadows, and drawn as one
 	// `InstancedMesh` per batch, so the temple and its lanterns are a handful of draw calls.
-	const batches = new Map<string, { geometry: BufferGeometry; material: Material; cast: boolean; receive: boolean; matrices: Matrix4[] }>()
+	const batches = new Map<string, { geometry: BufferGeometry; material: Material; cast: boolean; receive: boolean; parent: Group; matrices: Matrix4[] }>()
+	// The buildings built here stand in for the temple kit's until it has loaded.
+	const placeholders = new Group()
+	group.add(placeholders)
+	let into = group
 	const add = (geometry: BufferGeometry, material: Material, x: number, y: number, z: number, sx = 1, sy = 1, sz = 1, cast = true, receive = cast, turn = 0) => {
-		const key = `${geometry.uuid}:${material.uuid}:${cast}:${receive}`
+		const key = `${geometry.uuid}:${material.uuid}:${cast}:${receive}:${into.uuid}`
 		let batch = batches.get(key)
 		if (batch === undefined) {
-			batch = { geometry, material, cast, receive, matrices: [] }
+			batch = { geometry, material, cast, receive, parent: into, matrices: [] }
 			batches.set(key, batch)
 		}
 		batch.matrices.push(new Matrix4().compose(new Vector3(x, y, z), new Quaternion().setFromAxisAngle(up, turn), new Vector3(sx, sy, sz)))
@@ -145,6 +175,7 @@ export function createScenery(owned: Owned): Scenery {
 		add(cube, lit(sceneryPalette.stoneDark, 1), 0, 0.065, 0.5 - index * 2.1, 2.7, 0.02, 0.08, false)
 	}
 
+	into = placeholders
 	// The temple hall (hondō): a stone platform with steps, red pillars, white walls, two roofs.
 	const hall = { z: -76, width: 22, depth: 13 }
 	add(cube, lit(sceneryPalette.stone, 1), 0, 0.9, hall.z, hall.width + 2, 1.8, hall.depth + 2)
@@ -189,9 +220,11 @@ export function createScenery(owned: Owned): Scenery {
 	const glowMaterial = new SpriteMaterial({ map: glow, color: 0xc86a30, transparent: true, depthWrite: false, blending: AdditiveBlending })
 	owned.materials.push(glowMaterial)
 	const glows: Sprite[] = []
+	const lanterns: Matrix4[] = []
 	for (const z of [-6, -20, -36]) {
 		for (const side of [-1, 1]) {
 			const x = side * 2.6
+			lanterns.push(new Matrix4().makeTranslation(x, 0, z))
 			add(cube, lit(sceneryPalette.stone, 1, true), x, 0.15, z, 0.7, 0.3, 0.7)
 			add(cube, lit(sceneryPalette.stone, 1, true), x, 0.75, z, 0.28, 0.9, 0.28)
 			add(cube, glowing(sceneryPalette.paper), x, 1.4, z, 0.45, 0.4, 0.45, false)
@@ -204,6 +237,7 @@ export function createScenery(owned: Owned): Scenery {
 		}
 	}
 
+	into = group
 	// Mountains in layers, nearer ones darker, all fading into the haze; the great peak behind the hall.
 	const peak = shape(new ConeGeometry(1, 1, 7, 1).translate(0, 0.5, 0))
 	for (let index = 0; index < 22; index++) {
@@ -218,14 +252,14 @@ export function createScenery(owned: Owned): Scenery {
 	add(peak, lit(sceneryPalette.mountains[3] ?? 0x9a6e72, 1, true), 0, -2, fuji.z, fuji.width, fuji.height, fuji.width * 0.6, false)
 	add(peak, lit(sceneryPalette.snow, 0.9, true), 0, fuji.height * 0.62 - 2, fuji.z + 1, fuji.width * 0.38, fuji.height * 0.38, fuji.width * 0.6 * 0.38, false)
 
-	for (const { geometry, material, cast, receive, matrices } of batches.values()) {
+	for (const { geometry, material, cast, receive, parent, matrices } of batches.values()) {
 		const mesh = new InstancedMesh(geometry, material, matrices.length)
 		matrices.forEach((matrix, index) => { mesh.setMatrixAt(index, matrix) })
 		mesh.instanceMatrix.needsUpdate = true
 		mesh.castShadow = cast
 		mesh.receiveShadow = receive
 		mesh.computeBoundingSphere()
-		group.add(mesh)
+		parent.add(mesh)
 		instanced.push(mesh)
 	}
 
@@ -254,6 +288,24 @@ export function createScenery(owned: Owned): Scenery {
 
 	return {
 		group,
+
+		useKit(kit) {
+			const hallModel = kit.getObjectByName('Hall')
+			const pagodaModel = kit.getObjectByName('Pagoda')
+			const lanternModel = kit.getObjectByName('StoneLantern')
+			if (hallModel === undefined || pagodaModel === undefined || lanternModel === undefined) {
+				console.warn('[bunbu] the temple kit is missing a piece; the placeholders stay')
+				return
+			}
+			placeholders.visible = false
+			const made = [
+				...instancesOf(hallModel, [new Matrix4().makeTranslation(0, 0, hall.z)]),
+				...instancesOf(pagodaModel, [new Matrix4().makeTranslation(pagoda.x, 0, pagoda.z)]),
+				...instancesOf(lanternModel, lanterns),
+			]
+			group.add(...made)
+			instanced.push(...made)
+		},
 
 		dispose() {
 			for (const mesh of instanced) mesh.dispose()

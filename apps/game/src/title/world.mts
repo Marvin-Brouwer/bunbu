@@ -208,16 +208,20 @@ export function createTitleWorld(viewport: Viewport): View {
 	// A plain red gate stands in until the model is in, and stays if it never comes.
 	const placeholderGate = toriiPlaceholder(owned)
 	torii.add(placeholderGate)
-	void loadModel('torii').then((model) => {
+	// The temple kit (`assets/blender/temple_kit.py`): the gate, and the buildings the scenery stands in for.
+	void loadModel('temple-kit').then((model) => {
 		if (disposed) return
+		scenery.useKit(model.scene)
+		const kitGate = model.scene.getObjectByName('Torii')
+		if (kitGate === undefined) throw new Error('the temple kit has no torii')
 		torii.remove(placeholderGate)
-		const gate = standing(model.scene.clone(), toriiHeight)
+		const gate = standing(kitGate.clone(), toriiHeight)
 		gate.traverse((object) => {
 			if (object instanceof Mesh) object.castShadow = true
 		})
 		torii.add(gate)
 	}).catch((error: unknown) => {
-		console.warn('[bunbu] the torii model did not load; the placeholder gate stays', error)
+		console.warn('[bunbu] the temple kit did not load; the placeholder gate and buildings stay', error)
 	})
 	// Cherry trees: the maples with their leaves in blossom. Their own materials, so the shared model keeps its colours.
 	const grove = new Group()
