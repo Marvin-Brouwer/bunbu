@@ -12,6 +12,7 @@ import { createCastleTown } from './castle-town.mts'
 import type { StageView } from './landscape.mts'
 import { createPath, townRound, type Path } from './path.mts'
 import { bambooRound, createBambooForest } from './bamboo-forest.mts'
+import { castleRound, createEdoCastle } from './edo-castle.mts'
 import { createMountainTemple, mountainRound } from './mountain-temple.mts'
 import { createRiceFields, riceRound } from './rice-fields.mts'
 
@@ -46,6 +47,10 @@ export function createStageWorld(stage: Stage, scene: Scene, length: number): St
 	if (stage === 'mountain-temple') {
 		const path = createPath(length, mountainRound)
 		return { path, view: createMountainTemple(scene, path, -60, length, loadSome({ temple: 'temple-kit', kit: 'stage-kit' })) }
+	}
+	if (stage === 'edo-castle') {
+		const path = createPath(length, castleRound)
+		return { path, view: createEdoCastle(scene, path, -60, length, loadSome({ kit: 'stage-kit', temple: 'temple-kit' })) }
 	}
 	const path = createPath(length, townRound)
 	return { path, view: createCastleTown(scene, path, -60, length, loadSome({ maple: 'maple', torii: 'torii', bamboo: 'bamboo', kit: 'town-kit' })) }

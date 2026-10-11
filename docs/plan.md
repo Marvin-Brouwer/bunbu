@@ -102,7 +102,7 @@ Owns `canvas/`, `fight/world/` (the run's world), `_shared/world/` (the figures 
 Builds against placeholder models (capsules and boxes) until F delivers, so it never waits on art.
 
 - Renderer setup as in [rendering.md](architecture/rendering.md#renderer-setup): pixel ratio cap, resize, alpha only if there is a CSS backdrop.
-- The stage: a path with corners and curves at constant pace, instanced props, at least one stage (Castle town: streets and gardens) to start, the other four later.
+- The stage: a path with corners and curves at constant pace, instanced props, all five stages (`fight/world/stages.mts`): rice fields, bamboo forest, mountain temple, castle town and Edo castle, each with its own path and world.
 - Camera that follows the shogun, centred, portrait framing that also survives landscape.
 - Shogun: run, strike, block, hurt and fallen clips driven by `shogun` state, timed to the state rather than to the clip.
 - Ninjas: one mesh per ninja in the store, approach position from `ninjas` state (they are the timer), slain, blocked and flee, landing the hit, front then back waves.
