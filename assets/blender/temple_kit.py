@@ -118,7 +118,7 @@ def _turn(angle):
     return Matrix.Rotation(angle, 3, 'Z')
 
 
-def curved_roof(parent, centre, width, depth, height, lift, thickness=0.28, steps=6, run=10):
+def curved_roof(parent, centre, width, depth, height, lift, thickness=0.28, steps=6, run=10, faces=('RoofTile', 'RoofEdge'), sweep=1.7):
     """
     A hip roof `width` by `depth` metres at the eaves, `height` metres from eave to ridge, standing
     on `centre`. Each of its four slopes goes from the eave to the ridge (a point when the roof is
@@ -151,7 +151,7 @@ def curved_roof(parent, centre, width, depth, height, lift, thickness=0.28, step
                 x = ex + (rx - ex) * t
                 z = ez + (rz - ez) * t
                 corner = abs(2 * s - 1) ** 4
-                y = height * t ** 1.7 + lift * corner * (1 - t) ** 2
+                y = height * t ** sweep + lift * corner * (1 - t) ** 2
                 line.append(built.verts.new(at(centre[0] + x, centre[1] + y, centre[2] + z)))
             grid.append(line)
         for row in range(steps):
@@ -167,7 +167,7 @@ def curved_roof(parent, centre, width, depth, height, lift, thickness=0.28, step
             face.normal_flip()
     built.to_mesh(mesh)
     built.free()
-    roof = new_object('roof', mesh, ['RoofTile', 'RoofEdge'], parent)
+    roof = new_object('roof', mesh, list(faces), parent)
     solid = roof.modifiers.new('thickness', 'SOLIDIFY')
     solid.thickness = thickness
     solid.offset = -1
@@ -431,4 +431,5 @@ def render_preview(pieces, path):
     bpy.ops.render.render(write_still=True)
 
 
-main()
+if __name__ == '__main__':
+    main()

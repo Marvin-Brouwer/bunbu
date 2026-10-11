@@ -18,6 +18,7 @@ import { pointsPerCorrect } from '../state/score.mts'
 import { metresPerAmbush } from '../flows/run.mts'
 import { fixtureQuiz, manyOptions } from '../../_temp/quiz.mts'
 import { seeded } from '../../_temp/random.mts'
+import { builtStages, selection } from '../../_shared/state/selection.mts'
 
 type Fixture = Partial<RunGameState>
 
@@ -228,5 +229,9 @@ export function fixtureFromUrl(search: string): Fixture | undefined {
 		console.warn(`[bunbu] unknown fixture "${name}". Try one of: ${Object.keys(fixtures).join(', ')}`)
 		return undefined
 	}
+	// `&stage=rice-fields` runs the fixture on that stage, to see a stage's world without the select screen.
+	const stage = new URLSearchParams(search).get('stage')
+	const built = [...builtStages].find((each) => each === stage)
+	if (built !== undefined) selection.value.chooseStage(built)
 	return fixture()
 }

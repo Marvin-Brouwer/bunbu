@@ -96,6 +96,7 @@ request. No `oxlint-disable` without a comment saying why.
 ```sh
 pnpm dev                                  # the game
 pnpm dev  # then open /fight/?fixture=ambush-multiple
+pnpm dev  # then open /fight/?fixture=running&stage=rice-fields
 ```
 
 Fixtures put the stores into a named state without playing a run, so a screen can be built and
