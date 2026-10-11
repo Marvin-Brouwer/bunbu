@@ -20,7 +20,7 @@ export const stageNames: Readonly<Record<Stage, string>> = {
 }
 
 /** The stages with a world built so far; the others show in the stage select but can't be chosen yet. */
-export const builtStages: ReadonlySet<Stage> = new Set<Stage>(['rice-fields', 'bamboo-forest', 'castle-town'])
+export const builtStages: ReadonlySet<Stage> = new Set<Stage>(['rice-fields', 'bamboo-forest', 'mountain-temple', 'castle-town'])
 
 export type SelectionState = {
 	/** The quiz to play, or `undefined` until one is chosen or loaded. */
