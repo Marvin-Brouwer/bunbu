@@ -18,7 +18,8 @@ export type PathPoint = {
 	readonly zone: Zone
 }
 
-type Leg = {
+/** A stretch of the path: straight, or an arc. */
+export type Leg = {
 	readonly length: number
 	/** Radians turned over the whole leg, left positive; `0` for a straight leg. */
 	readonly turn: number
@@ -35,7 +36,7 @@ const corner = (side: 1 | -1): Leg => ({ length: (cornerRadius * Math.PI) / 2, t
  * whose path winds left and right. The two corners cancel out, so the run keeps heading the same
  * way overall and the path never crosses itself.
  */
-const round: readonly Leg[] = [
+export const townRound: readonly Leg[] = [
 	{ length: 70, turn: 0, zone: 'street' },
 	corner(1),
 	{ length: 45, turn: 0, zone: 'street' },
@@ -49,7 +50,7 @@ const round: readonly Leg[] = [
 ]
 
 /** Metres in one round of the town. */
-export const roundLength = round.reduce((sum, leg) => sum + leg.length, 0)
+export const roundLength = townRound.reduce((sum, leg) => sum + leg.length, 0)
 
 type LaidLeg = Leg & {
 	readonly start: number
@@ -78,8 +79,11 @@ function travel(x: number, z: number, heading: number, curvature: number, along:
 	}
 }
 
-/** Lays the path out for at least `length` metres, starting at the origin facing `-z`. */
-export function createPath(length: number): Path {
+/**
+ * Lays the path out for at least `length` metres, starting at the origin facing `-z`, repeating
+ * `round`. A round should turn as much left as right, so the path keeps its way and never crosses itself.
+ */
+export function createPath(length: number, round: readonly Leg[] = townRound): Path {
 	const legs: LaidLeg[] = []
 	let start = 0
 	let point = { x: 0, z: 0, heading: 0 }

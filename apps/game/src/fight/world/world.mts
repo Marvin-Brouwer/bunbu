@@ -15,13 +15,14 @@ import type { View } from '../../canvas/stage.mts'
 import type { Viewport } from '../../canvas/viewport.mts'
 import type { RunGame } from '../state/game.mts'
 import { runFraming, viewOnPath } from './camera.mts'
-import { createCastleTown, skyRadius } from './castle-town.mts'
+import { skyRadius } from './landscape.mts'
+import { createStageWorld } from './stages.mts'
+import { selection } from '../../_shared/state/selection.mts'
 import { createEffects } from './effects.mts'
 import { createPetals } from '../../_shared/world/petals.mts'
 import { createCharacter, ninjaLook, placeholderBody, samuraiLook, type Body } from '../../_shared/world/character.mts'
 import { createFigureParts } from '../../_shared/world/figure.mts'
 import { createNinjasView } from './ninjas.mts'
-import { createPath } from './path.mts'
 import { headingOf } from './placement.mts'
 import { finishingOf, poseSeconds } from '../../_shared/world/poses.mts'
 
@@ -46,17 +47,11 @@ export function createRunWorld(game: RunGame, viewport: Viewport): View {
 	const overlay = new Scene()
 
 	const length = Math.max(game.run.value.stageLength, 300) + beyond
-	const path = createPath(length)
 	// The figures first, which the run waits on to look right; the town's trees after them.
 	const samuraiModel = loadModel('samurai')
 	const ninjaModel = loadModel('ninja')
-	const townModels = Promise.allSettled([loadModel('maple'), loadModel('torii'), loadModel('bamboo'), loadModel('town-kit')]).then(([maple, torii, bamboo, kit]) => ({
-		...(maple.status === 'fulfilled' ? { maple: maple.value } : {}),
-		...(torii.status === 'fulfilled' ? { torii: torii.value } : {}),
-		...(bamboo.status === 'fulfilled' ? { bamboo: bamboo.value } : {}),
-		...(kit.status === 'fulfilled' ? { kit: kit.value } : {}),
-	}))
-	const stage = createCastleTown(scene, path, -60, length, townModels)
+	// The stage's own world, after the figures, so the figures' models are asked for first.
+	const { path, view: stage } = createStageWorld(selection.value.stage, scene, length)
 
 	const parts = createFigureParts()
 	const fighters = new Group()
