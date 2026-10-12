@@ -1,19 +1,17 @@
 /**
- * The swipe zone ([ambush](../../../../../docs/design/gameplay.md#ambush)): the footer of the
- * scroll. A line on how to answer, the marks swiped so far, and under them a sheet of paper where
- * swipes answer the open ambush. Only swipes on the paper count, so the text above keeps its own
- * native scrolling.
+ * The swipe zone ([ambush](../../../../../docs/design/gameplay.md#ambush)): the answers on the
+ * paper of the answer drawer, where swipes answer the open ambush. Only swipes on the paper count,
+ * so the question above keeps its own native scrolling.
  *
- * The pointer leaves a faint trace on the paper, and each pick cuts it with a red slash in the
- * direction of its mark, through the middle of the swipe. Only the last cut matters, so the one
- * before it fades.
+ * The pointer leaves a faint trace on the paper, and each pick cuts its answer in two
+ * ([ScrollOption](../scroll/scroll-option.mts)).
  *
  * A swipe toward a mark picks it. `yes-no` and `single` strike at once; `multiple` and `order`
  * strike once the pointer has been lifted for the commit pause, and touching down again before
  * that keeps the answer open. Lifting between swipes is optional: one continuous stroke can pick
  * several marks ([stroke.mts](./stroke.mts)).
  *
- * The scroll puts it in its footer, in the run and in dojo practice. It picks through the
+ * The scroll puts it in its answer drawer, in the run and in dojo practice. It picks through the
  * ambush store and strikes through the mode's own `commit`, which spreads the result over the
  * mode's other stores.
  */
@@ -21,13 +19,14 @@
 import { component } from '@rooted/components'
 import { buzz, buzzes } from '../haptics.mts'
 import { ambushConfig } from '../state/ambush-time.mts'
-import { timeUp, type Ambush, type AmbushKind, type AmbushState, type Mark } from '../state/ambush.mts'
-import { SwipePaper } from './swipe-paper.mts'
-import { SwipePicks } from './swipe-picks.mts'
-import { directionOf, finish, follow, strikesAtOnce, strokeAt, type Point, type Stroke } from './stroke.mts'
+import { timeUp, type Ambush, type AmbushState, type Mark } from '../state/ambush.mts'
+import { AnswerSheet } from './answer-sheet.mts'
+import { finish, follow, strikesAtOnce, strokeAt, type Point, type Stroke } from './stroke.mts'
 import styles from './swipe.css'
 
 export type SwipeZoneOptions = {
+	/** The ambush as it was when the scroll opened. */
+	readonly state: AmbushState
 	readonly ambush: Ambush
 	/** Strikes: commits the ambush through the mode's flow, like `commitAmbush` in a run. */
 	readonly commit: () => void
@@ -45,27 +44,11 @@ const anyPicked = (state: AmbushState) => state.options.some((option) => option.
 const isPicked = (state: AmbushState, mark: Mark) =>
 	state.options.some((option) => option.mark === mark && option.pick > 0)
 
-/** A swipe, from where it started to how far it got, in pointer coordinates. */
-type Swipe = {
-	readonly from: Point
-	readonly to: Point
-}
-
-/** How to answer. One short line. */
-function hintOf(kind: AmbushKind): string {
-	if (kind === 'yes-no') return 'swipe ↑ yes · ↓ no'
-	if (kind === 'single') return 'swipe toward your answer'
-	return 'swipe each answer · lift + pause = strike'
-}
-
-/** The shortest slash drawn, in CSS pixels, so a swipe just past the dead zone still shows. */
-const shortestSlash = 72
-
 export const SwipeZone = component<SwipeZoneOptions>({
 	name: 'swipe-zone',
 	styles,
 	onMount({ append, create, element, options, signal }) {
-		const { ambush, commit, held = () => false } = options
+		const { state, ambush, commit, held = () => false } = options
 
 		// One pointer at a time: a second finger is ignored until the first one lifts.
 		let pointer: number | undefined
@@ -112,7 +95,6 @@ export const SwipeZone = component<SwipeZoneOptions>({
 			children: trace,
 		})
 		let traced: Point[] = []
-		let lastSlash: SVGLineElement | undefined
 
 		/** `point` on the paper, from the pointer's coordinates. */
 		const onPaper = (point: Point): Point => {
@@ -130,37 +112,13 @@ export const SwipeZone = component<SwipeZoneOptions>({
 			trace.setAttribute('points', '')
 		}
 
-		const fade = (line: SVGLineElement) => {
-			line.addEventListener('transitionend', () => { line.remove() }, { once: true, signal })
-			line.dataset.faded = 'true'
-		}
-
-		/** Cuts the paper along `mark`, through the middle of the swipe. */
-		const slash = (mark: Mark, swipe: Swipe) => {
-			const from = onPaper(swipe.from)
-			const to = onPaper(swipe.to)
-			const middle = { x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 }
-			const half = Math.max(shortestSlash, Math.hypot(to.x - from.x, to.y - from.y)) / 2
-			const toward = directionOf(mark)
-			if (lastSlash !== undefined) fade(lastSlash)
-			lastSlash = overlay.appendChild(element('svg:line', {
-				classes: styles.slash,
-				x1: middle.x - toward.x * half,
-				y1: middle.y - toward.y * half,
-				x2: middle.x + toward.x * half,
-				y2: middle.y + toward.y * half,
-				pathLength: 1,
-			}))
-		}
-
 		// A swipe is final: swiping a mark that is picked already does nothing.
-		const choose = (mark: Mark | undefined, swipe: Swipe) => {
-			const state = ambush.value
-			if (mark === undefined || !state.open || timeUp(state) || isPicked(state, mark)) return
-			state.pick(mark)
-			slash(mark, swipe)
+		const choose = (mark: Mark | undefined) => {
+			const current = ambush.value
+			if (mark === undefined || !current.open || timeUp(current) || isPicked(current, mark)) return
+			current.pick(mark)
 			buzz(buzzes.pick)
-			if (strikesAtOnce(state.kind)) strike()
+			if (strikesAtOnce(current.kind)) strike()
 		}
 
 		// `finishing` is false when the browser took the pointer over (pointercancel): the last
@@ -170,9 +128,9 @@ export const SwipeZone = component<SwipeZoneOptions>({
 			const last = stroke
 			forgetStroke()
 			clearTrace()
-			if (finishing && last !== undefined) choose(finish(last, available()), { from: last.from, to: last.furthest })
-			const state = ambush.value
-			if (state.open && !strikesAtOnce(state.kind) && anyPicked(state)) strikeAfterPause()
+			if (finishing && last !== undefined) choose(finish(last, available()))
+			const current = ambush.value
+			if (current.open && !strikesAtOnce(current.kind) && anyPicked(current)) strikeAfterPause()
 		}
 
 		const zone = element('div', {
@@ -191,11 +149,10 @@ export const SwipeZone = component<SwipeZoneOptions>({
 				},
 				pointermove(event) {
 					if (event.pointerId !== pointer || stroke === undefined) return
-					const before = stroke
-					const step = follow(before, pointOf(event), available())
+					const step = follow(stroke, pointOf(event), available())
 					stroke = step.stroke
 					traceTo(pointOf(event))
-					choose(step.mark, { from: before.from, to: before.furthest })
+					choose(step.mark)
 				},
 				pointerup(event) {
 					lift(event, true)
@@ -209,30 +166,19 @@ export const SwipeZone = component<SwipeZoneOptions>({
 				},
 			},
 			children: [
-				create(SwipePaper),
+				create(AnswerSheet, {
+					state,
+					ambush,
+				}),
 				overlay,
 			],
 		})
 
-		append(
-			element('div', {
-				classes: styles.swipe,
-				children: [
-					element('p', {
-						classes: styles.hint,
-						textContent: hintOf(ambush.value.kind),
-					}),
-					create(SwipePicks, {
-						ambush,
-					}),
-					zone,
-				],
-			})
-		)
+		append(zone)
 
-		const show = (state: AmbushState) => {
-			zone.dataset.open = String(state.open)
-			if (state.open) return
+		const show = (next: AmbushState) => {
+			zone.dataset.open = String(next.open)
+			if (next.open) return
 			cancelStrike()
 			forgetStroke()
 			clearTrace()

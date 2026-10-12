@@ -81,7 +81,7 @@ Pure gesture logic with tests on recorded pointer sequences, plus the swipe zone
 - One continuous stroke can pick several marks (← → in one go); lifting between swipes is optional.
 - 0.8 s pause after lifting commits for `multiple` and `order`; a single swipe commits at once for `yes-no` and `single`.
 - Calls `ambush.pick()` and `ambush.commit()`, nothing else.
-- The swipe zone is the scroll's footer: a line on how to answer, the marks swiped so far as arrows, then a ruled paper-cutting target with the finger's trace and a red slash for the last pick. Picks and order numbers also show on the scroll's options.
+- The swipe zone is the drawn answer drawer at the scroll's foot (issue #20): a line on how to answer, then the answers on lined paper with the finger's trace; a pick splits its answer along a red cut, and order numbers are brushed next to it.
 - Haptics through `navigator.vibrate`, behind the setting.
 - Test on a real phone early: iOS Safari edge swipes and pull-to-refresh are the usual traps (`touch-action`, `overscroll-behavior`).
 
@@ -91,7 +91,7 @@ Owns `_shared/scroll/`, `_shared/markdown/`, `fight/hud/` and the theme in `appl
 
 - Theme: papyrus, ink, fonts, colours as CSS custom properties, shared by every DOM component.
 - Markdown to HTML for queries, options, explanations: GFM, code blocks with highlighting, images (SVG as `<img>`, never inline), no raw HTML. Sanitise; quizzes are untrusted input. [`@rooted/markdown`](https://github.com/Marvin-Brouwer/rooted/blob/main/docs/guide/markdown.md) does not cover this: it parses `.md` files at build time and doesn't sanitise, while quiz Markdown arrives at runtime from the player. Bring a runtime parser and sanitiser.
-- The scroll: header (`AMBUSH · MULTIPLE · CHOOSE 2`), query, code, options with marks, `MARKED` state, order numbers, "2 of 3" for solutions. Unroll, roll-up, and being sliced in half on unanswered.
+- The scroll: header (`AMBUSH · MULTIPLE · CHOOSE 2`), query, code, the answer drawer with the options and their marks, the cut on a pick, order numbers, "2 of 3" for solutions. Unroll, roll-up, and being sliced in half on unanswered.
 - HUD: score with best to beat, life bar with the flashing lost chunk, pause button, progress bar with stage name, distance and ambush ticks.
 - Red edge flash on a hit, `+100` pop-up on correct.
 

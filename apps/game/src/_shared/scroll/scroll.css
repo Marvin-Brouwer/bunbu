@@ -52,7 +52,7 @@
 }
 
 .footer {
-	/* A clear gap between the text, which scrolls, and the swipe zone, whose paper runs to the edges. */
+	/* A clear gap between the text, which scrolls, and what stays at its foot. */
 	padding-top: 1rem;
 	border-top: 1px dashed var(--paper-edge);
 }
@@ -90,11 +90,6 @@
 	font-size: 1.15rem;
 	font-weight: 600;
 	line-height: 1.4;
-}
-
-.options {
-	display: grid;
-	gap: 0.5rem;
 }
 
 /* Unroll: the sheet grows from the top rod down. */
@@ -211,40 +206,184 @@
 	}
 }
 
-/* An option: its mark, its text, and what the player did with it. */
+/*
+ * The answer drawer (answer-drawer.mts): the footer of an ambush scroll. Its edge, with the red
+ * seal on it, keeps a row of its own at the foot of the sheet; the answers slide up over the
+ * question from there.
+ */
 
-.option {
-	display: grid;
-	grid-template-columns: 2.25rem 1fr auto;
-	align-items: center;
-	gap: 0.75rem;
-	padding: 0.4rem 0.6rem 0.4rem 0.4rem;
-	border: var(--frame);
-	border-radius: var(--radius);
-	background: var(--paper);
-	transition: border-color 120ms, box-shadow 120ms;
+.footer:has(.drawer) {
+	padding-top: 0;
+	border-top: none;
 }
 
-.option[data-picked='true'] {
-	border-color: var(--vermilion);
-	box-shadow: 0 0 0 1px var(--vermilion);
+.sheet:has(.drawer) {
+	position: relative;
+}
+
+.drawer {
+	--drawer-edge: 4.4rem;
+	height: var(--drawer-edge);
+}
+
+.drawerSlide {
+	position: absolute;
+	inset: auto 0 0;
+	z-index: 1;
+	display: grid;
+	grid-template-rows: var(--drawer-edge) minmax(0, auto);
+	max-height: calc(100% - 1.5rem);
+	translate: 0 calc(100% - var(--drawer-edge));
+	transition: translate 300ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.drawerSlide[data-drawn='true'] {
+	translate: 0 0;
+}
+
+/* The edge: a fade over the question, the line on how to open it, and the seal on a band of paper. */
+.drawerHandle {
+	position: relative;
+	display: block;
+	width: 100%;
+	padding: 0;
+	border: none;
+	background: linear-gradient(transparent, var(--paper) 0.75rem);
+	color: var(--ink-soft);
+	font: inherit;
+	cursor: grab;
+	/* Swiping the seal up or down opens and closes the drawer, so the browser must not scroll. */
+	touch-action: none;
+	user-select: none;
+	-webkit-user-select: none;
+	-webkit-touch-callout: none;
+}
+
+.drawerHandle:disabled {
+	cursor: default;
+}
+
+.drawerHandle::before {
+	content: '';
+	position: absolute;
+	inset: auto 0 0;
+	height: 1.3rem;
+	border-top: 1.5px solid var(--ink);
+	background: var(--paper-shade);
+}
+
+.drawerHandle:focus-visible {
+	outline: none;
+}
+
+.drawerHandle:focus-visible .seal {
+	outline: 2px solid var(--vermilion);
+	outline-offset: 3px;
+	border-radius: var(--radius);
+}
+
+.drawerLabel {
+	position: absolute;
+	top: 0.25rem;
+	left: 50%;
+	translate: -50% 0;
+	white-space: nowrap;
+	font-family: var(--font-brush);
+	font-size: 0.85rem;
+}
+
+.seal {
+	position: absolute;
+	bottom: 0;
+	left: 50%;
+	translate: -50% 0;
+	width: 3.2rem;
+	height: 3.2rem;
+	filter: drop-shadow(0 1.5px 2px rgb(0 0 0 / 30%));
+	transition: scale 180ms ease-out;
+}
+
+.drawerHandle:active:enabled .seal {
+	scale: 0.9;
+}
+
+/* The seal presses down as the answers come up, like stamping them. */
+.drawerSlide[data-drawn='true'] .seal {
+	animation: stamp 260ms ease-out;
+}
+
+@keyframes stamp {
+	50% {
+		scale: 0.82;
+	}
+}
+
+.hanko {
+	display: block;
+	width: 100%;
+	height: 100%;
+}
+
+.sealStamp {
+	fill: var(--vermilion);
+}
+
+.sealBorder {
+	fill: none;
+	stroke: var(--paper);
+	stroke-width: 1.4;
+}
+
+.sealCharacter {
+	fill: var(--paper);
+	font-family: var(--font-display);
+	font-size: 23px;
+	font-weight: 600;
+	text-anchor: middle;
+	dominant-baseline: central;
+}
+
+.drawerPaper {
+	min-height: 0;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+	background: var(--paper);
+	box-shadow: 0 0.6rem 1.2rem rgb(31 28 24 / 25%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.drawerSlide,
+	.seal {
+		transition: none;
+	}
+
+	.drawerSlide[data-drawn='true'] .seal {
+		animation: none;
+	}
+}
+
+/* An option in the drawer: its mark and its answer in ink on a line of the paper. */
+
+.option {
+	position: relative;
+}
+
+.face {
+	display: grid;
+	grid-template-columns: 1.6rem minmax(0, 1fr) auto;
+	align-items: center;
+	gap: 0.6rem;
+	min-height: 2.6rem;
+	padding: 0.3rem 0;
+	border-bottom: 1px solid var(--paper-edge);
+	background: var(--paper);
 }
 
 .mark {
-	display: grid;
-	place-items: center;
-	width: 2.25rem;
-	height: 2.25rem;
-	border-radius: var(--radius);
-	background: var(--ink);
-	color: var(--paper);
-	font-size: 1.25rem;
+	font-family: var(--font-display);
+	font-size: 1.35rem;
 	line-height: 1;
-	transition: background 120ms;
-}
-
-.option[data-picked='true'] .mark {
-	background: var(--vermilion);
+	text-align: center;
 }
 
 .answer {
@@ -252,26 +391,83 @@
 	font-size: 1.05rem;
 }
 
-.notes {
-	display: grid;
-	justify-items: end;
-	font-family: var(--font-mono);
-	font-size: 0.75rem;
-	letter-spacing: 0.05em;
-}
-
-.picked {
+/* For `order`: the place the option was cut in, brushed next to it. */
+.place {
+	min-width: 1.2rem;
 	color: var(--vermilion);
-	font-weight: 700;
+	font-family: var(--font-brush);
+	font-size: 1.4rem;
+	line-height: 1;
+	text-align: center;
 }
 
-.picked:empty {
-	display: none;
+/* A pick: the line splits along the cut, a thin red edge between the halves. */
+
+.option[data-picked='true'] > .face {
+	visibility: hidden;
 }
 
-/* For `order`: the place the option was swiped in. */
-.option[data-kind='order'] .picked {
-	font-size: 1.25rem;
+.lineHalf {
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+	animation: 220ms ease-out forwards;
+}
+
+.lineHalf > .face {
+	height: 100%;
+	box-sizing: border-box;
+}
+
+.lineUpper {
+	clip-path: polygon(0 0, 100% 0, 100% var(--cut-right), 0 var(--cut-left));
+	animation-name: split-upper;
+}
+
+.lineLower {
+	clip-path: polygon(0 var(--cut-left), 100% var(--cut-right), 100% 100%, 0 100%);
+	animation-name: split-lower;
+}
+
+.lineCut {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	overflow: visible;
+	pointer-events: none;
+	stroke: var(--vermilion);
+	stroke-width: 2;
+	vector-effect: non-scaling-stroke;
+	animation: slash 140ms ease-out both;
+}
+
+.lineCut line {
+	vector-effect: non-scaling-stroke;
+}
+
+@keyframes split-upper {
+	to {
+		translate: -3px -2px;
+		rotate: -0.6deg;
+	}
+}
+
+@keyframes split-lower {
+	to {
+		translate: 3px 2px;
+		rotate: 0.5deg;
+	}
+}
+
+@keyframes slash {
+	from {
+		clip-path: inset(0 100% 0 0);
+	}
+
+	to {
+		clip-path: inset(0 0 0 0);
+	}
 }
 
 /* Quiz Markdown in the ink of the scroll: inline code, highlighted code blocks, tables and images. */

@@ -55,13 +55,13 @@ A difficulty slider from **Apprentice** to **Shogun** over four stops (Apprentic
 
 ### 4 Ambush
 
-All variants: the scroll down to the bottom of the screen, with the swipe zone as its footer: a brush-lettered line on how to answer, the marks swiped so far as small arrows, then a ruled paper-cutting target of the scroll's own paper, edge to edge down to the rod between grey strips, which shows the finger's trace and a red slash for the last pick, slow motion, no timer bar. See [ambush](gameplay.md#ambush).
+All variants: the scroll down to the bottom of the screen with the question, and the answer drawer at its foot: closed, an edge with the red hanko seal (答) and "Tap or swipe up to answer"; drawn, the answers on lined paper over the question, a brush-lettered line on how to answer above them, and "Swipe down to read the question" over the seal. The finger leaves a trace on the answers, and each pick splits its answer along a thin red cut. Slow motion, no timer bar. See [ambush](gameplay.md#ambush).
 
 The scroll's heading is the label, the question type, `2 OF 3` for the rounds of `solutions` and `match`, `CHOOSE n` for `multiple`, and the ninjas (`7 OPTIONS · 5 NINJAS` when some carry two). `yes-no` is always one ninja and doesn't say so.
 
-- **4A single:** `AMBUSH · SINGLE · 3 NINJAS`, options on ← ↑ →, "swipe toward your answer".
+- **4A single:** `AMBUSH · SINGLE · 3 NINJAS`, options on ← ↑ →, "Cut your answer".
 - **4B solutions / yes-no:** `AMBUSH · SOLUTIONS · 2 OF 3`, scenario on the scroll, one ninja, ↑ yes (slash) / ↓ no (block).
-- **4C multiple / order:** `AMBUSH · MULTIPLE · CHOOSE 2`. Marked options show `MARKED`. Hint: "swipe each answer · lift + pause = strike". A swipe is final: swiping a marked option again does nothing. For `order` the marks get numbers in swipe order.
+- **4C multiple / order:** `AMBUSH · MULTIPLE · CHOOSE 2`. Picked answers are cut through. Hint: "Cut the 2 you choose, then hold still" (lifting and holding still strikes). A swipe is final: swiping a cut answer again does nothing. For `order` ("Cut them in order, then hold still") the place each answer was cut in is brushed next to it.
 - **4D many options:** `AMBUSH · 7 OPTIONS · 5 NINJAS`. Each option lists its mark; which ninja carries it isn't shown. 8 directions; front 3 strike in wave 1, back 2 in wave 2.
 
 <img src="screens/4a-single.png" alt="4A single" width="195"> <img src="screens/4b-solutions.png" alt="4B solutions" width="195"> <img src="screens/4c-multiple.png" alt="4C multiple" width="195"> <img src="screens/4d-many-options.png" alt="4D many options" width="195">

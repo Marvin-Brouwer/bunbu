@@ -24,15 +24,15 @@ The run ends when the stage is cleared ([results](screens.md#7-finished-results-
 
 ## Ambush
 
-One screen, no Draw or Submit button: **the swipe is the answer**.
+One screen, no Submit button: **the swipe is the answer**.
 
 1. The world freezes into slow motion. The ninjas run into view, one briefly winding up for a cut before the answer appears.
-2. The scroll opens and fills the top of the screen with the query, any code, and the options.
-3. Every option is tagged with a **mark**: the swipe direction (← ↑ → …) of the ninja carrying it.
-4. The foot of the scroll is the **swipe zone**: the scroll reaches down to the bottom of the screen, and its text scrolls above the zone. Swiping toward a mark picks that option. Only swipes in this zone count, so the text above can be scrolled freely.
+2. The scroll opens down to the bottom of the screen with the query and any code; the question has the whole scroll and scrolls when it is long.
+3. The answers are in the **answer drawer** at the foot of the scroll. Closed, only its edge shows, with a red seal (a hanko stamped 答, "answer") and "Tap or swipe up to answer" above it. Tapping the seal or swiping it up draws the answers up over the question; swiping it down puts them away to read the question again.
+4. Every option is tagged with a **mark**: the swipe direction (← ↑ → …) of the ninja carrying it. The drawn answers are the **swipe zone**: swiping toward a mark picks that option. Only swipes on the answers count, so the question can be scrolled freely.
 5. The scroll rolls up, slow motion snaps back to full speed, and the slashes and blocks play.
 
-The swipe zone is an abstract paper-cutting target, as in kumdo (종이베기): the scroll's own paper, edge to edge, ruled between grey strips, with a black band and ring; it shows no ninjas. Only the swipe zone blocks text selection; the scroll's text can be selected. Above it are one brush-lettered line on how to answer and the marks swiped so far, as small arrows in swipe order, since the options above may have scrolled away. The finger leaves a faint trace on the paper, and each pick cuts it with a red slash in the direction of its mark; only the last cut matters, so the one before fades. The ambush is about the answers: the real ninjas creep in, in 3D, behind the scroll (see [time limit](#time-limit)), and what happens to them follows the answer.
+The answers are written in ink on lined paper, one per line with the arrow of its mark in front; the drawer shows no ninjas. Above them is one brush-lettered line on how to answer. Only the swipe zone blocks text selection; the question can be selected. The finger leaves a faint trace on the paper, and a pick cuts its answer in two: the line splits along the cut, leaning with the swipe, with a thin red edge between the halves. For `order` the place it was cut in is brushed next to it. The ambush is about the answers: the real ninjas creep in, in 3D, behind the scroll (see [time limit](#time-limit)), and what happens to them follows the answer.
 
 <img src="screens/4a-single.png" alt="Single-answer ambush" width="195"> <img src="screens/4c-multiple.png" alt="Multiple-answer ambush" width="195">
 

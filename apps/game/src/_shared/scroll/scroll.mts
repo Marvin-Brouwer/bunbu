@@ -5,8 +5,8 @@
  * ([5 Outcome](../../../../../docs/design/screens.md#5-outcome)).
  *
  * Shared by the run and dojo practice: each hands it its own ambush and quiz, and the `commit`
- * that answers it. Its footer is the swipe zone, where the ambush is answered.
- * Without a `commit` the scroll only shows the ambush.
+ * that answers it. The answers are in its answer drawer, on the swipe zone where the ambush is
+ * answered. Without a `commit` the scroll only shows the ambush.
  */
 
 import { component } from '@rooted/components'
@@ -15,7 +15,8 @@ import type { Quiz } from '../state/quiz.mts'
 import { headingOf } from './heading.mts'
 import { scrollChangeOf } from './scroll-change.mts'
 import { ScrollPaper } from './scroll-paper.mts'
-import { SwipePaper } from '../swipe/swipe-paper.mts'
+import { AnswerDrawer } from './answer-drawer.mts'
+import { AnswerSheet } from '../swipe/answer-sheet.mts'
 import { SwipeZone } from '../swipe/swipe-zone.mts'
 import styles from './scroll.css'
 
@@ -67,19 +68,32 @@ export const Scroll = component<ScrollOptions>({
 			setStage('hidden')
 		}
 
+		// Whether the answers are drawn up, so the halves of a sliced scroll show them as they were.
+		let drawn = false
+
 		const unroll = (state: AmbushState) => {
+			drawn = false
 			scroll.replaceChildren(
 				create(ScrollPaper, {
 					state,
 					heading: heading(state),
-					ambush,
-					footer: commit === undefined
-						? undefined
-						: create(SwipeZone, {
-							ambush,
-							commit,
-							held,
-						}),
+					drawer: create(AnswerDrawer, {
+						onDraw(next) {
+							drawn = next
+						},
+						still: commit === undefined,
+						children: commit === undefined
+							? create(AnswerSheet, {
+								state,
+								ambush,
+							})
+							: create(SwipeZone, {
+								state,
+								ambush,
+								commit,
+								held,
+							}),
+					}),
 				})
 			)
 			setStage('unroll')
@@ -97,9 +111,13 @@ export const Scroll = component<ScrollOptions>({
 				children: create(ScrollPaper, {
 					state,
 					heading: heading(state),
-					footer: commit === undefined
-						? undefined
-						: create(SwipePaper),
+					drawer: create(AnswerDrawer, {
+						drawn,
+						still: true,
+						children: create(AnswerSheet, {
+							state,
+						}),
+					}),
 				}),
 			})
 			scroll.replaceChildren(
