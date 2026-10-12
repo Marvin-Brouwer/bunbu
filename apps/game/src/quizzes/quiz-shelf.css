@@ -37,6 +37,16 @@
 	box-shadow: inset 0 0 0 1px var(--vermilion), var(--tile);
 }
 
+/* Pressed where it chooses, not on its buttons, it sinks onto its bevel like a button. */
+.card:has(.cardChoose:active) {
+	translate: 0 var(--bevel-height);
+	box-shadow: none;
+}
+
+.card:has(input:checked):has(.cardChoose:active) {
+	box-shadow: inset 0 0 0 1px var(--vermilion);
+}
+
 .card:has(input:focus-visible) {
 	outline: 3px solid var(--indigo);
 	outline-offset: 2px;
