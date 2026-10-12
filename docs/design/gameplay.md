@@ -26,7 +26,7 @@ The run ends when the stage is cleared ([results](screens.md#7-finished-results-
 
 One screen, no Submit button: **the swipe is the answer**.
 
-1. The world goes into slow motion, slowing down hard at first and then ever more, but never to a stop: the samurai, the ninjas and everything around them run on slower and slower. The scroll unrolls at once, as the view moves. The ninjas run into view, one briefly winding up for a cut; the swipes and the time start once they are in.
+1. The world goes into slow motion, slowing down hard at first and then ever more, but never to a stop: the samurai, the ninjas and everything around them run on slower and slower. The scroll unrolls at once, as the view moves. The ninjas run into view; the swipes and the time start once they are in.
 2. The scroll opens down to the bottom of the screen with the query and any code; the question has the whole scroll and scrolls when it is long.
 3. The answers are in the **answer drawer** at the foot of the scroll. Closed, only its edge shows, with a red seal (a hanko stamped 答, "answer") and "Tap or swipe up to answer" above it. Tapping the seal or swiping it up draws the answers up over the whole scroll, the same swipe area for every question; swiping it down puts them away to read the question again.
 4. Every option is tagged with a **mark**: the swipe direction (← ↑ → …) of the ninja carrying it. The drawn answers are the **swipe zone**: swiping toward a mark picks that option. Only swipes on the answers count, so the question can be scrolled freely.

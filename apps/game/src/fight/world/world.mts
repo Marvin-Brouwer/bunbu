@@ -174,9 +174,8 @@ export function createRunWorld(game: RunGame, viewport: Viewport, roomBelow: () 
 			const view = viewOnPath(path, run.distance, frame.aspect, fallen)
 
 			// The ninjas first: they keep the mark each came from after the ambush's options are gone.
-			// One winds up for a cut as they come in, not again between the rounds of a question, and
-			// all of them just before the time runs out.
-			ninjas.draw(game.ninjas.value.active, ambush.options, view.frame, delta, worldDelta, ambush.openingLeft > 0 && ambush.round === 1, ambush.open && ambush.seconds > 0 ? ambush.secondsLeft : undefined)
+			// They wind up to charge just before the time runs out.
+			ninjas.draw(game.ninjas.value.active, ambush.options, view.frame, delta, worldDelta, ambush.open && ambush.seconds > 0 ? ambush.secondsLeft : undefined)
 
 			// He runs along the path, and turns toward the ninja he strikes or blocks, who stands square
 			// to the camera's way ahead.

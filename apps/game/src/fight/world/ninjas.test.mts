@@ -3,7 +3,7 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { clashSeconds, fleeSideOf, motionOf, slicerRunSeconds } from './ninjas.mts'
+import { clashSeconds, fleeSideOf, motionOf } from './ninjas.mts'
 
 describe('a ninja in the outcome', () => {
 	it('lunges in at once to land its hit', () => {
@@ -24,14 +24,16 @@ describe('a ninja in the outcome', () => {
 		expect(motionOf('fleeing', undefined, 0.2, 0.5).approach).toBe(1)
 	})
 
-	it('runs back in from mid screen when it sliced the scroll, and only then strikes', () => {
-		// Cutting through the scroll first.
-		expect(motionOf('strike', true, 0.9, 0.1)).toMatchObject({ pose: 'strike', time: 0.1 })
-		const running = motionOf('strike', true, 0.9, 0.65 + slicerRunSeconds / 2)
-		expect(running.pose).toBe('approach')
-		expect(running.approach).toBeGreaterThan(0)
-		expect(running.approach).toBeLessThan(1)
-		expect(motionOf('strike', true, 0.9, 0.65 + slicerRunSeconds + 0.1)).toMatchObject({ approach: 1, pose: 'strike' })
+	it('leaps across to mid screen when it slices the scroll, then charges in with the others', () => {
+		// Cutting through the scroll, in the air, as far out as it was.
+		const leaping = motionOf('strike', true, 0.5, 0.1)
+		expect(leaping).toMatchObject({ approach: 0.5, pose: 'strike' })
+		expect(leaping.hop).toBeGreaterThan(0)
+		// Standing mid screen while the halves fall.
+		expect(motionOf('strike', true, 0.5, 0.5)).toMatchObject({ approach: 0.5, hop: 0 })
+		// Then charging in at the same moment as the others.
+		expect(motionOf('strike', true, 0.5, 0.75)).toEqual(motionOf('strike', false, 0.5, 0.75))
+		expect(motionOf('strike', true, 0.5, 2).approach).toBe(1)
 	})
 
 	it('winds up while the halves of the scroll fall, before the others charge in', () => {
