@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://raw.githubusercontent.com/Marvin-Brouwer/bunbu/main/schema/v1.json",
+  "$id": "https://marvin-brouwer.github.io/bunbu/schema/v1.json",
   "title": "Bunbu quiz",
   "description": "A quiz in the Bunbu data format, version 1.",
   "type": "object",

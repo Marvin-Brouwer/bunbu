@@ -142,7 +142,7 @@ export function generateLargeQuiz(questionCount: number, seed = 1): BunbuData {
   };
 }
 
-const modeline = "# yaml-language-server: $schema=https://raw.githubusercontent.com/Marvin-Brouwer/bunbu/main/schema/v1.json";
+const modeline = "# yaml-language-server: $schema=https://marvin-brouwer.github.io/bunbu/schema/v1.json";
 
 /** The quiz as a YAML file, as an author would write it. */
 export function toYamlFile(data: BunbuData): string {
