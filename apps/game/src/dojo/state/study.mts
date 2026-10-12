@@ -3,8 +3,8 @@
  * shuffled loop of cards read aloud, with the word being spoken highlighted. The study route
  * creates it when it mounts and drops it when it unmounts.
  *
- * Speech itself is a side effect and lives outside the stores; it reports the spoken word back
- * through `speak`. The rules belong to the dojo track; this fixes the shapes.
+ * Speech itself is a side effect and lives outside the stores (`_shared/speech/`); it reports the
+ * card it reached through `reach` and the spoken word through `speak`.
  */
 
 import { createQuiz, noQuiz, type Quiz, type QuizState } from '../../_shared/state/quiz.mts'
@@ -16,8 +16,10 @@ export type ReadingState = {
 	readonly playing: boolean
 	/** Speech rate, `1` is normal. */
 	readonly rate: number
-	/** Character range of the word being spoken in the card's text, for the highlight. */
-	readonly word: { readonly start: number; readonly end: number } | undefined
+	/** The chosen voice by its `voiceURI`, or `undefined` for the system's own for the quiz's language. */
+	readonly voice: string | undefined
+	/** The word being spoken: a character range in one of the card's blocks of text, for the highlight. */
+	readonly word: { readonly block: number; readonly start: number; readonly end: number } | undefined
 }
 
 export type ReadingActions = {
@@ -25,9 +27,11 @@ export type ReadingActions = {
 	pause: () => void
 	/** Back to the first card. */
 	restart: () => void
-	/** The next card; loops back to the first after the last. */
-	next: (cards: number) => void
+	/** The card the reading reached. */
+	reach: (card: number) => void
+	/** The speed, kept between {@link slowest} and {@link fastest}. */
 	setRate: (rate: number) => void
+	chooseVoice: (voice: string | undefined) => void
 	/** The word the speech engine reached, or `undefined` between words. */
 	speak: (word: ReadingState['word']) => void
 }
@@ -35,7 +39,12 @@ export type ReadingActions = {
 /** The store, with its actions on its state. Change it through those, not `update`. */
 export type Reading = Store<ReadingState & ReadingActions>
 
-export const notReading: ReadingState = { card: 0, playing: false, rate: 1, word: undefined }
+export const notReading: ReadingState = { card: 0, playing: false, rate: 1, voice: undefined, word: undefined }
+
+export const slowest = 0.5
+export const fastest = 2
+/** How much the − and + of the speed change it. */
+export const rateStep = 0.25
 
 export function createReading(initial: ReadingState = notReading): Reading {
 	const change = (next: Partial<ReadingState>) => { store.update(() => next) }
@@ -44,8 +53,9 @@ export function createReading(initial: ReadingState = notReading): Reading {
 		play: () => { change({ playing: true }) },
 		pause: () => { change({ playing: false }) },
 		restart: () => { change({ card: 0, word: undefined }) },
-		next: (cards) => { change({ card: cards === 0 ? 0 : (store.value.card + 1) % cards, word: undefined }) },
-		setRate: (rate) => { change({ rate: Math.min(2, Math.max(0.5, rate)) }) },
+		reach: (card) => { change({ card, word: undefined }) },
+		setRate: (rate) => { change({ rate: Math.min(fastest, Math.max(slowest, rate)) }) },
+		chooseVoice: (voice) => { change({ voice }) },
 		speak: (word) => { change({ word }) },
 	})
 	return store

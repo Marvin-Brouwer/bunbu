@@ -4,8 +4,8 @@
  *
  * - **Full screen** on a phone. Leaving full screen (the system's back gesture, or swiping down)
  *   pauses; resuming goes full screen again.
- * - **Screen on**: the screen doesn't dim or lock while on the game, full screen or not. The
- *   browser lets go of this when the page is hidden, so it is asked for again on coming back.
+ * - **Screen on**: the screen doesn't dim or lock while on the game, full screen or not
+ *   ({@link keepScreenOn}).
  * - **Back** pauses first: playing puts one history entry on the page, which Back takes off
  *   again. Back once more leaves as usual. Resuming puts the entry back.
  *
@@ -17,6 +17,7 @@
  */
 
 import { navigate, type Path } from '@rooted/router'
+import { keepScreenOn } from './screen-on.mts'
 
 export type PlayGuardOptions = {
 	readonly pause: () => void
@@ -59,31 +60,6 @@ function enterFullscreen() {
 	})
 }
 
-/** Keeps the screen on, where the browser can; the browser lets go when the page is hidden. */
-let wakeLock: WakeLockSentinel | undefined
-/** Asked for and not answered yet, so coming back to the page doesn't ask twice. */
-let asking = false
-
-function keepScreenOn() {
-	if (!('wakeLock' in navigator) || document.visibilityState !== 'visible' || asking) return
-	if (wakeLock !== undefined && !wakeLock.released) return
-	asking = true
-	navigator.wakeLock.request('screen').then((sentinel) => {
-		// Left while asking: let go again.
-		if (active > 0) wakeLock = sentinel
-		else void sentinel.release()
-	}).catch(() => {
-		// Refused, as on low battery: the screen dims as it would.
-	}).finally(() => {
-		asking = false
-	})
-}
-
-function letScreenDim() {
-	void wakeLock?.release()
-	wakeLock = undefined
-}
-
 function resumed() {
 	enterFullscreen()
 	guard()
@@ -104,15 +80,12 @@ export function guardPlay(options: PlayGuardOptions, signal: AbortSignal): PlayG
 		if (document.fullscreenElement === null && options.pausable()) options.pause()
 	}, { signal })
 
-	document.addEventListener('visibilitychange', keepScreenOn, { signal })
-
 	signal.addEventListener('abort', () => {
 		active--
 		// Left from a menu, not restarted: take the guard off, so Back doesn't stop on it later,
-		// leave full screen and let the screen dim. A restart keeps all three for the next play.
+		// and leave full screen. A restart keeps both for the next play.
 		setTimeout(() => {
 			if (active > 0) return
-			letScreenDim()
 			if (guarding()) history.back()
 			if (document.fullscreenElement !== null) {
 				document.exitFullscreen().catch(() => {
@@ -122,7 +95,7 @@ export function guardPlay(options: PlayGuardOptions, signal: AbortSignal): PlayG
 		})
 	}, { once: true })
 
-	keepScreenOn()
+	keepScreenOn(signal)
 	resumed()
 	return {
 		resumed,

@@ -128,8 +128,8 @@ See [dojo.md](dojo.md) for the rules.
 
 - Progress (`12 / 40`), `▶ playing · shuffled loop`.
 - The word being spoken is highlighted: grey background and underline.
-- Card: category, type, query, and **Correct answer**. `multiple` lists all correct options, `order` the right sequence, `solutions` each solution with yes/no.
-- **Pause**, **Restart**, **Voice** (`System (en-US)`), **Speed** (`− 1.5× +`).
+- Card: type, query, and **Correct answer**. `multiple` lists all correct options, `order` the right sequence, `solutions` each solution with yes/no, `match` each row with its answer. (Questions have no category in the [data format](data-format.md#common-fields), so the card shows none.)
+- **Pause** (**Play** while paused), **Restart**, **Voice** (`System (en-US)`), **Speed** (`− 1.5× +`).
 
 ### D3 Practice start
 
