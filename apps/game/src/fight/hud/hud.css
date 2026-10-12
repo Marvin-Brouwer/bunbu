@@ -198,25 +198,21 @@
 	background: var(--paper);
 }
 
-.ticks {
+/* A notch at each quarter of the stage; the ones behind the samurai are dimmed. */
+.mark {
 	position: absolute;
-	inset: -0.2rem 0;
-}
-
-.tick {
-	position: absolute;
-	top: 0;
-	bottom: 0;
+	top: -0.2rem;
+	bottom: -0.2rem;
 	width: 2px;
 	margin-left: -1px;
 	background: var(--vermilion);
 }
 
-.tick[data-passed='true'] {
+.mark[data-passed='true'] {
 	background: var(--ink-soft);
 }
 
-.distance {
+.caption {
 	font-family: var(--font-mono);
 	font-size: 0.7rem;
 	text-shadow: 0 1px 2px var(--night);

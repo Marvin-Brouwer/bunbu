@@ -28,13 +28,10 @@ import {
 } from 'three'
 import type { GLTF } from 'three/addons/loaders/GLTFLoader.js'
 import { Batch, chunkOf, placed, scatter, type Cursor } from './kit.mts'
-import { clearanceOf, cutAway, facingPath, fogFar, isFree, sky, skyRadius, stamp, strip, type Owned, type Planting, type StageView, type Taken } from './landscape.mts'
+import { clearanceOf, cutAway, facingPath, fogFar, isFree, passTime, sky, skyRadius, stamp, strip, type Daylight, type Owned, type Planting, type StageView, type Taken } from './landscape.mts'
 import { beside, type Leg, type Path } from './path.mts'
 
 const palette = {
-	skyTop: 0x3b6cb0,
-	skyHorizon: 0xe6edf2,
-	fog: 0xc6d0d8,
 	ground: 0x6a6f4c,
 	step: 0xa39e93,
 	stepEdge: 0x86817a,
@@ -43,6 +40,42 @@ const palette = {
 	peaks: [0x6e7a86, 0x8a96a4, 0xa8b3c0],
 	snow: 0xf4f6fa,
 }
+
+/** From a clear noon to the glow on the snow at sunset. One light per quarter of the stage ({@link passTime}). */
+const daylight: Daylight = [
+	{
+		skyTop: 0x3b6cb0,
+		skyHorizon: 0xe6edf2,
+		fog: 0xc6d0d8,
+		ambient: { sky: 0xe4ecff, ground: 0x5a5440, intensity: 2.2 },
+		sun: { colour: 0xfff4e0, intensity: 2.8 },
+		lamps: 0,
+	},
+	{
+		skyTop: 0x3a66a8,
+		skyHorizon: 0xeee8e0,
+		fog: 0xc8ccd0,
+		ambient: { sky: 0xe6e8f8, ground: 0x5a5440, intensity: 2.2 },
+		sun: { colour: 0xffead0, intensity: 2.7 },
+		lamps: 0,
+	},
+	{
+		skyTop: 0x385a98,
+		skyHorizon: 0xf2d6bc,
+		fog: 0xc8c0bc,
+		ambient: { sky: 0xe8dcec, ground: 0x58503e, intensity: 2.1 },
+		sun: { colour: 0xffd0a0, intensity: 2.5 },
+		lamps: 0,
+	},
+	{
+		skyTop: 0x2e4680,
+		skyHorizon: 0xf0a898,
+		fog: 0xb8a4ac,
+		ambient: { sky: 0xdcc4e0, ground: 0x4c4438, intensity: 2.0 },
+		sun: { colour: 0xffa888, intensity: 2.2 },
+		lamps: 0,
+	},
+]
 
 /** Long straights for the torii tunnels, joined by turns as much left as right. */
 export const mountainRound: readonly Leg[] = [
@@ -85,14 +118,16 @@ function heightOf(model: Object3D): number {
 
 export function createMountainTemple(scene: Scene, path: Path, from: number, to: number, models: Promise<MountainModels>): StageView {
 	const visualTo = Math.min(to, 2400)
-	scene.background = new Color(palette.fog)
-	scene.fog = new Fog(palette.fog, 30, fogFar)
+	const [first] = daylight
+	const fog = new Fog(first.fog, 30, fogFar)
+	scene.fog = fog
 	const owned: Owned = { geometries: [], materials: [], textures: [] }
-	const backdrop = sky(owned, palette.skyTop, palette.skyHorizon)
+	const backdrop = sky(owned, first.skyTop, first.skyHorizon)
 	scene.add(backdrop)
 
-	scene.add(new HemisphereLight(0xe4ecff, 0x5a5440, 2.2))
-	const sun = new DirectionalLight(0xfff4e0, 2.8)
+	const ambient = new HemisphereLight(first.ambient.sky, first.ambient.ground, first.ambient.intensity)
+	scene.add(ambient)
+	const sun = new DirectionalLight(first.sun.colour, first.sun.intensity)
 	sun.castShadow = true
 	sun.shadow.mapSize.set(1024, 1024)
 	for (const side of ['left', 'bottom'] as const) sun.shadow.camera[side] = -18
@@ -244,6 +279,8 @@ export function createMountainTemple(scene: Scene, path: Path, from: number, to:
 	})
 
 	return {
+		passTime: passTime({ scene, fog, backdrop, ambient, sun }, daylight),
+
 		frame(camera, x, z) {
 			// The samurai's depth in view, less a little, so the gate he is passing under still shows.
 			cut.value = Math.max(0, -samurai.set(x, 1, z).applyMatrix4(camera.matrixWorldInverse).z - 2.5)

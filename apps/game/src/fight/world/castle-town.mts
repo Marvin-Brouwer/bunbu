@@ -1,5 +1,5 @@
 /**
- * Castle town ([2 Quiz + stage](../../../../../docs/design/screens.md#2-quiz--stage)) at dusk:
+ * Castle town ([2 Quiz + stage](../../../../../docs/design/screens.md#2-quiz--stage)) from dusk to night:
  * streets of two-storey town houses with lattice fronts, tiled roofs, noren curtains and paper
  * lanterns, and between them gardens with maples, bamboo, stone lanterns, a pond under a red bridge
  * and a torii at the gate. The path turns corners and winds through the gardens ({@link Path}).
@@ -37,7 +37,7 @@ import {
 import type { GLTF } from 'three/addons/loaders/GLTFLoader.js'
 import { Batch, chunkOf, gableGeometry, glowTexture, partOf, placed, scatter, slatsTexture, within, type Cursor } from './kit.mts'
 import { beside, type Path, type PathPoint } from './path.mts'
-import { clearanceOf, facingPath, fogFar, isFree, sky, skyRadius, stamp, strip, type Owned, type Planting, type StageView, type Taken } from './landscape.mts'
+import { clearanceOf, facingPath, fogFar, isFree, passTime, sky, skyRadius, stamp, strip, type Daylight, type Owned, type Planting, type StageView, type Taken } from './landscape.mts'
 
 export { fogFar, skyRadius, type StageView }
 
@@ -47,9 +47,6 @@ export const gardenHalfWidth = 1.8
 
 
 const palette = {
-	skyTop: 0x1d2147,
-	skyHorizon: 0xe58a5c,
-	fog: 0x8a6070,
 	street: 0x7a6650,
 	gardenPath: 0xa79e8e,
 	ground: 0x5e5044,
@@ -69,6 +66,42 @@ const palette = {
 	water: 0x2d4a5a,
 	bridge: 0xa8261c,
 }
+
+/** From dusk to night: the sun goes down and the shops and lanterns light up. One light per quarter of the stage ({@link passTime}). */
+const daylight: Daylight = [
+	{
+		skyTop: 0x1d2147,
+		skyHorizon: 0xe58a5c,
+		fog: 0x8a6070,
+		ambient: { sky: 0xb0b4e0, ground: 0x5a4236, intensity: 2.4 },
+		sun: { colour: 0xffb27a, intensity: 2.4 },
+		lamps: 0,
+	},
+	{
+		skyTop: 0x181a3e,
+		skyHorizon: 0xc86a58,
+		fog: 0x745468,
+		ambient: { sky: 0xa0a6dc, ground: 0x4c3a32, intensity: 2.2 },
+		sun: { colour: 0xff9a6a, intensity: 1.9 },
+		lamps: 0.35,
+	},
+	{
+		skyTop: 0x121638,
+		skyHorizon: 0x7a5070,
+		fog: 0x524862,
+		ambient: { sky: 0x8c96d4, ground: 0x3c3230, intensity: 2.0 },
+		sun: { colour: 0xc8a0b8, intensity: 1.3 },
+		lamps: 0.7,
+	},
+	{
+		skyTop: 0x0b0e28,
+		skyHorizon: 0x34305a,
+		fog: 0x34324c,
+		ambient: { sky: 0x7a86cc, ground: 0x2c2630, intensity: 1.8 },
+		sun: { colour: 0xa8b8e8, intensity: 0.9 },
+		lamps: 1,
+	},
+]
 
 
 /** The models the town uses; it is built without them first and gets them when they are in. */
@@ -324,7 +357,7 @@ function gardensOf(path: Path, from: number, to: number): { start: number; end: 
 	return gardens
 }
 
-function lay(path: Path, from: number, to: number): { town: Town; pending: Pending; owned: Owned; group: Group } {
+function lay(path: Path, from: number, to: number): { town: Town; pending: Pending; owned: Owned; group: Group; shopLight: MeshStandardMaterial } {
 	const owned: Owned = { geometries: [], materials: [], textures: [] }
 	const geometry = <T extends BufferGeometry>(made: T) => {
 		owned.geometries.push(made)
@@ -341,10 +374,11 @@ function lay(path: Path, from: number, to: number): { town: Town; pending: Pendi
 	const cursor: Cursor = { chunk: 0 }
 	const box = geometry(new BoxGeometry(1, 1, 1))
 	const lit = (roughness = 0.85) => material(new MeshStandardMaterial({ roughness, flatShading: true }))
+	// Shops open at dusk: warm light from inside shows through the lattice, brighter as night falls.
+	const shopLight = material(new MeshStandardMaterial({ map: slats, roughness: 0.9, emissive: 0xffa050, emissiveMap: slats, emissiveIntensity: 0.35 }))
 	const town: Town = {
 		walls: new Batch(box, lit(), cursor, { cast: true, receive: true }),
-		// Shops open at dusk: warm light from inside shows through the lattice.
-		lattice: new Batch(box, material(new MeshStandardMaterial({ map: slats, roughness: 0.9, emissive: 0xffa050, emissiveMap: slats, emissiveIntensity: 0.35 })), cursor),
+		lattice: new Batch(box, shopLight, cursor),
 		plaster: new Batch(box, lit(0.95), cursor, { cast: true, receive: true }),
 		windows: new Batch(box, material(new MeshStandardMaterial({ map: slats, roughness: 0.9 })), cursor),
 		roofs: new Batch(geometry(gableGeometry()), lit(0.7), cursor, { cast: true }),
@@ -489,22 +523,24 @@ function lay(path: Path, from: number, to: number): { town: Town; pending: Pendi
 	for (const batch of Object.values(town)) {
 		if (batch instanceof Batch && batch.count > 0) group.add(...batch.build())
 	}
-	return { town, pending, owned, group }
+	return { town, pending, owned, group, shopLight }
 }
 
 export function createCastleTown(scene: Scene, path: Path, from: number, to: number, models: Promise<TownModels>): StageView {
 	// Keep the visual layout bounded for very large quizzes. The path itself continues so the
 	// run rules remain correct; beyond this window the fog and ground provide the backdrop.
 	const visualTo = Math.min(to, 2400)
-	scene.background = new Color(palette.fog)
-	scene.fog = new Fog(palette.fog, 30, fogFar)
+	const [first] = daylight
+	const fog = new Fog(first.fog, 30, fogFar)
+	scene.fog = fog
 
 	const owned: Owned = { geometries: [], materials: [], textures: [] }
-	const backdrop = sky(owned, palette.skyTop, palette.skyHorizon)
+	const backdrop = sky(owned, first.skyTop, first.skyHorizon)
 	scene.add(backdrop)
 
-	scene.add(new HemisphereLight(0xb0b4e0, 0x5a4236, 2.4))
-	const sun = new DirectionalLight(0xffb27a, 2.4)
+	const ambient = new HemisphereLight(first.ambient.sky, first.ambient.ground, first.ambient.intensity)
+	scene.add(ambient)
+	const sun = new DirectionalLight(first.sun.colour, first.sun.intensity)
 	sun.castShadow = true
 	sun.shadow.mapSize.set(1024, 1024)
 	sun.shadow.camera.left = -18
@@ -558,6 +594,11 @@ export function createCastleTown(scene: Scene, path: Path, from: number, to: num
 	owned.materials.push(glowMaterial)
 	owned.textures.push(glow)
 	scene.add(new Points(glowGeometry, glowMaterial))
+	// As night falls the lanterns' glow spreads and the shops shine brighter.
+	const lamps = (strength: number) => {
+		glowMaterial.size = 2.6 + strength
+		laid.shopLight.emissiveIntensity = 0.35 + 0.65 * strength
+	}
 
 	// The models come in later; until then the town stands without its trees. Their geometry and
 	// textures belong to the shared, cached model; only the clones made here are freed with the town.
@@ -595,6 +636,8 @@ export function createCastleTown(scene: Scene, path: Path, from: number, to: num
 	})
 
 	return {
+		passTime: passTime({ scene, fog, backdrop, ambient, sun, lamps }, daylight),
+
 		follow(x, z) {
 			ground.position.set(x, 0, z)
 			backdrop.position.set(x, 0, z)

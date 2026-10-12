@@ -18,8 +18,12 @@ import {
 	SphereGeometry,
 	Vector3,
 	type Camera,
+	type DirectionalLight,
+	type Fog,
+	type HemisphereLight,
 	type Material,
 	type Object3D,
+	type Scene,
 	type Texture,
 } from 'three'
 import { beside, type Path, type PathPoint } from './path.mts'
@@ -35,14 +39,19 @@ export type StageView = {
 	follow: (x: number, z: number) => void
 	/** Once the camera has moved this frame, with the samurai at `x, z`: for what depends on the view. */
 	frame?: (camera: Camera, x: number, z: number) => void
+	/** Moves the light on toward the time of day after `marksPassed` quarter marks ({@link Daylight}). */
+	passTime: (marksPassed: number, delta: number) => void
 	dispose: () => void
 }
 
 /** What a stage made on the GPU, so it can be freed when the world goes. */
 export type Owned = { geometries: BufferGeometry[]; materials: Material[]; textures: Texture[] }
 
+/** The sky dome; its `top` and `horizon` colours can change while it is up. */
+export type Sky = Mesh<SphereGeometry, ShaderMaterial>
+
 /** A sky dome `radius` metres round, from `horizon` at the bottom to `top` overhead. */
-export function sky(owned: Owned, top: number, horizon: number, radius = skyRadius): Mesh {
+export function sky(owned: Owned, top: number, horizon: number, radius = skyRadius): Sky {
 	const geometry = new SphereGeometry(radius, 24, 12)
 	const material = new ShaderMaterial({
 		side: BackSide,
@@ -61,6 +70,94 @@ export function sky(owned: Owned, top: number, horizon: number, radius = skyRadi
 	const mesh = new Mesh(geometry, material)
 	mesh.renderOrder = -10
 	return mesh
+}
+
+/** How a stage is lit at one time of day. */
+export type Light = {
+	readonly skyTop: number
+	readonly skyHorizon: number
+	/** The fog, and the background behind it. */
+	readonly fog: number
+	/** The light from all round: from the sky above, from the ground below. */
+	readonly ambient: { readonly sky: number; readonly ground: number; readonly intensity: number }
+	/** The light that casts the shadows. */
+	readonly sun: { readonly colour: number; readonly intensity: number }
+	/** How brightly lanterns and lit windows glow, `0` to `1`; for stages that have them. */
+	readonly lamps: number
+}
+
+/** A stage's light at the start of the run and after each of the three quarter marks. */
+export type Daylight = readonly [Light, Light, Light, Light]
+
+/** Seconds the light takes to move on to the next time of day. */
+export const dayFade = 6
+
+/**
+ * Where a fade from `shown` toward `target` is after `delta` seconds, in steps of the
+ * {@link Daylight}: one step per {@link dayFade} seconds.
+ */
+export function fadeToward(shown: number, target: number, delta: number): number {
+	const step = delta / dayFade
+	return target > shown ? Math.min(target, shown + step) : Math.max(target, shown - step)
+}
+
+/** `amount` of the way from `before` to `after`. */
+const mix = (before: number, after: number, amount: number) => before + (after - before) * amount
+
+/** What a stage lights itself with, for {@link passTime} to change. */
+export type Lit = {
+	readonly scene: Scene
+	readonly fog: Fog
+	readonly backdrop: Sky
+	readonly ambient: HemisphereLight
+	readonly sun: DirectionalLight
+	/** Brightens the stage's lanterns and windows, `0` to `1`. */
+	readonly lamps?: (strength: number) => void
+}
+
+/**
+ * Lets the day go by over a run: after each quarter mark the stage's light fades, over
+ * {@link dayFade} seconds, to the next time of day in `daylight`. Lights `lit` as the first at once.
+ */
+export function passTime(lit: Lit, daylight: Daylight): StageView['passTime'] {
+	const { scene, fog, backdrop, ambient, sun, lamps } = lit
+	const background = new Color()
+	scene.background = background
+	const top = backdrop.material.uniforms.top?.value as Color
+	const horizon = backdrop.material.uniforms.horizon?.value as Color
+	const last = daylight.length - 1
+	const from = new Color()
+	const to = new Color()
+	const blend = (into: Color, before: number, after: number, amount: number) => into.copy(from.set(before).lerp(to.set(after), amount))
+
+	// `shown` is how far through the day the light is, in steps of `daylight`.
+	const show = (shown: number) => {
+		const step = Math.min(Math.floor(shown), last - 1)
+		const amount = shown - step
+		const [first] = daylight
+		const before = daylight[step] ?? first
+		const after = daylight[step + 1] ?? before
+		blend(top, before.skyTop, after.skyTop, amount)
+		blend(horizon, before.skyHorizon, after.skyHorizon, amount)
+		blend(fog.color, before.fog, after.fog, amount)
+		background.copy(fog.color)
+		blend(ambient.color, before.ambient.sky, after.ambient.sky, amount)
+		blend(ambient.groundColor, before.ambient.ground, after.ambient.ground, amount)
+		ambient.intensity = mix(before.ambient.intensity, after.ambient.intensity, amount)
+		blend(sun.color, before.sun.colour, after.sun.colour, amount)
+		sun.intensity = mix(before.sun.intensity, after.sun.intensity, amount)
+		lamps?.(mix(before.lamps, after.lamps, amount))
+	}
+
+	show(0)
+	// A run joined halfway (a fixture) starts at its own time of day instead of fading there.
+	let shown: number | undefined
+	return (marksPassed, delta) => {
+		const target = Math.min(marksPassed, last)
+		if (target === shown) return
+		shown = shown === undefined ? target : fadeToward(shown, target, delta)
+		show(shown)
+	}
 }
 
 export type Strip = {

@@ -7,7 +7,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createLife, shareOfOnePoint, type Life } from './life.mts'
 import { createRunGame } from './game.mts'
-import { createRun, runConfig, type Run } from './run.mts'
+import { createRun, marksPassed, runConfig, type Run } from './run.mts'
 import { beats, createScore, pointsPerCorrect, type Score } from './score.mts'
 
 // Every test gets its own stores: a game mode creates them per run, so tests do the same.
@@ -123,5 +123,19 @@ describe('run game', () => {
 		const game = createRunGame({ life: { value: 0.25, lastLoss: 0.25, hits: 3 } })
 		expect(game.life.value.value).toBe(0.25)
 		expect(game.score.value.points).toBe(0)
+	})
+})
+
+describe('quarter marks', () => {
+	it('counts the marks behind the samurai, each one at a quarter of the stage', () => {
+		expect(marksPassed({ distance: 0, stageLength: 1200 })).toBe(0)
+		expect(marksPassed({ distance: 299, stageLength: 1200 })).toBe(0)
+		expect(marksPassed({ distance: 300, stageLength: 1200 })).toBe(1)
+		expect(marksPassed({ distance: 900, stageLength: 1200 })).toBe(3)
+		expect(marksPassed({ distance: 1200, stageLength: 1200 })).toBe(3)
+	})
+
+	it('passes none before the stage has a length', () => {
+		expect(marksPassed({ distance: 0, stageLength: 0 })).toBe(0)
 	})
 })

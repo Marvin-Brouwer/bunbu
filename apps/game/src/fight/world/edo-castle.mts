@@ -27,17 +27,50 @@ import {
 } from 'three'
 import type { GLTF } from 'three/addons/loaders/GLTFLoader.js'
 import { Batch, chunkOf, placed, scatter, type Cursor } from './kit.mts'
-import { clearanceOf, cutAway, facingPath, fogFar, isFree, sky, skyRadius, stamp, strip, type Owned, type Planting, type StageView, type Taken } from './landscape.mts'
+import { clearanceOf, cutAway, facingPath, fogFar, isFree, passTime, sky, skyRadius, stamp, strip, type Daylight, type Owned, type Planting, type StageView, type Taken } from './landscape.mts'
 import { beside, type Leg, type Path } from './path.mts'
 
 const palette = {
-	skyTop: 0x2c2458,
-	skyHorizon: 0xf28c56,
-	fog: 0xb07a70,
 	lawn: 0x56603a,
 	gravel: 0xb8ad98,
 	water: 0x2d4a5a,
 }
+
+/** From sunset to a moonlit night. One light per quarter of the stage ({@link passTime}). */
+const daylight: Daylight = [
+	{
+		skyTop: 0x2c2458,
+		skyHorizon: 0xf28c56,
+		fog: 0xb07a70,
+		ambient: { sky: 0xc0b0e0, ground: 0x4a3a30, intensity: 2.2 },
+		sun: { colour: 0xffa070, intensity: 2.8 },
+		lamps: 0,
+	},
+	{
+		skyTop: 0x241e4e,
+		skyHorizon: 0xd06a58,
+		fog: 0x8e6468,
+		ambient: { sky: 0xaca4dc, ground: 0x40342e, intensity: 2.1 },
+		sun: { colour: 0xff8a64, intensity: 2.2 },
+		lamps: 0,
+	},
+	{
+		skyTop: 0x1a1840,
+		skyHorizon: 0x7a5274,
+		fog: 0x5c5066,
+		ambient: { sky: 0x9498d4, ground: 0x34302e, intensity: 1.9 },
+		sun: { colour: 0xc0a0c0, intensity: 1.5 },
+		lamps: 0,
+	},
+	{
+		skyTop: 0x0e1030,
+		skyHorizon: 0x36325c,
+		fog: 0x38364e,
+		ambient: { sky: 0x808ccc, ground: 0x2a2630, intensity: 1.8 },
+		sun: { colour: 0xa8b8e8, intensity: 1.0 },
+		lamps: 0,
+	},
+]
 
 /** Straight ways between the walls, joined by turns as much left as right. */
 export const castleRound: readonly Leg[] = [
@@ -86,15 +119,17 @@ function heightOf(model: Object3D): number {
 
 export function createEdoCastle(scene: Scene, path: Path, from: number, to: number, models: Promise<CastleModels>): StageView {
 	const visualTo = Math.min(to, 2400)
-	scene.background = new Color(palette.fog)
-	scene.fog = new Fog(palette.fog, 30, fogFar)
+	const [first] = daylight
+	const fog = new Fog(first.fog, 30, fogFar)
+	scene.fog = fog
 	const owned: Owned = { geometries: [], materials: [], textures: [] }
-	const backdrop = sky(owned, palette.skyTop, palette.skyHorizon)
+	const backdrop = sky(owned, first.skyTop, first.skyHorizon)
 	scene.add(backdrop)
 
-	scene.add(new HemisphereLight(0xc0b0e0, 0x4a3a30, 2.2))
+	const ambient = new HemisphereLight(first.ambient.sky, first.ambient.ground, first.ambient.intensity)
+	scene.add(ambient)
 	// A low sun, warm and long-shadowed.
-	const sun = new DirectionalLight(0xffa070, 2.8)
+	const sun = new DirectionalLight(first.sun.colour, first.sun.intensity)
 	sun.castShadow = true
 	sun.shadow.mapSize.set(1024, 1024)
 	for (const side of ['left', 'bottom'] as const) sun.shadow.camera[side] = -18
@@ -223,6 +258,8 @@ export function createEdoCastle(scene: Scene, path: Path, from: number, to: numb
 	})
 
 	return {
+		passTime: passTime({ scene, fog, backdrop, ambient, sun }, daylight),
+
 		frame(camera, x, z) {
 			// The samurai's depth in view, less a little, so the gate he is passing under still shows.
 			cut.value = Math.max(0, -samurai.set(x, 1, z).applyMatrix4(camera.matrixWorldInverse).z - 3)

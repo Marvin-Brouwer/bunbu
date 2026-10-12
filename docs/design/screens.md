@@ -51,7 +51,7 @@ A difficulty slider from **Apprentice** to **Shogun** over four stops (Apprentic
 
 - 3D samurai, always centred, auto-running toward a torii. No input until an ambush.
 - HUD: **score** with best to beat, **life bar** (full = 100%, empty = the pass mark), and a **pause** button.
-- Progress bar: stage name and distance (`860 / 1,500 m`). Ticks mark ambushes, a block marks the boss.
+- Progress bar: stage name and the questions done (`Castle town · 7 / 40`). A notch marks each quarter of the stage, and a block marks the boss. Passing a notch moves the stage's time of day on, fading over a few seconds: castle town goes from dusk to night as its shops and lanterns light up.
 
 ### 4 Ambush
 

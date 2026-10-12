@@ -1,5 +1,5 @@
 /**
- * The run's world: castle town at dusk, the samurai running its streets and gardens along a path
+ * The run's world: castle town from dusk to night, the samurai running its streets and gardens along a path
  * that turns, the ninjas of the current ambush and the camera that follows him.
  *
  * The samurai and the ninjas start as placeholder figures and become the real model as soon as it
@@ -14,6 +14,7 @@ import { loadModel } from '../../canvas/models.mts'
 import type { View } from '../../canvas/stage.mts'
 import type { Viewport } from '../../canvas/viewport.mts'
 import type { RunGame } from '../state/game.mts'
+import { marksPassed } from '../state/run.mts'
 import { framedIn, runFraming, viewOnPath } from './camera.mts'
 import { skyRadius } from './landscape.mts'
 import { createStageWorld } from './stages.mts'
@@ -148,6 +149,7 @@ export function createRunWorld(game: RunGame, viewport: Viewport, roomBelow: () 
 
 			const here = path.at(run.distance)
 			stage.follow(here.x, here.z)
+			stage.passTime(marksPassed(run), delta)
 
 			if (shogun.sequence === seen) {
 				since += delta
