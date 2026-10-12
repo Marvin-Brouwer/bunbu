@@ -7,8 +7,12 @@ allowBuilds:
 minimumReleaseAgeExclude:
   # Fixes binary data in store state (Marvin-Brouwer/rooted#404); younger than the minimum release age when bumped.
   - '@rooted/store@1.0.0-alpha.14'
-  # Pre-render leaves missing window properties undefined (Marvin-Brouwer/rooted#403); younger than the minimum release age when bumped.
-  - '@rooted-adapters/github-pages@1.0.0-alpha.29'
-  - '@rooted/adapter@1.0.0-alpha.29'
-  - '@rooted/application@1.0.0-alpha.43'
-  - '@rooted/prerender@1.0.0-alpha.2'
+  # Pre-rendered pages boot the app (Marvin-Brouwer/rooted#407) and preload from the page's origin, not file:///
+  # (Marvin-Brouwer/rooted#409); younger than the minimum release age when bumped.
+  - '@rooted-adapters/github-pages@1.0.0-alpha.31'
+  - '@rooted/adapter@1.0.0-alpha.31'
+  - '@rooted/application@1.0.0-alpha.45'
+  - '@rooted/dom-globals@1.0.0-alpha.2'
+  - '@rooted/prerender@1.0.0-alpha.3'
+  - '@rooted/router@1.0.0-alpha.34'
+  - '@rooted/seo@1.0.0-alpha.22'
