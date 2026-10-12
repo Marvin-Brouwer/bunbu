@@ -108,7 +108,8 @@ describe('storage', () => {
 
 describe('parsing what was saved', () => {
 	it('keeps the settings that are valid and drops the rest', () => {
-		expect(parseSettings({ difficulty: 'master', haptics: 'yes', volume: 3 })).toEqual({ difficulty: 'master' })
+		expect(parseSettings({ difficulty: 'shogun', haptics: 'yes', volume: 3 })).toEqual({ difficulty: 'shogun' })
+		expect(parseSettings({ difficulty: 'novice' })).toEqual({})
 		expect(parseSettings({ difficulty: 'toString' })).toEqual({})
 		expect(parseSettings(undefined)).toEqual({})
 	})
@@ -151,20 +152,20 @@ describe('parsing what was saved', () => {
 
 describe('persistApp', () => {
 	it('puts back what was saved before the first screen', async () => {
-		write('settings', { difficulty: 'master', haptics: false, volume: 0.2 })
+		write('settings', { difficulty: 'shogun', haptics: false, volume: 0.2 })
 		write('high-scores', { '["a","1"]': { points: 200, seconds: 30, correct: 2, answered: 2 } })
 		write('last-run', { quiz: { id: 'a', version: '1' }, misses: [{ at: { question: 0, part: 0 }, outcome: 'unanswered', picked: [] }] })
 
 		await persistApp(stop.signal)
 
-		expect(settings.value).toMatchObject({ difficulty: 'master', haptics: false, volume: 0.2 })
+		expect(settings.value).toMatchObject({ difficulty: 'shogun', haptics: false, volume: 0.2 })
 		expect(highScores.value.of('a', '1')).toMatchObject({ points: 200 })
 		expect(lastRun.value.missesOf('a', '1')).toHaveLength(1)
 	})
 
 	it('saves every change, and what it saved is what it puts back', async () => {
 		await persistApp(stop.signal)
-		settings.value.setDifficulty('novice')
+		settings.value.setDifficulty('apprentice')
 		highScores.value.submit('a', '1', { points: 100, seconds: 9, correct: 1, answered: 1 })
 		lastRun.value.save('a', '1', [{ at: { question: 2, part: 0 }, outcome: 'wrong', picked: [1] }])
 		stop.abort()
@@ -174,7 +175,7 @@ describe('persistApp', () => {
 		lastRun.value.reset()
 		await persistApp(session())
 
-		expect(settings.value.difficulty).toBe('novice')
+		expect(settings.value.difficulty).toBe('apprentice')
 		expect(highScores.value.of('a', '1')).toMatchObject({ points: 100, seconds: 9 })
 		expect(lastRun.value.missesOf('a', '1')).toEqual([{ at: { question: 2, part: 0 }, outcome: 'wrong', picked: [1] }])
 	})
@@ -218,7 +219,7 @@ describe('persistApp', () => {
 
 	it('starts from the defaults when nothing was saved', async () => {
 		await persistApp(stop.signal)
-		expect(settings.value).toMatchObject({ difficulty: 'adept', haptics: true, volume: 0.8 })
+		expect(settings.value).toMatchObject({ difficulty: 'samurai', haptics: true, volume: 0.8 })
 		expect(lastRun.value.quiz).toBeUndefined()
 	})
 

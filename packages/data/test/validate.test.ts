@@ -63,6 +63,20 @@ describe("validate", () => {
     expect(data.version).toBe("1");
   });
 
+  it("accepts a time per question in hours, minutes and seconds", async () => {
+    for (const time of ["45s", "3m", "1m30s", "1h", "1h2m3s"]) {
+      const data = await expectValid(quiz(single).replace("passingScore: 70", `passingScore: 70\ntimePerQuestion: ${time}`));
+      expect(data.timePerQuestion).toBe(time);
+    }
+  });
+
+  it("rejects a time per question without units, out of order or of no time", async () => {
+    for (const time of ["30", "30x", "30s1m", "0s", "0m0s", "1.5m", "''"]) {
+      const error = await expectIssues(quiz(single).replace("passingScore: 70", `passingScore: 70\ntimePerQuestion: ${time}`));
+      expect(error.issues[0]?.path).toBe("/timePerQuestion");
+    }
+  });
+
   it("requires the schema modeline", async () => {
     const error = await expectIssues(quiz(single).replace(modeline, "# just a comment"));
     expect(error.issues).toEqual([expect.objectContaining({ line: 1, message: expect.stringContaining("first line") })]);

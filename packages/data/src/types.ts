@@ -12,6 +12,8 @@ export interface BunbuData {
   license?: string;
   /** Percentage (0-100) of points needed to pass. */
   passingScore: number;
+  /** How long a question may take in a fight, such as `3m` or `1m30s`. Read it with `secondsOf`. */
+  timePerQuestion?: string;
   pronunciations?: Record<string, string>;
   questions: Question[];
 }

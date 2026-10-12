@@ -60,12 +60,15 @@ description: >-           # optional, Markdown
 authors: [Jane Doe]       # optional
 license: CC-BY-4.0        # optional, SPDX identifier for the content
 passingScore: 70          # required, percentage (0-100) needed to pass
+timePerQuestion: 1m30s    # optional, how long a question may take in a fight
 
 pronunciations: {}        # optional, see Pronunciations
 questions: []             # required, at least one question
 ```
 
 `passingScore` is the percentage of points needed to pass. A question is either right or wrong, and worth one point when right. The proposed solutions in a `solutions` question are each answered and counted as one point.
+
+`timePerQuestion` is how long a question may take in a fight: hours, minutes and seconds, in that order, each optional, such as `45s`, `3m`, `1m30s` or `1h`. A question asked in several ambushes (the rows of a `match`, the solutions of a `solutions`) shares that time between them. The difficulty scales it, see [time limit](gameplay.md#time-limit). Without it the game works the time out from the length of each question. The dojo has no time limit.
 
 ## Markdown
 

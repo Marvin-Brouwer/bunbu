@@ -6,7 +6,7 @@
 
 import { component } from '@rooted/components'
 import { settings } from '../../settings/state/settings.mts'
-import { DifficultyPicker } from './difficulty-picker.mts'
+import { DifficultySlider } from './difficulty-slider.mts'
 import { MenuSection } from './menu-section.mts'
 import styles from './settings-form.css'
 
@@ -32,15 +32,14 @@ export const SettingsForm = component<SettingsFormOptions>({
 			create(MenuSection, {
 				label: 'Difficulty',
 				children: [
-					create(DifficultyPicker, {
-						name: 'difficulty',
+					create(DifficultySlider, {
 						disabled: running,
 					}),
 					element('p', {
 						classes: styles.hint,
 						textContent: running
 							? 'Set for this run. Change it before your next one.'
-							: 'How long an ambush waits for your answer. Novice has no time limit, Adept gives you half again as long as Master.',
+							: 'How long an ambush waits for your answer. Apprentice gets a little more time, Shogun half. Samurai is the usual time.',
 					}),
 				],
 			}),

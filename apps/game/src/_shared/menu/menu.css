@@ -129,55 +129,131 @@
 	font-weight: 400;
 }
 
-/* A choice of a few, side by side: Novice / Adept / Master. */
+/* The difficulty: a slider over four stops from Apprentice to Shogun, the inner stops marked. */
 
-.segments {
+.difficulty {
 	display: grid;
-	grid-auto-columns: 1fr;
-	grid-auto-flow: column;
+	gap: 0.35rem;
+	padding: 0.85rem 1rem;
 	border: var(--frame);
 	border-radius: var(--radius);
-	overflow: hidden;
 	background: var(--paper-light);
 }
 
-.segment {
-	display: grid;
-	place-items: center;
-	padding: 0.75rem 0.5rem;
-	font-weight: 700;
-	cursor: pointer;
-}
-
-.segment + .segment {
-	border-left: 1px solid var(--ink);
-}
-
-.segment:has(input:checked) {
-	background: var(--ink);
-	color: var(--paper-light);
-}
-
-.segment:has(input:disabled) {
-	cursor: default;
-}
-
-.segments:has(input:disabled) {
+.difficulty:has(input:disabled) {
 	border-style: dashed;
-}
-
-.segment:has(input:disabled:not(:checked)) {
 	color: var(--ink-soft);
 }
 
-.segment:has(input:focus-visible) {
-	outline: 3px solid var(--indigo);
-	outline-offset: -5px;
+.difficultyEnds {
+	display: flex;
+	justify-content: space-between;
+	font-weight: 700;
 }
 
-/* The radio itself is the whole segment. */
-.segment input {
-	position: absolute;
-	opacity: 0;
-	pointer-events: none;
+/*
+ * The slider is drawn in layers, so the marks sit on the rail but under the red fill: the rail,
+ * the marks, the fill up to the thumb, then the input with a clear track and only its thumb.
+ * The thumb travels a thumb's width less than the track, so marks and fill are placed the same way.
+ */
+.difficultyTrack {
+	--thumb: 1.1rem;
+	position: relative;
+	display: grid;
+	align-items: center;
+	height: var(--thumb);
 }
+
+.difficultyRail,
+.difficultyFill {
+	position: absolute;
+	left: 0;
+	height: 0.45rem;
+	border-radius: 999px;
+}
+
+.difficultyRail {
+	right: 0;
+	border: 1px solid var(--ink-soft);
+	background: var(--paper);
+}
+
+.difficultyFill {
+	width: calc(var(--thumb) / 2 + (100% - var(--thumb)) * var(--place));
+	background: var(--vermilion);
+}
+
+/* Taller than the rail, so a mark the fill covers still shows above and below it. */
+.difficultyMark {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	left: calc(var(--thumb) / 2 + (100% - var(--thumb)) * var(--place));
+	width: 2px;
+	translate: -50% 0;
+	background: var(--ink);
+}
+
+.difficultyTrack input {
+	position: relative;
+	width: 100%;
+	height: var(--thumb);
+	margin: 0;
+	background: transparent;
+	appearance: none;
+	cursor: pointer;
+}
+
+.difficultyTrack input::-webkit-slider-runnable-track {
+	background: transparent;
+}
+
+.difficultyTrack input::-moz-range-track {
+	background: transparent;
+}
+
+.difficultyTrack input::-webkit-slider-thumb {
+	width: var(--thumb);
+	height: var(--thumb);
+	border: none;
+	border-radius: 50%;
+	background: var(--vermilion);
+	appearance: none;
+}
+
+.difficultyTrack input::-moz-range-thumb {
+	width: var(--thumb);
+	height: var(--thumb);
+	border: none;
+	border-radius: 50%;
+	background: var(--vermilion);
+}
+
+.difficultyTrack input:focus-visible {
+	outline: 3px solid var(--indigo);
+	outline-offset: 2px;
+	border-radius: 999px;
+}
+
+.difficultyTrack:has(input:disabled) .difficultyFill {
+	background: var(--ink-soft);
+}
+
+.difficultyTrack input:disabled {
+	cursor: default;
+}
+
+.difficultyTrack input:disabled::-webkit-slider-thumb {
+	background: var(--ink-soft);
+}
+
+.difficultyTrack input:disabled::-moz-range-thumb {
+	background: var(--ink-soft);
+}
+
+.difficultyNote {
+	margin: 0;
+	font-size: 0.85rem;
+	text-align: center;
+}
+

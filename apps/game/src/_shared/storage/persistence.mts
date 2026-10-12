@@ -13,7 +13,7 @@ import { Immutable, type StateObject, type Store } from '@rooted/store'
 import { highScores } from '../../fight/state/highscores.mts'
 import { lastRun, type LastRunState } from '../../fight/state/lastrun.mts'
 import { pointsPerCorrect, type HighScore } from '../../fight/state/score.mts'
-import { settings, type SettingsState } from '../../settings/state/settings.mts'
+import { difficulties, settings, type SettingsState } from '../../settings/state/settings.mts'
 import { builtStages, selection, stages, type Stage } from '../state/selection.mts'
 import { snapshot } from '../state/store.mts'
 import { library, type LibraryActions, type LibraryEntry, type LibraryState } from './library.mts'
@@ -27,7 +27,7 @@ import { read, write, type StoredKey } from './storage.mts'
 const passed = <T,>(result: T | type.errors): result is T => !(result instanceof type.errors)
 
 const settingFields = {
-	difficulty: type.enumerated('novice', 'adept', 'master'),
+	difficulty: type.enumerated(...difficulties),
 	haptics: type('boolean'),
 	volume: type('0 <= number <= 1'),
 } satisfies Record<keyof SettingsState, Type>

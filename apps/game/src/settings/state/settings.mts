@@ -2,13 +2,24 @@
  * The player's settings. App-wide, so one store for every route and game mode. Persisting them in
  * local storage is the run track's job; this store is plain state with defaults.
  *
- * Difficulty is the ambush time limit: Novice has none, Adept gets half again as long as Master
- * ([time limit](../../../../../docs/design/gameplay.md#time-limit)). The values are defaults to tune.
+ * The difficulty is the ambush time limit, a `timeScale` from Apprentice's 120% to Shogun's 50%
+ * ([time limit](../../../../../docs/design/gameplay.md#time-limit)).
  */
 
 import { createStore, type Store } from '@rooted/store'
 
-export type Difficulty = 'novice' | 'adept' | 'master'
+/** The difficulty, as the stops on its slider from easy to hard. */
+export const difficulties = ['apprentice', 'samurai', 'daimyo', 'shogun'] as const
+
+export type Difficulty = (typeof difficulties)[number]
+
+/** How much of a question's time an ambush gives, per difficulty. */
+export const timeScales: Readonly<Record<Difficulty, number>> = {
+	apprentice: 1.2,
+	samurai: 1,
+	daimyo: 0.8,
+	shogun: 0.5,
+}
 
 export type SettingsState = {
 	readonly difficulty: Difficulty
@@ -18,18 +29,11 @@ export type SettingsState = {
 	readonly volume: number
 }
 
-/** `timeScale` per difficulty; `undefined` means no time limit at all. */
-export const timeScales: Readonly<Record<Difficulty, number | undefined>> = {
-	novice: undefined,
-	adept: 1.5,
-	master: 1,
-}
-
-const initial: SettingsState = { difficulty: 'adept', haptics: true, volume: 0.8 }
+const initial: SettingsState = { difficulty: 'samurai', haptics: true, volume: 0.8 }
 
 export type SettingsActions = {
-	/** The `timeScale` of the chosen difficulty, or `undefined` when there is no time limit. */
-	timeScale: () => number | undefined
+	/** How much of a question's time an ambush gives at the chosen difficulty. */
+	timeScale: () => number
 	setDifficulty: (difficulty: Difficulty) => void
 	setHaptics: (haptics: boolean) => void
 	setVolume: (volume: number) => void

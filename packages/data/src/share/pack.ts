@@ -28,6 +28,7 @@ const hasAuthors = 1 << 1;
 const hasLicense = 1 << 2;
 const hasPronunciations = 1 << 3;
 const fractionalScore = 1 << 4;
+const hasTimePerQuestion = 1 << 5;
 
 class Writer {
   private readonly bytes: number[] = [];
@@ -160,7 +161,8 @@ export function pack(data: BunbuData): Uint8Array {
       (data.authors !== undefined ? hasAuthors : 0) |
       (data.license !== undefined ? hasLicense : 0) |
       (data.pronunciations !== undefined ? hasPronunciations : 0) |
-      (scoreIsInteger ? 0 : fractionalScore),
+      (scoreIsInteger ? 0 : fractionalScore) |
+      (data.timePerQuestion !== undefined ? hasTimePerQuestion : 0),
   );
   writer.string(data.id);
   writer.string(data.title);
@@ -176,6 +178,7 @@ export function pack(data: BunbuData): Uint8Array {
     for (const author of data.authors) writer.string(author);
   }
   if (data.license !== undefined) writer.string(data.license);
+  if (data.timePerQuestion !== undefined) writer.string(data.timePerQuestion);
   if (data.pronunciations !== undefined) {
     const entries = Object.entries(data.pronunciations);
     writer.varint(entries.length);
@@ -203,6 +206,7 @@ export function unpack(bytes: Uint8Array): BunbuData {
   if (flags & hasDescription) data.description = reader.string<Markdown>();
   if (flags & hasAuthors) data.authors = Array.from({ length: reader.count() }, () => reader.string());
   if (flags & hasLicense) data.license = reader.string();
+  if (flags & hasTimePerQuestion) data.timePerQuestion = reader.string();
   if (flags & hasPronunciations) {
     // fromEntries, so a "__proto__" term becomes a normal property.
     data.pronunciations = Object.fromEntries(

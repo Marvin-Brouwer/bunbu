@@ -136,7 +136,7 @@ describe('openAmbush', () => {
 		expect(game.ninjas.value.active).toMatchObject([{ id: 0, wave: 0, options: [0, 1], approach: 0, pose: 'approach' }])
 	})
 
-	it('opens without a time limit on Novice', () => {
+	it('opens without a time limit when there is none, as in the dojo', () => {
 		openAmbush(game, undefined, seeded(1))
 		expect(game.ambush.value.seconds).toBe(0)
 	})

@@ -67,6 +67,14 @@ Each ninja carries one option. A **slash** means "this option is picked", a **bl
 
 There is no timer bar: the ambush opens in slow motion and **the ninjas creeping in are the timer**.
 
+When the quiz sets [`timePerQuestion`](data-format.md#document-structure), that is the time, shared by the ambushes of a question (the rows of a `match`, the solutions of a `solutions`):
+
+```text
+ambushSeconds = timePerQuestion / ambushes of the question × timeScale
+```
+
+Without it, the time is worked out from the question:
+
 ```text
 ambushSeconds = ceil(read + answer) × timeScale, minimum 5 s
 read          = words / 200 wpm (words in code count double)
@@ -78,7 +86,7 @@ answer        = yes-no:    1.5
 
 `solutions` and `match` use the `yes-no` and `single` rows, per solution or row.
 
-`timeScale` is a setting: `1`, relaxed `1.5`, or `off`.
+`timeScale` is the difficulty, a slider with four stops, the two inner ones marked on the track: **Apprentice** `1.2`, **Samurai** `1` (where a new player starts), **Daimyo** `0.8` and **Shogun** `0.5`. The dojo has no time limit.
 
 All of these numbers are defaults. Make them configurable and tune them in playtests, including the 0.8 s commit pause.
 

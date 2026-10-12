@@ -5,7 +5,7 @@
  * [more than 3 options](../../../../../docs/design/gameplay.md#more-than-3-options)).
  */
 
-import type { BunbuData, Question } from '@bunbu/data'
+import { secondsOf, type BunbuData, type Question } from '@bunbu/data'
 import { yesNoMarks, type AmbushKind, type AmbushOpening, type AmbushOption, type Mark } from './ambush.mts'
 import { ambushSeconds } from './ambush-time.mts'
 import { choicesOf, partsOf, type QuestionRef } from './quiz.mts'
@@ -67,7 +67,7 @@ const rankIn = (correct: readonly boolean[], source: number) =>
 	correct[source] ? correct.slice(0, source + 1).filter(Boolean).length : 0
 
 export type OpeningSettings = {
-	/** From the settings; `undefined` means no time limit (Novice, and the dojo). */
+	/** From the settings; `undefined` means no time limit, as in the dojo. */
 	readonly timeScale: number | undefined
 	readonly random: Random
 }
@@ -101,6 +101,9 @@ export function openingOf(quiz: BunbuData, refs: readonly QuestionRef[], at: Que
 	}))
 	const query = queryOf(question, at.part)
 	const ownRefs = refs.filter((ref) => ref.question === at.question)
+	const rounds = Math.max(1, ownRefs.length)
+	// The quiz's time per question, shared by the ambushes of the question.
+	const perQuestion = quiz.timePerQuestion === undefined ? undefined : secondsOf(quiz.timePerQuestion)
 
 	return {
 		kind,
@@ -108,9 +111,9 @@ export function openingOf(quiz: BunbuData, refs: readonly QuestionRef[], at: Que
 		query,
 		options,
 		choose: kind === 'multiple' || kind === 'order' ? correct.filter(Boolean).length : 1,
-		seconds: ambushSeconds(kind, [query, ...options.map((option) => option.answer)], options.length, settings.timeScale),
+		seconds: ambushSeconds(kind, [query, ...options.map((option) => option.answer)], options.length, settings.timeScale, perQuestion === undefined ? undefined : perQuestion / rounds),
 		round: Math.max(1, ownRefs.findIndex((ref) => ref.part === at.part) + 1),
-		rounds: Math.max(1, ownRefs.length),
+		rounds,
 	}
 }
 
