@@ -30,7 +30,7 @@ export const ambushRoomConfig = {
 	/** The room below never takes more than this share of the screen. */
 	largestBelow: 0.2,
 	/** The duel strip's height, with room at its top for the score box's line with the best score. */
-	strip: 3.5,
+	strip: 4,
 	/** The gap between the duel strip and the scroll. */
 	stripGap: 0.5,
 }
