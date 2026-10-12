@@ -161,7 +161,7 @@ describe('commitAmbush', () => {
 		expect(game.ninjas.value.active.map((ninja) => ninja.pose)).toEqual(['slain', 'strike', 'blocked'])
 		expect(game.shogun.value.pose).toBe('block')
 		playOut()
-		expect(game.ninjas.value.active.map((ninja) => [ninja.id, ninja.pose])).toEqual([[0, 'slain'], [1, 'fleeing'], [2, 'fleeing']])
+		expect(game.ninjas.value.active.map((ninja) => [ninja.id, ninja.pose])).toEqual([[0, 'slain'], [1, 'strike'], [2, 'blocked']])
 	})
 
 	it('takes the question share off the life bar on a miss and keeps the score', () => {
@@ -180,7 +180,7 @@ describe('commitAmbush', () => {
 		answer(1)
 		expect(game.life.value.empty()).toBe(true)
 
-		// The hits play out first; then the ninjas flee and the samurai falls.
+		// The hits play out first; then the samurai falls.
 		expect(game.run.value.phase).toBe('running')
 		expect(game.run.value.recovery).toBe(outcomeDelaySeconds + moveSeconds + runConfig.hitSeconds)
 		untilFirstMove()
@@ -188,7 +188,7 @@ describe('commitAmbush', () => {
 		playOut()
 		expect(game.run.value.phase).toBe('fallen')
 		expect(game.shogun.value.pose).toBe('fallen')
-		expect(game.ninjas.value.active.every((ninja) => ninja.pose === 'fleeing')).toBe(true)
+		expect(game.ninjas.value.active.every((ninja) => ninja.pose === 'strike')).toBe(true)
 	})
 
 	it('finishes the run after the last question', () => {
@@ -199,7 +199,7 @@ describe('commitAmbush', () => {
 		expect(game.run.value.recovery).toBe(outcomeDelaySeconds + moveSeconds + runConfig.strikeSeconds)
 		playOut()
 		expect(game.run.value.phase).toBe('finished')
-		expect(game.ninjas.value.active.find((ninja) => ninja.id === 1)?.pose).toBe('fleeing')
+		expect(game.ninjas.value.active.find((ninja) => ninja.id === 1)?.pose).toBe('blocked')
 		expect(game.score.value.points).toBe(fixtureQuiz.questions.length * 100)
 	})
 })

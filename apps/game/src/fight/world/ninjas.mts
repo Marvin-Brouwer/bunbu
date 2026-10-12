@@ -123,6 +123,13 @@ export type Motion = {
 	readonly hop: number
 }
 
+/** Seconds a ninja shows its cut, or being knocked back, before it turns and flees on its own. */
+const strikeSeconds = poseSeconds.strike + 0.1
+const knockedSeconds = poseSeconds.blocked + 0.1
+
+/** Having struck, it flees from in reach, `since` seconds after it was done. */
+const fleeing = (since: number): Motion => ({ approach: 1, pose: 'fleeing', time: since, hop: 0 })
+
 /** Lunging in from `approach` over `seconds`: how close it is and how high it leaps, `time` seconds in. */
 function charge(approach: number, time: number, seconds: number): Pick<Motion, 'approach' | 'hop'> {
 	const done = Math.min(1, Math.max(0, time / seconds))
@@ -137,21 +144,26 @@ function charge(approach: number, time: number, seconds: number): Pick<Motion, '
  *   slicer cuts the scroll from where it stands and charges in once the halves have fallen; the
  *   others wind up while they fall, then turn and flee from where they stand.
  * - Blocked, it lunges in and cuts first; the samurai's sword meets it after `clashSeconds`, and
- *   it is knocked back, then flees from there.
+ *   it is knocked back.
+ * - Having landed its hit or been knocked back, it flees straight away, without waiting for the
+ *   others.
  */
 export function motionOf(pose: NinjaPose, slicer: boolean | undefined, approach: number, time: number): Motion {
 	if (pose === 'strike') {
-		if (slicer === undefined) return { ...charge(approach, time, lungeSeconds), pose, time }
+		if (slicer === undefined) {
+			return time < strikeSeconds ? { ...charge(approach, time, lungeSeconds), pose, time } : fleeing(time - strikeSeconds)
+		}
 		const wait = time - strikeDelaySeconds
 		// The slicer cuts through the scroll from where it stands; the others wind up while it
 		// falls. Then the slicer charges in to land the hit, and the others flee.
 		if (wait <= 0) return { approach, pose, time: slicer ? time : windUpTime, hop: 0 }
-		return slicer ? { ...charge(approach, wait, lungeSeconds), pose, time: wait } : { approach, pose: 'fleeing', time: wait, hop: 0 }
+		if (!slicer) return { approach, pose: 'fleeing', time: wait, hop: 0 }
+		return wait < strikeSeconds ? { ...charge(approach, wait, lungeSeconds), pose, time: wait } : fleeing(wait - strikeSeconds)
 	}
 	if (pose === 'blocked') {
-		return time < clashSeconds
-			? { ...charge(approach, time, clashSeconds), pose: 'strike', time }
-			: { approach: 1, pose, time: time - clashSeconds, hop: 0 }
+		if (time < clashSeconds) return { ...charge(approach, time, clashSeconds), pose: 'strike', time }
+		const knocked = time - clashSeconds
+		return knocked < knockedSeconds ? { approach: 1, pose, time: knocked, hop: 0 } : fleeing(knocked - knockedSeconds)
 	}
 	if (pose === 'fleeing') return { approach: 1, pose, time, hop: 0 }
 	return { approach, pose, time, hop: 0 }

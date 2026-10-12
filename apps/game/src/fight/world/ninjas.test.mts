@@ -38,6 +38,19 @@ describe('a ninja in the outcome', () => {
 	})
 })
 
+describe('a ninja done with its move', () => {
+	it('flees straight after landing its hit, without waiting for the others', () => {
+		expect(motionOf('strike', undefined, 0.3, 0.2).pose).toBe('strike')
+		expect(motionOf('strike', undefined, 0.3, 0.6)).toMatchObject({ approach: 1, pose: 'fleeing' })
+		expect(motionOf('strike', true, 0.3, 0.65 + 0.6)).toMatchObject({ approach: 1, pose: 'fleeing' })
+	})
+
+	it('flees straight after it is knocked back', () => {
+		expect(motionOf('blocked', undefined, 0.3, clashSeconds + 0.1).pose).toBe('blocked')
+		expect(motionOf('blocked', undefined, 0.3, clashSeconds + 0.5)).toMatchObject({ approach: 1, pose: 'fleeing' })
+	})
+})
+
 describe('a fleeing ninja', () => {
 	it('runs off on the side it stands, so the samurai does not run into it', () => {
 		expect(fleeSideOf(2, 4)).toBe(1)

@@ -83,36 +83,6 @@ describe('the run', () => {
 		expect(game.run.value.distance).toBeGreaterThan(distance)
 	})
 
-	it('sends the ninjas that landed the hit fleeing once the samurai recovers', () => {
-		runToAmbush()
-		answer(false)
-		tickRun(game, outcomeDelaySeconds, outcomeDelaySeconds)
-		expect(game.ninjas.value.active.every((ninja) => ninja.pose === 'strike')).toBe(true)
-
-		tickRun(game, 0.5, 0.5)
-		expect(game.ninjas.value.active.every((ninja) => ninja.pose === 'strike')).toBe(true)
-		tickRun(game, 0.6, 0.6)
-		expect(game.ninjas.value.active.every((ninja) => ninja.pose === 'fleeing')).toBe(true)
-	})
-
-	it('sends the blocked ninjas fleeing once the samurai recovers, and leaves the slain where they fell', () => {
-		// The second question is a `single` of three: one slain, two blocked.
-		play([true])
-		runToAmbush()
-		answer(true)
-		// He deals with them in turn; just before the hold ends, he has met every one.
-		tickRun(game, game.run.value.recovery - 0.05, game.run.value.recovery - 0.05)
-		const blocked = game.ninjas.value.active.filter((ninja) => ninja.pose === 'blocked').map((ninja) => ninja.id)
-		const slain = game.ninjas.value.active.filter((ninja) => ninja.pose === 'slain').map((ninja) => ninja.id)
-		expect(blocked).toHaveLength(2)
-		expect(slain).toHaveLength(1)
-
-		tickRun(game, game.run.value.recovery + 0.1, game.run.value.recovery + 0.1)
-		const poses = new Map(game.ninjas.value.active.map((ninja) => [ninja.id, ninja.pose]))
-		for (const id of blocked) expect(poses.get(id)).toBe('fleeing')
-		for (const id of slain) expect(poses.get(id)).toBe('slain')
-	})
-
 	it('cannot be paused before it has started', () => {
 		game.run.value.reset()
 		game.run.value.pause()

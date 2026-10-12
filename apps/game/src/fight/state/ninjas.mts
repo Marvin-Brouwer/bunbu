@@ -103,7 +103,6 @@ export type NinjasActions = {
 	strikeUnanswered: () => void
 	slay: (id: number) => void
 	block: (id: number) => void
-	flee: (id: number) => void
 	clear: () => void
 }
 
@@ -187,7 +186,6 @@ export function createNinjas(initial: NinjasState = noNinjas): Ninjas {
 		},
 		slay: (id) => { pose(id, 'slain') },
 		block: (id) => { pose(id, 'blocked') },
-		flee: (id) => { pose(id, 'fleeing') },
 		clear: () => { store.update(() => noNinjas) },
 	})
 	return store

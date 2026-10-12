@@ -156,15 +156,3 @@ export function tickOutcome(game: RunGame, realDelta: number): void {
 	// A long frame can take in more than one move.
 	for (let move = game.shogun.value.tick(realDelta); move !== undefined; move = game.shogun.value.tick(0)) meet(game, move)
 }
-
-/**
- * Ends the outcome once the samurai's hold after an ambush is over: the ninjas that landed a hit
- * and the ones he blocked flee ([outcome](../../../../../docs/design/gameplay.md#outcome)). The
- * ones that fled when the time ran out are on their way already; the slain stay where they fell.
- * The next ambush clears the field.
- */
-export function settleOutcome(game: RunGame): void {
-	for (const ninja of game.ninjas.value.active) {
-		if ((ninja.pose === 'strike' && ninja.slicer !== false) || ninja.pose === 'blocked') game.ninjas.value.flee(ninja.id)
-	}
-}
