@@ -7,7 +7,7 @@
 	display: grid;
 	gap: 0.25rem;
 	padding-top: 0.75rem;
-	border-top: 1px dashed var(--paper-edge);
+	border-top: 1px solid var(--paper-edge);
 }
 
 .top {

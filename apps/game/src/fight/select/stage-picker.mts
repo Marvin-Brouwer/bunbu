@@ -5,6 +5,7 @@
  */
 
 import { component } from '@rooted/components'
+import { ChoiceStamp } from '../../_shared/menu/choice-stamp.mts'
 import { formatWhole } from '../../_shared/numbers.mts'
 import { builtStages, selection, stageNames, stages, type Stage } from '../../_shared/state/selection.mts'
 import { stageResults } from '../state/stage-results.mts'
@@ -22,7 +23,7 @@ function resultOf(stage: Stage): string | undefined {
 export const StagePicker = component({
 	name: 'stage-picker',
 	styles,
-	onMount({ append, element }) {
+	onMount({ append, create, element }) {
 		append(
 			element('div', {
 				classes: styles.stages,
@@ -47,6 +48,7 @@ export const StagePicker = component({
 									},
 								},
 							}),
+							create(ChoiceStamp),
 							element('span', {
 								classes: styles.stageText,
 								children: [

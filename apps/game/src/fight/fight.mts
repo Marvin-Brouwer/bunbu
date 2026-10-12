@@ -31,7 +31,6 @@ export const Fight = component({
 			replace(
 				create(RunScreen, {
 					game,
-					leave: showSelect,
 					restart: start,
 				})
 			)

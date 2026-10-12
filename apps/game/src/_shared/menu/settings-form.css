@@ -19,6 +19,12 @@
 	cursor: pointer;
 }
 
+.toggle:has(input:disabled) {
+	border: var(--frame-faded);
+	color: var(--ink-soft);
+	cursor: default;
+}
+
 .toggle input {
 	width: 1.4rem;
 	height: 1.4rem;

@@ -1,16 +1,21 @@
 /**
- * The red seal on the edge of the answer drawer, a hanko stamped with 答, "answer": the thing to
- * tap or swipe up to draw the answers ([4 Ambush](../../../../../docs/design/screens.md#4-ambush)).
+ * A red seal, a hanko. On the edge of the answer drawer it is stamped with 答, "answer": the thing
+ * to tap or swipe up to draw the answers ([4 Ambush](../../../../../docs/design/screens.md#4-ambush)).
  * Drawn, not an image, so it stays sharp and takes the scroll's own colours.
  */
 
 import { component } from '@rooted/components'
 import styles from './scroll.css'
 
-export const Hanko = component({
+export type HankoOptions = {
+	/** The character stamped on it; 答 by default. */
+	readonly character?: string
+}
+
+export const Hanko = component<HankoOptions>({
 	name: 'hanko',
 	styles,
-	onMount({ append, element }) {
+	onMount({ append, element, options }) {
 		append(
 			element('svg', {
 				classes: styles.hanko,
@@ -41,7 +46,7 @@ export const Hanko = component({
 							classes: styles.sealCharacter,
 							x: 24,
 							y: 25,
-							textContent: '答',
+							textContent: options.character ?? '答',
 						}),
 					],
 				}),

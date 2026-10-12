@@ -5,13 +5,13 @@
 
 /* The chosen quiz */
 
+/* It only tells, so it has no frame. */
 .quiz {
 	display: grid;
 	gap: 0.3rem;
 	padding: 0.75rem 0.9rem;
-	border: var(--frame);
 	border-radius: var(--radius);
-	background: var(--paper-light);
+	background: var(--paper-shade);
 }
 
 .quizTitle {
@@ -36,21 +36,23 @@
 }
 
 .stage {
+	position: relative;
 	display: flex;
 	align-items: center;
 	gap: 0.4rem;
 	padding: 0.95rem 1rem;
-	border: var(--frame);
+	border: 2px solid transparent;
 	border-radius: var(--radius);
 	background: var(--paper-light);
 	font-size: 1.1rem;
 	font-weight: 700;
 	cursor: pointer;
+	box-shadow: var(--tile);
 }
 
 .stage:has(input:checked) {
 	border-color: var(--vermilion);
-	box-shadow: inset 0 0 0 1px var(--vermilion);
+	box-shadow: inset 0 0 0 1px var(--vermilion), var(--tile);
 }
 
 .stage:has(input:focus-visible) {
@@ -59,9 +61,10 @@
 }
 
 .stage:has(input:disabled) {
-	border-style: dashed;
+	background: var(--paper-shade);
 	color: var(--ink-soft);
 	cursor: not-allowed;
+	box-shadow: none;
 }
 
 .stage input {
@@ -69,6 +72,7 @@
 	opacity: 0;
 	pointer-events: none;
 }
+
 
 .stageNumber {
 	font-family: var(--font-mono);

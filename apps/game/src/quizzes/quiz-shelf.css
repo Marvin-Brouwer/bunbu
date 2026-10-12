@@ -16,10 +16,11 @@
 	grid-template-columns: 1fr auto;
 	align-items: center;
 	gap: 0.6rem;
-	border: var(--frame);
+	border: 2px solid transparent;
 	border-radius: var(--radius);
 	background: var(--paper-light);
 	color: var(--ink);
+	box-shadow: var(--tile);
 }
 
 /* Choosing takes the card but for its buttons. */
@@ -33,7 +34,7 @@
 
 .card:has(input:checked) {
 	border-color: var(--vermilion);
-	box-shadow: inset 0 0 0 1px var(--vermilion);
+	box-shadow: inset 0 0 0 1px var(--vermilion), var(--tile);
 }
 
 .card:has(input:focus-visible) {
@@ -47,6 +48,7 @@
 	opacity: 0;
 	pointer-events: none;
 }
+
 
 .cardTitle {
 	font-weight: 700;
@@ -76,7 +78,7 @@
 	width: 2.85rem;
 	height: 2.85rem;
 	padding: 0;
-	border: 2px solid var(--vermilion);
+	border: none;
 	border-radius: var(--radius);
 	background: var(--vermilion);
 	color: var(--paper-light);
@@ -84,6 +86,12 @@
 	font-size: 0.45rem;
 	font-weight: 700;
 	cursor: pointer;
+	box-shadow: var(--tile-vermilion);
+}
+
+.cardAction:active {
+	translate: 0 var(--bevel-height);
+	box-shadow: none;
 }
 
 .cardAction:focus-visible {

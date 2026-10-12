@@ -4,6 +4,7 @@
  */
 
 import { component } from '@rooted/components'
+import type { Path } from '@rooted/router'
 import type { RunGame } from '../state/game.mts'
 import type { RunState } from '../state/run.mts'
 import { Countdown } from './countdown.mts'
@@ -15,8 +16,8 @@ export type RunOverlaysOptions = {
 	readonly game: RunGame
 	/** A new run on the chosen quiz and stage: Restart stage, Next stage, Rise again. */
 	readonly restart: () => void
-	/** Back to the select screen: Quit. */
-	readonly leave: () => void
+	/** Leaves the run for another screen, which takes its place in history: Quit, Menu, Practise mistakes. */
+	readonly leave: (to: Path) => void
 }
 
 type Overlay = 'none' | 'pause' | 'countdown' | 'finished' | 'fallen'

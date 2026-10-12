@@ -5,6 +5,7 @@
 
 import type { BunbuData } from '@bunbu/data'
 import { component } from '@rooted/components'
+import { ChoiceStamp } from '../_shared/menu/choice-stamp.mts'
 import { formatWhole } from '../_shared/numbers.mts'
 import { download, quizFileOf } from '../_shared/quiz/quiz-file.mts'
 import { highScores } from '../fight/state/highscores.mts'
@@ -41,6 +42,7 @@ export const QuizCard = component<QuizCardOptions>({
 									change: options.choose,
 								},
 							}),
+							create(ChoiceStamp),
 							element('span', {
 								classes: styles.cardTitle,
 								textContent: quiz.title,

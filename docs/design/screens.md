@@ -23,8 +23,8 @@ Wireframe source: the project's design canvas (`design/wireframes/*.dc.html` and
 
 - 3D samurai idling under a torii, falling petals.
 - 文武 · **Bunbu** · Shogun Scholar.
-- The chosen quiz: its title, and its high score `2,480` with `17 / 20 correct · 4:05` (or "No high score yet"), and **Share**, which sends the quiz on as a `.bunbu` file ([sharing](data-format.md#sharing)): the share sheet where the browser says it takes the file (`navigator.canShare`). Otherwise a scroll explains how to share by hand, without saying why: a friend needs the quiz and Bunbu, so **Download the quiz**, **Share Bunbu** (a link to the game; copied where there is no share sheet), and they load the file under Quizzes. **Close** leaves it.
-- **Fight**, **Change quiz**, **Dojo**, **Settings**. Without a chosen quiz: **Fight** ("Choose a quiz first") and **Quizzes** both lead to Quizzes.
+- The quiz card. While the saved quizzes come back it says **Loading…**; without a quiz it has one red **Select quiz**, which leads to Quizzes. With one: its title, and its high score `2,480` with `17 / 20 correct · 4:05` (or "No high score yet"), and **Share**, which sends the quiz on as a `.bunbu` file ([sharing](data-format.md#sharing)): the share sheet where the browser says it takes the file (`navigator.canShare`). Otherwise a scroll explains how to share by hand, without saying why: a friend needs the quiz and Bunbu, so **Download the quiz**, **Share Bunbu** (a link to the game; copied where there is no share sheet), and they load the file under Quizzes. **Close** leaves it. Under that, on the card: **Fight**, and **Change quiz** under it.
+- **Dojo**, **How to play** and **Settings** in a row, and the credits as a link, "About the Bunbu app".
 
 ### 1b Quizzes
 
@@ -69,7 +69,7 @@ The scroll's heading is the label, the question type, `2 OF 3` for the rounds of
 ### 5 Outcome
 
 - **5A Correct:** `+100`. The scroll rolls up, slow motion snaps back. Picked ninjas slain, the others blocked and fleeing.
-- **5B Wrong:** score `+0`, the lost chunk of the life bar flashes and drops off, red edge flash, haptic buzz (can be turned off in settings). A ninja lands the hit, all vanish. About 1 s, then the run resumes.
+- **5B Wrong:** score `+0`, the lost chunk of the life bar flashes and drops off, red edge flash, haptic buzz (can be turned off in settings, and is greyed out there where the phone or browser can't buzz). A ninja lands the hit, all vanish. About 1 s, then the run resumes.
 - **5C Unanswered:** time ran out. The front ninja leaps in straight ahead, slicing through the scroll with a white cut, and stands mid screen as the halves of the scroll fall away. Then all hit (one hit) and the run resumes.
 
 <img src="screens/5a-correct.png" alt="5A correct" width="195"> <img src="screens/5b-wrong.png" alt="5B wrong" width="195"> <img src="screens/5c-unanswered.png" alt="5C unanswered" width="195">
@@ -83,7 +83,7 @@ All on a scroll over the dimmed world, like an ambush:
 - This run: quiz, stage, answered (`11 / 13`), distance.
 - **Resume**, **Restart stage**, **Settings**, **Quit** at the foot of the scroll. Settings open in place on the scroll; the difficulty only shows there, since it can't change halfway through a run.
 - Auto-pauses when the app goes to the background or a call comes in. 3-2-1 countdown on resume.
-- Also pauses on **Back** and when the player leaves full screen. On a phone (a touch screen without a mouse or trackpad) a run, and [practice](dojo.md#practice), plays full screen; resuming goes full screen again, and **Back** while paused leaves the run. The screen stays on during a run and practice, full screen or not, so it doesn't dim or lock mid fight.
+- Also pauses on **Back** and when the player leaves full screen. On a phone (a touch screen without a mouse or trackpad) a run, and [practice](dojo.md#practice), plays full screen; resuming goes full screen again, and **Back** while paused leaves the run. The screen stays on during a run and practice, full screen or not, so it doesn't dim or lock mid fight. **Quit** here, and **Menu** or **Practise mistakes** on the results, go to the title (or the dojo) in the run's place in history, so Back from there never goes into the run again.
 
 ### 7 Finished: results and mistakes
 

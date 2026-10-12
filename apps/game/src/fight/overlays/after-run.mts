@@ -1,10 +1,10 @@
 /**
  * What both results screens end with: the one thing to do next, then Practise mistakes (when there
- * are any) and Menu.
+ * are any) and Menu, to the title. Both leave the run, which they take the place of in history.
  */
 
 import { component } from '@rooted/components'
-import { href } from '@rooted/router'
+import { href, type Path } from '@rooted/router'
 import { DojoRoute } from '../../dojo/_routes.mts'
 import { MenuButton, type MenuButtonOptions } from '../../_shared/menu/menu-button.mts'
 import styles from './overlays.css'
@@ -13,6 +13,7 @@ export type AfterRunOptions = {
 	/** Next stage, or Rise again. */
 	readonly next: MenuButtonOptions
 	readonly misses: number
+	readonly leave: (to: Path) => void
 }
 
 export const AfterRun = component<AfterRunOptions>({
@@ -21,7 +22,7 @@ export const AfterRun = component<AfterRunOptions>({
 	onMount({ append, create, element, options }) {
 		const menu = create(MenuButton, {
 			label: 'Menu',
-			href: href.path('/'),
+			action: () => { options.leave(href.path('/')) },
 		})
 
 		append(
@@ -39,7 +40,7 @@ export const AfterRun = component<AfterRunOptions>({
 							children: [
 								create(MenuButton, {
 									label: 'Practise mistakes',
-									href: href.for(DojoRoute),
+									action: () => { options.leave(href.for(DojoRoute)) },
 								}),
 								menu,
 							],

@@ -4,8 +4,9 @@
  * where the difficulty only shows: it can't change halfway through a run.
  */
 
-import { component } from '@rooted/components'
+import { component, environment } from '@rooted/components'
 import { settings } from '../../settings/state/settings.mts'
+import { canBuzz } from '../haptics.mts'
 import { DifficultySlider } from './difficulty-slider.mts'
 import { MenuSection } from './menu-section.mts'
 import styles from './settings-form.css'
@@ -22,6 +23,8 @@ export const SettingsForm = component<SettingsFormOptions>({
 	styles,
 	onMount({ append, create, element, options }) {
 		const { running } = options
+		// The pre-rendered page has no phone to ask; the app asks again once it loads in the browser.
+		const buzzing = environment.is('preRenderer') || canBuzz()
 
 		const percent = element('span', {
 			classes: styles.percent,
@@ -52,7 +55,8 @@ export const SettingsForm = component<SettingsFormOptions>({
 							'Buzz when you are hit',
 							element('input', {
 								type: 'checkbox',
-								checked: settings.value.haptics,
+								checked: buzzing && settings.value.haptics,
+								disabled: !buzzing,
 								on: {
 									change(event) {
 										settings.value.setHaptics(event.currentTarget.checked)
