@@ -61,7 +61,15 @@ export const QuizCard = component<QuizCardOptions>({
 							element('button', {
 								type: 'button',
 								classes: styles.cardAction,
-								textContent: 'Download',
+								children: [
+									element('span', {
+										classes: [
+											styles.cardIcon,
+											styles.downloadIcon,
+										],
+									}),
+									'Download',
+								],
 								aria: {
 									label: `Download ${quiz.title}`,
 								},

@@ -53,7 +53,15 @@ export const RemoveQuizButton = component<RemoveQuizButtonOptions>({
 			element('button', {
 				type: 'button',
 				classes: styles.cardAction,
-				textContent: 'Remove',
+				children: [
+					element('span', {
+						classes: [
+							styles.cardIcon,
+							styles.removeIcon,
+						],
+					}),
+					'Remove',
+				],
 				aria: {
 					label: `Remove ${quiz.title}`,
 				},

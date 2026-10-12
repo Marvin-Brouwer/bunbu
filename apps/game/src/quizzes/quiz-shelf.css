@@ -14,7 +14,7 @@
 	position: relative;
 	display: grid;
 	grid-template-columns: 1fr auto;
-	align-items: start;
+	align-items: center;
 	gap: 0.6rem;
 	border: var(--frame);
 	border-radius: var(--radius);
@@ -62,30 +62,49 @@
 }
 
 .cardActions {
-	display: grid;
-	justify-items: end;
-	gap: 0.15rem;
+	display: flex;
+	gap: 0.4rem;
 	padding: 0.45rem 0.45rem 0.45rem 0;
 }
 
+/* Download and Remove: square and big enough to hit with a thumb, red like Share on the title. */
 .cardAction {
-	padding: 0.3rem 0.5rem;
-	border: 1px solid transparent;
+	display: grid;
+	place-items: center;
+	align-content: center;
+	gap: 0.2rem;
+	width: 3.9rem;
+	height: 3.9rem;
+	padding: 0;
+	border: 2px solid var(--vermilion);
 	border-radius: var(--radius);
-	background: none;
-	color: var(--ink-soft);
-	font-family: var(--font-mono);
-	font-size: 0.75rem;
+	background: var(--vermilion);
+	color: var(--paper-light);
+	font: inherit;
+	font-size: 0.65rem;
+	font-weight: 700;
 	cursor: pointer;
-}
-
-.cardAction:hover {
-	border-color: var(--ink-soft);
 }
 
 .cardAction:focus-visible {
 	outline: 3px solid var(--indigo);
 	outline-offset: 2px;
+}
+
+/* The icons are masks, so they take the button's text colour. */
+.cardIcon {
+	width: 1.4rem;
+	height: 1.4rem;
+	background: currentcolor;
+	mask: var(--icon) center / contain no-repeat;
+}
+
+.downloadIcon {
+	--icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3v12M6 10l6 6 6-6M4 21h16'/%3E%3C/svg%3E");
+}
+
+.removeIcon {
+	--icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 7h16M9 7V4h6v3M6 7l1 14h10l1-14M10 11v6M14 11v6'/%3E%3C/svg%3E");
 }
 
 .load {
