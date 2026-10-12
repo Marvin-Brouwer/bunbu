@@ -177,6 +177,11 @@ export const fixtures: Readonly<Record<string, () => Fixture>> = {
 			ninjas: { active: state.ninjas.active.map((ninja) => ({ ...ninja, pose: 'strike', approach: 0.15, sequence: 1 })) },
 		}
 	},
+	// The time runs out a moment after the scroll has unrolled, so the scroll is sliced.
+	'ambush-last-second': () => {
+		const state = ambush(2)
+		return { ...state, ambush: { ...state.ambush, secondsLeft: 1.5 } }
+	},
 	'outcome-unanswered': () => {
 		const state = ambush(2)
 		return {
