@@ -14,6 +14,7 @@ import { loaded, type AnswerRecord } from '../../_shared/state/quiz.mts'
 import { newRun, type RunGameState } from '../state/game.mts'
 import { spawnsOf, type Ninja } from '../state/ninjas.mts'
 import { quarterMarks, runConfig } from '../state/run.mts'
+import { standing } from '../state/shogun.mts'
 import { pointsPerCorrect } from '../state/score.mts'
 import { metresPerAmbush } from '../flows/run.mts'
 import { fixtureQuiz, manyOptions } from '../../_temp/quiz.mts'
@@ -97,9 +98,9 @@ function midRun(answered: number): RunGameState {
 			phase: 'running',
 			elapsed: 94,
 			distance: answered * metresPerAmbush,
-			stageLength: quiz.refs.length * metresPerAmbush,
+			stageLength: quiz.order.length * metresPerAmbush,
 		},
-		shogun: { pose: 'run', target: undefined, sequence: 1 },
+		shogun: { ...standing, pose: 'run', sequence: 1 },
 	}
 }
 
@@ -154,7 +155,7 @@ export const fixtures: Readonly<Record<string, () => Fixture>> = {
 			...state,
 			ambush: { ...state.ambush, open: false },
 			score: { ...state.score, points: state.score.points + pointsPerCorrect, correct: state.score.correct + 1 },
-			shogun: { pose: 'strike', target: slain, sequence: 2 },
+			shogun: { ...standing, pose: 'strike', target: slain, sequence: 2 },
 			ninjas: { active: state.ninjas.active.map((ninja) => ({ ...ninja, pose: ninja.id === slain ? 'slain' : 'blocked', sequence: 1 })) },
 		}
 	},
@@ -164,7 +165,7 @@ export const fixtures: Readonly<Record<string, () => Fixture>> = {
 			...state,
 			ambush: { ...state.ambush, open: false },
 			life: { value: 0.66, lastLoss: 1 / 6, hits: 2 },
-			shogun: { pose: 'hurt', target: 0, sequence: 4 },
+			shogun: { ...standing, pose: 'hurt', target: 0, sequence: 4 },
 			ninjas: { active: state.ninjas.active.map((ninja) => ({ ...ninja, pose: 'strike', approach: 1, sequence: 1 })) },
 		}
 	},
@@ -175,7 +176,7 @@ export const fixtures: Readonly<Record<string, () => Fixture>> = {
 			...state,
 			ambush: { ...state.ambush, open: false },
 			life: { value: 0.66, lastLoss: 1 / 6, hits: 2 },
-			shogun: { pose: 'hurt', target: 0, sequence: 4 },
+			shogun: { ...standing, pose: 'hurt', target: 0, sequence: 4 },
 			ninjas: { active: state.ninjas.active.map((ninja) => ({ ...ninja, pose: 'strike', approach: 0.15, sequence: 1 })) },
 		}
 	},
@@ -219,7 +220,7 @@ export const fixtures: Readonly<Record<string, () => Fixture>> = {
 			life: { value: 0, lastLoss: 1 / 6, hits: 6 },
 			score: { ...state.score, correct: 1, answered: 3, points: pointsPerCorrect },
 			run: { ...state.run, phase: 'fallen' },
-			shogun: { pose: 'fallen', target: undefined, sequence: 9 },
+			shogun: { ...standing, pose: 'fallen', target: undefined, sequence: 9 },
 		}
 	},
 }

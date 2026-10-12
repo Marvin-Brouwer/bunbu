@@ -17,17 +17,23 @@ import { lastRun } from '../state/lastrun.mts'
 import { runConfig } from '../state/run.mts'
 import { pointOf, type HighScore } from '../state/score.mts'
 import { stageResults } from '../state/stage-results.mts'
-import { missShare, openAmbush, settleOutcome, tickAmbush } from './ambush.mts'
+import { missShare, openAmbush, settleOutcome, tickAmbush, tickOutcome } from './ambush.mts'
 
 /** Metres of path per ambush, until stage length and question count are decided (docs/plan.md). */
 export const metresPerAmbush = 120
 
 /**
- * Where the samurai is when the ambush after `answered` answers springs: one leg of the path per
- * ambush, so the last one is at the end of the stage.
+ * Where the samurai is when the ambush after `asked` questions springs: one leg of the path per
+ * question, so the last one is at the end of the stage. The rounds of a question are one ambush.
  */
-export function ambushAt(answered: number): number {
-	return (answered + 1) * metresPerAmbush
+export function ambushAt(asked: number): number {
+	return (asked + 1) * metresPerAmbush
+}
+
+/** How many questions have been asked to the end. */
+function questionsAsked(game: RunGame): number {
+	const { refs, answered } = game.quiz.value
+	return new Set(refs.slice(0, answered).map((ref) => ref.question)).size
 }
 
 /** `best` defaults to the high score of the quiz, which the HUD shows as the one to beat. */
@@ -38,7 +44,7 @@ export function startRun(game: RunGame, data: BunbuData, best: HighScore | undef
 	game.ambush.value.close()
 	game.ninjas.value.clear()
 	game.shogun.value.run()
-	game.run.value.start(game.quiz.value.refs.length * metresPerAmbush)
+	game.run.value.start(game.quiz.value.order.length * metresPerAmbush)
 }
 
 /**
@@ -117,7 +123,10 @@ export function tickRun(game: RunGame, worldDelta: number, realDelta: number): v
 
 	// The run first, so its clock has this frame in it when the last answer comes in.
 	game.run.value.tick(cappedAtAmbush(game, worldDelta), realDelta)
-	if (!counting) tickAmbush(game, realDelta)
+	if (!counting) {
+		tickAmbush(game, realDelta)
+		tickOutcome(game, realDelta)
+	}
 
 	const { phase, recovery, distance, countdown } = game.run.value
 	if (phase !== 'running' || recovery > 0 || countdown > 0) return
@@ -132,7 +141,7 @@ export function tickRun(game: RunGame, worldDelta: number, realDelta: number): v
 		}
 		game.shogun.value.run()
 	}
-	if (game.quiz.value.current() !== undefined && distance >= ambushAt(game.quiz.value.answered) - reached) {
+	if (game.quiz.value.current() !== undefined && distance >= ambushAt(questionsAsked(game)) - reached) {
 		openAmbush(game, settings.value.timeScale())
 	}
 }
@@ -144,6 +153,6 @@ const reached = 1e-9
 function cappedAtAmbush(game: RunGame, worldDelta: number): number {
 	const { phase, recovery, distance } = game.run.value
 	if (phase !== 'running' || recovery > 0 || game.quiz.value.current() === undefined) return worldDelta
-	const left = Math.max(0, ambushAt(game.quiz.value.answered) - distance)
+	const left = Math.max(0, ambushAt(questionsAsked(game)) - distance)
 	return Math.min(worldDelta, left / runConfig.pace)
 }

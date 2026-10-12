@@ -43,7 +43,10 @@ export type AmbushOption = {
 
 export type AmbushState = {
 	readonly open: boolean
-	/** Seconds of the visual ninja entrance before the answer scroll appears. */
+	/**
+	 * Seconds of the visual ninja entrance before the answer scroll appears, or between the rounds
+	 * of a question before the next scroll does. The time limit waits for it.
+	 */
 	readonly openingLeft: number
 	readonly kind: AmbushKind
 	readonly at: QuestionRef
@@ -52,7 +55,10 @@ export type AmbushState = {
 	readonly options: readonly AmbushOption[]
 	/** How many options to choose, `0` when the count is not given away. */
 	readonly choose: number
-	/** The time limit in seconds, `0` when there is none, as in the dojo. */
+	/**
+	 * The time limit in seconds, `0` when there is none, as in the dojo. A question asked over
+	 * several rounds has one time limit for all of them: the rounds are one ninja attack.
+	 */
 	readonly seconds: number
 	readonly secondsLeft: number
 	/** Which of the question's ambushes this is, 1, 2, 3 …: "2 of 3" for `solutions`. */
@@ -79,6 +85,11 @@ export type AmbushResult = {
 export type AmbushActions = {
 	/** Opens an ambush on a question. */
 	start: (opening: AmbushOpening) => void
+	/**
+	 * Opens the next round of the question just answered, in the same attack: the next scroll
+	 * comes after `nextScrollSeconds`, and the time goes on from `secondsLeft`.
+	 */
+	nextRound: (opening: AmbushOpening, secondsLeft: number) => void
 	/**
 	 * Picks the option on `mark`. A swipe is final: picking it again does nothing. `yes-no` and
 	 * `single` hold one pick, so a new pick replaces the old one.
@@ -119,6 +130,9 @@ export const noAmbush: AmbushState = {
 /** The ninja telegraph before the answer scroll unrolls. */
 export const openingSeconds = 2
 
+/** Between the rounds of a question: the scroll rolls up, the samurai takes a hit if he must, and the next one unrolls. */
+export const nextScrollSeconds = 0.8
+
 /** Whether the time limit has run out: the ambush ends unanswered. Never with no time limit. */
 export const timeUp = (state: AmbushState) => state.seconds > 0 && state.secondsLeft === 0
 
@@ -137,6 +151,10 @@ export function createAmbush(initial: AmbushState = noAmbush): Ambush {
 
 		start(opening) {
 			store.update(() => ({ ...opening, open: true, openingLeft: openingSeconds, secondsLeft: opening.seconds }))
+		},
+
+		nextRound(opening, secondsLeft) {
+			store.update(() => ({ ...opening, open: true, openingLeft: nextScrollSeconds, secondsLeft }))
 		},
 
 		pick(mark) {

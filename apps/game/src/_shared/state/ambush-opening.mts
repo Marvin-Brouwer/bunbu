@@ -102,8 +102,6 @@ export function openingOf(quiz: BunbuData, refs: readonly QuestionRef[], at: Que
 	const query = queryOf(question, at.part)
 	const ownRefs = refs.filter((ref) => ref.question === at.question)
 	const rounds = Math.max(1, ownRefs.length)
-	// The quiz's time per question, shared by the ambushes of the question.
-	const perQuestion = quiz.timePerQuestion === undefined ? undefined : secondsOf(quiz.timePerQuestion)
 
 	return {
 		kind,
@@ -111,10 +109,24 @@ export function openingOf(quiz: BunbuData, refs: readonly QuestionRef[], at: Que
 		query,
 		options,
 		choose: kind === 'multiple' || kind === 'order' ? correct.filter(Boolean).length : 1,
-		seconds: ambushSeconds(kind, [query, ...options.map((option) => option.answer)], options.length, settings.timeScale, perQuestion === undefined ? undefined : perQuestion / rounds),
+		seconds: questionSeconds(quiz, question, ownRefs.length === 0 ? [at] : ownRefs, settings.timeScale),
 		round: Math.max(1, ownRefs.findIndex((ref) => ref.part === at.part) + 1),
 		rounds,
 	}
+}
+
+/**
+ * The time limit of a question, for all the rounds in `refs` together: they are one ninja attack.
+ * The quiz's time per question when it has one, otherwise each round's own time added up.
+ */
+function questionSeconds(quiz: BunbuData, question: Question, refs: readonly QuestionRef[], timeScale: number | undefined): number {
+	if (quiz.timePerQuestion !== undefined) {
+		return ambushSeconds(kindOf(question), [], 0, timeScale, secondsOf(quiz.timePerQuestion))
+	}
+	return refs.reduce((total, ref) => {
+		const answers = choicesOf(question, ref.part).map((choice) => choice.answer)
+		return total + ambushSeconds(kindOf(question), [queryOf(question, ref.part), ...answers], Math.min(answers.length, maxOptions), timeScale)
+	}, 0)
 }
 
 /**

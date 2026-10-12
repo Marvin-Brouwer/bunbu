@@ -47,6 +47,11 @@ export type NinjasState = {
 
 export type NinjasActions = {
 	spawn: (wave: readonly NinjaSpawn[]) => void
+	/**
+	 * The next round of the same attack: the ninjas carry the next scroll's options and keep coming
+	 * from where they are. A ninja the round has no options for leaves, one it needs more joins.
+	 */
+	regroup: (wave: readonly NinjaSpawn[]) => void
 	/** Moves every approaching ninja to `approach`, which the ambush derives from the time left. */
 	advance: (approach: number) => void
 	strike: (id: number) => void
@@ -85,6 +90,18 @@ export function createNinjas(initial: NinjasState = noNinjas): Ninjas {
 		spawn(wave) {
 			const spawned = wave.map((ninja) => ({ ...ninja, approach: 0, pose: 'approach' as const, sequence: 0 }))
 			store.update(() => ({ active: [...store.value.active, ...spawned] }))
+		},
+
+		regroup(wave) {
+			const { active } = store.value
+			store.update(() => ({
+				active: wave.map((next) => {
+					const staying = active.find((ninja) => ninja.id === next.id)
+					return staying === undefined
+						? { ...next, approach: 0, pose: 'approach' as const, sequence: 0 }
+						: { ...staying, options: next.options }
+				}),
+			}))
 		},
 
 		advance(approach) {

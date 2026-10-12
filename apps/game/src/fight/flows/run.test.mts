@@ -9,6 +9,7 @@ import { lastRun } from '../state/lastrun.mts'
 import { shareOfOnePoint } from '../state/life.mts'
 import { runConfig } from '../state/run.mts'
 import { stageResults } from '../state/stage-results.mts'
+import { nextScrollSeconds } from '../../_shared/state/ambush.mts'
 import { commitAmbush } from './ambush.mts'
 import { ambushAt, endRun, metresPerAmbush, startRun, tickRun } from './run.mts'
 
@@ -96,12 +97,14 @@ describe('the run', () => {
 		play([true])
 		runToAmbush()
 		answer(true)
+		// He deals with them in turn; just before the hold ends, he has met every one.
+		tickRun(game, game.run.value.recovery - 0.05, game.run.value.recovery - 0.05)
 		const blocked = game.ninjas.value.active.filter((ninja) => ninja.pose === 'blocked').map((ninja) => ninja.id)
 		const slain = game.ninjas.value.active.filter((ninja) => ninja.pose === 'slain').map((ninja) => ninja.id)
 		expect(blocked).toHaveLength(2)
 		expect(slain).toHaveLength(1)
 
-		tickRun(game, runConfig.strikeSeconds + 0.1, runConfig.strikeSeconds + 0.1)
+		tickRun(game, game.run.value.recovery + 0.1, game.run.value.recovery + 0.1)
 		const poses = new Map(game.ninjas.value.active.map((ninja) => [ninja.id, ninja.pose]))
 		for (const id of blocked) expect(poses.get(id)).toBe('fleeing')
 		for (const id of slain) expect(poses.get(id)).toBe('slain')
@@ -145,11 +148,12 @@ describe('the run', () => {
 		play([true, true, true])
 		runToAmbush()
 		answer(true)
+		const hold = game.run.value.recovery
 		const best = highScores.value.of('fixture', '1')
 
 		// Another commit after the last answer is refused, and changes nothing that was kept.
 		commitAmbush(game)
-		tickRun(game, runConfig.strikeSeconds, runConfig.strikeSeconds)
+		tickRun(game, hold, hold)
 		endRun(game)
 		expect(game.run.value.phase).toBe('finished')
 		expect(highScores.value.of('fixture', '1')).toEqual(best)
@@ -163,8 +167,9 @@ describe('high score', () => {
 		runToAmbush()
 		answer(true)
 		// The run ends when the hold after the last answer does.
-		const ends = game.run.value.elapsed + runConfig.strikeSeconds
-		tickRun(game, runConfig.strikeSeconds, runConfig.strikeSeconds)
+		const hold = game.run.value.recovery
+		const ends = game.run.value.elapsed + hold
+		tickRun(game, hold, hold)
 		expect(game.run.value.phase).toBe('finished')
 		expect(game.run.value.elapsed).toBeCloseTo(ends)
 
@@ -178,6 +183,7 @@ describe('high score', () => {
 		play([true, true, true])
 		runToAmbush()
 		answer(true)
+		const hold = game.run.value.recovery
 		const best = highScores.value.of('fixture', '1')
 		expect(best).toMatchObject({ points: 400, correct: 4, answered: 4 })
 		// The misses are kept too, for this quiz: none, every answer was right.
@@ -190,7 +196,7 @@ describe('high score', () => {
 		game.run.value.resume()
 		tickRun(game, runConfig.countdownSeconds, runConfig.countdownSeconds)
 		expect(game.run.value.phase).toBe('running')
-		tickRun(game, runConfig.strikeSeconds, runConfig.strikeSeconds)
+		tickRun(game, hold, hold)
 		expect(game.run.value.phase).toBe('finished')
 		expect(game.run.value.elapsed).toBeCloseTo(best?.seconds ?? 0)
 		expect(highScores.value.of('fixture', '1')).toEqual(best)
@@ -325,6 +331,52 @@ describe('questions of several ambushes', () => {
 	it('does not score a match question with a row missed', () => {
 		play([false, true])
 		expect(game.score.value).toMatchObject({ points: 0, correct: 0, answered: 1 })
+	})
+
+	it('asks the rounds of a question one after another, in the same attack', () => {
+		runToAmbush()
+		const ninjas = game.ninjas.value.active.map((ninja) => ninja.id)
+		game.ambush.value.tick(game.ambush.value.openingLeft + 1)
+		const { seconds, secondsLeft } = game.ambush.value
+		answer(true)
+
+		expect(game.run.value.phase).toBe('ambush')
+		expect(game.ambush.value).toMatchObject({ open: true, round: 2, rounds: 2, openingLeft: nextScrollSeconds, seconds, secondsLeft })
+		expect(game.ninjas.value.active.map((ninja) => ninja.id)).toEqual(ninjas)
+		expect(game.ninjas.value.active.every((ninja) => ninja.pose === 'approach')).toBe(true)
+		// The time waits for the next scroll to open.
+		tickRun(game, 0.1, nextScrollSeconds)
+		expect(game.ambush.value.secondsLeft).toBe(secondsLeft)
+	})
+
+	it('takes a hit for a wrong round, and the next scroll still comes', () => {
+		runToAmbush()
+		answer(false)
+		expect(game.shogun.value.pose).toBe('hurt')
+		expect(game.life.value.hits).toBe(1)
+		expect(game.ambush.value).toMatchObject({ open: true, round: 2 })
+
+		// Back on guard when the next scroll opens.
+		tickRun(game, 0.1, nextScrollSeconds)
+		expect(game.shogun.value.pose).toBe('run')
+	})
+
+	it('leaves every round still to come unanswered when the time runs out', () => {
+		runToAmbush()
+		game.ambush.value.tick(game.ambush.value.seconds + game.ambush.value.openingLeft)
+		tickRun(game, 0.1, 0.1)
+
+		expect(game.quiz.value.records.map((record) => record.outcome)).toEqual(['unanswered', 'unanswered'])
+		expect(game.life.value.hits).toBe(1)
+		expect(game.run.value.phase).toBe('running')
+	})
+
+	it('springs the next question on the next leg of the path', () => {
+		play([true, true])
+		runToAmbush()
+		expect(game.ambush.value.at.question).toBe(1)
+		expect(game.run.value.distance).toBeCloseTo(ambushAt(1))
+		expect(game.run.value.stageLength).toBe(2 * metresPerAmbush)
 	})
 
 	it('scores every solutions entry on its own', () => {

@@ -4,6 +4,7 @@ import { createRunGame, type RunGame } from '../state/game.mts'
 import { highScores } from '../state/highscores.mts'
 import { lastRun } from '../state/lastrun.mts'
 import { runConfig } from '../state/run.mts'
+import { moveSeconds } from '../state/shogun.mts'
 import { settings } from '../../settings/state/settings.mts'
 import { fixtureQuiz } from '../../_temp/quiz.mts'
 import { seeded } from '../../_temp/random.mts'
@@ -37,9 +38,10 @@ function answer(mark: number) {
 	commitAmbush(game)
 }
 
-/** Lets the hold after an answer run out, a hit's being the longest. */
+/** Lets the hold after an answer run out. */
 function playOut() {
-	tickRun(game, runConfig.hitSeconds, runConfig.hitSeconds)
+	const { recovery } = game.run.value
+	tickRun(game, recovery, recovery)
 }
 
 beforeEach(() => {
@@ -82,10 +84,42 @@ describe('commitAmbush', () => {
 
 		expect(game.score.value).toMatchObject({ points: 100, correct: 1, answered: 1 })
 		expect(game.life.value.value).toBe(1)
-		expect(game.ninjas.value.active.map((ninja) => ninja.pose)).toEqual(['slain', 'blocked'])
+		expect(game.ninjas.value.active[0]?.pose).toBe('slain')
 		expect(game.shogun.value).toMatchObject({ pose: 'strike', target: 0 })
 		expect(game.run.value.phase).toBe('running')
 		expect(game.quiz.value.answered).toBe(1)
+	})
+
+	it('blocks the ninjas that were not picked, one after another, while the run holds', () => {
+		answer(0)
+		expect(game.ninjas.value.active[1]?.pose).toBe('approach')
+		expect(game.run.value.recovery).toBe(runConfig.strikeSeconds + moveSeconds)
+
+		tickRun(game, moveSeconds, moveSeconds)
+		expect(game.shogun.value).toMatchObject({ pose: 'block', target: 1 })
+		expect(game.ninjas.value.active.map((ninja) => ninja.pose)).toEqual(['slain', 'blocked'])
+	})
+
+	it('deals with every ninja even when one long frame takes in several moves', () => {
+		game.run.value.beginAmbush()
+		game.ninjas.value.clear()
+		game.ninjas.value.spawn([0, 1, 2].map((id) => ({ id, wave: 0, options: [id] })))
+		game.ambush.value.start({
+			kind: 'single',
+			at: game.quiz.value.current() ?? { question: 0, part: 0 },
+			query: 'Which attribute?',
+			options: [0, 1, 2].map((id) => ({ answer: `${id}`, correct: id === 1, mark: marks[id]!, ninja: id, pick: 0, source: id, rank: 0 })),
+			choose: 1,
+			seconds: 10,
+			round: 1,
+			rounds: 1,
+		})
+		game.ambush.value.pick(marks[1]!)
+		commitAmbush(game)
+		expect(game.ninjas.value.active.map((ninja) => ninja.pose)).toEqual(['blocked', 'approach', 'approach'])
+
+		tickRun(game, moveSeconds * 2, moveSeconds * 2)
+		expect(game.ninjas.value.active.map((ninja) => ninja.pose)).toEqual(['blocked', 'slain', 'blocked'])
 	})
 
 	it('takes the question share off the life bar on a miss and keeps the score', () => {
@@ -118,7 +152,7 @@ describe('commitAmbush', () => {
 
 		// The last strike plays out first; then the ninja he blocked flees and the run is done.
 		expect(game.run.value.phase).toBe('running')
-		expect(game.run.value.recovery).toBe(runConfig.strikeSeconds)
+		expect(game.run.value.recovery).toBe(runConfig.strikeSeconds + moveSeconds)
 		playOut()
 		expect(game.run.value.phase).toBe('finished')
 		expect(game.ninjas.value.active.find((ninja) => ninja.id === 1)?.pose).toBe('fleeing')
