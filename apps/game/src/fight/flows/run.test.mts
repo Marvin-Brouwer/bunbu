@@ -289,7 +289,7 @@ describe('stage results', () => {
 
 describe('questions of several ambushes', () => {
 	const markdown = (text: string) => text as Markdown
-	// One `match` question of two rows (1 point) and one `solutions` question of two entries (2 points).
+	// One `match` question of two rows and one `solutions` question of two entries: 2 points each.
 	const quiz: BunbuData = {
 		...fixtureQuiz,
 		passingScore: 30,
@@ -318,23 +318,23 @@ describe('questions of several ambushes', () => {
 		startRun(game, quiz)
 	})
 
-	it('scores a match question once, when all its rows are right', () => {
-		play([true])
-		expect(game.score.value).toMatchObject({ points: 0, correct: 0, answered: 0 })
+	it('scores every row of a match question on its own', () => {
 		play([true])
 		expect(game.score.value).toMatchObject({ points: 100, correct: 1, answered: 1 })
+		play([true])
+		expect(game.score.value).toMatchObject({ points: 200, correct: 2, answered: 2 })
 	})
 
-	it('takes a match question\'s share of the life bar once, however many rows are missed', () => {
+	it('takes a share of the life bar for every row missed', () => {
 		play([false, false])
-		expect(game.life.value.hits).toBe(1)
-		expect(game.life.value.value).toBeCloseTo(1 - shareOfOnePoint(3, 30))
-		expect(game.score.value).toMatchObject({ points: 0, correct: 0, answered: 1 })
+		expect(game.life.value.hits).toBe(2)
+		expect(game.life.value.value).toBeCloseTo(1 - 2 * shareOfOnePoint(4, 30))
+		expect(game.score.value).toMatchObject({ points: 0, correct: 0, answered: 2 })
 	})
 
-	it('does not score a match question with a row missed', () => {
+	it('still scores the rows answered right next to one missed', () => {
 		play([false, true])
-		expect(game.score.value).toMatchObject({ points: 0, correct: 0, answered: 1 })
+		expect(game.score.value).toMatchObject({ points: 100, correct: 1, answered: 2 })
 	})
 
 	it('asks the rounds of a question one after another, in the same attack', () => {
@@ -409,7 +409,7 @@ describe('questions of several ambushes', () => {
 		tickRun(game, 0.1, 0.1)
 
 		expect(game.quiz.value.records.map((record) => record.outcome)).toEqual(['unanswered', 'unanswered'])
-		expect(game.life.value.hits).toBe(1)
+		expect(game.life.value.hits).toBe(2)
 		expect(game.run.value.phase).toBe('running')
 	})
 
@@ -424,7 +424,7 @@ describe('questions of several ambushes', () => {
 	it('scores every solutions entry on its own', () => {
 		play([true, true, true, false])
 		expect(game.run.value.phase).toBe('finished')
-		expect(game.score.value).toMatchObject({ points: 200, correct: 2, answered: 3 })
+		expect(game.score.value).toMatchObject({ points: 300, correct: 3, answered: 4 })
 		expect(game.life.value.hits).toBe(1)
 	})
 })

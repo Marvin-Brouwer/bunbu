@@ -12,11 +12,12 @@ export const pointsPerCorrect = 100
 
 /**
  * The point an ambush counts toward ([data format](../../../../../docs/design/data-format.md)):
- * every `solutions` entry is a point of its own, any other question is one point, however many
- * ambushes it takes. So the rows of a `match` question share one.
+ * every `solutions` entry and every row of a `match` is a point of its own, any other question is
+ * one point, however many ambushes it takes.
  */
 export function pointOf(quiz: BunbuData, at: QuestionRef): string {
-	return quiz.questions[at.question]?.type === 'solutions' ? `${at.question}.${at.part}` : `${at.question}`
+	const type = quiz.questions[at.question]?.type
+	return type === 'solutions' || type === 'match' ? `${at.question}.${at.part}` : `${at.question}`
 }
 
 /** How many points the ambushes in `refs` are worth together. */

@@ -47,7 +47,7 @@ The answers are written in ink on lined paper, one per line with the arrow of it
 | `solutions` | 1 per proposed solution     | One scroll per solution, answered like `yes-no` ("2 of 3" on the scroll).               |
 | `match`     | one per option              | One `single`-style scroll per row.                                                      |
 
-The solutions of a `solutions` question and the rows of a `match` are **rounds of one ambush**: the ninjas attack once, and the scrolls come one after another. When a scroll is answered it rolls up and the next one unrolls; the ninjas keep closing in, and the samurai stands his ground. A wrong round still costs what the miss costs right away (see [life bar](#life-bar)), but nobody strikes yet. A ninja keeps the same answer in every round where the answers stay the same (the rows of a `match` share one pool), and the outcome after the last round shows what was answered in all of them: a ninja handled wrong in any round strikes, the others are slain or blocked as they were answered. When the time runs out, the round on the scroll and every round still to come are unanswered, for one hit.
+The solutions of a `solutions` question and the rows of a `match` are **rounds of one ambush**: the ninjas attack once, and the scrolls come one after another. When a scroll is answered it rolls up and the next one unrolls; the ninjas keep closing in, and the samurai stands his ground. Each round is a point of its own, so every wrong round takes its share of the life bar right away, before the next scroll (see [life bar](#life-bar)), but nobody strikes yet. A ninja keeps the same answer in every round where the answers stay the same (the rows of a `match` share one pool), and the outcome after the last round shows what was answered in all of them: a ninja handled wrong in any round strikes, the others are slain or blocked as they were answered. When the time runs out, the round on the scroll and every round still to come are unanswered, each taking its share of the life bar.
 
 ### Outcome
 
@@ -57,7 +57,7 @@ Every ninja gets its own verdict from what was answered: **slain** when its opti
 
 - **Correct:** every ninja is slain or blocked. `+100` pops up (see [score](#score)). The run resumes once the last one is dealt with.
 - **Wrong:** only the ninjas handled wrong strike, with a katana slice and blood spray, and vanish; the others are still slain or blocked. However many strike, it is one miss: the lost chunk flashes and drops off the life bar, with a haptic buzz (haptics can be turned off in the settings). No answer is shown and nothing needs tapping. The miss is saved for the review at the end.
-- **Unanswered:** time ran out. The front ninja slices through the scroll, then all of them hit, which still counts as one hit. Costs the same as a wrong answer. Half-swiped answers do not count. Saved for the review as "unanswered".
+- **Unanswered:** time ran out. The front ninja slices through the scroll, then all of them hit, which counts as one hit (one per round left, for the rounds of a `match` or `solutions`). Costs the same as a wrong answer. Half-swiped answers do not count. Saved for the review as "unanswered".
 
 ### More than 3 options
 
@@ -109,7 +109,7 @@ No hearts. The life bar shows **only the error margin**: full is 100%, empty is 
 life = (best score still possible − pass) / (1 − pass)
 ```
 
-- Points as in the data format: each question is 1 point, each `solutions` entry is 1 point.
+- Points as in the data format: each question is 1 point, each `solutions` entry and each `match` row is 1 point.
 - Each miss takes its question's share for good. Any error in a question costs the whole share, however many ninjas or errors were involved. Example: 20 points with a 70% pass mark leaves a margin of 6 points, so one miss takes a sixth of the bar.
 - An empty bar means the quiz can no longer be passed: the samurai falls ([screen 8](screens.md#8-fallen)).
 
