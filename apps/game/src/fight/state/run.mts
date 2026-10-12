@@ -66,6 +66,18 @@ export const runConfig = {
 	hitSeconds: 1,
 }
 
+/**
+ * Where the stage is marked off in quarters, as shares of its length. Each mark the samurai passes
+ * moves the stage's light on ([3 Running](../../../../../docs/design/screens.md#3-running)).
+ */
+export const quarterMarks = [0.25, 0.5, 0.75] as const
+
+/** How many of the {@link quarterMarks} the samurai has passed. */
+export function marksPassed({ distance, stageLength }: Pick<RunState, 'distance' | 'stageLength'>): number {
+	if (stageLength === 0) return 0
+	return quarterMarks.filter((mark) => distance >= mark * stageLength).length
+}
+
 export const notRunning: RunState = {
 	phase: 'idle',
 	elapsed: 0,

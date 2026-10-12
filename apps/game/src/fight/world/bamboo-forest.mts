@@ -31,19 +31,52 @@ import {
 } from 'three'
 import type { GLTF } from 'three/addons/loaders/GLTFLoader.js'
 import { Batch, chunkOf, placed, scatter, type Cursor } from './kit.mts'
-import { clearanceOf, facingPath, isFree, sky, skyRadius, stamp, strip, type Owned, type Planting, type StageView, type Taken } from './landscape.mts'
+import { clearanceOf, facingPath, isFree, passTime, sky, skyRadius, stamp, strip, type Daylight, type Owned, type Planting, type StageView, type Taken } from './landscape.mts'
 import { beside, type Leg, type Path } from './path.mts'
 
 const palette = {
-	skyTop: 0x8fb08a,
-	skyHorizon: 0xdde6c8,
-	fog: 0xb4c2a2,
 	moss: 0x55663a,
 	gravel: 0x8f8a76,
 	stone: 0x9a958a,
 	stalk: 0x7fa046,
 	shaft: 0xfff2c0,
 }
+
+/** From a misty noon to a misty dusk. One light per quarter of the stage ({@link passTime}). */
+const daylight: Daylight = [
+	{
+		skyTop: 0x8fb08a,
+		skyHorizon: 0xdde6c8,
+		fog: 0xb4c2a2,
+		ambient: { sky: 0xe8f4d0, ground: 0x3a4a28, intensity: 2.4 },
+		sun: { colour: 0xfff2d0, intensity: 2.0 },
+		lamps: 0,
+	},
+	{
+		skyTop: 0x88a884,
+		skyHorizon: 0xe0e2c0,
+		fog: 0xb2bc9c,
+		ambient: { sky: 0xe8f0c8, ground: 0x3a4a28, intensity: 2.3 },
+		sun: { colour: 0xffeac0, intensity: 1.9 },
+		lamps: 0,
+	},
+	{
+		skyTop: 0x7c9480,
+		skyHorizon: 0xe4d4a8,
+		fog: 0xaab08e,
+		ambient: { sky: 0xe8e0bc, ground: 0x3a4426, intensity: 2.2 },
+		sun: { colour: 0xffd498, intensity: 1.7 },
+		lamps: 0,
+	},
+	{
+		skyTop: 0x5a6a70,
+		skyHorizon: 0xc8a888,
+		fog: 0x8c9080,
+		ambient: { sky: 0xc8c8c8, ground: 0x303a26, intensity: 2.0 },
+		sun: { colour: 0xffb880, intensity: 1.3 },
+		lamps: 0,
+	},
+]
 
 /** A path that winds tightly between the stands, as much left as right. */
 export const bambooRound: readonly Leg[] = [
@@ -100,15 +133,17 @@ function heightOf(model: Object3D): number {
 
 export function createBambooForest(scene: Scene, path: Path, from: number, to: number, models: Promise<BambooModels>): StageView {
 	const visualTo = Math.min(to, 2400)
-	scene.background = new Color(palette.fog)
 	// Thick mist: the forest closes in, and what is far off is only a green haze.
-	scene.fog = new Fog(palette.fog, 22, 115)
+	const [first] = daylight
+	const fog = new Fog(first.fog, 22, 115)
+	scene.fog = fog
 	const owned: Owned = { geometries: [], materials: [], textures: [] }
-	const backdrop = sky(owned, palette.skyTop, palette.skyHorizon)
+	const backdrop = sky(owned, first.skyTop, first.skyHorizon)
 	scene.add(backdrop)
 
-	scene.add(new HemisphereLight(0xe8f4d0, 0x3a4a28, 2.4))
-	const sun = new DirectionalLight(0xfff2d0, 2.0)
+	const ambient = new HemisphereLight(first.ambient.sky, first.ambient.ground, first.ambient.intensity)
+	scene.add(ambient)
+	const sun = new DirectionalLight(first.sun.colour, first.sun.intensity)
 	sun.castShadow = true
 	sun.shadow.mapSize.set(1024, 1024)
 	for (const side of ['left', 'bottom'] as const) sun.shadow.camera[side] = -18
@@ -258,6 +293,8 @@ export function createBambooForest(scene: Scene, path: Path, from: number, to: n
 	})
 
 	return {
+		passTime: passTime({ scene, fog, backdrop, ambient, sun }, daylight),
+
 		follow(x, z) {
 			ground.position.set(x, 0, z)
 			backdrop.position.set(x, 0, z)

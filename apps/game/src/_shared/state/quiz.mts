@@ -85,6 +85,16 @@ export function refsOf(quiz: BunbuData, order: readonly number[], random?: Rando
 	})
 }
 
+/**
+ * How many questions are done: every ambush of them answered. A question halfway through its
+ * rounds isn't done yet.
+ */
+export function questionsAnswered({ refs, answered }: Pick<QuizState, 'refs' | 'answered'>): number {
+	const touched = new Set(refs.slice(0, answered).map((ref) => ref.question))
+	const going = refs[answered]?.question
+	return going !== undefined && touched.has(going) ? touched.size - 1 : touched.size
+}
+
 /** A loaded quiz, ready to be asked in `order`. */
 export function loaded(data: BunbuData, order?: readonly number[], random?: Random): QuizState {
 	const asked = order ?? data.questions.map((_, index) => index)

@@ -3,11 +3,12 @@
  * far back the camera stands. The three.js side only applies these.
  */
 
-import { PerspectiveCamera, Vector3 } from 'three'
+import { DirectionalLight, Fog, HemisphereLight, PerspectiveCamera, Scene, Vector3 } from 'three'
 import { describe, expect, it } from 'vitest'
 import { marks } from '../../_shared/state/ambush.mts'
 import { distanceFor } from '../../canvas/framing.mts'
 import { cameraOf, runFraming, viewOnPath } from './camera.mts'
+import { dayFade, fadeToward, passTime, sky, type Daylight, type Light } from './landscape.mts'
 import { markOf } from './ninjas.mts'
 import { beside, createPath, roundLength } from './path.mts'
 import { headingOf, lungeOf, placementConfig, spotOf } from './placement.mts'
@@ -265,5 +266,70 @@ describe('camera', () => {
 		const corner = viewOnPath(path, 80, 9 / 19.5, false)
 		expect(corner.frame.heading).toBeGreaterThan(0)
 		expect(corner.frame.heading).toBeLessThan(path.at(80).heading)
+	})
+})
+
+describe('time passing', () => {
+	const at = (fog: number, lamps: number): Light => ({
+		skyTop: fog,
+		skyHorizon: fog,
+		fog,
+		ambient: { sky: fog, ground: fog, intensity: 2 },
+		sun: { colour: fog, intensity: 2 },
+		lamps,
+	})
+	const daylight: Daylight = [at(0x000000, 0), at(0x808080, 0.5), at(0xffffff, 1), at(0xffffff, 1)]
+	const litStage = () => {
+		const scene = new Scene()
+		const fog = new Fog(0x123456, 30, 150)
+		let lamps = -1
+		const lit = {
+			scene,
+			fog,
+			backdrop: sky({ geometries: [], materials: [], textures: [] }, 0x123456, 0x123456),
+			ambient: new HemisphereLight(),
+			sun: new DirectionalLight(),
+			lamps: (strength: number) => { lamps = strength },
+		}
+		return { lit, fog, lamps: () => lamps, pass: passTime(lit, daylight) }
+	}
+
+	it('fades one step of the day per dayFade seconds, and no further than the target', () => {
+		expect(fadeToward(0, 1, dayFade / 2)).toBeCloseTo(0.5)
+		expect(fadeToward(0.5, 1, dayFade)).toBe(1)
+		expect(fadeToward(1, 3, dayFade)).toBe(2)
+		expect(fadeToward(2, 0, dayFade)).toBe(1)
+	})
+
+	it('lights the stage as the first time of day at once', () => {
+		const { fog, lamps } = litStage()
+		expect(fog.color.getHex()).toBe(0x000000)
+		expect(lamps()).toBe(0)
+	})
+
+	it('moves on after a mark, over a few seconds, and holds still with no time passing', () => {
+		const { fog, lamps, pass } = litStage()
+		pass(0, 0)
+		pass(1, 0)
+		expect(fog.color.getHex()).toBe(0x000000)
+		pass(1, dayFade / 2)
+		expect(lamps()).toBeCloseTo(0.25)
+		pass(1, dayFade)
+		expect(fog.color.getHex()).toBe(0x808080)
+		expect(lamps()).toBe(0.5)
+	})
+
+	it('starts a run joined halfway at its own time of day', () => {
+		const { fog, pass } = litStage()
+		pass(2, 0)
+		expect(fog.color.getHex()).toBe(0xffffff)
+	})
+
+	it('goes no further than the last time of day', () => {
+		const { fog, lamps, pass } = litStage()
+		pass(0, 0)
+		for (let second = 0; second < dayFade * 5; second++) pass(3, 1)
+		expect(fog.color.getHex()).toBe(0xffffff)
+		expect(lamps()).toBe(1)
 	})
 })

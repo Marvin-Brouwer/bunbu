@@ -13,7 +13,7 @@ import { openingOf } from '../../_shared/state/ambush-opening.mts'
 import { loaded, type AnswerRecord } from '../../_shared/state/quiz.mts'
 import { newRun, type RunGameState } from '../state/game.mts'
 import { spawnsOf, type Ninja } from '../state/ninjas.mts'
-import { runConfig } from '../state/run.mts'
+import { quarterMarks, runConfig } from '../state/run.mts'
 import { pointsPerCorrect } from '../state/score.mts'
 import { metresPerAmbush } from '../flows/run.mts'
 import { fixtureQuiz, manyOptions } from '../../_temp/quiz.mts'
@@ -132,6 +132,8 @@ export const fixtures: Readonly<Record<string, () => Fixture>> = {
 		const state = midRun(0)
 		return { ...state, run: { ...state.run, distance: 78 } }
 	},
+	// Just past each quarter mark, for the time of day (it fades there from the first light).
+	...Object.fromEntries(quarterMarks.map((mark, index) => [`running-mark-${index + 1}`, () => midRun(Math.ceil(quiz.refs.length * mark))])),
 	'ambush-yes-no': () => ambush(0),
 	'ambush-single': single,
 	'ambush-multiple': () => ambush(2),

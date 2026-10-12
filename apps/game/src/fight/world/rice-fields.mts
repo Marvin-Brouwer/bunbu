@@ -33,13 +33,10 @@ import {
 } from 'three'
 import type { GLTF } from 'three/addons/loaders/GLTFLoader.js'
 import { Batch, chunkOf, placed, scatter, type Cursor } from './kit.mts'
-import { clearanceOf, facingPath, fogFar, isFree, sky, skyRadius, stamp, strip, type Owned, type Planting, type StageView, type Taken } from './landscape.mts'
+import { clearanceOf, facingPath, fogFar, isFree, passTime, sky, skyRadius, stamp, strip, type Daylight, type Owned, type Planting, type StageView, type Taken } from './landscape.mts'
 import { beside, type Leg, type Path } from './path.mts'
 
 const palette = {
-	skyTop: 0x4f86c6,
-	skyHorizon: 0xf4dcae,
-	fog: 0xd9d2bc,
 	grass: 0x6f8f3e,
 	path: 0xa08a64,
 	water: 0xffffff,
@@ -47,6 +44,42 @@ const palette = {
 	/** Near mountains to far, bluer and paler with distance. */
 	mountains: [0x5d7a6a, 0x7d93a0, 0x9fb0c0],
 }
+
+/** From late morning to a golden evening. One light per quarter of the stage ({@link passTime}). */
+const daylight: Daylight = [
+	{
+		skyTop: 0x4f86c6,
+		skyHorizon: 0xf4dcae,
+		fog: 0xd9d2bc,
+		ambient: { sky: 0xdfe8ff, ground: 0x7a6a4a, intensity: 2.2 },
+		sun: { colour: 0xfff0d0, intensity: 2.6 },
+		lamps: 0,
+	},
+	{
+		skyTop: 0x4a7cbc,
+		skyHorizon: 0xf6d6a0,
+		fog: 0xdccfb2,
+		ambient: { sky: 0xe2e4f4, ground: 0x7a6a4a, intensity: 2.2 },
+		sun: { colour: 0xffe6bc, intensity: 2.6 },
+		lamps: 0,
+	},
+	{
+		skyTop: 0x46699e,
+		skyHorizon: 0xf4c486,
+		fog: 0xd8bf98,
+		ambient: { sky: 0xe6dcd8, ground: 0x7a6448, intensity: 2.1 },
+		sun: { colour: 0xffcf90, intensity: 2.5 },
+		lamps: 0,
+	},
+	{
+		skyTop: 0x3a4f86,
+		skyHorizon: 0xf0a070,
+		fog: 0xc8a084,
+		ambient: { sky: 0xd8c8d8, ground: 0x6a5440, intensity: 2.0 },
+		sun: { colour: 0xffaa70, intensity: 2.2 },
+		lamps: 0,
+	},
+]
 
 /** Long gentle curves along the dikes, as much left as right. */
 export const riceRound: readonly Leg[] = [
@@ -129,14 +162,16 @@ function heightOf(model: Object3D): number {
 
 export function createRiceFields(scene: Scene, path: Path, from: number, to: number, models: Promise<RiceModels>): StageView {
 	const visualTo = Math.min(to, 2400)
-	scene.background = new Color(palette.fog)
-	scene.fog = new Fog(palette.fog, 40, fogFar)
+	const [first] = daylight
+	const fog = new Fog(first.fog, 40, fogFar)
+	scene.fog = fog
 	const owned: Owned = { geometries: [], materials: [], textures: [] }
-	const backdrop = sky(owned, palette.skyTop, palette.skyHorizon)
+	const backdrop = sky(owned, first.skyTop, first.skyHorizon)
 	scene.add(backdrop)
 
-	scene.add(new HemisphereLight(0xdfe8ff, 0x7a6a4a, 2.2))
-	const sun = new DirectionalLight(0xfff0d0, 2.6)
+	const ambient = new HemisphereLight(first.ambient.sky, first.ambient.ground, first.ambient.intensity)
+	scene.add(ambient)
+	const sun = new DirectionalLight(first.sun.colour, first.sun.intensity)
 	sun.castShadow = true
 	sun.shadow.mapSize.set(1024, 1024)
 	for (const side of ['left', 'bottom'] as const) sun.shadow.camera[side] = -18
@@ -260,6 +295,8 @@ export function createRiceFields(scene: Scene, path: Path, from: number, to: num
 	})
 
 	return {
+		passTime: passTime({ scene, fog, backdrop, ambient, sun }, daylight),
+
 		follow(x, z) {
 			ground.position.set(x, 0, z)
 			backdrop.position.set(x, 0, z)
