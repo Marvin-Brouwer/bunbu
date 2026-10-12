@@ -86,7 +86,7 @@ answer        = yes-no:    1.5
 
 `solutions` and `match` use the `yes-no` and `single` rows, per solution or row.
 
-`timeScale` is the difficulty, a slider from **Apprentice** (`1.2`, 120% of the time) to **Shogun** (`0.5`, half the time). The middle is marked and is the default, `1`. Each half of the slider runs at its own rate. The dojo has no time limit.
+`timeScale` is the difficulty, a slider with four stops: **Apprentice** `1.2`, **Default** `1` (marked, and where a new player starts), **Experienced** `0.8` and **Shogun** `0.5`. The dojo has no time limit.
 
 All of these numbers are defaults. Make them configurable and tune them in playtests, including the 0.8 s commit pause.
 

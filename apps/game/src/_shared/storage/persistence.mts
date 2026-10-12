@@ -13,7 +13,7 @@ import { Immutable, type StateObject, type Store } from '@rooted/store'
 import { highScores } from '../../fight/state/highscores.mts'
 import { lastRun, type LastRunState } from '../../fight/state/lastrun.mts'
 import { pointsPerCorrect, type HighScore } from '../../fight/state/score.mts'
-import { settings, timeScales, type SettingsState } from '../../settings/state/settings.mts'
+import { difficulties, settings, type SettingsState } from '../../settings/state/settings.mts'
 import { builtStages, selection, stages, type Stage } from '../state/selection.mts'
 import { snapshot } from '../state/store.mts'
 import { library, type LibraryActions, type LibraryEntry, type LibraryState } from './library.mts'
@@ -27,7 +27,7 @@ import { read, write, type StoredKey } from './storage.mts'
 const passed = <T,>(result: T | type.errors): result is T => !(result instanceof type.errors)
 
 const settingFields = {
-	timeScale: type(`${timeScales.shogun} <= number <= ${timeScales.apprentice}`),
+	difficulty: type.enumerated(...difficulties),
 	haptics: type('boolean'),
 	volume: type('0 <= number <= 1'),
 } satisfies Record<keyof SettingsState, Type>
@@ -136,7 +136,7 @@ export function persistApp(signal: AbortSignal): Promise<void> {
 	const chosen = parseSelection(read('selection'))
 	if (chosen.stage !== undefined) selection.value.chooseStage(chosen.stage)
 
-	save(settings, 'settings', signal, ({ timeScale, haptics, volume }) => ({ timeScale, haptics, volume }))
+	save(settings, 'settings', signal, ({ difficulty, haptics, volume }) => ({ difficulty, haptics, volume }))
 	save(highScores, 'high-scores', signal, ({ scores }) => scores)
 	save(lastRun, 'last-run', signal, ({ quiz, misses }) => ({ quiz, misses }))
 	save(selection, 'selection', signal, ({ quiz, stage }) => ({ quiz: quiz && { id: quiz.id, version: quiz.version }, stage }))

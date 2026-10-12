@@ -129,7 +129,7 @@ export function tickRun(game: RunGame, worldDelta: number, realDelta: number): v
 		game.shogun.value.run()
 	}
 	if (game.quiz.value.current() !== undefined && distance >= ambushAt(game.quiz.value.answered) - reached) {
-		openAmbush(game, settings.value.timeScale)
+		openAmbush(game, settings.value.timeScale())
 	}
 }
 

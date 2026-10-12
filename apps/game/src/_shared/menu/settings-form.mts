@@ -39,7 +39,7 @@ export const SettingsForm = component<SettingsFormOptions>({
 						classes: styles.hint,
 						textContent: running
 							? 'Set for this run. Change it before your next one.'
-							: 'How long an ambush waits for your answer. Apprentice gets a little more time, Shogun half. The mark in the middle is the usual time.',
+							: 'How long an ambush waits for your answer. Apprentice gets a little more time, Shogun half. The mark is the usual time.',
 					}),
 				],
 			}),
