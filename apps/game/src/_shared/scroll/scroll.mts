@@ -159,8 +159,9 @@ export const Scroll = component<ScrollOptions>({
 			if (change === 'unroll') due = true
 			// The first scroll of an ambush unrolls at once, as the world slows down and the view
 			// moves; the swipes and the time wait for the ninjas to come in. A next round turns the
-			// page of the scroll that is open; a scroll still rolling up is waited for.
-			if (due && next.round > 1 && shown.open && (stage === 'open' || stage === 'unroll' || stage === 'turn')) {
+			// page of the scroll still on screen: answering a round closes it for a moment, which
+			// starts it rolling up, and the next round opens it again in the same breath.
+			if (due && next.round > 1 && stage !== 'hidden' && stage !== 'slice') {
 				due = false
 				turn(next)
 			}
