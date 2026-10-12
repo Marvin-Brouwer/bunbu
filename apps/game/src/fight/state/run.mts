@@ -71,10 +71,10 @@ export const runConfig = {
 	/** How long he holds after a hit: the run resumes after about 1 s ([outcome](../../../../../docs/design/gameplay.md#outcome)). */
 	hitSeconds: 1,
 	/**
-	 * How long he holds when the time ran out: the scroll is cut and its halves fall, the slicer
-	 * runs back in from mid screen, and they all strike.
+	 * How long he holds when the time ran out: the scroll is cut and its halves fall, and the
+	 * slicer charges in and lands the hit while the others flee.
 	 */
-	slicedSeconds: 1.7,
+	slicedSeconds: 1.3,
 }
 
 /**

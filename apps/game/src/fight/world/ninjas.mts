@@ -13,7 +13,7 @@
 import type { Group } from 'three'
 import type { AmbushOption, Mark } from '../../_shared/state/ambush.mts'
 import { marks } from '../../_shared/state/ambush.mts'
-import type { Ninja, NinjaPose } from '../state/ninjas.mts'
+import { chargeOrder, type Ninja, type NinjaPose } from '../state/ninjas.mts'
 import type { Body } from '../../_shared/world/character.mts'
 import type { ViewFrame } from './camera.mts'
 import type { ClashSpot, SlainSpot } from './effects.mts'
@@ -55,8 +55,10 @@ const lungeSeconds = poseSeconds.strike * 0.6
  * they keep their distance, and charge in to strike from there.
  */
 export const creepReach = 0.6
-/** Seconds before the time runs out that the ninjas stop and wind up to charge. */
+/** Seconds before the time runs out that the first ninja stops and winds up to charge. */
 export const chargeSeconds = 0.6
+/** Seconds after one ninja winds up before the next one does. */
+const chargeStagger = 0.1
 /** How far into the strike a ninja holds its blade up, winding up. */
 const windUpTime = poseSeconds.strike * 0.35
 /** Metres a ninja leaps up charging in from where it crept to. */
@@ -189,6 +191,7 @@ export function createNinjasView(parent: Group, make: () => Body): NinjasView {
 	return {
 		draw(active, options, frame, delta, worldDelta, secondsLeft) {
 			cycle += worldDelta * creepCycle
+			const charging = chargeOrder(active).map((ninja) => ninja.id)
 
 			for (const ninja of active) {
 				let entry = shown.get(ninja.id)
@@ -228,13 +231,13 @@ export function createNinjasView(parent: Group, make: () => Body): NinjasView {
 				}
 				entry.pose = ninja.pose
 
-				if (!beaten.has(ninja.pose)) entry.beatenAt = undefined
-				else entry.beatenAt ??= frame
-
 				entry.mark = markOf(ninja, options) ?? entry.mark
 				// They keep their distance while the time runs, and charge in from there.
 				const crept = entry.approach * creepReach
 				const motion = motionOf(ninja.pose, ninja.slicer, crept, entry.time)
+
+				if (!beaten.has(ninja.pose) && motion.pose !== 'fleeing') entry.beatenAt = undefined
+				else entry.beatenAt ??= frame
 				const spot = spotOf(entry.mark, ninja.wave, motion.approach)
 				// Enter from farther out the same way. It can disappear behind a tree or house and then
 				// run out into view, instead of appearing at the ambush's first visible position.
@@ -268,8 +271,9 @@ export function createNinjasView(parent: Group, make: () => Body): NinjasView {
 				}
 				// Where the blades meet on a block: between the two, nearer the samurai's sword.
 				entry.clash = { x: samurai.x + (at.x - samurai.x) * 0.45, z: samurai.z + (at.z - samurai.z) * 0.45 }
-				// Winding up to charge just before the time runs out.
-				const windingUp = secondsLeft !== undefined && secondsLeft < chargeSeconds && ninja.pose === 'approach'
+				// Winding up to charge just before the time runs out, one after another.
+				const turn = charging.indexOf(ninja.id)
+				const windingUp = secondsLeft !== undefined && ninja.pose === 'approach' && secondsLeft < chargeSeconds - turn * chargeStagger
 				const pose = windingUp ? 'strike' : motion.pose
 				const time = windingUp ? windUpTime : motion.time
 				// Out of step with each other, so they don't run as one.

@@ -131,7 +131,7 @@ export function tickRun(game: RunGame, worldDelta: number, realDelta: number): v
 	const { phase, recovery, distance, countdown } = game.run.value
 	if (phase !== 'running' || recovery > 0 || countdown > 0) return
 
-	// Once the strike or the hit has played out, the ninjas he faced flee or vanish, and the
+	// Once the strike or the hit has played out, the ninjas he faced flee, and the
 	// samurai is back on his feet, or the run ends after its last answer or a hit too many.
 	if (game.shogun.value.pose !== 'run') {
 		settleOutcome(game)

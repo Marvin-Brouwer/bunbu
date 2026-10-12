@@ -16,7 +16,7 @@ let game: RunGame
 function openSingle() {
 	game.run.value.beginAmbush()
 	game.ninjas.value.clear()
-	game.ninjas.value.spawn([{ id: 0, wave: 0, options: [0] }, { id: 1, wave: 0, options: [1] }])
+	game.ninjas.value.spawn([{ id: 0, wave: 0, options: [0], chargeAs: 0 }, { id: 1, wave: 0, options: [1], chargeAs: 1 }])
 	game.ambush.value.start({
 		kind: 'single',
 		at: game.quiz.value.current() ?? { question: 0, part: 0 },
@@ -110,7 +110,7 @@ describe('commitAmbush', () => {
 	it('deals with every ninja even when one long frame takes in several moves', () => {
 		game.run.value.beginAmbush()
 		game.ninjas.value.clear()
-		game.ninjas.value.spawn([0, 1, 2].map((id) => ({ id, wave: 0, options: [id] })))
+		game.ninjas.value.spawn([0, 1, 2].map((id) => ({ id, wave: 0, options: [id], chargeAs: id })))
 		game.ambush.value.start({
 			kind: 'single',
 			at: game.quiz.value.current() ?? { question: 0, part: 0 },
@@ -139,7 +139,7 @@ describe('commitAmbush', () => {
 	it('lets only the ninjas answered wrong land a hit, and blocks the others', () => {
 		game.run.value.beginAmbush()
 		game.ninjas.value.clear()
-		game.ninjas.value.spawn([0, 1, 2].map((id) => ({ id, wave: 0, options: [id] })))
+		game.ninjas.value.spawn([0, 1, 2].map((id) => ({ id, wave: 0, options: [id], chargeAs: id })))
 		game.ambush.value.start({
 			kind: 'multiple',
 			at: game.quiz.value.current() ?? { question: 0, part: 0 },
@@ -161,7 +161,7 @@ describe('commitAmbush', () => {
 		expect(game.ninjas.value.active.map((ninja) => ninja.pose)).toEqual(['slain', 'strike', 'blocked'])
 		expect(game.shogun.value.pose).toBe('block')
 		playOut()
-		expect(game.ninjas.value.active.map((ninja) => [ninja.id, ninja.pose])).toEqual([[0, 'slain'], [2, 'fleeing']])
+		expect(game.ninjas.value.active.map((ninja) => [ninja.id, ninja.pose])).toEqual([[0, 'slain'], [1, 'fleeing'], [2, 'fleeing']])
 	})
 
 	it('takes the question share off the life bar on a miss and keeps the score', () => {
@@ -180,7 +180,7 @@ describe('commitAmbush', () => {
 		answer(1)
 		expect(game.life.value.empty()).toBe(true)
 
-		// The hits play out first; then the ninjas vanish and the samurai falls.
+		// The hits play out first; then the ninjas flee and the samurai falls.
 		expect(game.run.value.phase).toBe('running')
 		expect(game.run.value.recovery).toBe(outcomeDelaySeconds + moveSeconds + runConfig.hitSeconds)
 		untilFirstMove()
@@ -188,7 +188,7 @@ describe('commitAmbush', () => {
 		playOut()
 		expect(game.run.value.phase).toBe('fallen')
 		expect(game.shogun.value.pose).toBe('fallen')
-		expect(game.ninjas.value.active).toHaveLength(0)
+		expect(game.ninjas.value.active.every((ninja) => ninja.pose === 'fleeing')).toBe(true)
 	})
 
 	it('finishes the run after the last question', () => {

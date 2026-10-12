@@ -83,16 +83,16 @@ describe('the run', () => {
 		expect(game.run.value.distance).toBeGreaterThan(distance)
 	})
 
-	it('lets the ninjas that landed the hit vanish once the samurai recovers', () => {
+	it('sends the ninjas that landed the hit fleeing once the samurai recovers', () => {
 		runToAmbush()
 		answer(false)
 		tickRun(game, outcomeDelaySeconds, outcomeDelaySeconds)
 		expect(game.ninjas.value.active.every((ninja) => ninja.pose === 'strike')).toBe(true)
 
 		tickRun(game, 0.5, 0.5)
-		expect(game.ninjas.value.active).not.toHaveLength(0)
+		expect(game.ninjas.value.active.every((ninja) => ninja.pose === 'strike')).toBe(true)
 		tickRun(game, 0.6, 0.6)
-		expect(game.ninjas.value.active).toHaveLength(0)
+		expect(game.ninjas.value.active.every((ninja) => ninja.pose === 'fleeing')).toBe(true)
 	})
 
 	it('sends the blocked ninjas fleeing once the samurai recovers, and leaves the slain where they fell', () => {

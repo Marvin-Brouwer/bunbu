@@ -8,6 +8,7 @@ import { createStore, type Store } from '@rooted/store'
 import { frontRow } from '../../_shared/state/ambush-opening.mts'
 import type { NinjaVerdict, Verdict } from '../../_shared/state/ambush.mts'
 import { sortDistinct } from '../../_shared/state/arrays.mts'
+import { shuffle, type Random } from '../../_shared/state/random.mts'
 import { refuse } from '../../_shared/state/store.mts'
 
 export type NinjaPose = 'approach' | 'strike' | 'slain' | 'blocked' | 'fleeing'
@@ -23,8 +24,16 @@ export type Ninja = {
 	readonly pose: NinjaPose
 	/** Counts up on every pose change, so the renderer can start an effect without an event bus. */
 	readonly sequence: number
-	/** The one who slices through the scroll when the time runs out, before they all strike. */
+	/**
+	 * When the time runs out: `true` for the one who slices through the scroll and lands the hit,
+	 * `false` for the others, who flee.
+	 */
 	readonly slicer?: boolean
+	/**
+	 * Its turn to wind up as the time runs out, 0, 1, 2 …: the first one to wind up is the one who
+	 * slices through the scroll.
+	 */
+	readonly chargeAs: number
 	/**
 	 * How the answers so far handled it, over every round of the question: a miss in any round
 	 * stays a miss, and one rightly picked round makes it a slash.
@@ -35,18 +44,26 @@ export type Ninja = {
 }
 
 /** What a ninja spawns with. */
-export type NinjaSpawn = Pick<Ninja, 'id' | 'wave' | 'options'>
+export type NinjaSpawn = Pick<Ninja, 'id' | 'wave' | 'options' | 'chargeAs'>
 
 /**
  * The ninjas carrying an ambush's options, one per distinct `ninja`: the first 3 in front, the
- * rest behind.
+ * rest behind. They wind up in a random order, or in the order of their ids without a `random`.
  */
-export function spawnsOf(options: readonly { readonly ninja: number }[]): NinjaSpawn[] {
-	return sortDistinct(options.map((option) => option.ninja)).map((id) => ({
+export function spawnsOf(options: readonly { readonly ninja: number }[], random?: Random): NinjaSpawn[] {
+	const ids = sortDistinct(options.map((option) => option.ninja))
+	const turns = random === undefined ? ids.map((_, turn) => turn) : shuffle(ids.map((_, turn) => turn), random)
+	return ids.map((id, index) => ({
 		id,
 		wave: id < frontRow ? 0 : 1,
-		options: options.flatMap((option, index) => (option.ninja === id ? [index] : [])),
+		options: options.flatMap((option, at) => (option.ninja === id ? [at] : [])),
+		chargeAs: turns[index] ?? index,
 	}))
+}
+
+/** The ninjas in the order they wind up when the time runs out; the first slices through the scroll. */
+export function chargeOrder(active: readonly Ninja[]): Ninja[] {
+	return active.toSorted((first, second) => first.chargeAs - second.chargeAs || first.id - second.id)
 }
 
 export type NinjasState = {
@@ -87,8 +104,6 @@ export type NinjasActions = {
 	slay: (id: number) => void
 	block: (id: number) => void
 	flee: (id: number) => void
-	/** The ninja landed its hit and is gone. */
-	vanish: (id: number) => void
 	clear: () => void
 }
 
@@ -165,7 +180,7 @@ export function createNinjas(initial: NinjasState = noNinjas): Ninjas {
 		strike: (id) => { pose(id, 'strike') },
 		strikeUnanswered() {
 			const { active } = store.value
-			const slicer = active.find((ninja) => ninja.wave === 0)?.id
+			const slicer = chargeOrder(active)[0]?.id
 			store.update(() => ({
 				active: active.map((ninja) => ({ ...ninja, pose: 'strike', sequence: ninja.sequence + 1, slicer: ninja.id === slicer })),
 			}))
@@ -173,9 +188,6 @@ export function createNinjas(initial: NinjasState = noNinjas): Ninjas {
 		slay: (id) => { pose(id, 'slain') },
 		block: (id) => { pose(id, 'blocked') },
 		flee: (id) => { pose(id, 'fleeing') },
-		vanish(id) {
-			store.update(() => ({ active: store.value.active.filter((ninja) => ninja.id !== id) }))
-		},
 		clear: () => { store.update(() => noNinjas) },
 	})
 	return store

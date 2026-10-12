@@ -3,11 +3,12 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { createNinjas, outcomeOrder } from './ninjas.mts'
+import { chargeOrder, createNinjas, outcomeOrder, spawnsOf } from './ninjas.mts'
+import { seeded } from '../../_temp/random.mts'
 
 const three = () => {
 	const ninjas = createNinjas()
-	ninjas.value.spawn([0, 1, 2].map((id) => ({ id, wave: 0, options: [id] })))
+	ninjas.value.spawn([0, 1, 2].map((id) => ({ id, wave: 0, options: [id], chargeAs: id })))
 	return ninjas
 }
 
@@ -40,5 +41,22 @@ describe('judging the ninjas', () => {
 			{ ninja: 2, verdict: 'block', picked: 0 },
 		])
 		expect(outcomeOrder(ninjas.value.active).map((ninja) => ninja.id)).toEqual([2, 1, 0])
+	})
+})
+
+describe('when the time runs out', () => {
+	it('lets the first one to wind up slice through the scroll, and the others flee', () => {
+		const ninjas = createNinjas()
+		ninjas.value.spawn([{ id: 0, wave: 0, options: [0], chargeAs: 2 }, { id: 1, wave: 0, options: [1], chargeAs: 0 }, { id: 2, wave: 0, options: [2], chargeAs: 1 }])
+		expect(chargeOrder(ninjas.value.active).map((ninja) => ninja.id)).toEqual([1, 2, 0])
+		ninjas.value.strikeUnanswered()
+		expect(ninjas.value.active.map((ninja) => ninja.slicer)).toEqual([false, true, false])
+	})
+
+	it('winds them up in a random order, each its own turn', () => {
+		const options = [0, 1, 2, 3].map((ninja) => ({ ninja }))
+		expect(spawnsOf(options).map((ninja) => ninja.chargeAs)).toEqual([0, 1, 2, 3])
+		const turns = spawnsOf(options, seeded(4)).map((ninja) => ninja.chargeAs)
+		expect(turns.toSorted((first, second) => first - second)).toEqual([0, 1, 2, 3])
 	})
 })

@@ -44,7 +44,7 @@ export function openAmbush(game: RunGame, timeScale: number | undefined, random:
 	if (quiz === undefined) return
 	const opening = openingOf(quiz, refs, at, { timeScale, random })
 	game.ninjas.value.clear()
-	game.ninjas.value.spawn(spawnsOf(opening.options))
+	game.ninjas.value.spawn(spawnsOf(opening.options, random))
 	game.ambush.value.start(opening)
 }
 
@@ -132,7 +132,7 @@ function openNextRound(game: RunGame, at: QuestionRef, time: { seconds: number; 
 	if (quiz === undefined) return
 	// The time limit is the question's, so it is the same for every round.
 	const opening = { ...inPlacesOf(openingOf(quiz, refs, at, { timeScale: undefined, random }), before), seconds: time.seconds }
-	game.ninjas.value.regroup(spawnsOf(opening.options))
+	game.ninjas.value.regroup(spawnsOf(opening.options, random))
 	game.ambush.value.nextRound(opening, time.secondsLeft)
 }
 
@@ -159,12 +159,12 @@ export function tickOutcome(game: RunGame, realDelta: number): void {
 
 /**
  * Ends the outcome once the samurai's hold after an ambush is over: the ninjas that landed a hit
- * vanish, and the ones he blocked flee ([outcome](../../../../../docs/design/gameplay.md#outcome)).
- * The slain stay where they fell; the next ambush clears the field.
+ * and the ones he blocked flee ([outcome](../../../../../docs/design/gameplay.md#outcome)). The
+ * ones that fled when the time ran out are on their way already; the slain stay where they fell.
+ * The next ambush clears the field.
  */
 export function settleOutcome(game: RunGame): void {
 	for (const ninja of game.ninjas.value.active) {
-		if (ninja.pose === 'strike') game.ninjas.value.vanish(ninja.id)
-		else if (ninja.pose === 'blocked') game.ninjas.value.flee(ninja.id)
+		if ((ninja.pose === 'strike' && ninja.slicer !== false) || ninja.pose === 'blocked') game.ninjas.value.flee(ninja.id)
 	}
 }

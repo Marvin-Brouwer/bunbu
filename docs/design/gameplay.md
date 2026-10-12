@@ -53,11 +53,11 @@ The solutions of a `solutions` question and the rows of a `match` are **rounds o
 
 Each ninja carries one option. A **slash** means "this option is picked", a **block** means "not picked". The answer is correct when every slash lands on a correct option and every block on an incorrect one. The same rule covers `yes-no` and `solutions`.
 
-Every ninja gets its own verdict from what was answered: **slain** when its option was rightly picked, **blocked** when it was rightly left alone, and it **strikes** when it was handled wrong (picked but not correct, or correct but not picked). The ninjas then come one after another, in the order their answers were given (unpicked ones last), about half a second apart: a slain one falls, a blocked one lunges in and the blades meet with a white flash before it is knocked back and flees off to its side of the path, and a striking one lands its hit on the samurai.
+Every ninja gets its own verdict from what was answered: **slain** when its option was rightly picked, **blocked** when it was rightly left alone, and it **strikes** when it was handled wrong (picked but not correct, or correct but not picked). The ninjas then come one after another, in the order their answers were given (unpicked ones last), about half a second apart: a slain one falls, a blocked one lunges in and the blades meet with a white flash before it is knocked back and flees off to its side of the path, and a striking one lands its hit on the samurai and then flees.
 
 - **Correct:** every ninja is slain or blocked. `+100` pops up (see [score](#score)). The run resumes once the last one is dealt with.
 - **Wrong:** only the ninjas handled wrong strike, with a katana slice and blood spray, and vanish; the others are still slain or blocked. However many strike, it is one miss: the lost chunk flashes and drops off the life bar, with a haptic buzz (haptics can be turned off in the settings). No answer is shown and nothing needs tapping. The miss is saved for the review at the end.
-- **Unanswered:** time ran out. The front ninja slices through the scroll and then lands the hit, while the others flee. It counts as one hit (one per round left, for the rounds of a `match` or `solutions`). Costs the same as a wrong answer. Half-swiped answers do not count. Saved for the review as "unanswered".
+- **Unanswered:** time ran out. The ninja that wound up first slices through the scroll and then charges in with a leap and lands the hit, while the others flee. Then it flees too. It counts as one hit (one per round left, for the rounds of a `match` or `solutions`). Costs the same as a wrong answer. Half-swiped answers do not count. Saved for the review as "unanswered".
 
 ### More than 3 options
 
@@ -69,7 +69,7 @@ Every ninja gets its own verdict from what was answered: **slain** when its opti
 
 ## Time limit
 
-There is no timer bar: the ambush opens in slow motion and **the ninjas creeping in are the timer**. They keep their distance, creeping about halfway in; just before the time runs out they stop and wind up, and when it does they charge in with a leap.
+There is no timer bar: the ambush opens in slow motion and **the ninjas creeping in are the timer**. They keep their distance, creeping about halfway in; just before the time runs out they stop and wind up one after another, in a different order each time.
 
 On a phone in portrait the scroll covers the whole width, so the ninjas have to be shown:
 
