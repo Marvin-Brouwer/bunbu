@@ -13,13 +13,21 @@
 .card {
 	position: relative;
 	display: grid;
-	align-content: start;
-	gap: 0.3rem;
-	padding: 0.75rem 0.9rem;
+	grid-template-columns: 1fr auto;
+	align-items: center;
+	gap: 0.6rem;
 	border: var(--frame);
 	border-radius: var(--radius);
 	background: var(--paper-light);
 	color: var(--ink);
+}
+
+/* Choosing takes the card but for its buttons. */
+.cardChoose {
+	display: grid;
+	align-content: start;
+	gap: 0.3rem;
+	padding: 0.75rem 0 0.75rem 0.9rem;
 	cursor: pointer;
 }
 
@@ -33,7 +41,7 @@
 	outline-offset: 2px;
 }
 
-/* The radio itself is the whole card. */
+/* The radio itself is the card. */
 .card input {
 	position: absolute;
 	opacity: 0;
@@ -51,6 +59,52 @@
 	font-family: var(--font-mono);
 	font-size: 0.75rem;
 	color: var(--ink-soft);
+}
+
+.cardActions {
+	display: flex;
+	gap: 0.9rem;
+	padding: 0.6rem 0.75rem 0.6rem 0;
+}
+
+/* Download and Remove: square and big enough to hit with a thumb, red like Share on the title. */
+.cardAction {
+	display: grid;
+	place-items: center;
+	align-content: center;
+	gap: 0.1rem;
+	width: 2.85rem;
+	height: 2.85rem;
+	padding: 0;
+	border: 2px solid var(--vermilion);
+	border-radius: var(--radius);
+	background: var(--vermilion);
+	color: var(--paper-light);
+	font: inherit;
+	font-size: 0.45rem;
+	font-weight: 700;
+	cursor: pointer;
+}
+
+.cardAction:focus-visible {
+	outline: 3px solid var(--indigo);
+	outline-offset: 2px;
+}
+
+/* The icons are masks, so they take the button's text colour. */
+.cardIcon {
+	width: 1.25rem;
+	height: 1.25rem;
+	background: currentcolor;
+	mask: var(--icon) center / contain no-repeat;
+}
+
+.downloadIcon {
+	--icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3v12M6 10l6 6 6-6M4 21h16'/%3E%3C/svg%3E");
+}
+
+.removeIcon {
+	--icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 7h16M9 7V4h6v3M6 7l1 14h10l1-14M10 11v6M14 11v6'/%3E%3C/svg%3E");
 }
 
 .load {

@@ -3,11 +3,12 @@ import { Immutable } from '@rooted/store'
 import { IDBFactory } from 'fake-indexeddb'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { highScores } from '../../fight/state/highscores.mts'
+import { stageResults } from '../../fight/state/stage-results.mts'
 import { lastRun } from '../../fight/state/lastrun.mts'
 import { settings } from '../../settings/state/settings.mts'
 import { selection } from '../state/selection.mts'
 import { library } from './library.mts'
-import { parseHighScores, parseLastRun, parseLibrary, parseSelection, parseSettings, persistApp } from './persistence.mts'
+import { parseHighScores, parseLastRun, parseStageResults, parseLibrary, parseSelection, parseSettings, persistApp } from './persistence.mts'
 import { readQuizFiles, writeQuizFiles } from './quiz-files.mts'
 import { read, storedVersion, write } from './storage.mts'
 
@@ -69,6 +70,7 @@ beforeEach(() => {
 	settings.value.reset()
 	highScores.value.reset()
 	lastRun.value.reset()
+	stageResults.value.reset()
 	library.value.reset()
 	selection.value.reset()
 })
@@ -126,6 +128,14 @@ describe('parsing what was saved', () => {
 		expect(parseHighScores({ a: { ...good, points: 999_999 }, b: { ...good, answered: 2 }, c: good })).toEqual({ c: good })
 	})
 
+	it('keeps the stage results that are valid', () => {
+		const good = { distance: 360, cleared: false }
+
+		const parsed = parseStageResults({ a: good, b: { ...good, distance: -1 }, c: { distance: 10 }, d: 'x' })
+
+		expect(parsed).toEqual({ a: good })
+	})
+
 	it('keeps the misses that are valid', () => {
 		const miss = { at: { question: 1, part: 0 }, outcome: 'wrong', picked: [2, 0] }
 		expect(parseLastRun({ quiz: { id: 'a', version: '1' }, misses: [miss, { ...miss, outcome: 'maybe' }, null] }))
@@ -168,16 +178,19 @@ describe('persistApp', () => {
 		settings.value.setDifficulty('apprentice')
 		highScores.value.submit('a', '1', { points: 100, seconds: 9, correct: 1, answered: 1 })
 		lastRun.value.save('a', '1', [{ at: { question: 2, part: 0 }, outcome: 'wrong', picked: [1] }])
+		stageResults.value.submit('a', '1', 'castle-town', { distance: 240, cleared: false })
 		stop.abort()
 
 		settings.value.reset()
 		highScores.value.reset()
 		lastRun.value.reset()
+		stageResults.value.reset()
 		await persistApp(session())
 
 		expect(settings.value.difficulty).toBe('apprentice')
 		expect(highScores.value.of('a', '1')).toMatchObject({ points: 100, seconds: 9 })
 		expect(lastRun.value.missesOf('a', '1')).toEqual([{ at: { question: 2, part: 0 }, outcome: 'wrong', picked: [1] }])
+		expect(stageResults.value.of('a', '1', 'castle-town')).toEqual({ distance: 240, cleared: false })
 	})
 
 	it('keeps the best of what was saved and what was earned meanwhile', async () => {
@@ -251,6 +264,18 @@ describe('persistApp', () => {
 		await persistApp(stop.signal)
 		selection.value.chooseQuiz(savedQuiz)
 		expect(read('selection')).toEqual({ quiz: { id: 'saved', version: '1' }, stage: 'castle-town' })
+	})
+
+	it('forgets the chosen quiz when it is removed, and leaves another chosen one be', async () => {
+		await persistApp(stop.signal)
+		selection.value.chooseQuiz(savedQuiz)
+
+		selection.value.forgetQuiz('other', '1')
+		const kept = selection.value.quiz
+		selection.value.forgetQuiz('saved', '1')
+
+		expect(kept).toMatchObject({ id: 'saved' })
+		expect(read('selection')).toEqual({ stage: 'castle-town' })
 	})
 
 	it('keeps a quiz chosen while the saved ones are still being validated', async () => {

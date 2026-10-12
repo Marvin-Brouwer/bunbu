@@ -7,6 +7,7 @@
  */
 
 import type { BunbuData } from '@bunbu/data'
+import { selection } from '../../_shared/state/selection.mts'
 import { snapshot } from '../../_shared/state/store.mts'
 import type { Outcome, QuestionRef, QuizActions, QuizState } from '../../_shared/state/quiz.mts'
 import { settings } from '../../settings/state/settings.mts'
@@ -15,6 +16,7 @@ import { highScores } from '../state/highscores.mts'
 import { lastRun } from '../state/lastrun.mts'
 import { runConfig } from '../state/run.mts'
 import { pointOf, type HighScore } from '../state/score.mts'
+import { stageResults } from '../state/stage-results.mts'
 import { missShare, openAmbush, settleOutcome, tickAmbush } from './ambush.mts'
 
 /** Metres of path per ambush, until stage length and question count are decided (docs/plan.md). */
@@ -71,7 +73,7 @@ export function runIsOver(game: RunGame): boolean {
 
 /**
  * Keeps what the run leaves behind, the moment its last answer is in: the misses for "practise
- * mistakes" either way, and the high score when it passed. Saved then rather than when the run
+ * mistakes" and how far it got on its stage either way, and the high score when it passed. Saved then rather than when the run
  * ends after the hold, so pausing or closing the app during the last strike or hit loses nothing.
  * The time is the run's time when it ends: now, plus the hold that is left, which a pause doesn't
  * add to. The run's own clock goes by whole frames, so it may pass that by part of the frame that
@@ -82,6 +84,8 @@ export function recordRun(game: RunGame): void {
 	if (quiz === undefined) return
 	const fallen = game.life.value.empty()
 	lastRun.value.save(quiz.id, quiz.version, game.quiz.value.misses())
+	// The stage can't change during a run: the fight setup is the only place it is chosen.
+	stageResults.value.submit(quiz.id, quiz.version, selection.value.stage, { distance: game.run.value.distance, cleared: !fallen })
 	const { points, correct, answered } = game.score.value
 	const seconds = game.run.value.elapsed + game.run.value.recovery
 	game.score.value.settle(!fallen && highScores.value.submit(quiz.id, quiz.version, { points, seconds, correct, answered }))
