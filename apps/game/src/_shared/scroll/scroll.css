@@ -55,7 +55,7 @@
 .footer {
 	/* A clear gap between the text, which scrolls, and what stays at its foot. */
 	padding-top: 1rem;
-	border-top: 1px dashed var(--paper-edge);
+	border-top: 1px solid var(--paper-edge);
 }
 
 .body {

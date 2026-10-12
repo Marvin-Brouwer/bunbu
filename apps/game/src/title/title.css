@@ -4,6 +4,9 @@
  */
 
 .title {
+	/* On the dark ground of the world, an ink ledge wouldn't show; papyrus does. */
+	--ledge: 0 var(--ledge-height) 0 var(--paper-edge);
+
 	position: absolute;
 	inset: 0;
 	display: grid;
@@ -164,6 +167,12 @@
 	font: inherit;
 	font-weight: 700;
 	cursor: pointer;
+	box-shadow: var(--ledge-vermilion);
+}
+
+.panelButton:active {
+	translate: 0 var(--ledge-height);
+	box-shadow: none;
 }
 
 /* How to play and the credits: small, under the menu. */

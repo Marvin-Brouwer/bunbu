@@ -20,7 +20,7 @@
 }
 
 .toggle:has(input:disabled) {
-	border-style: dashed;
+	border: var(--frame-faded);
 	color: var(--ink-soft);
 	cursor: default;
 }

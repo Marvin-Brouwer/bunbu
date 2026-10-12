@@ -49,6 +49,7 @@
 	font-size: 1.5rem;
 	line-height: 1;
 	text-decoration: none;
+	box-shadow: var(--ledge);
 }
 
 /* A numbered part of a screen: `1 · QUIZ`. */
@@ -103,6 +104,7 @@
 	text-align: center;
 	text-decoration: none;
 	cursor: pointer;
+	box-shadow: var(--ledge);
 }
 
 .button.primary {
@@ -110,11 +112,21 @@
 	background: var(--vermilion);
 	color: var(--paper-light);
 	font-size: 1.3rem;
+	box-shadow: var(--ledge-vermilion);
+}
+
+.button:active,
+.back:active {
+	translate: 0 var(--ledge-height);
+	box-shadow: none;
 }
 
 .button:disabled {
-	opacity: 0.45;
+	border-color: var(--ink-faint);
+	color: var(--ink-faint);
 	cursor: default;
+	translate: none;
+	box-shadow: none;
 }
 
 .button:focus-visible,
@@ -141,7 +153,7 @@
 }
 
 .difficulty:has(input:disabled) {
-	border-style: dashed;
+	border: var(--frame-faded);
 	color: var(--ink-soft);
 }
 

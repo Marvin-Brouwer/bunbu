@@ -43,6 +43,19 @@
 	--radius: 3px;
 	--frame: 2px solid var(--ink);
 	--shadow: 0 2px 6px rgb(0 0 0 / 35%);
+	/*
+	 * One look per kind of control, and dashed lines only for the area a quiz file is dropped on:
+	 * - a button stands on a ledge of ink and sinks when pressed;
+	 * - a choice (one of several, as a stage or a quiz) is flat, with a round mark that fills red;
+	 * - a control group (a slider, a switch) and a panel that only tells are flat in a frame;
+	 * - what can't be used now keeps its shape, faded.
+	 */
+	--ledge-height: 0.2rem;
+	--ledge: 0 var(--ledge-height) 0 var(--ink);
+	--ledge-vermilion: 0 var(--ledge-height) 0 #6e1f0f;
+	--frame-faded: 2px solid var(--ink-faint);
+	--mark: 1.25rem;
+	--vermilion-tint: #f6e6dc;
 
 	position: fixed;
 	inset: 0;
