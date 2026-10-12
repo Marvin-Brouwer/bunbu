@@ -8,9 +8,9 @@ import { createStore, type Store } from '@rooted/store'
 
 export type Pose = 'idle' | 'run' | 'strike' | 'block' | 'hurt' | 'fallen'
 
-/** One cut or parry of the samurai's, aimed at one ninja. */
+/** One cut or parry of the samurai's, or the hit he takes, from one ninja. */
 export type Move = {
-	readonly pose: 'strike' | 'block'
+	readonly pose: 'strike' | 'block' | 'hurt'
 	readonly target: number
 }
 
@@ -20,7 +20,7 @@ export type ShogunState = {
 	readonly target: number | undefined
 	/** Counts up on every change, so the renderer can start a one-off effect without an event bus. */
 	readonly sequence: number
-	/** The moves still to come after this one, when he deals with several ninjas in turn. */
+	/** The moves still to come, when he deals with several ninjas in turn. */
 	readonly moves: readonly Move[]
 	/** Seconds until the next of `moves`. */
 	readonly moveLeft: number
@@ -32,10 +32,10 @@ export type ShogunActions = {
 	strike: (ninja: number) => void
 	block: (ninja: number) => void
 	/**
-	 * Deals with the ninjas one after another: the first move now, the next one every
-	 * `moveSeconds` ([outcome](../../../../../docs/design/gameplay.md#outcome)).
+	 * Deals with the ninjas one after another: the first move after `delay` seconds, the next one
+	 * every `moveSeconds` ([outcome](../../../../../docs/design/gameplay.md#outcome)).
 	 */
-	fight: (moves: readonly Move[]) => void
+	fight: (moves: readonly Move[], delay: number) => void
 	/** Counts down to the next move, and returns it when it starts. */
 	tick: (delta: number) => Move | undefined
 	hurt: () => void
@@ -49,7 +49,7 @@ export type Shogun = Store<ShogunState & ShogunActions>
 export const standing: ShogunState = { pose: 'idle', target: undefined, sequence: 0, moves: [], moveLeft: 0 }
 
 /** Seconds between his moves when he deals with several ninjas in turn. To tune in playtests. */
-export const moveSeconds = 0.35
+export const moveSeconds = 0.5
 
 export function createShogun(initial: ShogunState = standing): Shogun {
 
@@ -64,11 +64,8 @@ export function createShogun(initial: ShogunState = standing): Shogun {
 		run: () => { pose('run') },
 		strike: (ninja) => { pose('strike', ninja) },
 		block: (ninja) => { pose('block', ninja) },
-		fight(moves) {
-			const [first, ...rest] = moves
-			if (first === undefined) return
-			pose(first.pose, first.target)
-			store.update(() => ({ moves: rest, moveLeft: moveSeconds }))
+		fight(moves, delay) {
+			store.update(() => ({ moves, moveLeft: delay }))
 		},
 		tick(delta) {
 			const { moves, moveLeft } = store.value

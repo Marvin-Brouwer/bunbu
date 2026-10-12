@@ -116,6 +116,21 @@ export function openingOf(quiz: BunbuData, refs: readonly QuestionRef[], at: Que
 }
 
 /**
+ * The next round of the same attack, with every option that was in the round before still where
+ * it was: the same ninja carries the same answer all attack long, as the rows of a `match` that
+ * share one pool do. When the options differ, the round keeps its own places.
+ */
+export function inPlacesOf(opening: AmbushOpening, before: readonly AmbushOption[]): AmbushOpening {
+	const same = opening.options.length === before.length
+		&& before.every((option) => opening.options.some((next) => next.answer === option.answer))
+	if (!same) return opening
+	return {
+		...opening,
+		options: before.map(({ answer, mark, ninja }) => ({ ...opening.options.find((next) => next.answer === answer)!, mark, ninja })),
+	}
+}
+
+/**
  * The time limit of a question, for all the rounds in `refs` together: they are one ninja attack.
  * The quiz's time per question when it has one, otherwise each round's own time added up.
  */

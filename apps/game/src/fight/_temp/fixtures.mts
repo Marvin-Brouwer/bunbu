@@ -12,7 +12,7 @@ import type { BunbuData, Markdown } from '@bunbu/data'
 import { openingOf } from '../../_shared/state/ambush-opening.mts'
 import { loaded, type AnswerRecord } from '../../_shared/state/quiz.mts'
 import { newRun, type RunGameState } from '../state/game.mts'
-import { spawnsOf, type Ninja } from '../state/ninjas.mts'
+import { noNinjas, spawnsOf, type Ninja } from '../state/ninjas.mts'
 import { quarterMarks, runConfig } from '../state/run.mts'
 import { standing } from '../state/shogun.mts'
 import { pointsPerCorrect } from '../state/score.mts'
@@ -119,7 +119,7 @@ function ambush(question: number, data = fixtureQuiz): RunGameState {
 		...state,
 		run: { ...state.run, phase: 'ambush', worldScale: runConfig.ambushWorldScale },
 		ambush: { ...opening, open: true, openingLeft: 0, secondsLeft: opening.seconds * 0.6 },
-		ninjas: { active: ninjas },
+		ninjas: { ...noNinjas, active: ninjas },
 	}
 }
 
@@ -156,7 +156,7 @@ export const fixtures: Readonly<Record<string, () => Fixture>> = {
 			ambush: { ...state.ambush, open: false },
 			score: { ...state.score, points: state.score.points + pointsPerCorrect, correct: state.score.correct + 1 },
 			shogun: { ...standing, pose: 'strike', target: slain, sequence: 2 },
-			ninjas: { active: state.ninjas.active.map((ninja) => ({ ...ninja, pose: ninja.id === slain ? 'slain' : 'blocked', sequence: 1 })) },
+			ninjas: { ...noNinjas, active: state.ninjas.active.map((ninja) => ({ ...ninja, pose: ninja.id === slain ? 'slain' : 'blocked', sequence: 1 })) },
 		}
 	},
 	'outcome-wrong': () => {
@@ -166,7 +166,7 @@ export const fixtures: Readonly<Record<string, () => Fixture>> = {
 			ambush: { ...state.ambush, open: false },
 			life: { value: 0.66, lastLoss: 1 / 6, hits: 2 },
 			shogun: { ...standing, pose: 'hurt', target: 0, sequence: 4 },
-			ninjas: { active: state.ninjas.active.map((ninja) => ({ ...ninja, pose: 'strike', approach: 1, sequence: 1 })) },
+			ninjas: { ...noNinjas, active: state.ninjas.active.map((ninja) => ({ ...ninja, pose: 'strike', approach: 1, sequence: 1 })) },
 		}
 	},
 	// A wrong answer swiped early, with the ninjas still far off: they lunge in to land the hit.
@@ -177,7 +177,7 @@ export const fixtures: Readonly<Record<string, () => Fixture>> = {
 			ambush: { ...state.ambush, open: false },
 			life: { value: 0.66, lastLoss: 1 / 6, hits: 2 },
 			shogun: { ...standing, pose: 'hurt', target: 0, sequence: 4 },
-			ninjas: { active: state.ninjas.active.map((ninja) => ({ ...ninja, pose: 'strike', approach: 0.15, sequence: 1 })) },
+			ninjas: { ...noNinjas, active: state.ninjas.active.map((ninja) => ({ ...ninja, pose: 'strike', approach: 0.15, sequence: 1 })) },
 		}
 	},
 	// The time runs out a moment after the scroll has unrolled, so the scroll is sliced.
@@ -190,7 +190,7 @@ export const fixtures: Readonly<Record<string, () => Fixture>> = {
 		return {
 			...state,
 			ambush: { ...state.ambush, secondsLeft: 0 },
-			ninjas: { active: state.ninjas.active.map((ninja) => ({ ...ninja, approach: 1 })) },
+			ninjas: { ...noNinjas, active: state.ninjas.active.map((ninja) => ({ ...ninja, approach: 1 })) },
 		}
 	},
 	paused: () => {

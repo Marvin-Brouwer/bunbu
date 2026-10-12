@@ -47,14 +47,16 @@ The answers are written in ink on lined paper, one per line with the arrow of it
 | `solutions` | 1 per proposed solution     | One scroll per solution, answered like `yes-no` ("2 of 3" on the scroll).               |
 | `match`     | one per option              | One `single`-style scroll per row.                                                      |
 
-The solutions of a `solutions` question and the rows of a `match` are **rounds of one ambush**: the ninjas attack once, and the scrolls come one after another. When a scroll is answered it rolls up and the next one unrolls; the ninjas keep closing in, and the samurai stands his ground. A wrong round still costs a hit: the samurai is hit, and the life bar loses what the miss costs (see [life bar](#life-bar)). The outcome plays out after the last round, by its answer. When the time runs out, the round on the scroll and every round still to come are unanswered, for one hit.
+The solutions of a `solutions` question and the rows of a `match` are **rounds of one ambush**: the ninjas attack once, and the scrolls come one after another. When a scroll is answered it rolls up and the next one unrolls; the ninjas keep closing in, and the samurai stands his ground. A wrong round still costs what the miss costs right away (see [life bar](#life-bar)), but nobody strikes yet. A ninja keeps the same answer in every round where the answers stay the same (the rows of a `match` share one pool), and the outcome after the last round shows what was answered in all of them: a ninja handled wrong in any round strikes, the others are slain or blocked as they were answered. When the time runs out, the round on the scroll and every round still to come are unanswered, for one hit.
 
 ### Outcome
 
 Each ninja carries one option. A **slash** means "this option is picked", a **block** means "not picked". The answer is correct when every slash lands on a correct option and every block on an incorrect one. The same rule covers `yes-no` and `solutions`.
 
-- **Correct:** the samurai deals with the ninjas one after another: he slays the picked ones and blocks the others, which are knocked back and flee. `+100` pops up (see [score](#score)). He holds for about half a second after the first one, plus a beat for each ninja after it, then runs on.
-- **Wrong:** a ninja lands the hit with a katana slice and blood spray, and all of them vanish. The lost chunk flashes and drops off the life bar, with a haptic buzz (haptics can be turned off in the settings). No answer is shown and nothing needs tapping: after about 1 s the run resumes. The miss is saved for the review at the end.
+Every ninja gets its own verdict from what was answered: **slain** when its option was rightly picked, **blocked** when it was rightly left alone, and it **strikes** when it was handled wrong (picked but not correct, or correct but not picked). The ninjas then come one after another, in the order their answers were given (unpicked ones last), about half a second apart: a slain one falls, a blocked one lunges in and the blades meet with a white flash before it is knocked back and flees, and a striking one lands its hit on the samurai.
+
+- **Correct:** every ninja is slain or blocked. `+100` pops up (see [score](#score)). The run resumes once the last one is dealt with.
+- **Wrong:** only the ninjas handled wrong strike, with a katana slice and blood spray, and vanish; the others are still slain or blocked. However many strike, it is one miss: the lost chunk flashes and drops off the life bar, with a haptic buzz (haptics can be turned off in the settings). No answer is shown and nothing needs tapping. The miss is saved for the review at the end.
 - **Unanswered:** time ran out. The front ninja slices through the scroll, then all of them hit, which still counts as one hit. Costs the same as a wrong answer. Half-swiped answers do not count. Saved for the review as "unanswered".
 
 ### More than 3 options

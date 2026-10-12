@@ -70,16 +70,27 @@ export type AmbushState = {
 /** What an ambush opens with. The ambush track decides marks, ninjas and seconds. */
 export type AmbushOpening = Omit<AmbushState, 'open' | 'openingLeft' | 'secondsLeft'>
 
+/**
+ * How the answer handled one ninja: `slash` when it was rightly picked, `block` when it was
+ * rightly left alone, `miss` when any of its options was answered wrong.
+ */
+export type Verdict = 'slash' | 'block' | 'miss'
+
+export type NinjaVerdict = {
+	readonly ninja: number
+	readonly verdict: Verdict
+	/** When the first of its options was picked, 1, 2, 3 …, or `0` when none was. */
+	readonly picked: number
+}
+
 /** The result of a commit, for the flow that spreads it over the other stores. */
 export type AmbushResult = {
 	readonly at: QuestionRef
 	readonly outcome: Outcome
 	/** The picked options' `source`, in pick order. */
 	readonly picked: readonly number[]
-	/** Ninjas whose options were all picked correctly. */
-	readonly slain: readonly number[]
-	/** Ninjas that were blocked, knocked back and flee. */
-	readonly blocked: readonly number[]
+	/** How the answer handled each ninja, whatever the outcome; a ninja is right only when all its options are. */
+	readonly ninjas: readonly NinjaVerdict[]
 }
 
 export type AmbushActions = {
@@ -215,18 +226,22 @@ export function createAmbush(initial: AmbushState = noAmbush): Ambush {
 				return undefined
 			}
 			const correct = !unanswered && state.options.every((option) => right(state.kind, option))
-			// A bundled ninja is slain when one of its options is slashed, and handled right only
-			// when all of them are, which `correct` already covers.
-			const slashed = (ninja: number) => state.options.some((option) => option.ninja === ninja && slashes(state.kind, option))
-			const ninjas = sortDistinct(state.options.map((option) => option.ninja))
+			// A bundled ninja is handled right only when all its options are, and slashed when one of them is.
+			const ninjas = sortDistinct(state.options.map((option) => option.ninja)).map((ninja): NinjaVerdict => {
+				const own = state.options.filter((option) => option.ninja === ninja)
+				const picks = own.flatMap((option) => (option.pick > 0 ? [option.pick] : []))
+				const verdict = !own.every((option) => right(state.kind, option))
+					? 'miss'
+					: own.some((option) => slashes(state.kind, option)) ? 'slash' : 'block'
+				return { ninja, verdict, picked: picks.length === 0 ? 0 : Math.min(...picks) }
+			})
 
 			store.update(() => noAmbush)
 			return {
 				at: state.at,
 				outcome: unanswered ? 'unanswered' : correct ? 'correct' : 'wrong',
 				picked,
-				slain: correct ? ninjas.filter((ninja) => slashed(ninja)) : [],
-				blocked: correct ? ninjas.filter((ninja) => !slashed(ninja)) : [],
+				ninjas,
 			}
 		},
 

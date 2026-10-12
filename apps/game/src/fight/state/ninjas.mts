@@ -6,6 +6,7 @@
 
 import { createStore, type Store } from '@rooted/store'
 import { frontRow } from '../../_shared/state/ambush-opening.mts'
+import type { NinjaVerdict, Verdict } from '../../_shared/state/ambush.mts'
 import { sortDistinct } from '../../_shared/state/arrays.mts'
 import { refuse } from '../../_shared/state/store.mts'
 
@@ -24,6 +25,13 @@ export type Ninja = {
 	readonly sequence: number
 	/** The one who slices through the scroll when the time runs out, before they all strike. */
 	readonly slicer?: boolean
+	/**
+	 * How the answers so far handled it, over every round of the question: a miss in any round
+	 * stays a miss, and one rightly picked round makes it a slash.
+	 */
+	readonly verdict?: Verdict
+	/** When one of its options was first picked in this attack, 1, 2, 3 …, for playing the outcome in that order. */
+	readonly answeredAs?: number
 }
 
 /** What a ninja spawns with. */
@@ -43,6 +51,20 @@ export function spawnsOf(options: readonly { readonly ninja: number }[]): NinjaS
 
 export type NinjasState = {
 	readonly active: readonly Ninja[]
+	/** How many ninjas have been picked in this attack, to number the next one. */
+	readonly picks: number
+}
+
+/** Which verdict wins when a ninja is judged again in a later round. */
+const weight: Readonly<Record<Verdict, number>> = { block: 0, slash: 1, miss: 2 }
+
+/**
+ * The order the outcome plays in: the ninjas as they were answered, then the ones never picked,
+ * front row first.
+ */
+export function outcomeOrder(active: readonly Ninja[]): Ninja[] {
+	return active.toSorted((first, second) =>
+		(first.answeredAs ?? Infinity) - (second.answeredAs ?? Infinity) || first.id - second.id)
 }
 
 export type NinjasActions = {
@@ -54,6 +76,8 @@ export type NinjasActions = {
 	regroup: (wave: readonly NinjaSpawn[]) => void
 	/** Moves every approaching ninja to `approach`, which the ambush derives from the time left. */
 	advance: (approach: number) => void
+	/** Takes in how a round's answer handled each ninja ([outcome](../../../../../docs/design/gameplay.md#outcome)). */
+	judge: (verdicts: readonly NinjaVerdict[]) => void
 	strike: (id: number) => void
 	/**
 	 * The time ran out: the first ninja in front slices through the scroll, then every one of them
@@ -63,13 +87,15 @@ export type NinjasActions = {
 	slay: (id: number) => void
 	block: (id: number) => void
 	flee: (id: number) => void
+	/** The ninja landed its hit and is gone. */
+	vanish: (id: number) => void
 	clear: () => void
 }
 
 /** The store, with its actions on its state. Change it through those, not `update`. */
 export type Ninjas = Store<NinjasState & NinjasActions>
 
-export const noNinjas: NinjasState = { active: [] }
+export const noNinjas: NinjasState = { active: [], picks: 0 }
 
 export function createNinjas(initial: NinjasState = noNinjas): Ninjas {
 
@@ -117,6 +143,25 @@ export function createNinjas(initial: NinjasState = noNinjas): Ninjas {
 			}))
 		},
 
+		judge(verdicts) {
+			const { active, picks } = store.value
+			// Numbered in the order they were picked, and only the first time.
+			const newlyPicked = verdicts
+				.filter((each) => each.picked > 0 && active.find((ninja) => ninja.id === each.ninja)?.answeredAs === undefined)
+				.toSorted((first, second) => first.picked - second.picked)
+				.map((each) => each.ninja)
+			store.update(() => ({
+				picks: picks + newlyPicked.length,
+				active: active.map((ninja) => {
+					const judged = verdicts.find((each) => each.ninja === ninja.id)
+					if (judged === undefined) return ninja
+					const verdict = ninja.verdict === undefined || weight[judged.verdict] > weight[ninja.verdict] ? judged.verdict : ninja.verdict
+					const order = newlyPicked.indexOf(ninja.id)
+					return { ...ninja, verdict, answeredAs: order < 0 ? ninja.answeredAs : picks + order + 1 }
+				}),
+			}))
+		},
+
 		strike: (id) => { pose(id, 'strike') },
 		strikeUnanswered() {
 			const { active } = store.value
@@ -128,6 +173,9 @@ export function createNinjas(initial: NinjasState = noNinjas): Ninjas {
 		slay: (id) => { pose(id, 'slain') },
 		block: (id) => { pose(id, 'blocked') },
 		flee: (id) => { pose(id, 'fleeing') },
+		vanish(id) {
+			store.update(() => ({ active: store.value.active.filter((ninja) => ninja.id !== id) }))
+		},
 		clear: () => { store.update(() => noNinjas) },
 	})
 	return store

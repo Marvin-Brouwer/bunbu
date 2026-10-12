@@ -145,14 +145,28 @@ describe('ambush', () => {
 		open('multiple', safeMethods())
 		ambush.value.pick(marks[0]!)
 		ambush.value.pick(marks[1]!)
-		expect(ambush.value.commit()).toMatchObject({ outcome: 'correct', slain: [0, 1], blocked: [2] })
+		expect(ambush.value.commit()).toMatchObject({
+			outcome: 'correct',
+			ninjas: [{ ninja: 0, verdict: 'slash', picked: 1 }, { ninja: 1, verdict: 'slash', picked: 2 }, { ninja: 2, verdict: 'block', picked: 0 }],
+		})
 	})
 
 	it('is wrong when a slash lands on an incorrect option', () => {
 		open('multiple', safeMethods())
 		ambush.value.pick(marks[0]!)
 		ambush.value.pick(marks[2]!)
-		expect(ambush.value.commit()).toMatchObject({ outcome: 'wrong', slain: [], blocked: [] })
+		expect(ambush.value.commit()).toMatchObject({ outcome: 'wrong' })
+	})
+
+	it('judges every ninja on its own, so a wrong answer only misses the ninjas it got wrong', () => {
+		open('multiple', safeMethods())
+		ambush.value.pick(marks[2]!)
+		ambush.value.pick(marks[0]!)
+		expect(ambush.value.commit()?.ninjas).toEqual([
+			{ ninja: 0, verdict: 'slash', picked: 2 },
+			{ ninja: 1, verdict: 'miss', picked: 0 },
+			{ ninja: 2, verdict: 'miss', picked: 1 },
+		])
 	})
 
 	it('is wrong when a correct option is left out', () => {
@@ -187,11 +201,11 @@ describe('ambush', () => {
 		]
 		open('yes-no', yesNo(false))
 		ambush.value.pick(yesNoMarks.no)
-		expect(ambush.value.commit()).toMatchObject({ outcome: 'correct', picked: [1], slain: [], blocked: [0] })
+		expect(ambush.value.commit()).toMatchObject({ outcome: 'correct', picked: [1], ninjas: [{ ninja: 0, verdict: 'block' }] })
 
 		open('yes-no', yesNo(true))
 		ambush.value.pick(yesNoMarks.yes)
-		expect(ambush.value.commit()).toMatchObject({ outcome: 'correct', picked: [0], slain: [0], blocked: [] })
+		expect(ambush.value.commit()).toMatchObject({ outcome: 'correct', picked: [0], ninjas: [{ ninja: 0, verdict: 'slash' }] })
 	})
 
 	it('reports what was picked as the options of the question, in swipe order', () => {
