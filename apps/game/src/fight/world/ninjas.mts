@@ -132,7 +132,8 @@ function charge(approach: number, time: number, seconds: number): Pick<Motion, '
  * pose. `approach` is where the store left it.
  *
  * - Striking in an outcome, it charges in at once to land its hit. After the time ran out, the
- *   slicer cuts the scroll from where it stands, and they all charge in once the halves have fallen.
+ *   slicer cuts the scroll from where it stands and charges in once the halves have fallen; the
+ *   others wind up while they fall, then turn and flee from where they stand.
  * - Blocked, it lunges in and cuts first; the samurai's sword meets it after `clashSeconds`, and
  *   it is knocked back, then flees from there.
  */
@@ -141,9 +142,9 @@ export function motionOf(pose: NinjaPose, slicer: boolean | undefined, approach:
 		if (slicer === undefined) return { ...charge(approach, time, lungeSeconds), pose, time }
 		const wait = time - strikeDelaySeconds
 		// The slicer cuts through the scroll from where it stands; the others wind up while it
-		// falls. Then they all charge in.
-		if (wait > 0) return { ...charge(approach, wait, lungeSeconds), pose, time: wait }
-		return { approach, pose, time: slicer ? time : windUpTime, hop: 0 }
+		// falls. Then the slicer charges in to land the hit, and the others flee.
+		if (wait <= 0) return { approach, pose, time: slicer ? time : windUpTime, hop: 0 }
+		return slicer ? { ...charge(approach, wait, lungeSeconds), pose, time: wait } : { approach, pose: 'fleeing', time: wait, hop: 0 }
 	}
 	if (pose === 'blocked') {
 		return time < clashSeconds
@@ -257,11 +258,11 @@ export function createNinjasView(parent: Group, make: () => Body): NinjasView {
 				const toZ = samurai.z - at.z
 				const facing = Math.hypot(toX, toZ) > 1e-6 ? Math.atan2(-toX, -toZ) : samurai.heading
 				// The figure runs off behind its back; fleeing, it turns that way off to its side.
-				if (ninja.pose === 'fleeing') {
+				if (motion.pose === 'fleeing') {
 					const side = fleeSideOf(visible.x, ninja.id)
 					const off = beside(samurai, side, fleeAhead)
 					const away = Math.atan2(off.x - samurai.x, off.z - samurai.z)
-					root.rotation.y = facing + turnBetween(facing, away) * Math.min(1, entry.time / fleeTurnSeconds)
+					root.rotation.y = facing + turnBetween(facing, away) * Math.min(1, motion.time / fleeTurnSeconds)
 				} else {
 					root.rotation.y = facing
 				}
