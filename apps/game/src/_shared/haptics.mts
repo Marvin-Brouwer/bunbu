@@ -1,6 +1,6 @@
 /**
  * The phone's buzz, behind the haptics setting ([outcome](../../../../docs/design/gameplay.md#outcome)).
- * Phones without `navigator.vibrate`, iOS Safari among them, stay silent.
+ * Where it can't buzz, the setting is greyed out and nothing buzzes.
  */
 
 import { settings } from '../settings/state/settings.mts'
@@ -13,7 +13,15 @@ export const buzzes = {
 	hit: 150,
 }
 
+/**
+ * Whether this phone can buzz: its browser has `navigator.vibrate` (iOS Safari and Firefox don't),
+ * and its main pointer is a finger, as a laptop's browser has `vibrate` too but nothing to buzz with.
+ * A phone with vibration turned off in its own settings still passes: the browser can't tell.
+ */
+export const canBuzz = () =>
+	'vibrate' in navigator && window.matchMedia('(hover: none) and (pointer: coarse)').matches
+
 export function buzz(milliseconds: number): void {
-	if (!settings.value.haptics || !('vibrate' in navigator)) return
+	if (!settings.value.haptics || !canBuzz()) return
 	navigator.vibrate(milliseconds)
 }
