@@ -5,6 +5,8 @@
 
 .zone {
 	position: relative;
+	/* Swipes count anywhere on the drawn paper, also under the last answer. */
+	min-height: 100%;
 	/*
 	 * Every gesture here is a swipe: no browser panning, zooming, pull-to-refresh or overscroll
 	 * glow, no text selection and no long-press menu.

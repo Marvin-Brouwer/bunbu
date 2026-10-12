@@ -226,13 +226,13 @@
 	height: var(--drawer-edge);
 }
 
+/* Drawn, it always fills the whole sheet, so the swipe area is the same for every question. */
 .drawerSlide {
 	position: absolute;
-	inset: auto 0 0;
+	inset: 0;
 	z-index: 1;
 	display: grid;
-	grid-template-rows: var(--drawer-edge) minmax(0, auto);
-	max-height: calc(100% - 1.5rem);
+	grid-template-rows: var(--drawer-edge) minmax(0, 1fr);
 	translate: 0 calc(100% - var(--drawer-edge));
 	transition: translate 300ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
