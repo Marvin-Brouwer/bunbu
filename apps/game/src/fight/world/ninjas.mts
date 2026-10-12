@@ -36,13 +36,6 @@ const entranceScale = 0.15
 /** When the time ran out, the halves of the scroll fall before the ninjas strike. */
 const strikeDelaySeconds = 0.65
 
-/**
- * Seconds the slicer takes to leap across to straight ahead of the samurai, as long as the
- * scroll's cut: it stands mid screen while the halves fall.
- */
-const slicerLeapSeconds = 0.2
-/** Metres the slicer leaps up, crossing over to mid screen. */
-const slicerLeapHeight = 0.4
 
 /**
  * Seconds a blocked ninja takes to lunge in and bring its blade down, until the samurai's sword
@@ -107,33 +100,6 @@ export function markOf(ninja: Ninja, options: readonly AmbushOption[]): Mark | u
 /** A mark for a ninja that never had options to go by, spread out by its id. */
 const markById = (id: number): Mark => marks[(id * 2) % marks.length] ?? 'up'
 
-/**
- * Where the slicer stands when the time has run out, `motion` its own: it leaps across from its own
- * spot to straight ahead, as far out, cutting through the scroll on the way, so it stands mid
- * screen as the halves fall. Then it charges in from there with the others.
- */
-function sliceSpotOf(mark: Mark, wave: number, approach: number, time: number, motion: Motion) {
-	const from = spotOf(mark, wave, approach)
-	const ahead = spotOf('up', 0, motion.approach)
-	const leap = Math.min(1, time / slicerLeapSeconds)
-	return {
-		x: from.x + (ahead.x - from.x) * leap,
-		z: from.z + (ahead.z - from.z) * leap,
-	}
-}
-
-/**
- * The side a ninja flees to, `1` right of the path and `-1` left: away from the path on the side it
- * stands, so the samurai doesn't run into it. One in the middle picks a side by its `id`.
- */
-export function fleeSideOf(x: number, id: number): 1 | -1 {
-	if (Math.abs(x) > 0.3) return x > 0 ? 1 : -1
-	return id % 2 === 0 ? 1 : -1
-}
-
-/** The angle from `from` to `to`, the short way round. */
-const turnBetween = (from: number, to: number) => Math.atan2(Math.sin(to - from), Math.cos(to - from))
-
 /** How close a ninja is, what it shows, and how high it leaps. */
 export type Motion = {
 	readonly approach: number
@@ -153,8 +119,8 @@ function charge(approach: number, time: number, seconds: number): Pick<Motion, '
  * How close a ninja in `pose` is, and what it shows, `time` seconds after the store gave it that
  * pose. `approach` is where the store left it.
  *
- * - Striking in an outcome, it lunges in at once to land its hit. After the time ran out, it waits
- *   for the halves of the scroll to fall; the slicer then runs back in from mid screen first.
+ * - Striking in an outcome, it charges in at once to land its hit. After the time ran out, the
+ *   slicer cuts the scroll from where it stands, and they all charge in once the halves have fallen.
  * - Blocked, it lunges in and cuts first; the samurai's sword meets it after `clashSeconds`, and
  *   it is knocked back, then flees from there.
  */
@@ -162,12 +128,10 @@ export function motionOf(pose: NinjaPose, slicer: boolean | undefined, approach:
 	if (pose === 'strike') {
 		if (slicer === undefined) return { ...charge(approach, time, lungeSeconds), pose, time }
 		const wait = time - strikeDelaySeconds
-		// The slicer cuts through the scroll straight away, leaping across; the others wind up while
-		// it falls. Then they all charge in.
+		// The slicer cuts through the scroll from where it stands; the others wind up while it
+		// falls. Then they all charge in.
 		if (wait > 0) return { ...charge(approach, wait, lungeSeconds), pose, time: wait }
-		if (!slicer) return { approach, pose, time: windUpTime, hop: 0 }
-		const hop = time < slicerLeapSeconds ? Math.sin((Math.PI * time) / slicerLeapSeconds) * slicerLeapHeight : 0
-		return { approach, pose, time, hop }
+		return { approach, pose, time: slicer ? time : windUpTime, hop: 0 }
 	}
 	if (pose === 'blocked') {
 		return time < clashSeconds
@@ -258,9 +222,7 @@ export function createNinjasView(parent: Group, make: () => Body): NinjasView {
 				// They keep their distance while the time runs, and charge in from there.
 				const crept = entry.approach * creepReach
 				const motion = motionOf(ninja.pose, ninja.slicer, crept, entry.time)
-				const spot = ninja.slicer === true
-					? sliceSpotOf(entry.mark, ninja.wave, crept, entry.time, motion)
-					: spotOf(entry.mark, ninja.wave, motion.approach)
+				const spot = spotOf(entry.mark, ninja.wave, motion.approach)
 				// Enter from farther out the same way. It can disappear behind a tree or house and then
 				// run out into view, instead of appearing at the ambush's first visible position.
 				const far = spotOf(entry.mark, ninja.wave, 0)

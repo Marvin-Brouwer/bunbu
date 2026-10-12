@@ -70,7 +70,7 @@ The scroll's heading is the label, the question type, `2 OF 3` for the rounds of
 
 - **5A Correct:** `+100`. The scroll rolls up, slow motion snaps back. One ninja after another, in the order they were answered: picked ninjas slain, the others blocked with a white flash where the blades meet, then fleeing.
 - **5B Wrong:** score `+0`, the lost chunk of the life bar flashes and drops off, red edge flash, haptic buzz (can be turned off in settings, and is greyed out there where the phone or browser can't buzz). Ninjas handled wrong land their hit and vanish; the others are still slain or blocked, one after another. Then the run resumes.
-- **5C Unanswered:** time ran out. The front ninja leaps in straight ahead, slicing through the scroll with a white cut, and stands mid screen as the halves of the scroll fall away. Then they all charge in with a leap, the front one from mid screen, and hit (one hit), and the run resumes.
+- **5C Unanswered:** time ran out. The front ninja slices through the scroll with a white cut from where it stands, and the halves of the scroll fall away. Then they all charge in with a leap and hit (one hit), and the run resumes.
 
 <img src="screens/5a-correct.png" alt="5A correct" width="195"> <img src="screens/5b-wrong.png" alt="5B wrong" width="195"> <img src="screens/5c-unanswered.png" alt="5C unanswered" width="195">
 
