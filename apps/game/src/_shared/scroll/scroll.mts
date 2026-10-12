@@ -32,10 +32,10 @@ export type ScrollOptions = {
 }
 
 /**
- * Unrolling, turning to the next round's page, open, rolling up, sliced, or nothing to show. Each
- * stage has its own CSS animation.
+ * Unrolling, revealing the next round's scroll under the answered one, open, rolling up, sliced,
+ * or nothing to show. Each stage has its own CSS animation.
  */
-type Stage = 'unroll' | 'turn' | 'open' | 'roll-up' | 'slice' | 'hidden'
+type Stage = 'unroll' | 'reveal' | 'open' | 'roll-up' | 'slice' | 'hidden'
 
 export const Scroll = component<ScrollOptions>({
 	name: 'scroll',
@@ -53,7 +53,7 @@ export const Scroll = component<ScrollOptions>({
 					// Unrolling, rolling up and slicing end with an animation on the scroll itself, after which it settles.
 					animationend(event) {
 						if (event.target !== scroll) return
-						if (stage === 'unroll' || stage === 'turn') setStage('open')
+						if (stage === 'unroll' || stage === 'reveal') setStage('open')
 						else if (stage === 'roll-up' || stage === 'slice') hide()
 					},
 				},
@@ -96,28 +96,52 @@ export const Scroll = component<ScrollOptions>({
 					}),
 				})
 
+		// A question asked over several rounds has a scroll per round, all open at once: the rounds
+		// still to come lie under the one on top, their foot showing below it, top to bottom.
+		const stackOf = (state: AmbushState) => {
+			const below = state.rounds - state.round
+			scroll.style.setProperty('--scroll-stack', String(below))
+			return Array.from({ length: below }, (_, index) => {
+				const stacked = element('div', {
+					classes: styles.stacked,
+					style: {
+						zIndex: String(-index - 1),
+					},
+					aria: {
+						hidden: 'true',
+					},
+					children: element('div', {
+						classes: styles.stackedRod,
+					}),
+				})
+				stacked.style.setProperty('--stacked', String(index + 1))
+				return stacked
+			})
+		}
+
 		const unroll = (state: AmbushState) => {
 			drawn = false
-			scroll.replaceChildren(paperOf(state))
+			scroll.replaceChildren(paperOf(state), ...stackOf(state))
 			setStage('unroll')
 		}
 
-		// The next round of a question is the next page of the same scroll: the page that was
-		// answered turns over, a still copy of it, and shows the next one underneath.
-		const turn = (state: AmbushState) => {
+		// The next round: the answered scroll, a still copy of it, rolls up and reveals the next
+		// one, which was under it.
+		const reveal = (state: AmbushState) => {
 			const answered = scroll.firstElementChild?.cloneNode(true)
 			drawn = false
 			scroll.replaceChildren(
 				paperOf(state),
+				...stackOf(state),
 				element('div', {
-					classes: styles.turningPage,
+					classes: styles.answeredScroll,
 					aria: {
 						hidden: 'true',
 					},
 					children: answered,
 				})
 			)
-			setStage('turn')
+			setStage('reveal')
 		}
 
 		// The front ninja cuts through the scroll: the halves are two copies of it, each clipped to
@@ -158,12 +182,12 @@ export const Scroll = component<ScrollOptions>({
 			const change = scrollChangeOf(shown, next)
 			if (change === 'unroll') due = true
 			// The first scroll of an ambush unrolls at once, as the world slows down and the view
-			// moves; the swipes and the time wait for the ninjas to come in. A next round turns the
-			// page of the scroll still on screen: answering a round closes it for a moment, which
+			// moves; the swipes and the time wait for the ninjas to come in. A next round is revealed
+			// under the scroll still on screen: answering a round closes it for a moment, which
 			// starts it rolling up, and the next round opens it again in the same breath.
 			if (due && next.round > 1 && stage !== 'hidden' && stage !== 'slice') {
 				due = false
-				turn(next)
+				reveal(next)
 			}
 			else if (due && (next.openingLeft === 0 || (next.round === 1 && stage === 'hidden'))) {
 				due = false

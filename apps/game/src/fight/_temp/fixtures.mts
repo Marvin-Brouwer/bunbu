@@ -65,6 +65,24 @@ const longQuiz: BunbuData = {
 		),
 }
 
+/** The fixture quiz with a three-row `match` question after the others, for the stack of scrolls. */
+const matchQuiz: BunbuData = {
+	...fixtureQuiz,
+	questions: [
+		...fixtureQuiz.questions,
+		{
+			type: 'match',
+			query: 'Match each status code to its meaning.' as Markdown,
+			rows: [
+				{ text: '`200`' as Markdown, answer: 'Success' as Markdown },
+				{ text: '`301`' as Markdown, answer: 'Permanent redirect' as Markdown },
+				{ text: '`404`' as Markdown, answer: 'Resource not found' as Markdown },
+			],
+			distractors: ['Access denied' as Markdown],
+		},
+	],
+}
+
 /** Picks the options at `places` in the opening's order, as the swipes would. */
 function picking(state: RunGameState, places: readonly number[]): RunGameState {
 	const options = state.ambush.options
@@ -82,10 +100,10 @@ function answers(...outcomes: readonly ('correct' | readonly number[])[]): Answe
 }
 
 /** Running, with `answered` questions behind the samurai, all of them right. */
-function midRun(answered: number): RunGameState {
+function midRun(answered: number, data = fixtureQuiz): RunGameState {
 	return {
 		...newRun,
-		quiz: { ...quiz, answered },
+		quiz: { ...loaded(data), answered },
 		score: {
 			points: answered * pointsPerCorrect,
 			correct: answered,
@@ -107,8 +125,8 @@ function midRun(answered: number): RunGameState {
 /** An open ambush on `question`, opened by the real rules (with a fixed shuffle), its ninjas creeping in. */
 function ambush(question: number, data = fixtureQuiz): RunGameState {
 	const at = { question, part: 0 }
-	const opening = openingOf(data, quiz.refs, at, { timeScale: 1, random: seeded(question) })
-	const state = midRun(question)
+	const state = midRun(question, data)
+	const opening = openingOf(data, state.quiz.refs, at, { timeScale: 1, random: seeded(question) })
 	const ninjas: Ninja[] = spawnsOf(opening.options).map((ninja) => ({
 		...ninja,
 		approach: 0.4,
@@ -148,6 +166,7 @@ export const fixtures: Readonly<Record<string, () => Fixture>> = {
 	'ambush-marked': () => picking(ambush(2), [0]),
 	'ambush-order-picked': () => picking(ambush(3), [2, 0]),
 	'ambush-long': () => ambush(1, longQuiz),
+	'ambush-match': () => ambush(fixtureQuiz.questions.length, matchQuiz),
 	'outcome-correct': () => {
 		const state = single()
 		const slain = state.ambush.options.find((option) => option.correct)?.ninja ?? 0

@@ -8,7 +8,10 @@
  */
 
 .scroll {
+	/* How far each scroll in a stack shows below the one above it. */
+	--stack-step: 0.7rem;
 	position: relative;
+	isolation: isolate;
 	color: var(--ink);
 }
 
@@ -25,12 +28,12 @@
 	/* Keeps the rods against the sheet while it grows, instead of sharing out the space left. */
 	align-content: start;
 	/* `--scroll-reserve` is room a mode keeps free above or below the scroll, like the run's ambush room. */
-	max-height: calc(100dvh - 4rem - var(--scroll-reserve, 0px));
+	max-height: calc(100dvh - 4rem - var(--scroll-reserve, 0px) - var(--scroll-stack, 0) * var(--stack-step));
 	filter: drop-shadow(var(--shadow));
 }
 
 .paper[data-fill='true'] {
-	height: calc(100dvh - 4rem - var(--scroll-reserve, 0px));
+	height: calc(100dvh - 4rem - var(--scroll-reserve, 0px) - var(--scroll-stack, 0) * var(--stack-step));
 }
 
 .rod {
@@ -112,22 +115,44 @@
 }
 
 /*
- * Turn: the next round of a question is the next page. The answered page lifts off the top rod
- * toward the player and turns over, showing the next one underneath.
+ * The stack: the rounds of a question still to come, each a scroll under the one above it, of
+ * which only the foot shows. Revealing the next one rolls up the answered scroll on top of it.
  */
-.scroll[data-stage='turn'] {
-	animation: page-turned 450ms;
+.stacked {
+	position: absolute;
+	inset: 0;
+	display: grid;
+	align-content: end;
+	max-width: 34rem;
+	margin-inline: auto;
+	translate: 0 calc(var(--stacked) * var(--stack-step));
+	background: linear-gradient(90deg, var(--paper-shade), var(--paper) 5%, var(--paper) 95%, var(--paper-shade));
+	border-inline: 1px solid var(--paper-edge);
+	filter: drop-shadow(var(--shadow)) brightness(calc(1 - var(--stacked) * 0.06));
 }
 
-.turningPage {
+.stackedRod {
+	height: 0.85rem;
+	margin: 0 -0.35rem;
+	border-radius: 999px;
+	background: linear-gradient(var(--wood-light), var(--wood) 60%, var(--ink));
+}
+
+.scroll[data-stage='reveal'] {
+	animation: revealed 360ms;
+}
+
+.answeredScroll {
 	position: absolute;
 	inset: 0;
 	pointer-events: none;
-	transform-origin: 50% 0;
-	animation: page-turn 450ms ease-in forwards;
 }
 
-.scroll:not([data-stage='turn']) .turningPage {
+.answeredScroll .paper {
+	animation: unroll 360ms ease-in reverse forwards;
+}
+
+.scroll:not([data-stage='reveal']) .answeredScroll {
 	display: none;
 }
 
@@ -174,23 +199,8 @@
 	}
 }
 
-@keyframes page-turn {
-	from {
-		transform: perspective(70rem) rotateX(0);
-	}
-
-	70% {
-		opacity: 1;
-	}
-
-	to {
-		transform: perspective(70rem) rotateX(-100deg);
-		opacity: 0;
-	}
-}
-
-/* Only marks the end of the turn for the component; the page itself is what moves. */
-@keyframes page-turned {
+/* Only marks the end of the reveal for the component; the answered scroll is what moves. */
+@keyframes revealed {
 	to {
 		opacity: 1;
 	}

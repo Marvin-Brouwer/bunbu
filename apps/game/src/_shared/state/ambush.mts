@@ -141,7 +141,7 @@ export const noAmbush: AmbushState = {
 /** The ninja telegraph before the answer scroll unrolls. */
 export const openingSeconds = 2
 
-/** Between the rounds of a question: the scroll turns to the next page before it can be answered. */
+/** Between the rounds of a question: the answered scroll rolls up to reveal the next one before it can be answered. */
 export const nextScrollSeconds = 0.5
 
 /** Whether the time limit has run out: the ambush ends unanswered. Never with no time limit. */
