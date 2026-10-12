@@ -1,5 +1,6 @@
 import type { BunbuData, Markdown } from '@bunbu/data'
 import { beforeEach, describe, expect, it } from 'vitest'
+import { selection } from '../../_shared/state/selection.mts'
 import { fixtureQuiz } from '../../_temp/quiz.mts'
 import { settings } from '../../settings/state/settings.mts'
 import { createRunGame, type RunGame } from '../state/game.mts'
@@ -7,6 +8,7 @@ import { highScores } from '../state/highscores.mts'
 import { lastRun } from '../state/lastrun.mts'
 import { shareOfOnePoint } from '../state/life.mts'
 import { runConfig } from '../state/run.mts'
+import { stageResults } from '../state/stage-results.mts'
 import { commitAmbush } from './ambush.mts'
 import { ambushAt, endRun, metresPerAmbush, startRun, tickRun } from './run.mts'
 
@@ -43,6 +45,8 @@ beforeEach(() => {
 	settings.value.reset()
 	highScores.value.reset()
 	lastRun.value.reset()
+	stageResults.value.reset()
+	selection.value.reset()
 	startRun(game, fixtureQuiz)
 })
 
@@ -238,6 +242,38 @@ describe('the last run', () => {
 		startRun(game, fixtureQuiz)
 		play([true, true, true, true])
 		expect(lastRun.value.missesOf('fixture', '1')).toEqual([])
+	})
+})
+
+describe('stage results', () => {
+	it('marks the stage cleared by a finished run, at its full length', () => {
+		play([true, true, true, true])
+
+		expect(stageResults.value.of('fixture', '1', 'castle-town')).toEqual({ distance: 4 * metresPerAmbush, cleared: true })
+	})
+
+	it('keeps how far a fallen run got', () => {
+		play([false, false])
+
+		expect(stageResults.value.of('fixture', '1', 'castle-town')).toEqual({ distance: ambushAt(1), cleared: false })
+	})
+
+	it('keeps the best of the runs on a stage', () => {
+		play([true, true, true, true])
+		startRun(game, fixtureQuiz)
+
+		play([false, false])
+
+		expect(stageResults.value.of('fixture', '1', 'castle-town')).toMatchObject({ cleared: true })
+	})
+
+	it('is per stage', () => {
+		selection.value.chooseStage('rice-fields')
+
+		play([false, false])
+
+		expect(stageResults.value.of('fixture', '1', 'rice-fields')).toMatchObject({ cleared: false })
+		expect(stageResults.value.of('fixture', '1', 'castle-town')).toBeUndefined()
 	})
 })
 

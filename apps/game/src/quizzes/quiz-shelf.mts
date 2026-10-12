@@ -17,11 +17,20 @@ import styles from './quiz-shelf.css'
 
 const same = (quiz: BunbuData, other: BunbuData | undefined) => quiz.id === other?.id && quiz.version === other.version
 
-/** The quizzes to choose from: the library, and in dev the fixture quiz when the library doesn't have it. */
-function quizzesIn(state: LibraryState): BunbuData[] {
-	const quizzes = state.entries.map((entry) => entry.quiz)
-	if (import.meta.env.DEV && !quizzes.some((quiz) => same(quiz, fixtureQuiz))) quizzes.push(fixtureQuiz)
+/**
+ * The quizzes to choose from: the library, and in dev the fixture quiz when the library doesn't
+ * have it. Only those in the library can be removed.
+ */
+function quizzesIn(state: LibraryState): { quiz: BunbuData, kept: boolean }[] {
+	const quizzes = state.entries.map((entry) => ({ quiz: entry.quiz, kept: true }))
+	if (import.meta.env.DEV && !quizzes.some(({ quiz }) => same(quiz, fixtureQuiz))) quizzes.push({ quiz: fixtureQuiz, kept: false })
 	return quizzes
+}
+
+/** Takes a quiz out of the library, and unchooses it when it was chosen. Its high score stays. */
+function remove(quiz: BunbuData): void {
+	selection.value.forgetQuiz(quiz.id, quiz.version)
+	library.value.remove(quiz.id, quiz.version)
 }
 
 export const QuizShelf = component({
@@ -65,10 +74,11 @@ export const QuizShelf = component({
 		const showShelf = (state: LibraryState) => {
 			const { quiz: chosen } = snapshot<SelectionState>(selection)
 			shelf.replaceChildren(
-				...quizzesIn(state).map((quiz) => create(QuizCard, {
+				...quizzesIn(state).map(({ quiz, kept }) => create(QuizCard, {
 					quiz,
 					chosen: same(quiz, chosen),
 					choose: () => { selection.value.chooseQuiz(quiz) },
+					remove: kept ? () => { remove(quiz) } : undefined,
 				})),
 			)
 		}

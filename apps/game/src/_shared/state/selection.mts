@@ -33,6 +33,8 @@ const initial: SelectionState = { quiz: undefined, stage: 'castle-town' }
 
 export type SelectionActions = {
 	chooseQuiz: (quiz: BunbuData) => void
+	/** Unchooses the quiz when it is this one, as when it is removed from the library. */
+	forgetQuiz: (id: string, version: string) => void
 	chooseStage: (stage: Stage) => void
 	reset: () => void
 }
@@ -46,6 +48,11 @@ export const selection: Store<SelectionState & SelectionActions> = createStore<S
 
 	chooseQuiz: (quiz) => {
 		selection.update(() => ({ quiz }))
+	},
+
+	forgetQuiz: (id, version) => {
+		const { quiz } = selection.value
+		if (quiz?.id === id && quiz.version === version) selection.update(() => ({ quiz: undefined }))
 	},
 
 	chooseStage: (stage) => {

@@ -76,6 +76,19 @@
 	color: var(--ink-soft);
 }
 
+.stageText {
+	display: grid;
+	gap: 0.25rem;
+}
+
+/* How far the player got on the stage: `Best 860 m · cleared`. */
+.stageResult {
+	font-family: var(--font-mono);
+	font-size: 0.75rem;
+	font-weight: 400;
+	color: var(--ink-soft);
+}
+
 .stageSoon {
 	margin-left: auto;
 	font-family: var(--font-mono);

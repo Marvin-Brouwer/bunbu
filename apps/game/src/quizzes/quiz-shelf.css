@@ -13,13 +13,21 @@
 .card {
 	position: relative;
 	display: grid;
-	align-content: start;
-	gap: 0.3rem;
-	padding: 0.75rem 0.9rem;
+	grid-template-columns: 1fr auto;
+	align-items: start;
+	gap: 0.6rem;
 	border: var(--frame);
 	border-radius: var(--radius);
 	background: var(--paper-light);
 	color: var(--ink);
+}
+
+/* Choosing takes the card but for Remove. */
+.cardChoose {
+	display: grid;
+	align-content: start;
+	gap: 0.3rem;
+	padding: 0.75rem 0 0.75rem 0.9rem;
 	cursor: pointer;
 }
 
@@ -33,7 +41,7 @@
 	outline-offset: 2px;
 }
 
-/* The radio itself is the whole card. */
+/* The radio itself is the card. */
 .card input {
 	position: absolute;
 	opacity: 0;
@@ -51,6 +59,27 @@
 	font-family: var(--font-mono);
 	font-size: 0.75rem;
 	color: var(--ink-soft);
+}
+
+.remove {
+	margin: 0.45rem 0.45rem 0 0;
+	padding: 0.3rem 0.5rem;
+	border: 1px solid transparent;
+	border-radius: var(--radius);
+	background: none;
+	color: var(--ink-soft);
+	font-family: var(--font-mono);
+	font-size: 0.75rem;
+	cursor: pointer;
+}
+
+.remove:hover {
+	border-color: var(--ink-soft);
+}
+
+.remove:focus-visible {
+	outline: 3px solid var(--indigo);
+	outline-offset: 2px;
 }
 
 .load {
