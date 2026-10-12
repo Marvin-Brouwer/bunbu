@@ -61,7 +61,7 @@ The scroll's heading is the label, the question type, `2 OF 3` for the rounds of
 
 - **4A single:** `AMBUSH · SINGLE · 3 NINJAS`, options on ← ↑ →, "Cut your answer".
 - **4B solutions / yes-no:** `AMBUSH · SOLUTIONS · 2 OF 3`, scenario on the scroll, one ninja, ↑ yes (slash) / ↓ no (block).
-- **4C multiple / order:** `AMBUSH · MULTIPLE · CHOOSE 2`. Picked answers are cut through. Hint: "Cut the 2 you choose, then hold still" (lifting and holding still strikes). A swipe is final: swiping a cut answer again does nothing. For `order` ("Cut them in order, then hold still") the place each answer was cut in is brushed next to it.
+- **4C multiple / order:** `AMBUSH · MULTIPLE · CHOOSE 2`. Picked answers are cut through. Hint: "Cut the 2 you choose, then hold still" (lifting and holding still strikes). A swipe is final: swiping a cut answer again does nothing. For `order` ("Cut them all, in order") the place each answer was cut in is brushed next to it, and it strikes as soon as the last one is cut.
 - **4D many options:** `AMBUSH · 7 OPTIONS · 5 NINJAS`. Each option lists its mark; which ninja carries it isn't shown. 8 directions; front 3 strike in wave 1, back 2 in wave 2.
 
 <img src="screens/4a-single.png" alt="4A single" width="195"> <img src="screens/4b-solutions.png" alt="4B solutions" width="195"> <img src="screens/4c-multiple.png" alt="4C multiple" width="195"> <img src="screens/4d-many-options.png" alt="4D many options" width="195">

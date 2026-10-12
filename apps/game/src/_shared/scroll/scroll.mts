@@ -31,8 +31,11 @@ export type ScrollOptions = {
 	readonly held?: () => boolean
 }
 
-/** Unrolling, open, rolling up, sliced, or nothing to show. Each stage has its own CSS animation. */
-type Stage = 'unroll' | 'open' | 'roll-up' | 'slice' | 'hidden'
+/**
+ * Unrolling, turning to the next round's page, open, rolling up, sliced, or nothing to show. Each
+ * stage has its own CSS animation.
+ */
+type Stage = 'unroll' | 'turn' | 'open' | 'roll-up' | 'slice' | 'hidden'
 
 export const Scroll = component<ScrollOptions>({
 	name: 'scroll',
@@ -50,7 +53,7 @@ export const Scroll = component<ScrollOptions>({
 					// Unrolling, rolling up and slicing end with an animation on the scroll itself, after which it settles.
 					animationend(event) {
 						if (event.target !== scroll) return
-						if (stage === 'unroll') setStage('open')
+						if (stage === 'unroll' || stage === 'turn') setStage('open')
 						else if (stage === 'roll-up' || stage === 'slice') hide()
 					},
 				},
@@ -71,10 +74,7 @@ export const Scroll = component<ScrollOptions>({
 		// Whether the answers are drawn up, so the halves of a sliced scroll show them as they were.
 		let drawn = false
 
-		const unroll = (state: AmbushState) => {
-			drawn = false
-			scroll.replaceChildren(
-				create(ScrollPaper, {
+		const paperOf = (state: AmbushState) => create(ScrollPaper, {
 					state,
 					heading: heading(state),
 					drawer: create(AnswerDrawer, {
@@ -95,8 +95,29 @@ export const Scroll = component<ScrollOptions>({
 							}),
 					}),
 				})
-			)
+
+		const unroll = (state: AmbushState) => {
+			drawn = false
+			scroll.replaceChildren(paperOf(state))
 			setStage('unroll')
+		}
+
+		// The next round of a question is the next page of the same scroll: the page that was
+		// answered turns over, a still copy of it, and shows the next one underneath.
+		const turn = (state: AmbushState) => {
+			const answered = scroll.firstElementChild?.cloneNode(true)
+			drawn = false
+			scroll.replaceChildren(
+				paperOf(state),
+				element('div', {
+					classes: styles.turningPage,
+					aria: {
+						hidden: 'true',
+					},
+					children: answered,
+				})
+			)
+			setStage('turn')
 		}
 
 		// The front ninja cuts through the scroll: the halves are two copies of it, each clipped to
@@ -137,9 +158,13 @@ export const Scroll = component<ScrollOptions>({
 			const change = scrollChangeOf(shown, next)
 			if (change === 'unroll') due = true
 			// The first scroll of an ambush unrolls at once, as the world slows down and the view
-			// moves; the swipes and the time wait for the ninjas to come in. A next round's scroll
-			// waits for the one before it to roll up.
-			if (due && (next.openingLeft === 0 || (next.round === 1 && stage === 'hidden'))) {
+			// moves; the swipes and the time wait for the ninjas to come in. A next round turns the
+			// page of the scroll that is open; a scroll still rolling up is waited for.
+			if (due && next.round > 1 && shown.open && (stage === 'open' || stage === 'unroll' || stage === 'turn')) {
+				due = false
+				turn(next)
+			}
+			else if (due && (next.openingLeft === 0 || (next.round === 1 && stage === 'hidden'))) {
 				due = false
 				unroll(next)
 			}

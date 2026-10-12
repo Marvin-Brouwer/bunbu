@@ -141,8 +141,8 @@ export const noAmbush: AmbushState = {
 /** The ninja telegraph before the answer scroll unrolls. */
 export const openingSeconds = 2
 
-/** Between the rounds of a question: the scroll rolls up, the samurai takes a hit if he must, and the next one unrolls. */
-export const nextScrollSeconds = 0.8
+/** Between the rounds of a question: the scroll turns to the next page before it can be answered. */
+export const nextScrollSeconds = 0.5
 
 /** Whether the time limit has run out: the ambush ends unanswered. Never with no time limit. */
 export const timeUp = (state: AmbushState) => state.seconds > 0 && state.secondsLeft === 0

@@ -111,6 +111,26 @@
 	animation: unroll 360ms ease-in reverse forwards;
 }
 
+/*
+ * Turn: the next round of a question is the next page. The answered page lifts off the top rod
+ * toward the player and turns over, showing the next one underneath.
+ */
+.scroll[data-stage='turn'] {
+	animation: page-turned 450ms;
+}
+
+.turningPage {
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+	transform-origin: 50% 0;
+	animation: page-turn 450ms ease-in forwards;
+}
+
+.scroll:not([data-stage='turn']) .turningPage {
+	display: none;
+}
+
 /* A sheet shown on its own, such as the pause menu or the results, unrolls once. */
 .paper[data-unroll='true'] {
 	animation: unroll 420ms ease-out;
@@ -151,6 +171,28 @@
 
 	to {
 		grid-template-rows: auto 1fr auto;
+	}
+}
+
+@keyframes page-turn {
+	from {
+		transform: perspective(70rem) rotateX(0);
+	}
+
+	70% {
+		opacity: 1;
+	}
+
+	to {
+		transform: perspective(70rem) rotateX(-100deg);
+		opacity: 0;
+	}
+}
+
+/* Only marks the end of the turn for the component; the page itself is what moves. */
+@keyframes page-turned {
+	to {
+		opacity: 1;
 	}
 }
 
