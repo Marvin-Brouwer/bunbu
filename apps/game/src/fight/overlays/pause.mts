@@ -12,6 +12,7 @@ import { formatWhole } from '../../_shared/numbers.mts'
 import { ScrollSheet } from '../../_shared/scroll/scroll-sheet.mts'
 import { selection, stageNames } from '../../_shared/state/selection.mts'
 import type { RunGame } from '../state/game.mts'
+import { stageDistanceOf } from '../state/run.mts'
 import styles from './overlays.css'
 
 export type PauseOptions = {
@@ -53,7 +54,7 @@ export const Pause = component<PauseOptions>({
 						fact('Quiz', quiz?.title ?? ''),
 						fact('Stage', stageNames[selection.value.stage]),
 						fact('Answered', `${answered} / ${refs.length}`),
-						fact('Distance', `${formatWhole(Math.floor(game.run.value.distance))} m`),
+						fact('Distance', `${formatWhole(Math.floor(stageDistanceOf(game.run.value)))} m`),
 					],
 				}),
 			],

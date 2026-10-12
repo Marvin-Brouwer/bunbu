@@ -109,17 +109,24 @@ export const RunScreen = component<RunScreenOptions>({
 		// Where the ambush shows the ninjas closing in: the fight below the scroll when there is room,
 		// the duel strip above it when there isn't. The layout and the world's framing both follow it.
 		let room: AmbushRoom = noRoom
+		let pending = 0
 		resizeObserver({
 			targets: run,
 			signal,
 			on: {
+				// On the next frame, not in the observer's callback: the new room lays the scroll out
+				// again while the observer is still reporting, which Firefox logs as a loop error.
 				resize() {
-					room = ambushRoomOf(run.clientWidth, run.clientHeight)
-					run.style.setProperty('--room-below', `${room.below}px`)
-					run.style.setProperty('--strip-height', `${room.strip}px`)
+					cancelAnimationFrame(pending)
+					pending = requestAnimationFrame(() => {
+						room = ambushRoomOf(run.clientWidth, run.clientHeight)
+						run.style.setProperty('--room-below', `${room.below}px`)
+						run.style.setProperty('--strip-height', `${room.strip}px`)
+					})
 				},
 			},
 		})
+		signal.addEventListener('abort', () => { cancelAnimationFrame(pending) }, { once: true })
 
 		show((viewport) => createRunWorld(game, viewport, () => room.below), signal)
 	},

@@ -3,7 +3,7 @@ import { beforeAll, describe, expect, it } from 'vitest'
 import { fixtureQuiz, manyOptions } from '../../_temp/quiz.mts'
 import { seeded } from '../../_temp/random.mts'
 import { createAmbush, type AmbushOpening } from './ambush.mts'
-import { frontRow, maxNinjas, fitOf, openingOf } from './ambush-opening.mts'
+import { frontRow, maxNinjas, fitOf, inPlacesOf, openingOf } from './ambush-opening.mts'
 import { ambushConfig, ambushSeconds, approachOf, wordsIn } from './ambush-time.mts'
 import { refsOf } from './quiz.mts'
 
@@ -133,11 +133,39 @@ describe('opening an ambush', () => {
 		expect(opening.options.map((option) => option.correct)).toEqual([false, true])
 	})
 
-	it('shares the time per question of the quiz between its ambushes', () => {
+	it('gives a question the time per question of the quiz, for all its rounds together', () => {
 		const quiz = { ...fixtureQuiz, timePerQuestion: '1m' }
 		const refs = [{ question: 1, part: 0 }, { question: 1, part: 1 }]
-		expect(openingOf(quiz, refs, { question: 1, part: 0 }, { timeScale: 1.2, random: seeded(1) }).seconds).toBe(36)
+		expect(openingOf(quiz, refs, { question: 1, part: 0 }, { timeScale: 1.2, random: seeded(1) }).seconds).toBe(72)
 		expect(openingOf(quiz, refs.slice(0, 1), { question: 1, part: 0 }, { timeScale: 0.5, random: seeded(1) }).seconds).toBe(30)
+	})
+
+	it('keeps every answer on the same ninja from one match row to the next', () => {
+		const row = (text: string) => ({ text: markdown(text), answer: markdown(text) })
+		const data: BunbuData = {
+			...fixtureQuiz,
+			questions: [{ type: 'match', query: markdown('Match them.'), rows: [row('one'), row('two'), row('three')] }],
+		}
+		const refs = refsOf(data, [0])
+		const first = openingOf(data, refs, refs[0]!, settings(1))
+		const second = inPlacesOf(openingOf(data, refs, refs[1]!, settings(2)), first.options)
+		const place = (opening: AmbushOpening) => opening.options.map(({ answer, mark, ninja }) => [answer, mark, ninja])
+		expect(place(second)).toEqual(place(first))
+		expect(second.options.find((option) => option.correct)?.answer).toBe('two')
+	})
+
+	it('adds up the time of every round without a time per question', () => {
+		const row = (text: string) => ({ text: markdown(text), answer: markdown(text) })
+		const data: BunbuData = {
+			...fixtureQuiz,
+			questions: [{ type: 'match', query: markdown('Match them.'), rows: [row('one'), row('two')] }],
+		}
+		const refs = refsOf(data, [0])
+		const first = openingOf(data, refs.slice(0, 1), refs[0]!, settings()).seconds
+		const second = openingOf(data, refs.slice(1), refs[1]!, settings()).seconds
+		const both = openingOf(data, refs, refs[1]!, settings()).seconds
+		expect(both).toBe(first + second)
+		expect(openingOf(data, refs, refs[0]!, settings()).seconds).toBe(both)
 	})
 
 	it('has no time limit without a time scale', () => {

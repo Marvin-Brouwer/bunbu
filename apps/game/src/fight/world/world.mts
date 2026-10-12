@@ -174,7 +174,8 @@ export function createRunWorld(game: RunGame, viewport: Viewport, roomBelow: () 
 			const view = viewOnPath(path, run.distance, frame.aspect, fallen)
 
 			// The ninjas first: they keep the mark each came from after the ambush's options are gone.
-			ninjas.draw(game.ninjas.value.active, ambush.options, view.frame, delta, worldDelta, ambush.openingLeft > 0, since)
+			// They wind up to charge just before the time runs out.
+			ninjas.draw(game.ninjas.value.active, ambush.options, ambush.kind, view.frame, delta, worldDelta, ambush.open && ambush.seconds > 0 ? ambush.secondsLeft : undefined)
 
 			// He runs along the path, and turns toward the ninja he strikes or blocks, who stands square
 			// to the camera's way ahead.
@@ -233,7 +234,7 @@ export function createRunWorld(game: RunGame, viewport: Viewport, roomBelow: () 
 				heading: samurai.root.rotation.y,
 				time: shogun.pose === 'strike' ? since : undefined,
 				side,
-			}, ninjas.slain(), camera)
+			}, ninjas.slain(), ninjas.clashes(), camera)
 			// Around where the camera looks, a little ahead of him; they drift on in slow motion too.
 			petals.draw(worldDelta, { x: view.look[0], z: view.look[2] })
 		},

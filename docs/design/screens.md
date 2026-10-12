@@ -61,16 +61,16 @@ The scroll's heading is the label, the question type, `2 OF 3` for the rounds of
 
 - **4A single:** `AMBUSH · SINGLE · 3 NINJAS`, options on ← ↑ →, "Cut your answer".
 - **4B solutions / yes-no:** `AMBUSH · SOLUTIONS · 2 OF 3`, scenario on the scroll, one ninja, ↑ yes (slash) / ↓ no (block).
-- **4C multiple / order:** `AMBUSH · MULTIPLE · CHOOSE 2`. Picked answers are cut through. Hint: "Cut the 2 you choose, then hold still" (lifting and holding still strikes). A swipe is final: swiping a cut answer again does nothing. For `order` ("Cut them in order, then hold still") the place each answer was cut in is brushed next to it.
+- **4C multiple / order:** `AMBUSH · MULTIPLE · CHOOSE 2`. Picked answers are cut through. Hint: "Cut the 2 you choose, then hold still" (lifting and holding still strikes). A swipe is final: swiping a cut answer again does nothing. For `order` ("Cut them all, in order") the place each answer was cut in is brushed next to it, and it strikes as soon as the last one is cut.
 - **4D many options:** `AMBUSH · 7 OPTIONS · 5 NINJAS`. Each option lists its mark; which ninja carries it isn't shown. 8 directions; front 3 strike in wave 1, back 2 in wave 2.
 
 <img src="screens/4a-single.png" alt="4A single" width="195"> <img src="screens/4b-solutions.png" alt="4B solutions" width="195"> <img src="screens/4c-multiple.png" alt="4C multiple" width="195"> <img src="screens/4d-many-options.png" alt="4D many options" width="195">
 
 ### 5 Outcome
 
-- **5A Correct:** `+100`. The scroll rolls up, slow motion snaps back. Picked ninjas slain, the others blocked and fleeing.
-- **5B Wrong:** score `+0`, the lost chunk of the life bar flashes and drops off, red edge flash, haptic buzz (can be turned off in settings, and is greyed out there where the phone or browser can't buzz). A ninja lands the hit, all vanish. About 1 s, then the run resumes.
-- **5C Unanswered:** time ran out. The front ninja leaps in straight ahead, slicing through the scroll with a white cut, and stands mid screen as the halves of the scroll fall away. Then all hit (one hit) and the run resumes.
+- **5A Correct:** `+100`. The scroll rolls up, slow motion snaps back. One ninja after another, in the order they were answered: picked ninjas slain, the others blocked with a white flash where the blades meet, then fleeing.
+- **5B Wrong:** score `+0`, the lost chunk of the life bar flashes and drops off, red edge flash, haptic buzz (can be turned off in settings, and is greyed out there where the phone or browser can't buzz). Ninjas handled wrong land their hit and vanish; the others are still slain or blocked, one after another. Then the run resumes.
+- **5C Unanswered:** time ran out. The ninja that wound up first slices through the scroll with a white cut from where it stands, and the halves of the scroll fall away. Then it charges in with a leap and lands the hit (one hit) while the others flee, then flees too, and the run resumes.
 
 <img src="screens/5a-correct.png" alt="5A correct" width="195"> <img src="screens/5b-wrong.png" alt="5B wrong" width="195"> <img src="screens/5c-unanswered.png" alt="5C unanswered" width="195">
 

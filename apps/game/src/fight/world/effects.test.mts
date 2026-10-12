@@ -4,7 +4,7 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { inkTiming, slashOf, slashTiming, splashOf } from './effects.mts'
+import { clashOf, clashTiming, inkTiming, slashOf, slashTiming, splashOf } from './effects.mts'
 import { poseSeconds } from '../../_shared/world/poses.mts'
 
 describe('slash trail', () => {
@@ -59,5 +59,17 @@ describe('ink splash', () => {
 	it('splashes differently for each ninja, the same every time', () => {
 		expect(splashOf(1, 0.2)).toEqual(splashOf(1, 0.2))
 		expect(splashOf(1, 0.2).drops[0]).not.toEqual(splashOf(2, 0.2).drops[0])
+	})
+})
+
+describe('clash flash', () => {
+	it('flares up where the blades meet, then fades out', () => {
+		const flare = clashOf(clashTiming.grow)
+		expect(flare?.opacity).toBe(1)
+		expect(flare?.size).toBeCloseTo(clashTiming.size)
+		expect(clashOf(0)?.size).toBeLessThan(clashTiming.size)
+		expect(clashOf(clashTiming.fadeFrom + clashTiming.fade / 2)?.opacity).toBeCloseTo(0.5)
+		expect(clashOf(clashTiming.fadeFrom + clashTiming.fade)).toBeUndefined()
+		expect(clashOf(-0.1)).toBeUndefined()
 	})
 })

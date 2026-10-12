@@ -26,7 +26,7 @@ The run ends when the stage is cleared ([results](screens.md#7-finished-results-
 
 One screen, no Submit button: **the swipe is the answer**.
 
-1. The world freezes into slow motion. The ninjas run into view, one briefly winding up for a cut before the answer appears.
+1. The world goes into slow motion, slowing down hard at first and then ever more, but never to a stop: the samurai, the ninjas and everything around them run on slower and slower. The scroll unrolls at once, as the view moves. The ninjas run into view; the swipes and the time start once they are in.
 2. The scroll opens down to the bottom of the screen with the query and any code; the question has the whole scroll and scrolls when it is long.
 3. The answers are in the **answer drawer** at the foot of the scroll. Closed, only its edge shows, with a red seal (a hanko stamped 答, "answer") and "Tap or swipe up to answer" above it. Tapping the seal or swiping it up draws the answers up over the whole scroll, the same swipe area for every question; swiping it down puts them away to read the question again.
 4. Every option is tagged with a **mark**: the swipe direction (← ↑ → …) of the ninja carrying it. The drawn answers are the **swipe zone**: swiping toward a mark picks that option. Only swipes on the answers count, so the question can be scrolled freely.
@@ -43,17 +43,21 @@ The answers are written in ink on lined paper, one per line with the arrow of it
 | `yes-no`    | 1                           | One swipe: ↑ yes (slash), ↓ no (block).                                                 |
 | `single`    | one per option              | One swipe toward the chosen option's mark.                                              |
 | `multiple`  | one per option              | Swipe toward each mark to pick it. Lifting between swipes is optional: ← lift → and one continuous ← → stroke both pick two marks. A pause of 0.8 s after lifting strikes. A swipe is final: swiping a marked mark again does nothing. |
-| `order`     | one per item                | As `multiple`; the marks get numbers 1, 2, 3 … in swipe order.                          |
-| `solutions` | 1 per proposed solution     | One ambush per solution, answered like `yes-no` ("2 of 3" on the scroll).               |
-| `match`     | one per option              | One `single`-style ambush per row.                                                      |
+| `order`     | one per item                | Swipe every item in turn; numbered 1, 2, 3 …, it strikes once all are placed.           |
+| `solutions` | 1 per proposed solution     | One scroll per solution, answered like `yes-no` ("2 of 3" on the scroll).               |
+| `match`     | one per option              | One `single`-style scroll per row.                                                      |
+
+The solutions of a `solutions` question and the rows of a `match` are **rounds of one ambush**: the ninjas attack once, and each round has its own scroll. They all open at once, stacked top to bottom: the round to answer on top, the rounds still to come under it with only their foot showing. When a round is answered its scroll rolls up and reveals the next one underneath; the ninjas keep closing in, and the samurai stands his ground. Each round is a point of its own, so every wrong round takes its share of the life bar right away, before the next scroll (see [life bar](#life-bar)), but nobody strikes yet. A `solutions` question has a ninja per solution, all of them in the attack from the start, each in its own place since ↑ and ↓ mean yes and no rather than where a ninja is. A ninja keeps the same answer in every round where the answers stay the same (the rows of a `match` share one pool), and the outcome after the last round shows what was answered in all of them: a ninja handled wrong in any round strikes, the others are slain or blocked as they were answered. When the time runs out, the round on the scroll and every round still to come are unanswered, each taking its share of the life bar.
 
 ### Outcome
 
 Each ninja carries one option. A **slash** means "this option is picked", a **block** means "not picked". The answer is correct when every slash lands on a correct option and every block on an incorrect one. The same rule covers `yes-no` and `solutions`.
 
-- **Correct:** picked ninjas are slain, the others are blocked, knocked back and flee. `+100` pops up (see [score](#score)). The samurai holds for about half a second for the strike, then runs on.
-- **Wrong:** a ninja lands the hit with a katana slice and blood spray, and all of them vanish. The lost chunk flashes and drops off the life bar, with a haptic buzz (haptics can be turned off in the settings). No answer is shown and nothing needs tapping: after about 1 s the run resumes. The miss is saved for the review at the end.
-- **Unanswered:** time ran out. The front ninja slices through the scroll, then all of them hit, which still counts as one hit. Costs the same as a wrong answer. Half-swiped answers do not count. Saved for the review as "unanswered".
+Every ninja gets its own verdict from what was answered: **slain** when its option was rightly picked, **blocked** when it was rightly left alone, and it **strikes** when it was handled wrong (picked but not correct, or correct but not picked). The ninjas then come one after another, in the order their answers were given (unpicked ones last), about half a second apart: a slain one falls, a blocked one lunges in and the blades meet with a white flash before it is knocked back and flees off to its side of the path, and a striking one lands its hit on the samurai and then flees.
+
+- **Correct:** every ninja is slain or blocked. `+100` pops up (see [score](#score)). The run resumes once the last one is dealt with.
+- **Wrong:** only the ninjas handled wrong strike, with a katana slice and blood spray, and vanish; the others are still slain or blocked. However many strike, it is one miss: the lost chunk flashes and drops off the life bar, with a haptic buzz (haptics can be turned off in the settings). No answer is shown and nothing needs tapping. The miss is saved for the review at the end.
+- **Unanswered:** time ran out. The ninja that wound up first slices through the scroll and then charges in with a leap and lands the hit, while the others flee. Then it flees too. It counts as one hit (one per round left, for the rounds of a `match` or `solutions`). Costs the same as a wrong answer. Half-swiped answers do not count. Saved for the review as "unanswered".
 
 ### More than 3 options
 
@@ -65,7 +69,7 @@ Each ninja carries one option. A **slash** means "this option is picked", a **bl
 
 ## Time limit
 
-There is no timer bar: the ambush opens in slow motion and **the ninjas creeping in are the timer**.
+There is no timer bar: the ambush opens in slow motion and **the ninjas creeping in are the timer**. They keep their distance, creeping about halfway in; just before the time runs out they stop and wind up one after another, in a different order each time.
 
 On a phone in portrait the scroll covers the whole width, so the ninjas have to be shown:
 
@@ -74,10 +78,10 @@ On a phone in portrait the scroll covers the whole width, so the ninjas have to 
 
 Wider than the scroll (a tablet, landscape), the world shows beside it and needs neither.
 
-When the quiz sets [`timePerQuestion`](data-format.md#document-structure), that is the time, shared by the ambushes of a question (the rows of a `match`, the solutions of a `solutions`):
+When the quiz sets [`timePerQuestion`](data-format.md#document-structure), that is the time of the ambush, all its rounds together (the rows of a `match`, the solutions of a `solutions`):
 
 ```text
-ambushSeconds = timePerQuestion / ambushes of the question × timeScale
+ambushSeconds = timePerQuestion × timeScale
 ```
 
 Without it, the time is worked out from the question:
@@ -91,7 +95,7 @@ answer        = yes-no:    1.5
                 order:     1 + 1.5 per item
 ```
 
-`solutions` and `match` use the `yes-no` and `single` rows, per solution or row.
+`solutions` and `match` use the `yes-no` and `single` rows, per solution or row, added up for the whole ambush. A round answered early leaves its time to the ones after it. The pause between two scrolls doesn't count.
 
 `timeScale` is the difficulty, a slider with four stops, the two inner ones marked on the track: **Apprentice** `1.2`, **Samurai** `1` (where a new player starts), **Daimyo** `0.8` and **Shogun** `0.5`. The dojo has no time limit.
 
@@ -105,7 +109,7 @@ No hearts. The life bar shows **only the error margin**: full is 100%, empty is 
 life = (best score still possible − pass) / (1 − pass)
 ```
 
-- Points as in the data format: each question is 1 point, each `solutions` entry is 1 point.
+- Points as in the data format: each question is 1 point, each `solutions` entry and each `match` row is 1 point.
 - Each miss takes its question's share for good. Any error in a question costs the whole share, however many ninjas or errors were involved. Example: 20 points with a 70% pass mark leaves a margin of 6 points, so one miss takes a sixth of the bar.
 - An empty bar means the quiz can no longer be passed: the samurai falls ([screen 8](screens.md#8-fallen)).
 

@@ -6,9 +6,9 @@
  * The pointer leaves a faint trace on the paper, and each pick cuts its answer in two
  * ([ScrollOption](../scroll/scroll-option.mts)).
  *
- * A swipe toward a mark picks it. `yes-no` and `single` strike at once; `multiple` and `order`
- * strike once the pointer has been lifted for the commit pause, and touching down again before
- * that keeps the answer open. Lifting between swipes is optional: one continuous stroke can pick
+ * A swipe toward a mark picks it. `yes-no` and `single` strike at once, and `order` as soon as
+ * every item has its place; `multiple` strikes once the pointer has been lifted for the commit
+ * pause, and touching down again before that keeps the answer open. Lifting between swipes is optional: one continuous stroke can pick
  * several marks ([stroke.mts](./stroke.mts)).
  *
  * The scroll puts it in its answer drawer, in the run and in dojo practice. It picks through the
@@ -40,6 +40,10 @@ export type SwipeZoneOptions = {
 const pointOf = (event: PointerEvent): Point => ({ x: event.clientX, y: event.clientY })
 
 const anyPicked = (state: AmbushState) => state.options.some((option) => option.pick > 0)
+
+/** Whether the answer is complete: an `order` needs every item put in its place, the rest one pick. */
+const answered = (state: AmbushState) =>
+	state.kind === 'order' ? state.options.every((option) => option.pick > 0) : anyPicked(state)
 
 const isPicked = (state: AmbushState, mark: Mark) =>
 	state.options.some((option) => option.mark === mark && option.pick > 0)
@@ -78,7 +82,7 @@ export const SwipeZone = component<SwipeZoneOptions>({
 			cancelStrike()
 			strikeTimer = setTimeout(() => {
 				strikeTimer = undefined
-				if (!ambush.value.open || !anyPicked(ambush.value)) return
+				if (!ambush.value.open || !answered(ambush.value)) return
 				if (held()) strikeAfterPause()
 				else strike()
 			}, ambushConfig.commitPauseSeconds * 1000)
@@ -118,7 +122,7 @@ export const SwipeZone = component<SwipeZoneOptions>({
 			if (mark === undefined || !current.open || timeUp(current) || isPicked(current, mark)) return
 			current.pick(mark)
 			buzz(buzzes.pick)
-			if (strikesAtOnce(current.kind)) strike()
+			if (strikesAtOnce(current.kind) || (current.kind === 'order' && answered(ambush.value))) strike()
 		}
 
 		// `finishing` is false when the browser took the pointer over (pointercancel): the last
@@ -130,7 +134,7 @@ export const SwipeZone = component<SwipeZoneOptions>({
 			clearTrace()
 			if (finishing && last !== undefined) choose(finish(last, available()))
 			const current = ambush.value
-			if (current.open && !strikesAtOnce(current.kind) && anyPicked(current)) strikeAfterPause()
+			if (current.open && !strikesAtOnce(current.kind) && answered(current)) strikeAfterPause()
 		}
 
 		const zone = element('div', {

@@ -12,8 +12,9 @@ import type { BunbuData, Markdown } from '@bunbu/data'
 import { openingOf } from '../../_shared/state/ambush-opening.mts'
 import { loaded, type AnswerRecord } from '../../_shared/state/quiz.mts'
 import { newRun, type RunGameState } from '../state/game.mts'
-import { spawnsOf, type Ninja } from '../state/ninjas.mts'
+import { attackSpawnsOf, noNinjas, type Ninja } from '../state/ninjas.mts'
 import { quarterMarks, runConfig } from '../state/run.mts'
+import { standing } from '../state/shogun.mts'
 import { pointsPerCorrect } from '../state/score.mts'
 import { metresPerAmbush } from '../flows/run.mts'
 import { fixtureQuiz, manyOptions } from '../../_temp/quiz.mts'
@@ -64,6 +65,34 @@ const longQuiz: BunbuData = {
 		),
 }
 
+/** The fixture quiz with a three-row `match` and a three-solution `solutions` question after the others, for the stack of scrolls. */
+const roundsQuiz: BunbuData = {
+	...fixtureQuiz,
+	questions: [
+		...fixtureQuiz.questions,
+		{
+			type: 'match',
+			query: 'Match each status code to its meaning.' as Markdown,
+			rows: [
+				{ text: '`200`' as Markdown, answer: 'Success' as Markdown },
+				{ text: '`301`' as Markdown, answer: 'Permanent redirect' as Markdown },
+				{ text: '`404`' as Markdown, answer: 'Resource not found' as Markdown },
+			],
+			distractors: ['Access denied' as Markdown],
+		},
+		{
+			type: 'solutions',
+			scenario: 'Every request to a weather API needs a secret key, which must never reach the browser.' as Markdown,
+			query: 'Does this solution meet the goal?' as Markdown,
+			options: [
+				{ correct: false, answer: 'Inject the key at build time.' as Markdown },
+				{ correct: true, answer: 'Call the API through a backend endpoint.' as Markdown },
+				{ correct: false, answer: 'Store the key in `localStorage`.' as Markdown },
+			],
+		},
+	],
+}
+
 /** Picks the options at `places` in the opening's order, as the swipes would. */
 function picking(state: RunGameState, places: readonly number[]): RunGameState {
 	const options = state.ambush.options
@@ -81,10 +110,10 @@ function answers(...outcomes: readonly ('correct' | readonly number[])[]): Answe
 }
 
 /** Running, with `answered` questions behind the samurai, all of them right. */
-function midRun(answered: number): RunGameState {
+function midRun(answered: number, data = fixtureQuiz): RunGameState {
 	return {
 		...newRun,
-		quiz: { ...quiz, answered },
+		quiz: { ...loaded(data), answered },
 		score: {
 			points: answered * pointsPerCorrect,
 			correct: answered,
@@ -97,18 +126,19 @@ function midRun(answered: number): RunGameState {
 			phase: 'running',
 			elapsed: 94,
 			distance: answered * metresPerAmbush,
-			stageLength: quiz.refs.length * metresPerAmbush,
+			stageLength: quiz.order.length * metresPerAmbush,
 		},
-		shogun: { pose: 'run', target: undefined, sequence: 1 },
+		shogun: { ...standing, pose: 'run', sequence: 1 },
 	}
 }
 
 /** An open ambush on `question`, opened by the real rules (with a fixed shuffle), its ninjas creeping in. */
 function ambush(question: number, data = fixtureQuiz): RunGameState {
 	const at = { question, part: 0 }
-	const opening = openingOf(data, quiz.refs, at, { timeScale: 1, random: seeded(question) })
-	const state = midRun(question)
-	const ninjas: Ninja[] = spawnsOf(opening.options).map((ninja) => ({
+	// The questions before it, or the rounds of them, are behind the samurai.
+	const state = midRun(loaded(data).refs.findIndex((ref) => ref.question === question), data)
+	const opening = openingOf(data, state.quiz.refs, at, { timeScale: 1, random: seeded(question) })
+	const ninjas: Ninja[] = attackSpawnsOf(opening).map((ninja) => ({
 		...ninja,
 		approach: 0.4,
 		pose: 'approach',
@@ -116,9 +146,9 @@ function ambush(question: number, data = fixtureQuiz): RunGameState {
 	}))
 	return {
 		...state,
-		run: { ...state.run, phase: 'ambush', worldScale: runConfig.ambushWorldScale },
+		run: { ...state.run, phase: 'ambush', worldScale: runConfig.slowMotion.slowest, slowedFor: 60 },
 		ambush: { ...opening, open: true, openingLeft: 0, secondsLeft: opening.seconds * 0.6 },
-		ninjas: { active: ninjas },
+		ninjas: { ...noNinjas, active: ninjas },
 	}
 }
 
@@ -147,6 +177,8 @@ export const fixtures: Readonly<Record<string, () => Fixture>> = {
 	'ambush-marked': () => picking(ambush(2), [0]),
 	'ambush-order-picked': () => picking(ambush(3), [2, 0]),
 	'ambush-long': () => ambush(1, longQuiz),
+	'ambush-match': () => ambush(fixtureQuiz.questions.length, roundsQuiz),
+	'ambush-solutions': () => ambush(fixtureQuiz.questions.length + 1, roundsQuiz),
 	'outcome-correct': () => {
 		const state = single()
 		const slain = state.ambush.options.find((option) => option.correct)?.ninja ?? 0
@@ -154,8 +186,8 @@ export const fixtures: Readonly<Record<string, () => Fixture>> = {
 			...state,
 			ambush: { ...state.ambush, open: false },
 			score: { ...state.score, points: state.score.points + pointsPerCorrect, correct: state.score.correct + 1 },
-			shogun: { pose: 'strike', target: slain, sequence: 2 },
-			ninjas: { active: state.ninjas.active.map((ninja) => ({ ...ninja, pose: ninja.id === slain ? 'slain' : 'blocked', sequence: 1 })) },
+			shogun: { ...standing, pose: 'strike', target: slain, sequence: 2 },
+			ninjas: { ...noNinjas, active: state.ninjas.active.map((ninja) => ({ ...ninja, pose: ninja.id === slain ? 'slain' : 'blocked', sequence: 1 })) },
 		}
 	},
 	'outcome-wrong': () => {
@@ -164,8 +196,8 @@ export const fixtures: Readonly<Record<string, () => Fixture>> = {
 			...state,
 			ambush: { ...state.ambush, open: false },
 			life: { value: 0.66, lastLoss: 1 / 6, hits: 2 },
-			shogun: { pose: 'hurt', target: 0, sequence: 4 },
-			ninjas: { active: state.ninjas.active.map((ninja) => ({ ...ninja, pose: 'strike', approach: 1, sequence: 1 })) },
+			shogun: { ...standing, pose: 'hurt', target: 0, sequence: 4 },
+			ninjas: { ...noNinjas, active: state.ninjas.active.map((ninja) => ({ ...ninja, pose: 'strike', approach: 1, sequence: 1 })) },
 		}
 	},
 	// A wrong answer swiped early, with the ninjas still far off: they lunge in to land the hit.
@@ -175,8 +207,8 @@ export const fixtures: Readonly<Record<string, () => Fixture>> = {
 			...state,
 			ambush: { ...state.ambush, open: false },
 			life: { value: 0.66, lastLoss: 1 / 6, hits: 2 },
-			shogun: { pose: 'hurt', target: 0, sequence: 4 },
-			ninjas: { active: state.ninjas.active.map((ninja) => ({ ...ninja, pose: 'strike', approach: 0.15, sequence: 1 })) },
+			shogun: { ...standing, pose: 'hurt', target: 0, sequence: 4 },
+			ninjas: { ...noNinjas, active: state.ninjas.active.map((ninja) => ({ ...ninja, pose: 'strike', approach: 0.15, sequence: 1 })) },
 		}
 	},
 	// The time runs out a moment after the scroll has unrolled, so the scroll is sliced.
@@ -189,7 +221,7 @@ export const fixtures: Readonly<Record<string, () => Fixture>> = {
 		return {
 			...state,
 			ambush: { ...state.ambush, secondsLeft: 0 },
-			ninjas: { active: state.ninjas.active.map((ninja) => ({ ...ninja, approach: 1 })) },
+			ninjas: { ...noNinjas, active: state.ninjas.active.map((ninja) => ({ ...ninja, approach: 1 })) },
 		}
 	},
 	paused: () => {
@@ -219,7 +251,7 @@ export const fixtures: Readonly<Record<string, () => Fixture>> = {
 			life: { value: 0, lastLoss: 1 / 6, hits: 6 },
 			score: { ...state.score, correct: 1, answered: 3, points: pointsPerCorrect },
 			run: { ...state.run, phase: 'fallen' },
-			shogun: { pose: 'fallen', target: undefined, sequence: 9 },
+			shogun: { ...standing, pose: 'fallen', target: undefined, sequence: 9 },
 		}
 	},
 }

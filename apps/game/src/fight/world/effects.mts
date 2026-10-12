@@ -1,6 +1,6 @@
 /**
- * The run's effects: the slash trail when the samurai cuts, and the ink splash when a ninja is
- * slain. Both are timed from the store's poses, like the figures, and hold nothing the game needs.
+ * The run's effects: the slash trail when the samurai cuts, the ink splash when a ninja is
+ * slain, and the white flash where blades meet when he blocks one. Both are timed from the store's poses, like the figures, and hold nothing the game needs.
  *
  * The slash trail is drawn in the second pass, over the world whatever its depth
  * ([layering](../../../../../docs/architecture/rendering.md#layering-inside-the-canvas)): a brush
@@ -9,6 +9,7 @@
  */
 
 import {
+	AdditiveBlending,
 	BufferGeometry,
 	CanvasTexture,
 	Color,
@@ -115,6 +116,67 @@ export function splashOf(id: number, time: number): Splash {
 	}
 }
 
+/** Seconds and sizes of the white flash where blades meet on a block. */
+export const clashTiming = {
+	grow: 0.06,
+	fadeFrom: 0.08,
+	fade: 0.22,
+	size: 1.3,
+} as const
+
+/** The clash flash `time` seconds after the blades met, or `undefined` once it is gone. */
+export function clashOf(time: number): { readonly size: number; readonly opacity: number; readonly turn: number } | undefined {
+	if (time < 0 || time >= clashTiming.fadeFrom + clashTiming.fade) return undefined
+	return {
+		size: clashTiming.size * (0.35 + 0.65 * easeOut(progress(time, clashTiming.grow))),
+		opacity: 1 - progress(time - clashTiming.fadeFrom, clashTiming.fade),
+		// A quick quarter turn, so the rays glint.
+		turn: (Math.PI / 4) * progress(time, clashTiming.fadeFrom + clashTiming.fade),
+	}
+}
+
+/** Metres above the ground the blades meet: about shoulder height. */
+const clashHeight = 1.35
+
+/** A white glint: a soft glow with four long rays and four short ones, white on clear. */
+function glintTexture(): CanvasTexture {
+	const size = 128
+	const middle = size / 2
+	const canvas = document.createElement('canvas')
+	canvas.width = size
+	canvas.height = size
+	const context = canvas.getContext('2d')
+	if (context !== null) {
+		const glow = context.createRadialGradient(middle, middle, 0, middle, middle, middle * 0.45)
+		glow.addColorStop(0, 'rgba(255, 255, 255, 1)')
+		glow.addColorStop(0.35, 'rgba(255, 255, 255, 0.55)')
+		glow.addColorStop(1, 'rgba(255, 255, 255, 0)')
+		context.fillStyle = glow
+		context.fillRect(0, 0, size, size)
+		context.fillStyle = '#ffffff'
+		const ray = (angle: number, length: number, width: number) => {
+			context.save()
+			context.translate(middle, middle)
+			context.rotate(angle)
+			context.beginPath()
+			context.moveTo(0, -length)
+			context.lineTo(width, 0)
+			context.lineTo(0, length)
+			context.lineTo(-width, 0)
+			context.closePath()
+			context.fill()
+			context.restore()
+		}
+		ray(0, middle * 0.98, 4)
+		ray(Math.PI / 2, middle * 0.98, 4)
+		ray(Math.PI / 4, middle * 0.5, 3)
+		ray(-Math.PI / 4, middle * 0.5, 3)
+	}
+	const texture = new CanvasTexture(canvas)
+	texture.colorSpace = SRGBColorSpace
+	return texture
+}
+
 /** Sumi ink, not quite black. */
 const ink = 0x15121c
 
@@ -219,6 +281,14 @@ export type SlainSpot = {
 	readonly time: number
 }
 
+/** Where blades met on a block, and how long ago. */
+export type ClashSpot = {
+	readonly id: number
+	readonly x: number
+	readonly z: number
+	readonly time: number
+}
+
 /** What the effects need to know about the samurai's cut this frame. */
 export type Cut = {
 	readonly x: number
@@ -232,7 +302,7 @@ export type Cut = {
 }
 
 export type Effects = {
-	draw: (cut: Cut, slain: readonly SlainSpot[], camera: Camera) => void
+	draw: (cut: Cut, slain: readonly SlainSpot[], clashes: readonly ClashSpot[], camera: Camera) => void
 	dispose: () => void
 }
 
@@ -249,6 +319,14 @@ export function createEffects(world: Scene, overlay: Scene): Effects {
 	stroke.visible = false
 	overlay.add(stroke)
 	const strokeUniforms = stroke.material.uniforms as { sweep: { value: number }; opacity: { value: number } }
+
+	const glint = glintTexture()
+	const glints = new Map<number, Sprite>()
+	const dropGlint = (id: number, sprite: Sprite) => {
+		world.remove(sprite)
+		sprite.material.dispose()
+		glints.delete(id)
+	}
 
 	const blot = blotTexture()
 	const stainGeometry = new PlaneGeometry(1, 1).rotateX(-Math.PI / 2)
@@ -279,7 +357,7 @@ export function createEffects(world: Scene, overlay: Scene): Effects {
 	}
 
 	return {
-		draw(cut, slain, camera) {
+		draw(cut, slain, clashes, camera) {
 			const slash = cut.time === undefined ? undefined : slashOf(cut.time)
 			stroke.visible = slash !== undefined
 			if (slash !== undefined) {
@@ -325,10 +403,33 @@ export function createEffects(world: Scene, overlay: Scene): Effects {
 			for (const [id, made] of inks) {
 				if (!slain.some((spot) => spot.id === id)) dropInk(id, made)
 			}
+
+			// Over everything around it, so a blocked blow always shows.
+			for (const spot of clashes) {
+				let sprite = glints.get(spot.id)
+				if (sprite === undefined) {
+					sprite = new Sprite(new SpriteMaterial({ map: glint, transparent: true, depthTest: false, depthWrite: false, blending: AdditiveBlending }))
+					sprite.renderOrder = 3
+					world.add(sprite)
+					glints.set(spot.id, sprite)
+				}
+				const flash = clashOf(spot.time)
+				sprite.visible = flash !== undefined
+				if (flash === undefined) continue
+				sprite.position.set(spot.x, clashHeight, spot.z)
+				sprite.scale.setScalar(flash.size)
+				sprite.material.opacity = flash.opacity
+				sprite.material.rotation = flash.turn
+			}
+			for (const [id, sprite] of glints) {
+				if (!clashes.some((spot) => spot.id === id)) dropGlint(id, sprite)
+			}
 		},
 
 		dispose() {
 			for (const [id, made] of inks) dropInk(id, made)
+			for (const [id, sprite] of glints) dropGlint(id, sprite)
+			glint.dispose()
 			overlay.remove(stroke)
 			stroke.geometry.dispose()
 			stroke.material.dispose()

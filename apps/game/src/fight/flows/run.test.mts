@@ -9,7 +9,8 @@ import { lastRun } from '../state/lastrun.mts'
 import { shareOfOnePoint } from '../state/life.mts'
 import { runConfig } from '../state/run.mts'
 import { stageResults } from '../state/stage-results.mts'
-import { commitAmbush } from './ambush.mts'
+import { nextScrollSeconds } from '../../_shared/state/ambush.mts'
+import { commitAmbush, outcomeDelaySeconds } from './ambush.mts'
 import { ambushAt, endRun, metresPerAmbush, startRun, tickRun } from './run.mts'
 
 let game: RunGame
@@ -35,8 +36,9 @@ function play(rights: readonly boolean[]) {
 	for (const right of rights) {
 		runToAmbush()
 		answer(right)
-		// Let the samurai recover.
-		tickRun(game, 2, 2)
+		// Let the samurai recover, or the next scroll open.
+		const wait = Math.max(2, game.run.value.recovery + 0.1)
+		tickRun(game, wait, wait)
 	}
 }
 
@@ -55,7 +57,7 @@ describe('the run', () => {
 		runToAmbush()
 		expect(game.run.value.distance).toBeCloseTo(ambushAt(0))
 		expect(game.ambush.value.open).toBe(true)
-		expect(game.run.value.worldScale).toBe(runConfig.ambushWorldScale)
+		expect(game.run.value.phase).toBe('ambush')
 	})
 
 	it('does not spring one during the intro', () => {
@@ -68,6 +70,7 @@ describe('the run', () => {
 		runToAmbush()
 		answer(false)
 		const { distance } = game.run.value
+		tickRun(game, outcomeDelaySeconds, outcomeDelaySeconds)
 		expect(game.shogun.value.pose).toBe('hurt')
 
 		tickRun(game, 0.5, 0.5)
@@ -80,33 +83,6 @@ describe('the run', () => {
 		expect(game.run.value.distance).toBeGreaterThan(distance)
 	})
 
-	it('lets the ninjas that landed the hit vanish once the samurai recovers', () => {
-		runToAmbush()
-		answer(false)
-		expect(game.ninjas.value.active.every((ninja) => ninja.pose === 'strike')).toBe(true)
-
-		tickRun(game, 0.5, 0.5)
-		expect(game.ninjas.value.active).not.toHaveLength(0)
-		tickRun(game, 0.6, 0.6)
-		expect(game.ninjas.value.active).toHaveLength(0)
-	})
-
-	it('sends the blocked ninjas fleeing once the samurai recovers, and leaves the slain where they fell', () => {
-		// The second question is a `single` of three: one slain, two blocked.
-		play([true])
-		runToAmbush()
-		answer(true)
-		const blocked = game.ninjas.value.active.filter((ninja) => ninja.pose === 'blocked').map((ninja) => ninja.id)
-		const slain = game.ninjas.value.active.filter((ninja) => ninja.pose === 'slain').map((ninja) => ninja.id)
-		expect(blocked).toHaveLength(2)
-		expect(slain).toHaveLength(1)
-
-		tickRun(game, runConfig.strikeSeconds + 0.1, runConfig.strikeSeconds + 0.1)
-		const poses = new Map(game.ninjas.value.active.map((ninja) => [ninja.id, ninja.pose]))
-		for (const id of blocked) expect(poses.get(id)).toBe('fleeing')
-		for (const id of slain) expect(poses.get(id)).toBe('slain')
-	})
-
 	it('cannot be paused before it has started', () => {
 		game.run.value.reset()
 		game.run.value.pause()
@@ -116,14 +92,15 @@ describe('the run', () => {
 	it('keeps the hold after an ambush through a pause and its countdown', () => {
 		runToAmbush()
 		answer(false)
-		tickRun(game, 0.4, 0.4)
+		const hold = game.run.value.recovery
+		tickRun(game, 0.5, 0.5)
 		game.run.value.pause()
 		game.run.value.resume()
 		tickRun(game, runConfig.countdownSeconds, runConfig.countdownSeconds)
-		expect(game.run.value.recovery).toBeCloseTo(runConfig.hitSeconds - 0.4)
+		expect(game.run.value.recovery).toBeCloseTo(hold - 0.5)
 		expect(game.shogun.value.pose).toBe('hurt')
 
-		tickRun(game, 1, 1)
+		tickRun(game, hold, hold)
 		expect(game.shogun.value.pose).toBe('run')
 	})
 
@@ -145,11 +122,12 @@ describe('the run', () => {
 		play([true, true, true])
 		runToAmbush()
 		answer(true)
+		const hold = game.run.value.recovery
 		const best = highScores.value.of('fixture', '1')
 
 		// Another commit after the last answer is refused, and changes nothing that was kept.
 		commitAmbush(game)
-		tickRun(game, runConfig.strikeSeconds, runConfig.strikeSeconds)
+		tickRun(game, hold, hold)
 		endRun(game)
 		expect(game.run.value.phase).toBe('finished')
 		expect(highScores.value.of('fixture', '1')).toEqual(best)
@@ -163,8 +141,9 @@ describe('high score', () => {
 		runToAmbush()
 		answer(true)
 		// The run ends when the hold after the last answer does.
-		const ends = game.run.value.elapsed + runConfig.strikeSeconds
-		tickRun(game, runConfig.strikeSeconds, runConfig.strikeSeconds)
+		const hold = game.run.value.recovery
+		const ends = game.run.value.elapsed + hold
+		tickRun(game, hold, hold)
 		expect(game.run.value.phase).toBe('finished')
 		expect(game.run.value.elapsed).toBeCloseTo(ends)
 
@@ -178,6 +157,7 @@ describe('high score', () => {
 		play([true, true, true])
 		runToAmbush()
 		answer(true)
+		const hold = game.run.value.recovery
 		const best = highScores.value.of('fixture', '1')
 		expect(best).toMatchObject({ points: 400, correct: 4, answered: 4 })
 		// The misses are kept too, for this quiz: none, every answer was right.
@@ -190,7 +170,7 @@ describe('high score', () => {
 		game.run.value.resume()
 		tickRun(game, runConfig.countdownSeconds, runConfig.countdownSeconds)
 		expect(game.run.value.phase).toBe('running')
-		tickRun(game, runConfig.strikeSeconds, runConfig.strikeSeconds)
+		tickRun(game, hold, hold)
 		expect(game.run.value.phase).toBe('finished')
 		expect(game.run.value.elapsed).toBeCloseTo(best?.seconds ?? 0)
 		expect(highScores.value.of('fixture', '1')).toEqual(best)
@@ -279,7 +259,7 @@ describe('stage results', () => {
 
 describe('questions of several ambushes', () => {
 	const markdown = (text: string) => text as Markdown
-	// One `match` question of two rows (1 point) and one `solutions` question of two entries (2 points).
+	// One `match` question of two rows and one `solutions` question of two entries: 2 points each.
 	const quiz: BunbuData = {
 		...fixtureQuiz,
 		passingScore: 30,
@@ -308,29 +288,113 @@ describe('questions of several ambushes', () => {
 		startRun(game, quiz)
 	})
 
-	it('scores a match question once, when all its rows are right', () => {
-		play([true])
-		expect(game.score.value).toMatchObject({ points: 0, correct: 0, answered: 0 })
+	it('scores every row of a match question on its own', () => {
 		play([true])
 		expect(game.score.value).toMatchObject({ points: 100, correct: 1, answered: 1 })
+		play([true])
+		expect(game.score.value).toMatchObject({ points: 200, correct: 2, answered: 2 })
 	})
 
-	it('takes a match question\'s share of the life bar once, however many rows are missed', () => {
+	it('takes a share of the life bar for every row missed', () => {
 		play([false, false])
-		expect(game.life.value.hits).toBe(1)
-		expect(game.life.value.value).toBeCloseTo(1 - shareOfOnePoint(3, 30))
-		expect(game.score.value).toMatchObject({ points: 0, correct: 0, answered: 1 })
+		expect(game.life.value.hits).toBe(2)
+		expect(game.life.value.value).toBeCloseTo(1 - 2 * shareOfOnePoint(4, 30))
+		expect(game.score.value).toMatchObject({ points: 0, correct: 0, answered: 2 })
 	})
 
-	it('does not score a match question with a row missed', () => {
+	it('still scores the rows answered right next to one missed', () => {
 		play([false, true])
-		expect(game.score.value).toMatchObject({ points: 0, correct: 0, answered: 1 })
+		expect(game.score.value).toMatchObject({ points: 100, correct: 1, answered: 2 })
+	})
+
+	it('asks the rounds of a question one after another, in the same attack', () => {
+		runToAmbush()
+		const ninjas = game.ninjas.value.active.map((ninja) => ninja.id)
+		game.ambush.value.tick(game.ambush.value.openingLeft + 1)
+		const { seconds, secondsLeft } = game.ambush.value
+		answer(true)
+
+		expect(game.run.value.phase).toBe('ambush')
+		expect(game.ambush.value).toMatchObject({ open: true, round: 2, rounds: 2, openingLeft: nextScrollSeconds, seconds, secondsLeft })
+		expect(game.ninjas.value.active.map((ninja) => ninja.id)).toEqual(ninjas)
+		expect(game.ninjas.value.active.every((ninja) => ninja.pose === 'approach')).toBe(true)
+		// The time waits for the next scroll to open.
+		tickRun(game, 0.1, nextScrollSeconds)
+		expect(game.ambush.value.secondsLeft).toBe(secondsLeft)
+	})
+
+	it('costs the life bar on a wrong round at once, and the next scroll still comes', () => {
+		runToAmbush()
+		answer(false)
+		expect(game.life.value.hits).toBe(1)
+		expect(game.ambush.value).toMatchObject({ open: true, round: 2 })
+	})
+
+	it('plays out what every round did to the ninjas once the last one is answered', () => {
+		const row = (text: string, meaning: string) => ({ text: markdown(text), answer: markdown(meaning) })
+		// With the solutions after it, so one miss doesn't empty the bar.
+		const withDistractor: BunbuData = {
+			...quiz,
+			questions: [{
+				type: 'match',
+				query: markdown('Match the status codes.'),
+				rows: [row('`200`', 'Success'), row('`404`', 'Not found')],
+				distractors: [markdown('Teapot')],
+			}, quiz.questions[1]!],
+		}
+		const verdicts = () => game.ninjas.value.active.map((ninja) => ninja.verdict ?? 'none').toSorted((first, second) => first.localeCompare(second))
+
+		// Both rows right: the two answers are slashed, the distractor blocked.
+		startRun(game, withDistractor)
+		runToAmbush()
+		answer(true)
+		tickRun(game, 0.1, nextScrollSeconds)
+		answer(true)
+		expect(verdicts()).toEqual(['block', 'slash', 'slash'])
+		tickRun(game, game.run.value.recovery - 0.01, game.run.value.recovery - 0.01)
+		expect(game.ninjas.value.active.map((ninja) => ninja.pose).toSorted((first, second) => first.localeCompare(second))).toEqual(['blocked', 'slain', 'slain'])
+
+		// The first row answered with the distractor: it and the answer it should have been stay
+		// misses; the second row's answer is still slashed.
+		startRun(game, withDistractor)
+		runToAmbush()
+		const first = game.ambush.value.query
+		const teapot = game.ambush.value.options.find((option) => option.answer === 'Teapot')
+		game.ambush.value.pick(teapot!.mark)
+		commitAmbush(game)
+		tickRun(game, 0.1, nextScrollSeconds)
+		const right = first.includes('200') ? 'Not found' : 'Success'
+		expect(verdicts()).toEqual(['block', 'miss', 'miss'])
+		const rightNinja = game.ambush.value.options.find((option) => option.answer === right)?.ninja
+		answer(true)
+		expect(game.ninjas.value.active.find((ninja) => ninja.id === rightNinja)?.verdict).toBe('slash')
+		tickRun(game, game.run.value.recovery - 0.01, game.run.value.recovery - 0.01)
+		expect(game.ninjas.value.active.filter((ninja) => ninja.pose === 'strike')).toHaveLength(2)
+		expect(game.ninjas.value.active.filter((ninja) => ninja.pose === 'slain')).toHaveLength(1)
+	})
+
+	it('leaves every round still to come unanswered when the time runs out', () => {
+		runToAmbush()
+		game.ambush.value.tick(game.ambush.value.seconds + game.ambush.value.openingLeft)
+		tickRun(game, 0.1, 0.1)
+
+		expect(game.quiz.value.records.map((record) => record.outcome)).toEqual(['unanswered', 'unanswered'])
+		expect(game.life.value.hits).toBe(2)
+		expect(game.run.value.phase).toBe('running')
+	})
+
+	it('springs the next question on the next leg of the path', () => {
+		play([true, true])
+		runToAmbush()
+		expect(game.ambush.value.at.question).toBe(1)
+		expect(game.run.value.distance).toBeCloseTo(ambushAt(1))
+		expect(game.run.value.stageLength).toBe(2 * metresPerAmbush)
 	})
 
 	it('scores every solutions entry on its own', () => {
 		play([true, true, true, false])
 		expect(game.run.value.phase).toBe('finished')
-		expect(game.score.value).toMatchObject({ points: 200, correct: 2, answered: 3 })
+		expect(game.score.value).toMatchObject({ points: 300, correct: 3, answered: 4 })
 		expect(game.life.value.hits).toBe(1)
 	})
 })
@@ -351,9 +415,9 @@ describe('frames', () => {
 		tickRun(game, 0.1, 0.1)
 		expect(game.run.value.phase).toBe('running')
 		// The hit plays out, then the run is finished: 3 of 4 still passes.
-		tickRun(game, runConfig.hitSeconds, runConfig.hitSeconds)
+		tickRun(game, runConfig.slicedSeconds, runConfig.slicedSeconds)
 		expect(game.run.value.phase).toBe('finished')
-		const seconds = before + 0.1 + runConfig.hitSeconds
+		const seconds = before + 0.1 + runConfig.slicedSeconds
 		expect(game.run.value.elapsed).toBeCloseTo(seconds)
 		expect(highScores.value.of('fixture', '1')?.seconds).toBeCloseTo(seconds)
 	})
@@ -362,7 +426,7 @@ describe('frames', () => {
 		runToAmbush()
 		game.ambush.value.tick(game.ambush.value.seconds + game.ambush.value.openingLeft)
 		tickRun(game, 0.1, 0.1)
-		expect(game.run.value.recovery).toBe(runConfig.hitSeconds)
+		expect(game.run.value.recovery).toBe(runConfig.slicedSeconds)
 	})
 })
 

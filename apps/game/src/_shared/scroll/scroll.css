@@ -8,7 +8,12 @@
  */
 
 .scroll {
+	/* How far each scroll in a stack shows below the one above it. */
+	--stack-step: 0.7rem;
+	/* What the stack under the scroll takes off its height; a sheet outside an ambush has none. */
+	--stack-height: calc(var(--scroll-stack, 0) * var(--stack-step));
 	position: relative;
+	isolation: isolate;
 	color: var(--ink);
 }
 
@@ -25,12 +30,12 @@
 	/* Keeps the rods against the sheet while it grows, instead of sharing out the space left. */
 	align-content: start;
 	/* `--scroll-reserve` is room a mode keeps free above or below the scroll, like the run's ambush room. */
-	max-height: calc(100dvh - 4rem - var(--scroll-reserve, 0px));
+	max-height: calc(100dvh - 4rem - var(--scroll-reserve, 0px) - var(--stack-height, 0px));
 	filter: drop-shadow(var(--shadow));
 }
 
 .paper[data-fill='true'] {
-	height: calc(100dvh - 4rem - var(--scroll-reserve, 0px));
+	height: calc(100dvh - 4rem - var(--scroll-reserve, 0px) - var(--stack-height, 0px));
 }
 
 .rod {
@@ -111,6 +116,48 @@
 	animation: unroll 360ms ease-in reverse forwards;
 }
 
+/*
+ * The stack: the rounds of a question still to come, each a scroll under the one above it, of
+ * which only the foot shows. Revealing the next one rolls up the answered scroll on top of it.
+ */
+.stacked {
+	position: absolute;
+	inset: 0;
+	display: grid;
+	align-content: end;
+	max-width: 34rem;
+	margin-inline: auto;
+	translate: 0 calc(var(--stacked) * var(--stack-step));
+	background: linear-gradient(90deg, var(--paper-shade), var(--paper) 5%, var(--paper) 95%, var(--paper-shade));
+	border-inline: 1px solid var(--paper-edge);
+	filter: drop-shadow(var(--shadow)) brightness(calc(1 - var(--stacked) * 0.06));
+}
+
+.stackedRod {
+	height: 0.85rem;
+	margin: 0 -0.35rem;
+	border-radius: 999px;
+	background: linear-gradient(var(--wood-light), var(--wood) 60%, var(--ink));
+}
+
+.scroll[data-stage='reveal'] {
+	animation: revealed 360ms;
+}
+
+.answeredScroll {
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+}
+
+.answeredScroll .paper {
+	animation: unroll 360ms ease-in reverse forwards;
+}
+
+.scroll:not([data-stage='reveal']) .answeredScroll {
+	display: none;
+}
+
 /* A sheet shown on its own, such as the pause menu or the results, unrolls once. */
 .paper[data-unroll='true'] {
 	animation: unroll 420ms ease-out;
@@ -151,6 +198,13 @@
 
 	to {
 		grid-template-rows: auto 1fr auto;
+	}
+}
+
+/* Only marks the end of the reveal for the component; the answered scroll is what moves. */
+@keyframes revealed {
+	to {
+		opacity: 1;
 	}
 }
 
@@ -278,7 +332,7 @@
 	outline: none;
 }
 
-.drawerHandle:focus-visible .seal {
+.drawerHandle:focus-visible .drawerSeal {
 	outline: 2px solid var(--vermilion);
 	outline-offset: 3px;
 	border-radius: var(--radius);
@@ -294,7 +348,7 @@
 	font-size: 0.85rem;
 }
 
-.seal {
+.drawerSeal {
 	position: absolute;
 	bottom: 0;
 	left: 50%;
@@ -305,12 +359,12 @@
 	transition: scale 180ms ease-out;
 }
 
-.drawerHandle:active:enabled .seal {
+.drawerHandle:active:enabled .drawerSeal {
 	scale: 0.9;
 }
 
 /* The seal presses down as the answers come up, like stamping them. */
-.drawerSlide[data-drawn='true'] .seal {
+.drawerSlide[data-drawn='true'] .drawerSeal {
 	animation: stamp 260ms ease-out;
 }
 
@@ -355,11 +409,11 @@
 
 @media (prefers-reduced-motion: reduce) {
 	.drawerSlide,
-	.seal {
+	.drawerSeal {
 		transition: none;
 	}
 
-	.drawerSlide[data-drawn='true'] .seal {
+	.drawerSlide[data-drawn='true'] .drawerSeal {
 		animation: none;
 	}
 }

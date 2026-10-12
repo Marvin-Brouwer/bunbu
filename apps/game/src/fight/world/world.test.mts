@@ -72,11 +72,11 @@ describe('placement', () => {
 	})
 
 	it('finds a ninja its mark from its first option', () => {
-		const ninja = { id: 1, wave: 0, options: [2], approach: 0, pose: 'approach', sequence: 0 } as const
+		const ninja = { id: 1, wave: 0, options: [2], approach: 0, pose: 'approach', sequence: 0, chargeAs: 0 } as const
 		const option = (mark: (typeof marks)[number]) => ({ answer: '', correct: false, mark, ninja: 1, pick: 0, source: 0, rank: 0 })
-		expect(markOf(ninja, [option('left'), option('up'), option('right')])).toBe('right')
+		expect(markOf(ninja, [option('left'), option('up'), option('right')], 'single')).toBe('right')
 		// Committing clears the options; the world keeps the mark it last drew.
-		expect(markOf(ninja, [])).toBeUndefined()
+		expect(markOf(ninja, [], 'single')).toBeUndefined()
 	})
 })
 

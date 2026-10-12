@@ -39,13 +39,20 @@ export function createViewport(canvas: HTMLCanvasElement, container: Element, si
 		camera.updateProjectionMatrix()
 	}
 
+	// Resized on the next frame, not in the observer's callback: resizing the canvas there lays the
+	// page out again while the observer is still reporting, which Firefox logs as a loop error.
+	let pending = 0
 	resizeObserver({
 		targets: container,
 		signal,
 		on: {
-			resize,
+			resize() {
+				cancelAnimationFrame(pending)
+				pending = requestAnimationFrame(resize)
+			},
 		},
 	})
+	signal.addEventListener('abort', () => { cancelAnimationFrame(pending) }, { once: true })
 	resize()
 
 	signal.addEventListener('abort', () => {

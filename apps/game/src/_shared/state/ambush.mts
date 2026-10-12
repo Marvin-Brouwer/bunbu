@@ -43,7 +43,10 @@ export type AmbushOption = {
 
 export type AmbushState = {
 	readonly open: boolean
-	/** Seconds of the visual ninja entrance before the answer scroll appears. */
+	/**
+	 * Seconds of the visual ninja entrance before the answer scroll appears, or between the rounds
+	 * of a question before the next scroll does. The time limit waits for it.
+	 */
 	readonly openingLeft: number
 	readonly kind: AmbushKind
 	readonly at: QuestionRef
@@ -52,7 +55,10 @@ export type AmbushState = {
 	readonly options: readonly AmbushOption[]
 	/** How many options to choose, `0` when the count is not given away. */
 	readonly choose: number
-	/** The time limit in seconds, `0` when there is none, as in the dojo. */
+	/**
+	 * The time limit in seconds, `0` when there is none, as in the dojo. A question asked over
+	 * several rounds has one time limit for all of them: the rounds are one ninja attack.
+	 */
 	readonly seconds: number
 	readonly secondsLeft: number
 	/** Which of the question's ambushes this is, 1, 2, 3 …: "2 of 3" for `solutions`. */
@@ -64,21 +70,37 @@ export type AmbushState = {
 /** What an ambush opens with. The ambush track decides marks, ninjas and seconds. */
 export type AmbushOpening = Omit<AmbushState, 'open' | 'openingLeft' | 'secondsLeft'>
 
+/**
+ * How the answer handled one ninja: `slash` when it was rightly picked, `block` when it was
+ * rightly left alone, `miss` when any of its options was answered wrong.
+ */
+export type Verdict = 'slash' | 'block' | 'miss'
+
+export type NinjaVerdict = {
+	readonly ninja: number
+	readonly verdict: Verdict
+	/** When the first of its options was picked, 1, 2, 3 …, or `0` when none was. */
+	readonly picked: number
+}
+
 /** The result of a commit, for the flow that spreads it over the other stores. */
 export type AmbushResult = {
 	readonly at: QuestionRef
 	readonly outcome: Outcome
 	/** The picked options' `source`, in pick order. */
 	readonly picked: readonly number[]
-	/** Ninjas whose options were all picked correctly. */
-	readonly slain: readonly number[]
-	/** Ninjas that were blocked, knocked back and flee. */
-	readonly blocked: readonly number[]
+	/** How the answer handled each ninja, whatever the outcome; a ninja is right only when all its options are. */
+	readonly ninjas: readonly NinjaVerdict[]
 }
 
 export type AmbushActions = {
 	/** Opens an ambush on a question. */
 	start: (opening: AmbushOpening) => void
+	/**
+	 * Opens the next round of the question just answered, in the same attack: the next scroll
+	 * comes after `nextScrollSeconds`, and the time goes on from `secondsLeft`.
+	 */
+	nextRound: (opening: AmbushOpening, secondsLeft: number) => void
 	/**
 	 * Picks the option on `mark`. A swipe is final: picking it again does nothing. `yes-no` and
 	 * `single` hold one pick, so a new pick replaces the old one.
@@ -119,6 +141,9 @@ export const noAmbush: AmbushState = {
 /** The ninja telegraph before the answer scroll unrolls. */
 export const openingSeconds = 2
 
+/** Between the rounds of a question: the answered scroll rolls up to reveal the next one before it can be answered. */
+export const nextScrollSeconds = 0.5
+
 /** Whether the time limit has run out: the ambush ends unanswered. Never with no time limit. */
 export const timeUp = (state: AmbushState) => state.seconds > 0 && state.secondsLeft === 0
 
@@ -137,6 +162,10 @@ export function createAmbush(initial: AmbushState = noAmbush): Ambush {
 
 		start(opening) {
 			store.update(() => ({ ...opening, open: true, openingLeft: openingSeconds, secondsLeft: opening.seconds }))
+		},
+
+		nextRound(opening, secondsLeft) {
+			store.update(() => ({ ...opening, open: true, openingLeft: nextScrollSeconds, secondsLeft }))
 		},
 
 		pick(mark) {
@@ -197,18 +226,22 @@ export function createAmbush(initial: AmbushState = noAmbush): Ambush {
 				return undefined
 			}
 			const correct = !unanswered && state.options.every((option) => right(state.kind, option))
-			// A bundled ninja is slain when one of its options is slashed, and handled right only
-			// when all of them are, which `correct` already covers.
-			const slashed = (ninja: number) => state.options.some((option) => option.ninja === ninja && slashes(state.kind, option))
-			const ninjas = sortDistinct(state.options.map((option) => option.ninja))
+			// A bundled ninja is handled right only when all its options are, and slashed when one of them is.
+			const ninjas = sortDistinct(state.options.map((option) => option.ninja)).map((ninja): NinjaVerdict => {
+				const own = state.options.filter((option) => option.ninja === ninja)
+				const picks = own.flatMap((option) => (option.pick > 0 ? [option.pick] : []))
+				const verdict = !own.every((option) => right(state.kind, option))
+					? 'miss'
+					: own.some((option) => slashes(state.kind, option)) ? 'slash' : 'block'
+				return { ninja, verdict, picked: picks.length === 0 ? 0 : Math.min(...picks) }
+			})
 
 			store.update(() => noAmbush)
 			return {
 				at: state.at,
 				outcome: unanswered ? 'unanswered' : correct ? 'correct' : 'wrong',
 				picked,
-				slain: correct ? ninjas.filter((ninja) => slashed(ninja)) : [],
-				blocked: correct ? ninjas.filter((ninja) => !slashed(ninja)) : [],
+				ninjas,
 			}
 		},
 

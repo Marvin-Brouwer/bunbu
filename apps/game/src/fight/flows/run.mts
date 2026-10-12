@@ -14,20 +14,26 @@ import { settings } from '../../settings/state/settings.mts'
 import type { RunGame } from '../state/game.mts'
 import { highScores } from '../state/highscores.mts'
 import { lastRun } from '../state/lastrun.mts'
-import { runConfig } from '../state/run.mts'
+import { runConfig, stageDistanceOf } from '../state/run.mts'
 import { pointOf, type HighScore } from '../state/score.mts'
 import { stageResults } from '../state/stage-results.mts'
-import { missShare, openAmbush, settleOutcome, tickAmbush } from './ambush.mts'
+import { missShare, openAmbush, tickAmbush, tickOutcome } from './ambush.mts'
 
 /** Metres of path per ambush, until stage length and question count are decided (docs/plan.md). */
 export const metresPerAmbush = 120
 
 /**
- * Where the samurai is when the ambush after `answered` answers springs: one leg of the path per
- * ambush, so the last one is at the end of the stage.
+ * Where the samurai is when the ambush after `asked` questions springs: one leg of the path per
+ * question, so the last one is at the end of the stage. The rounds of a question are one ambush.
  */
-export function ambushAt(answered: number): number {
-	return (answered + 1) * metresPerAmbush
+export function ambushAt(asked: number): number {
+	return (asked + 1) * metresPerAmbush
+}
+
+/** How many questions have been asked to the end. */
+function questionsAsked(game: RunGame): number {
+	const { refs, answered } = game.quiz.value
+	return new Set(refs.slice(0, answered).map((ref) => ref.question)).size
 }
 
 /** `best` defaults to the high score of the quiz, which the HUD shows as the one to beat. */
@@ -38,7 +44,7 @@ export function startRun(game: RunGame, data: BunbuData, best: HighScore | undef
 	game.ambush.value.close()
 	game.ninjas.value.clear()
 	game.shogun.value.run()
-	game.run.value.start(game.quiz.value.refs.length * metresPerAmbush)
+	game.run.value.start(game.quiz.value.order.length * metresPerAmbush)
 }
 
 /**
@@ -85,7 +91,7 @@ export function recordRun(game: RunGame): void {
 	const fallen = game.life.value.empty()
 	lastRun.value.save(quiz.id, quiz.version, game.quiz.value.misses())
 	// The stage can't change during a run: the fight setup is the only place it is chosen.
-	stageResults.value.submit(quiz.id, quiz.version, selection.value.stage, { distance: game.run.value.distance, cleared: !fallen })
+	stageResults.value.submit(quiz.id, quiz.version, selection.value.stage, { distance: stageDistanceOf(game.run.value), cleared: !fallen })
 	const { points, correct, answered } = game.score.value
 	const seconds = game.run.value.elapsed + game.run.value.recovery
 	game.score.value.settle(!fallen && highScores.value.submit(quiz.id, quiz.version, { points, seconds, correct, answered }))
@@ -117,22 +123,23 @@ export function tickRun(game: RunGame, worldDelta: number, realDelta: number): v
 
 	// The run first, so its clock has this frame in it when the last answer comes in.
 	game.run.value.tick(cappedAtAmbush(game, worldDelta), realDelta)
-	if (!counting) tickAmbush(game, realDelta)
+	if (!counting) {
+		tickAmbush(game, realDelta)
+		tickOutcome(game, realDelta)
+	}
 
 	const { phase, recovery, distance, countdown } = game.run.value
 	if (phase !== 'running' || recovery > 0 || countdown > 0) return
 
-	// Once the strike or the hit has played out, the ninjas he faced flee or vanish, and the
-	// samurai is back on his feet, or the run ends after its last answer or a hit too many.
+	// Once the strike or the hit has played out, the samurai is back on his feet, or the run ends after its last answer or a hit too many.
 	if (game.shogun.value.pose !== 'run') {
-		settleOutcome(game)
 		if (runIsOver(game)) {
 			endRun(game)
 			return
 		}
 		game.shogun.value.run()
 	}
-	if (game.quiz.value.current() !== undefined && distance >= ambushAt(game.quiz.value.answered) - reached) {
+	if (game.quiz.value.current() !== undefined && distance >= ambushAt(questionsAsked(game)) - reached) {
 		openAmbush(game, settings.value.timeScale())
 	}
 }
@@ -144,6 +151,6 @@ const reached = 1e-9
 function cappedAtAmbush(game: RunGame, worldDelta: number): number {
 	const { phase, recovery, distance } = game.run.value
 	if (phase !== 'running' || recovery > 0 || game.quiz.value.current() === undefined) return worldDelta
-	const left = Math.max(0, ambushAt(game.quiz.value.answered) - distance)
+	const left = Math.max(0, ambushAt(questionsAsked(game)) - distance)
 	return Math.min(worldDelta, left / runConfig.pace)
 }

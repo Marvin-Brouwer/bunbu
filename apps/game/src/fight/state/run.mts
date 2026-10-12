@@ -22,8 +22,10 @@ export type RunState = {
 	/** Metres covered of `stageLength`. */
 	readonly distance: number
 	readonly stageLength: number
-	/** How fast the world moves: `1` while running, lower in the ambush's slow motion. */
+	/** How fast the world moves: `1` while running, lower and lower in the ambush's slow motion. */
 	readonly worldScale: number
+	/** Real seconds the ambush's slow motion has lasted, pauses left out. */
+	readonly slowedFor: number
 	/** Seconds left of the 3-2-1 countdown after resuming, `0` when not counting down. */
 	readonly countdown: number
 	/** The phase to return to when the pause or the countdown ends. */
@@ -57,13 +59,22 @@ export type Run = Store<RunState & RunActions>
 export const runConfig = {
 	/** Metres per second along the path. */
 	pace: 9,
-	ambushWorldScale: 0.15,
+	/**
+	 * The ambush's slow motion: the world runs at half speed after `halfSpeedAfter` real seconds,
+	 * at a third after twice that, and so on, but never slower than `slowest`.
+	 */
+	slowMotion: { halfSpeedAfter: 0.25, slowest: 0.03 },
 	introSeconds: 1.5,
 	countdownSeconds: 3,
 	/** How long the samurai holds after slaying or blocking. */
 	strikeSeconds: 0.5,
 	/** How long he holds after a hit: the run resumes after about 1 s ([outcome](../../../../../docs/design/gameplay.md#outcome)). */
 	hitSeconds: 1,
+	/**
+	 * How long he holds when the time ran out: the scroll is cut and its halves fall, and the
+	 * slicer charges in and lands the hit while the others flee.
+	 */
+	slicedSeconds: 1.3,
 }
 
 /**
@@ -84,6 +95,7 @@ export const notRunning: RunState = {
 	distance: 0,
 	stageLength: 0,
 	worldScale: 1,
+	slowedFor: 0,
 	countdown: 0,
 	resumeTo: 'running',
 	recovery: 0,
@@ -109,10 +121,28 @@ function recover(state: RunState, realDelta: number): Partial<RunState> {
 	return { elapsed: state.elapsed + realDelta, recovery: Math.max(0, state.recovery - realDelta) }
 }
 
-/** Running covers ground; an ambush only lets time pass. */
+/** Metres covered of the stage: the samurai may run on past its end in the last ambush. */
+export const stageDistanceOf = (state: Pick<RunState, 'distance' | 'stageLength'>): number => Math.min(state.distance, state.stageLength)
+
+/**
+ * How fast the world moves `seconds` into an ambush: slower and slower on a curve, so it slows down
+ * hard at first and then hardly moves.
+ */
+export function slowMotionOf(seconds: number): number {
+	const { halfSpeedAfter, slowest } = runConfig.slowMotion
+	return Math.max(slowest, 1 / (1 + Math.max(0, seconds) / halfSpeedAfter))
+}
+
+/**
+ * Running covers ground up to the end of the stage. In an ambush the samurai runs on in slow
+ * motion, past the end too, for the last question is asked there.
+ */
 function advance(state: RunState, worldDelta: number, realDelta: number): Partial<RunState> {
-	const moved = state.phase === 'running' ? state.distance + runConfig.pace * worldDelta : state.distance
-	return { elapsed: state.elapsed + realDelta, distance: Math.min(moved, state.stageLength) }
+	const elapsed = state.elapsed + realDelta
+	const moved = state.distance + runConfig.pace * worldDelta
+	if (state.phase !== 'ambush') return { elapsed, distance: Math.max(state.distance, Math.min(moved, state.stageLength)) }
+	const slowedFor = state.slowedFor + realDelta
+	return { elapsed, distance: moved, slowedFor, worldScale: slowMotionOf(slowedFor) }
 }
 
 export function createRun(initial: RunState = notRunning): Run {
@@ -143,7 +173,7 @@ export function createRun(initial: RunState = notRunning): Run {
 
 		beginAmbush() {
 			if (!expect('run.beginAmbush', 'running')) return
-			store.update(() => ({ phase: 'ambush', worldScale: runConfig.ambushWorldScale }))
+			store.update(() => ({ phase: 'ambush', worldScale: 1, slowedFor: 0 }))
 		},
 
 		endAmbush(recovery = 0) {
