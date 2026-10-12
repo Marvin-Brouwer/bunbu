@@ -16,7 +16,7 @@ import { generateLargeQuiz, toYamlFile } from "../test/fixtures/generate-large-q
 
 const designDoc = readFileSync(new URL("../../../docs/design/data-format.md", import.meta.url), "utf8");
 const docQuestions = [...designDoc.matchAll(/^(`{3,})yaml\n(- type:[\s\S]*?)^\1$/gm)].map((match) => match[2]!);
-const docYaml = `# yaml-language-server: $schema=https://raw.githubusercontent.com/Marvin-Brouwer/bunbu/main/schema/v1.json
+const docYaml = `# yaml-language-server: $schema=https://marvin-brouwer.github.io/bunbu/schema/v1.json
 id: doc
 title: Doc examples
 version: 1
