@@ -40,6 +40,11 @@
       "minimum": 0,
       "maximum": 100
     },
+    "timePerQuestion": {
+      "description": "How long a question may take in a fight, such as `45s`, `3m`, `1m30s` or `1h`. Without it the game works it out from the length of the question.",
+      "type": "string",
+      "pattern": "^(?=\\d)(?=.*[1-9])(\\d+h)?(\\d+m)?(\\d+s)?$"
+    },
     "pronunciations": {
       "description": "Written term mapped to the text the speech engine should say instead.",
       "type": "object",
