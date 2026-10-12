@@ -151,27 +151,103 @@
 	font-weight: 700;
 }
 
+/*
+ * The slider is drawn in layers, so the marks sit on the rail but under the red fill: the rail,
+ * the marks, the fill up to the thumb, then the input with a clear track and only its thumb.
+ * The thumb travels a thumb's width less than the track, so marks and fill are placed the same way.
+ */
 .difficultyTrack {
+	--thumb: 1.1rem;
 	position: relative;
 	display: grid;
+	align-items: center;
+	height: var(--thumb);
+}
+
+.difficultyRail,
+.difficultyFill {
+	position: absolute;
+	left: 0;
+	height: 0.45rem;
+	border-radius: 999px;
+}
+
+.difficultyRail {
+	right: 0;
+	border: 1px solid var(--ink-soft);
+	background: var(--paper);
+}
+
+.difficultyFill {
+	width: calc(var(--thumb) / 2 + (100% - var(--thumb)) * var(--place));
+	background: var(--vermilion);
+}
+
+/* As tall as the rail, so the fill covers the marks it has passed. */
+.difficultyMark {
+	position: absolute;
+	height: 0.45rem;
+	left: calc(var(--thumb) / 2 + (100% - var(--thumb)) * var(--place));
+	width: 2px;
+	translate: -50% 0;
+	background: var(--ink);
 }
 
 .difficultyTrack input {
 	position: relative;
 	width: 100%;
+	height: var(--thumb);
 	margin: 0;
-	accent-color: var(--vermilion);
+	background: transparent;
+	appearance: none;
+	cursor: pointer;
 }
 
-/* The thumb travels a thumb's width less than the track, so the mark is placed the same way. */
-.difficultyMark {
-	position: absolute;
-	top: -0.2rem;
-	bottom: -0.2rem;
-	left: calc(0.5rem + (100% - 1rem) * var(--place));
-	width: 2px;
-	translate: -50% 0;
-	background: var(--ink);
+.difficultyTrack input::-webkit-slider-runnable-track {
+	background: transparent;
+}
+
+.difficultyTrack input::-moz-range-track {
+	background: transparent;
+}
+
+.difficultyTrack input::-webkit-slider-thumb {
+	width: var(--thumb);
+	height: var(--thumb);
+	border: none;
+	border-radius: 50%;
+	background: var(--vermilion);
+	appearance: none;
+}
+
+.difficultyTrack input::-moz-range-thumb {
+	width: var(--thumb);
+	height: var(--thumb);
+	border: none;
+	border-radius: 50%;
+	background: var(--vermilion);
+}
+
+.difficultyTrack input:focus-visible {
+	outline: 3px solid var(--indigo);
+	outline-offset: 2px;
+	border-radius: 999px;
+}
+
+.difficultyTrack:has(input:disabled) .difficultyFill {
+	background: var(--ink-soft);
+}
+
+.difficultyTrack input:disabled {
+	cursor: default;
+}
+
+.difficultyTrack input:disabled::-webkit-slider-thumb {
+	background: var(--ink-soft);
+}
+
+.difficultyTrack input:disabled::-moz-range-thumb {
+	background: var(--ink-soft);
 }
 
 .difficultyNote {

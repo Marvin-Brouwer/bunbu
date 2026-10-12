@@ -5,8 +5,10 @@
  * On the fight screen and in the settings, both changing the same setting.
  */
 
+import { secondsOf } from '@bunbu/data'
 import { component } from '@rooted/components'
 import { difficulties, settings, timeScales, type Difficulty } from '../../settings/state/settings.mts'
+import { selection } from '../state/selection.mts'
 import styles from './menu.css'
 
 const names: Readonly<Record<Difficulty, string>> = {
@@ -16,11 +18,31 @@ const names: Readonly<Record<Difficulty, string>> = {
 	shogun: 'Shogun',
 }
 
-/** What the slider says about a difficulty: its name and its share of the time. */
-const describe = (difficulty: Difficulty) => `${names[difficulty]}: ${Math.round(timeScales[difficulty] * 100)}% of the time`
+/** A time as the quiz format writes it, with spaces: `45s`, `2m 24s`, `1h 12m`. */
+function durationOf(seconds: number): string {
+	const whole = Math.round(seconds)
+	const parts = [
+		[Math.floor(whole / 3600), 'h'],
+		[Math.floor(whole / 60) % 60, 'm'],
+		[whole % 60, 's'],
+	] as const
+	return parts.filter(([amount]) => amount > 0).map(([amount, unit]) => `${amount}${unit}`).join(' ')
+}
 
-/** Where each stop between the ends sits on the track, from `0` to `1`. */
-const markPlaces = difficulties.slice(1, -1).map((difficulty) => String(difficulties.indexOf(difficulty) / (difficulties.length - 1)))
+/**
+ * What the slider says about a difficulty: its name and the time per question of the chosen quiz,
+ * or its share of the time when the quiz doesn't set one.
+ */
+function describe(difficulty: Difficulty): string {
+	const timePerQuestion = selection.value.quiz?.timePerQuestion
+	const seconds = timePerQuestion === undefined ? undefined : secondsOf(timePerQuestion)
+	const time = seconds === undefined
+		? `${Math.round(timeScales[difficulty] * 100)}% of the time`
+		: `${durationOf(seconds * timeScales[difficulty])} per question`
+	return `${names[difficulty]}: ${time}`
+}
+
+const placeOf = (difficulty: Difficulty) => difficulties.indexOf(difficulty) / (difficulties.length - 1)
 
 export type DifficultySliderOptions = {
 	/** Shows the difficulty without letting it change, as during a run. */
@@ -51,27 +73,42 @@ export const DifficultySlider = component<DifficultySliderOptions>({
 				},
 			},
 		})
+		const fill = element('span', {
+			classes: styles.difficultyFill,
+			aria: {
+				hidden: 'true',
+			},
+		})
 		const show = (difficulty: Difficulty) => {
 			slider.value = String(difficulties.indexOf(difficulty))
+			fill.style.setProperty('--place', String(placeOf(difficulty)))
 			slider.setAttribute('aria-valuetext', describe(difficulty))
 			note.textContent = describe(difficulty)
 		}
 		show(settings.value.difficulty)
 
-		const marks = markPlaces.map((place) => {
+		// The stops between the ends, on the rail and under the red fill.
+		const marks = difficulties.slice(1, -1).map((difficulty) => {
 			const mark = element('span', {
 				classes: styles.difficultyMark,
 				aria: {
 					hidden: 'true',
 				},
 			})
-			mark.style.setProperty('--place', place)
+			mark.style.setProperty('--place', String(placeOf(difficulty)))
 			return mark
 		})
 		const track = element('div', {
 			classes: styles.difficultyTrack,
 			children: [
+				element('span', {
+					classes: styles.difficultyRail,
+					aria: {
+						hidden: 'true',
+					},
+				}),
 				...marks,
+				fill,
 				slider,
 			],
 		})

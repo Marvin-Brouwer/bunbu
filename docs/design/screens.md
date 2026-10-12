@@ -43,7 +43,7 @@ A screen of its own, so the title stays calm:
 1. **Quiz:** the chosen quiz, and which of its questions won't fit in a fight.
 2. **Stage:** Rice fields, Bamboo forest, Mountain temple, Castle town, Edo castle. Each shows its best distance and whether it was cleared.
 
-A difficulty slider from **Apprentice** to **Shogun** over four stops (Apprentice, Samurai, Daimyo, Shogun), the inner two marked (sets `timeScale`, see [time limit](gameplay.md#time-limit)), and **Start run**.
+A difficulty slider from **Apprentice** to **Shogun** over four stops (Apprentice, Samurai, Daimyo, Shogun), the inner two marked (sets `timeScale`, see [time limit](gameplay.md#time-limit)). Under it, the stop and the time it gives: `Daimyo: 2m 24s per question` when the quiz sets `timePerQuestion`, otherwise `Daimyo: 80% of the time`. Then **Start run**.
 
 ### 3 Running
 
