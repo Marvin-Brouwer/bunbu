@@ -63,8 +63,8 @@
 
 .cardActions {
 	display: flex;
-	gap: 0.4rem;
-	padding: 0.45rem 0.45rem 0.45rem 0;
+	gap: 0.9rem;
+	padding: 0.6rem 0.75rem 0.6rem 0;
 }
 
 /* Download and Remove: square and big enough to hit with a thumb, red like Share on the title. */
@@ -72,16 +72,16 @@
 	display: grid;
 	place-items: center;
 	align-content: center;
-	gap: 0.2rem;
-	width: 3.9rem;
-	height: 3.9rem;
+	gap: 0.1rem;
+	width: 3.1rem;
+	height: 3.1rem;
 	padding: 0;
 	border: 2px solid var(--vermilion);
 	border-radius: var(--radius);
 	background: var(--vermilion);
 	color: var(--paper-light);
 	font: inherit;
-	font-size: 0.65rem;
+	font-size: 0.55rem;
 	font-weight: 700;
 	cursor: pointer;
 }
@@ -93,8 +93,8 @@
 
 /* The icons are masks, so they take the button's text colour. */
 .cardIcon {
-	width: 1.4rem;
-	height: 1.4rem;
+	width: 1.15rem;
+	height: 1.15rem;
 	background: currentcolor;
 	mask: var(--icon) center / contain no-repeat;
 }
