@@ -88,8 +88,12 @@ export function openingOf(quiz: BunbuData, refs: readonly QuestionRef[], at: Que
 	const order = kind === 'yes-no' ? sources : withoutExtraDistractors(shuffle(sources, settings.random), correct)
 	if (kind === 'order') startOutOfOrder(order, correct)
 
+	const ownRefs = refs.filter((ref) => ref.question === at.question)
+	const round = Math.max(1, ownRefs.findIndex((ref) => ref.part === at.part) + 1)
+
 	const marks = kind === 'yes-no' ? [yesNoMarks.yes, yesNoMarks.no] : markSets[order.length] ?? []
-	const ninjas = kind === 'yes-no' ? [0, 0] : ninjasFor(order.length, settings.random)
+	// A `yes-no` round is one ninja, carrying both answers: the solutions of a `solutions` question each have their own.
+	const ninjas = kind === 'yes-no' ? [round - 1, round - 1] : ninjasFor(order.length, settings.random)
 	const options = order.map((source, place): AmbushOption => ({
 		answer: choices[source]!.answer,
 		correct: correct[source]!,
@@ -100,7 +104,6 @@ export function openingOf(quiz: BunbuData, refs: readonly QuestionRef[], at: Que
 		rank: kind === 'order' ? rankIn(correct, source) : 0,
 	}))
 	const query = queryOf(question, at.part)
-	const ownRefs = refs.filter((ref) => ref.question === at.question)
 	const rounds = Math.max(1, ownRefs.length)
 
 	return {
@@ -110,7 +113,7 @@ export function openingOf(quiz: BunbuData, refs: readonly QuestionRef[], at: Que
 		options,
 		choose: kind === 'multiple' || kind === 'order' ? correct.filter(Boolean).length : 1,
 		seconds: questionSeconds(quiz, question, ownRefs.length === 0 ? [at] : ownRefs, settings.timeScale),
-		round: Math.max(1, ownRefs.findIndex((ref) => ref.part === at.part) + 1),
+		round,
 		rounds,
 	}
 }

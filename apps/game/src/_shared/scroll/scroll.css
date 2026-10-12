@@ -10,6 +10,8 @@
 .scroll {
 	/* How far each scroll in a stack shows below the one above it. */
 	--stack-step: 0.7rem;
+	/* What the stack under the scroll takes off its height; a sheet outside an ambush has none. */
+	--stack-height: calc(var(--scroll-stack, 0) * var(--stack-step));
 	position: relative;
 	isolation: isolate;
 	color: var(--ink);
@@ -28,12 +30,12 @@
 	/* Keeps the rods against the sheet while it grows, instead of sharing out the space left. */
 	align-content: start;
 	/* `--scroll-reserve` is room a mode keeps free above or below the scroll, like the run's ambush room. */
-	max-height: calc(100dvh - 4rem - var(--scroll-reserve, 0px) - var(--scroll-stack, 0) * var(--stack-step));
+	max-height: calc(100dvh - 4rem - var(--scroll-reserve, 0px) - var(--stack-height, 0px));
 	filter: drop-shadow(var(--shadow));
 }
 
 .paper[data-fill='true'] {
-	height: calc(100dvh - 4rem - var(--scroll-reserve, 0px) - var(--scroll-stack, 0) * var(--stack-step));
+	height: calc(100dvh - 4rem - var(--scroll-reserve, 0px) - var(--stack-height, 0px));
 }
 
 .rod {

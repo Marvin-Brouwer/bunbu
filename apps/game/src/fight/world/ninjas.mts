@@ -11,7 +11,7 @@
  */
 
 import type { Group } from 'three'
-import type { AmbushOption, Mark } from '../../_shared/state/ambush.mts'
+import type { AmbushKind, AmbushOption, Mark } from '../../_shared/state/ambush.mts'
 import { marks } from '../../_shared/state/ambush.mts'
 import { chargeOrder, type Ninja, type NinjaPose } from '../state/ninjas.mts'
 import type { Body } from '../../_shared/world/character.mts'
@@ -93,10 +93,21 @@ type Shown = {
 /** Poses after the fight: the ninja stays on the path where it was beaten, and the run passes it by. */
 const beaten = new Set<Ninja['pose']>(['slain', 'blocked', 'fleeing'])
 
-/** The mark a ninja comes from: its first option's, or `undefined` once the ambush's options are gone. */
-export function markOf(ninja: Ninja, options: readonly AmbushOption[]): Mark | undefined {
+/**
+ * Where the ninjas of a `yes-no` attack come from, by id. Its marks say yes or no, not where a
+ * ninja is, so the ninja of each solution of a `solutions` question has its own spot.
+ */
+const yesNoSpots: readonly Mark[] = ['up', 'up-left', 'up-right', 'left', 'right']
+const yesNoSpotOf = (id: number): Mark => yesNoSpots[id % yesNoSpots.length] ?? 'up'
+
+/**
+ * The mark a ninja comes from: its first option's, or `undefined` once the ambush's options are
+ * gone. In a `yes-no` attack, its spot by id.
+ */
+export function markOf(ninja: Ninja, options: readonly AmbushOption[], kind: AmbushKind): Mark | undefined {
 	const first = ninja.options[0]
-	return first === undefined ? undefined : options[first]?.mark
+	if (first === undefined || options[first] === undefined) return undefined
+	return kind === 'yes-no' ? yesNoSpotOf(ninja.id) : options[first].mark
 }
 
 /** A mark for a ninja that never had options to go by, spread out by its id. */
@@ -175,7 +186,7 @@ export type NinjasView = {
 	 * where the samurai is and the way ahead, and the seconds until the time runs out (`undefined`
 	 * without a time limit).
 	 */
-	draw: (active: readonly Ninja[], options: readonly AmbushOption[], frame: ViewFrame, delta: number, worldDelta: number, secondsLeft: number | undefined) => void
+	draw: (active: readonly Ninja[], options: readonly AmbushOption[], kind: AmbushKind, frame: ViewFrame, delta: number, worldDelta: number, secondsLeft: number | undefined) => void
 	/** Swaps every figure's body for one made by `make`, for when the real model has loaded. */
 	remake: (make: () => Body) => void
 	/** The mark the ninja with `id` was last drawn at, for the samurai to turn toward. */
@@ -201,7 +212,7 @@ export function createNinjasView(parent: Group, make: () => Body): NinjasView {
 	}
 
 	return {
-		draw(active, options, frame, delta, worldDelta, secondsLeft) {
+		draw(active, options, kind, frame, delta, worldDelta, secondsLeft) {
 			cycle += worldDelta * creepCycle
 			const charging = chargeOrder(active).map((ninja) => ninja.id)
 
@@ -211,7 +222,7 @@ export function createNinjasView(parent: Group, make: () => Body): NinjasView {
 					entry = {
 						body: maker(),
 						pose: ninja.pose,
-						mark: markById(ninja.id),
+						mark: kind === 'yes-no' ? yesNoSpotOf(ninja.id) : markById(ninja.id),
 						sequence: ninja.sequence,
 						time: 0,
 						approach: ninja.approach,
@@ -243,7 +254,7 @@ export function createNinjasView(parent: Group, make: () => Body): NinjasView {
 				}
 				entry.pose = ninja.pose
 
-				entry.mark = markOf(ninja, options) ?? entry.mark
+				entry.mark = markOf(ninja, options, kind) ?? entry.mark
 				// They keep their distance while the time runs, and charge in from there.
 				const crept = entry.approach * creepReach
 				const motion = motionOf(ninja.pose, ninja.slicer, crept, entry.time)

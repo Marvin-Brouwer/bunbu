@@ -14,7 +14,7 @@ import type { AmbushOption, Verdict } from '../../_shared/state/ambush.mts'
 import type { QuestionRef, QuizActions, QuizState } from '../../_shared/state/quiz.mts'
 import type { RunGame } from '../state/game.mts'
 import { shareOfOnePoint } from '../state/life.mts'
-import { outcomeOrder, spawnsOf } from '../state/ninjas.mts'
+import { attackSpawnsOf, outcomeOrder } from '../state/ninjas.mts'
 import { runConfig } from '../state/run.mts'
 import { moveSeconds, type Move } from '../state/shogun.mts'
 import { pointsIn } from '../state/score.mts'
@@ -44,7 +44,7 @@ export function openAmbush(game: RunGame, timeScale: number | undefined, random:
 	if (quiz === undefined) return
 	const opening = openingOf(quiz, refs, at, { timeScale, random })
 	game.ninjas.value.clear()
-	game.ninjas.value.spawn(spawnsOf(opening.options, random))
+	game.ninjas.value.spawn(attackSpawnsOf(opening, random))
 	game.ambush.value.start(opening)
 }
 
@@ -132,7 +132,7 @@ function openNextRound(game: RunGame, at: QuestionRef, time: { seconds: number; 
 	if (quiz === undefined) return
 	// The time limit is the question's, so it is the same for every round.
 	const opening = { ...inPlacesOf(openingOf(quiz, refs, at, { timeScale: undefined, random }), before), seconds: time.seconds }
-	game.ninjas.value.regroup(spawnsOf(opening.options, random))
+	game.ninjas.value.regroup(attackSpawnsOf(opening, random))
 	game.ambush.value.nextRound(opening, time.secondsLeft)
 }
 

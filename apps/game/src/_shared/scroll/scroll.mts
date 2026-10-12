@@ -125,10 +125,24 @@ export const Scroll = component<ScrollOptions>({
 			setStage('unroll')
 		}
 
+		// A still copy of the scroll as it was, for the answered scroll rolling up and the halves of
+		// a sliced one. Rooted components can't be cloned, so it is made anew.
+		const stillPaperOf = (state: AmbushState) => create(ScrollPaper, {
+			state,
+			heading: heading(state),
+			drawer: create(AnswerDrawer, {
+				drawn,
+				still: true,
+				children: create(AnswerSheet, {
+					state,
+				}),
+			}),
+		})
+
 		// The next round: the answered scroll, a still copy of it, rolls up and reveals the next
 		// one, which was under it.
-		const reveal = (state: AmbushState) => {
-			const answered = scroll.firstElementChild?.cloneNode(true)
+		const reveal = (previous: AmbushState, state: AmbushState) => {
+			const copy = stillPaperOf(previous)
 			drawn = false
 			scroll.replaceChildren(
 				paperOf(state),
@@ -138,7 +152,7 @@ export const Scroll = component<ScrollOptions>({
 					aria: {
 						hidden: 'true',
 					},
-					children: answered,
+					children: copy,
 				})
 			)
 			setStage('reveal')
@@ -153,17 +167,7 @@ export const Scroll = component<ScrollOptions>({
 					styles.half,
 					side,
 				],
-				children: create(ScrollPaper, {
-					state,
-					heading: heading(state),
-					drawer: create(AnswerDrawer, {
-						drawn,
-						still: true,
-						children: create(AnswerSheet, {
-							state,
-						}),
-					}),
-				}),
+				children: stillPaperOf(state),
 			})
 			scroll.replaceChildren(
 				half(styles.upper),
@@ -176,6 +180,8 @@ export const Scroll = component<ScrollOptions>({
 		}
 
 		let shown: AmbushState = noAmbush
+		// The last ambush that was open, as it was answered: answering closes it before the next round opens.
+		let lastOpen: AmbushState = noAmbush
 		// A new scroll that has not unrolled yet.
 		let due = false
 		const follow = (next: AmbushState) => {
@@ -187,7 +193,7 @@ export const Scroll = component<ScrollOptions>({
 			// starts it rolling up, and the next round opens it again in the same breath.
 			if (due && next.round > 1 && stage !== 'hidden' && stage !== 'slice') {
 				due = false
-				reveal(next)
+				reveal(lastOpen, next)
 			}
 			else if (due && (next.openingLeft === 0 || (next.round === 1 && stage === 'hidden'))) {
 				due = false
@@ -203,6 +209,7 @@ export const Scroll = component<ScrollOptions>({
 				setStage('roll-up')
 			}
 			shown = next
+			if (next.open) lastOpen = next
 		}
 
 		follow(ambush.value)

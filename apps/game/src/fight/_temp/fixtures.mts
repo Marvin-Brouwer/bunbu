@@ -12,7 +12,7 @@ import type { BunbuData, Markdown } from '@bunbu/data'
 import { openingOf } from '../../_shared/state/ambush-opening.mts'
 import { loaded, type AnswerRecord } from '../../_shared/state/quiz.mts'
 import { newRun, type RunGameState } from '../state/game.mts'
-import { noNinjas, spawnsOf, type Ninja } from '../state/ninjas.mts'
+import { attackSpawnsOf, noNinjas, type Ninja } from '../state/ninjas.mts'
 import { quarterMarks, runConfig } from '../state/run.mts'
 import { standing } from '../state/shogun.mts'
 import { pointsPerCorrect } from '../state/score.mts'
@@ -65,8 +65,8 @@ const longQuiz: BunbuData = {
 		),
 }
 
-/** The fixture quiz with a three-row `match` question after the others, for the stack of scrolls. */
-const matchQuiz: BunbuData = {
+/** The fixture quiz with a three-row `match` and a three-solution `solutions` question after the others, for the stack of scrolls. */
+const roundsQuiz: BunbuData = {
 	...fixtureQuiz,
 	questions: [
 		...fixtureQuiz.questions,
@@ -79,6 +79,16 @@ const matchQuiz: BunbuData = {
 				{ text: '`404`' as Markdown, answer: 'Resource not found' as Markdown },
 			],
 			distractors: ['Access denied' as Markdown],
+		},
+		{
+			type: 'solutions',
+			scenario: 'Every request to a weather API needs a secret key, which must never reach the browser.' as Markdown,
+			query: 'Does this solution meet the goal?' as Markdown,
+			options: [
+				{ correct: false, answer: 'Inject the key at build time.' as Markdown },
+				{ correct: true, answer: 'Call the API through a backend endpoint.' as Markdown },
+				{ correct: false, answer: 'Store the key in `localStorage`.' as Markdown },
+			],
 		},
 	],
 }
@@ -125,9 +135,10 @@ function midRun(answered: number, data = fixtureQuiz): RunGameState {
 /** An open ambush on `question`, opened by the real rules (with a fixed shuffle), its ninjas creeping in. */
 function ambush(question: number, data = fixtureQuiz): RunGameState {
 	const at = { question, part: 0 }
-	const state = midRun(question, data)
+	// The questions before it, or the rounds of them, are behind the samurai.
+	const state = midRun(loaded(data).refs.findIndex((ref) => ref.question === question), data)
 	const opening = openingOf(data, state.quiz.refs, at, { timeScale: 1, random: seeded(question) })
-	const ninjas: Ninja[] = spawnsOf(opening.options).map((ninja) => ({
+	const ninjas: Ninja[] = attackSpawnsOf(opening).map((ninja) => ({
 		...ninja,
 		approach: 0.4,
 		pose: 'approach',
@@ -166,7 +177,8 @@ export const fixtures: Readonly<Record<string, () => Fixture>> = {
 	'ambush-marked': () => picking(ambush(2), [0]),
 	'ambush-order-picked': () => picking(ambush(3), [2, 0]),
 	'ambush-long': () => ambush(1, longQuiz),
-	'ambush-match': () => ambush(fixtureQuiz.questions.length, matchQuiz),
+	'ambush-match': () => ambush(fixtureQuiz.questions.length, roundsQuiz),
+	'ambush-solutions': () => ambush(fixtureQuiz.questions.length + 1, roundsQuiz),
 	'outcome-correct': () => {
 		const state = single()
 		const slain = state.ambush.options.find((option) => option.correct)?.ninja ?? 0

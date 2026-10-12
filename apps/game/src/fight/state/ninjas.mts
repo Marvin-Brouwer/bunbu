@@ -6,7 +6,7 @@
 
 import { createStore, type Store } from '@rooted/store'
 import { frontRow } from '../../_shared/state/ambush-opening.mts'
-import type { NinjaVerdict, Verdict } from '../../_shared/state/ambush.mts'
+import type { AmbushOpening, NinjaVerdict, Verdict } from '../../_shared/state/ambush.mts'
 import { sortDistinct } from '../../_shared/state/arrays.mts'
 import { shuffle, type Random } from '../../_shared/state/random.mts'
 import { refuse } from '../../_shared/state/store.mts'
@@ -47,11 +47,12 @@ export type Ninja = {
 export type NinjaSpawn = Pick<Ninja, 'id' | 'wave' | 'options' | 'chargeAs'>
 
 /**
- * The ninjas carrying an ambush's options, one per distinct `ninja`: the first 3 in front, the
- * rest behind. They wind up in a random order, or in the order of their ids without a `random`.
+ * The ninjas carrying an ambush's options, one per distinct `ninja`, and at least `count` of them
+ * (ids `0` up), for ninjas in the attack that carry nothing in this round: the first 3 in front,
+ * the rest behind. They wind up in a random order, or in the order of their ids without a `random`.
  */
-export function spawnsOf(options: readonly { readonly ninja: number }[], random?: Random): NinjaSpawn[] {
-	const ids = sortDistinct(options.map((option) => option.ninja))
+export function spawnsOf(options: readonly { readonly ninja: number }[], random?: Random, count = 0): NinjaSpawn[] {
+	const ids = sortDistinct([...options.map((option) => option.ninja), ...Array.from({ length: count }, (_, id) => id)])
 	const turns = random === undefined ? ids.map((_, turn) => turn) : shuffle(ids.map((_, turn) => turn), random)
 	return ids.map((id, index) => ({
 		id,
@@ -60,6 +61,13 @@ export function spawnsOf(options: readonly { readonly ninja: number }[], random?
 		chargeAs: turns[index] ?? index,
 	}))
 }
+
+/**
+ * The ninjas of an attack: those carrying the options of the round, and for a `solutions`
+ * question (its rounds are `yes-no`) one per solution, all of them from the first round on.
+ */
+export const attackSpawnsOf = (opening: Pick<AmbushOpening, 'kind' | 'options' | 'rounds'>, random?: Random) =>
+	spawnsOf(opening.options, random, opening.kind === 'yes-no' ? opening.rounds : 0)
 
 /** The ninjas in the order they wind up when the time runs out; the first slices through the scroll. */
 export function chargeOrder(active: readonly Ninja[]): Ninja[] {

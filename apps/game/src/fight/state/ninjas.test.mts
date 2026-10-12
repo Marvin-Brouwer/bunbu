@@ -3,7 +3,7 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { chargeOrder, createNinjas, outcomeOrder, spawnsOf } from './ninjas.mts'
+import { attackSpawnsOf, chargeOrder, createNinjas, outcomeOrder, spawnsOf } from './ninjas.mts'
 import { seeded } from '../../_temp/random.mts'
 
 const three = () => {
@@ -58,5 +58,11 @@ describe('when the time runs out', () => {
 		expect(spawnsOf(options).map((ninja) => ninja.chargeAs)).toEqual([0, 1, 2, 3])
 		const turns = spawnsOf(options, seeded(4)).map((ninja) => ninja.chargeAs)
 		expect(turns.toSorted((first, second) => first - second)).toEqual([0, 1, 2, 3])
+	})
+
+	it('has a ninja per solution of a `solutions` question from the first round, the round\'s own carrying its answers', () => {
+		const option = (mark: 'up' | 'down') => ({ answer: '', correct: mark === 'up', mark, ninja: 1, pick: 0, source: 0, rank: 0 })
+		const spawns = attackSpawnsOf({ kind: 'yes-no', options: [option('up'), option('down')], rounds: 3 })
+		expect(spawns.map(({ id, options }) => [id, options])).toEqual([[0, []], [1, [0, 1]], [2, []]])
 	})
 })
