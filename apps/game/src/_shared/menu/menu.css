@@ -183,10 +183,11 @@
 	background: var(--vermilion);
 }
 
-/* As tall as the rail, so the fill covers the marks it has passed. */
+/* Taller than the rail, so a mark the fill covers still shows above and below it. */
 .difficultyMark {
 	position: absolute;
-	height: 0.45rem;
+	top: 0;
+	bottom: 0;
 	left: calc(var(--thumb) / 2 + (100% - var(--thumb)) * var(--place));
 	width: 2px;
 	translate: -50% 0;

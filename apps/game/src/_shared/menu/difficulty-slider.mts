@@ -30,16 +30,14 @@ function durationOf(seconds: number): string {
 }
 
 /**
- * What the slider says about a difficulty: its name and the time per question of the chosen quiz,
- * or its share of the time when the quiz doesn't set one.
+ * What the slider says about a difficulty: its name, and the time per question when the chosen
+ * quiz sets one.
  */
 function describe(difficulty: Difficulty): string {
 	const timePerQuestion = selection.value.quiz?.timePerQuestion
 	const seconds = timePerQuestion === undefined ? undefined : secondsOf(timePerQuestion)
-	const time = seconds === undefined
-		? `${Math.round(timeScales[difficulty] * 100)}% of the time`
-		: `${durationOf(seconds * timeScales[difficulty])} per question`
-	return `${names[difficulty]}: ${time}`
+	if (seconds === undefined) return names[difficulty]
+	return `${names[difficulty]}: ${durationOf(seconds * timeScales[difficulty])} per question`
 }
 
 const placeOf = (difficulty: Difficulty) => difficulties.indexOf(difficulty) / (difficulties.length - 1)
