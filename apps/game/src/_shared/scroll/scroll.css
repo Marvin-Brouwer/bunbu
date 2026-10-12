@@ -24,12 +24,13 @@
 	grid-template-rows: auto 1fr auto;
 	/* Keeps the rods against the sheet while it grows, instead of sharing out the space left. */
 	align-content: start;
-	max-height: calc(100dvh - 4rem);
+	/* `--scroll-reserve` is room a mode keeps free above or below the scroll, like the run's ambush room. */
+	max-height: calc(100dvh - 4rem - var(--scroll-reserve, 0px));
 	filter: drop-shadow(var(--shadow));
 }
 
 .paper[data-fill='true'] {
-	height: calc(100dvh - 4rem);
+	height: calc(100dvh - 4rem - var(--scroll-reserve, 0px));
 }
 
 .rod {
