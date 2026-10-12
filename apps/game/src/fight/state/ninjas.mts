@@ -80,8 +80,8 @@ export type NinjasActions = {
 	judge: (verdicts: readonly NinjaVerdict[]) => void
 	strike: (id: number) => void
 	/**
-	 * The time ran out: the first ninja in front slices through the scroll and lands the hit, and
-	 * the others flee ([unanswered](../../../../../docs/design/gameplay.md#outcome)).
+	 * The time ran out: the first ninja in front slices through the scroll, then every one of them
+	 * strikes ([unanswered](../../../../../docs/design/gameplay.md#outcome)).
 	 */
 	strikeUnanswered: () => void
 	slay: (id: number) => void

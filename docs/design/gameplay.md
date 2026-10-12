@@ -57,7 +57,7 @@ Every ninja gets its own verdict from what was answered: **slain** when its opti
 
 - **Correct:** every ninja is slain or blocked. `+100` pops up (see [score](#score)). The run resumes once the last one is dealt with.
 - **Wrong:** only the ninjas handled wrong strike, with a katana slice and blood spray, and vanish; the others are still slain or blocked. However many strike, it is one miss: the lost chunk flashes and drops off the life bar, with a haptic buzz (haptics can be turned off in the settings). No answer is shown and nothing needs tapping. The miss is saved for the review at the end.
-- **Unanswered:** time ran out. The front ninja slices through the scroll and then lands the hit, while the others flee. It counts as one hit (one per round left, for the rounds of a `match` or `solutions`). Costs the same as a wrong answer. Half-swiped answers do not count. Saved for the review as "unanswered".
+- **Unanswered:** time ran out. The front ninja slices through the scroll, then all of them hit, which counts as one hit (one per round left, for the rounds of a `match` or `solutions`). Costs the same as a wrong answer. Half-swiped answers do not count. Saved for the review as "unanswered".
 
 ### More than 3 options
 

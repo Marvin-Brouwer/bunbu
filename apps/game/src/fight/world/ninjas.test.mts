@@ -24,17 +24,17 @@ describe('a ninja in the outcome', () => {
 		expect(motionOf('fleeing', undefined, 0.2, 0.5).approach).toBe(1)
 	})
 
-	it('cuts through the scroll from where it stands, then charges in alone to land the hit', () => {
+	it('cuts through the scroll from where it stands, then charges in with the others', () => {
 		expect(motionOf('strike', true, 0.5, 0.1)).toEqual({ approach: 0.5, pose: 'strike', time: 0.1, hop: 0 })
-		expect(motionOf('strike', true, 0.5, 0.75).approach).toBeGreaterThan(0.5)
+		expect(motionOf('strike', true, 0.5, 0.75)).toEqual(motionOf('strike', false, 0.5, 0.75))
 		expect(motionOf('strike', true, 0.5, 2).approach).toBe(1)
 	})
 
-	it('winds up while the halves of the scroll fall, then flees from where it stands while the slicer strikes', () => {
+	it('winds up while the halves of the scroll fall, before the others charge in', () => {
 		const waiting = motionOf('strike', false, 0.5, 0.3)
 		expect(waiting).toMatchObject({ approach: 0.5, pose: 'strike', hop: 0 })
 		expect(motionOf('strike', false, 0.5, 0.5)).toEqual(waiting)
-		expect(motionOf('strike', false, 0.5, 0.75)).toEqual({ approach: 0.5, pose: 'fleeing', time: expect.closeTo(0.1) as number, hop: 0 })
+		expect(motionOf('strike', false, 0.5, 0.75).approach).toBeGreaterThan(0.5)
 	})
 })
 
