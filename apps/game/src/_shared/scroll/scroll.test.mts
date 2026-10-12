@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { noAmbush, type AmbushOption, type AmbushState } from '../state/ambush.mts'
+import { cutOf } from './cut.mts'
 import { headingOf } from './heading.mts'
 import { scrollChangeOf } from './scroll-change.mts'
 
@@ -84,5 +85,24 @@ describe('scrollChangeOf', () => {
 
 	it('does nothing while no ambush is open', () => {
 		expect(scrollChangeOf(noAmbush, noAmbush)).toBe('none')
+	})
+})
+
+describe('cutOf', () => {
+	it('cuts level along a sideways swipe', () => {
+		expect(cutOf('left')).toEqual({ left: 50, right: 50 })
+		expect(cutOf('right')).toEqual({ left: 50, right: 50 })
+	})
+
+	it('leans the cut with a slanted swipe', () => {
+		expect(cutOf('up-right')).toEqual({ left: 64, right: 36 })
+		expect(cutOf('down-left')).toEqual({ left: 64, right: 36 })
+		expect(cutOf('up-left')).toEqual({ left: 36, right: 64 })
+		expect(cutOf('down-right')).toEqual({ left: 36, right: 64 })
+	})
+
+	it('cuts a little off level for an up or down swipe', () => {
+		expect(cutOf('up')).toEqual({ left: 56, right: 44 })
+		expect(cutOf('down')).toEqual({ left: 56, right: 44 })
 	})
 })

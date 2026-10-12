@@ -33,7 +33,7 @@ From back to front:
 | Backdrop (opt.) | CSS background behind the canvas, such as an ink-wash sky                 | none                                     |
 | World canvas    | three.js: stage, props, shogun, ninjas, effects                           | none (`pointer-events: none`)            |
 | HUD             | Life bar, score, pause button                                             | pause button only                        |
-| Scroll          | Papyrus scroll with query, code and options; its footer is the swipe zone | scrolls its own text; swipes in the zone |
+| Scroll          | Papyrus scroll with query and code; the answer drawer at its foot holds the options, on the swipe zone | scrolls its own text; the seal draws the answers; swipes on them |
 | Overlays        | Pause menu, results, fallen screen, settings                              | full                                     |
 
 All layers are siblings in one fixed, full-viewport container, stacked with `z-index`. The canvas fills the container and resizes with it.

@@ -1,17 +1,12 @@
 /*
- * The swipe zone (docs/design/screens.md#4-ambush): the footer of the scroll, under its text. A
- * line on how to answer, the marks swiped so far, and a ruled paper-cutting target, as in kumdo
- * (종이베기), to swipe across.
+ * The swipe zone and its answers (docs/design/screens.md#4-ambush): the paper of the answer drawer.
+ * A line on how to answer, then the answers, one per line; the finger leaves a faint trace.
  */
-
-.swipe {
-	display: grid;
-	gap: 0.5rem;
-}
 
 .zone {
 	position: relative;
-	display: grid;
+	/* Swipes count anywhere on the drawn paper, also under the last answer. */
+	min-height: 100%;
 	/*
 	 * Every gesture here is a swipe: no browser panning, zooming, pull-to-refresh or overscroll
 	 * glow, no text selection and no long-press menu.
@@ -23,60 +18,28 @@
 	-webkit-touch-callout: none;
 }
 
-/* Once the ambush is answered the paper stays while the scroll rolls up, but no longer takes swipes. */
+/* Once the ambush is answered the answers stay while the scroll rolls up, but no longer take swipes. */
 .zone[data-open='false'] {
 	pointer-events: none;
 }
 
-/* The scroll's own paper, edge to edge: grey strips along the top and bottom, ruled in between. */
-.target {
-	grid-area: 1 / 1;
-	display: grid;
-	grid-template-rows: 0.9rem 1fr 0.9rem;
-	height: 13rem;
-}
-
-.edge {
-	background: var(--target-edge);
-}
-
-.field {
-	position: relative;
-	background: repeating-linear-gradient(to bottom, transparent 0 0.6rem, var(--paper-edge) 0.6rem calc(0.6rem + 1px));
-}
-
-/* The thick black bar across the middle, with the ring a cut aims for. */
-.band {
-	position: absolute;
-	inset: 50% 0 auto;
-	height: 0.55rem;
-	translate: 0 -50%;
-	background: var(--ink);
-}
-
-.ring {
-	position: absolute;
-	top: 50%;
-	left: 50%;
-	width: 2rem;
-	height: 2rem;
-	translate: -50% -50%;
-	box-sizing: border-box;
-	border: 0.25rem solid var(--ink);
-	border-radius: 50%;
-	background: var(--paper);
-}
-
 .hint {
 	margin: 0;
-	padding-inline: 1rem;
+	padding: 0.6rem 1rem 0.2rem;
 	color: var(--ink-faint);
 	font-family: var(--font-brush);
-	font-size: 0.85rem;
+	font-size: 0.9rem;
 	line-height: 1.2;
 }
 
-/* The pointer's trace, and the red cut of each pick, drawn over the paper. */
+.answers {
+	display: grid;
+	margin: 0;
+	padding: 0 1rem 1rem;
+	list-style: none;
+}
+
+/* The pointer's trace, drawn over the answers. */
 
 .overlay {
 	/* Out of the flow: an SVG sized by the grid would take its default 150 px height. */
@@ -95,62 +58,4 @@
 	stroke-linecap: round;
 	stroke-linejoin: round;
 	opacity: 0.6;
-}
-
-.slash {
-	stroke: var(--vermilion);
-	stroke-width: 5;
-	stroke-linecap: round;
-	stroke-dasharray: 1;
-	animation: draw-slash 140ms ease-out both;
-	transition: opacity 400ms;
-}
-
-/* Only the last cut matters. */
-.slash[data-faded='true'] {
-	opacity: 0;
-}
-
-@keyframes draw-slash {
-	from {
-		stroke-dashoffset: 1;
-	}
-
-	to {
-		stroke-dashoffset: 0;
-	}
-}
-
-@media (prefers-reduced-motion: reduce) {
-	.slash {
-		animation: none;
-	}
-}
-
-/* The marks swiped so far, in swipe order. Keeps its height while empty, so the paper never moves. */
-
-.choices {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 0.25rem;
-	min-height: 1.25rem;
-	margin: 0;
-	padding: 0 1rem;
-	list-style: none;
-}
-
-.choice[hidden] {
-	display: none;
-}
-
-.choice {
-	display: grid;
-	place-items: center;
-	width: 1.25rem;
-	height: 1.25rem;
-	border-radius: var(--radius);
-	background: var(--vermilion);
-	color: var(--paper);
-	font-size: 0.8rem;
-	line-height: 1;
 }
