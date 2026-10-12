@@ -187,4 +187,18 @@ describe('tickRun', () => {
 		expect(game.life.value.value).toBeCloseTo(1 - missShare(game))
 		expect(game.score.value.points).toBe(0)
 	})
+
+	it('has the first ninja in front slice the scroll when the time runs out, and all of them strike', () => {
+		openSingle()
+		tickReal(12)
+
+		expect(game.ninjas.value.active.map((ninja) => [ninja.pose, ninja.slicer])).toEqual([['strike', true], ['strike', false]])
+	})
+
+	it('has no slicer on a wrong answer', () => {
+		openSingle()
+		answer(1)
+
+		expect(game.ninjas.value.active.every((ninja) => ninja.slicer !== true)).toBe(true)
+	})
 })

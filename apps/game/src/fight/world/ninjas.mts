@@ -33,6 +33,11 @@ const entranceScale = 0.15
 /** The scroll needs to finish rolling away before a striking ninja enters the hit animation. */
 const strikeDelaySeconds = 0.65
 
+/** World seconds the slicer takes to leap in front of the samurai, as long as the scroll's cut. */
+const slicerLeapSeconds = 0.2
+/** Where the slicer lands straight ahead: as far out as they start, so they stand mid screen while the halves fall. */
+const slicerApproach = 0
+
 /** Radians of the running cycle per world second while creeping in, so slow motion slows them. */
 const creepCycle = 9
 
@@ -68,6 +73,21 @@ export function markOf(ninja: Ninja, options: readonly AmbushOption[]): Mark | u
 
 /** A mark for a ninja that never had options to go by, spread out by its id. */
 const markById = (id: number): Mark => marks[(id * 2) % marks.length] ?? 'up'
+
+/**
+ * Where the slicer stands when the time has run out: it leaps from its own spot to straight ahead,
+ * cutting through the scroll on the way, so it stands mid screen as the halves fall. Then it lunges
+ * in with the others.
+ */
+function sliceSpotOf(mark: Mark, wave: number, approach: number, outcomeTime: number, strikeTime: number) {
+	const from = spotOf(mark, wave, approach)
+	const ahead = spotOf('up', 0, strikeTime === 0 ? slicerApproach : lungeOf(slicerApproach, strikeTime, poseSeconds.strike * 0.4))
+	const leap = Math.min(1, outcomeTime / slicerLeapSeconds)
+	return {
+		x: from.x + (ahead.x - from.x) * leap,
+		z: from.z + (ahead.z - from.z) * leap,
+	}
+}
 
 export type NinjasView = {
 	/**
@@ -146,7 +166,9 @@ export function createNinjasView(parent: Group, make: () => Body): NinjasView {
 				// A striker closes in during the wind-up, so the cut lands on the samurai.
 				const strikeTime = ninja.pose === 'strike' ? Math.max(0, outcomeTime - strikeDelaySeconds) : 0
 				const approach = ninja.pose === 'strike' ? lungeOf(entry.approach, strikeTime, poseSeconds.strike * 0.4) : entry.approach
-				const spot = spotOf(entry.mark, ninja.wave, approach)
+				const spot = ninja.slicer === true
+					? sliceSpotOf(entry.mark, ninja.wave, entry.approach, outcomeTime, strikeTime)
+					: spotOf(entry.mark, ninja.wave, approach)
 				// Enter from farther out the same way. It can disappear behind a tree or house and then
 				// run out into view, instead of appearing at the ambush's first visible position.
 				const far = spotOf(entry.mark, ninja.wave, 0)
@@ -170,8 +192,10 @@ export function createNinjasView(parent: Group, make: () => Body): NinjasView {
 				root.rotation.y = Math.hypot(toX, toZ) > 1e-6 ? Math.atan2(-toX, -toZ) : samurai.heading
 				// Out of step with each other, so they don't run as one.
 				const windingUp = telegraph && ninja.pose === 'approach' && entry.entrance > 0.7
-				const pose = ninja.pose === 'strike' && strikeTime === 0 ? 'approach' : windingUp ? 'strike' : ninja.pose
-				const time = ninja.pose === 'strike' ? strikeTime : windingUp ? poseSeconds.strike * 0.35 : entry.time
+				// The slicer cuts through the scroll straight away, the others wait for it to fall.
+				const slicing = ninja.slicer === true && strikeTime === 0
+				const pose = ninja.pose === 'strike' && strikeTime === 0 && !slicing ? 'approach' : windingUp ? 'strike' : ninja.pose
+				const time = slicing ? outcomeTime : ninja.pose === 'strike' ? strikeTime : windingUp ? poseSeconds.strike * 0.35 : entry.time
 				entry.body.show(pose, time, cycle + ninja.id * 1.7, ninja.wave > 0 ? backRowOpacity : 1)
 			}
 
