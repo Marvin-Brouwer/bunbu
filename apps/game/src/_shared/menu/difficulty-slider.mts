@@ -1,6 +1,7 @@
 /**
  * The difficulty, a slider over four stops from Apprentice to Shogun that sets how long an ambush
- * waits ([time limit](../../../../../docs/design/gameplay.md#time-limit)). The default is marked.
+ * waits ([time limit](../../../../../docs/design/gameplay.md#time-limit)). The stops between
+ * the ends are marked; Samurai is where a new player starts.
  * On the fight screen and in the settings, both changing the same setting.
  */
 
@@ -10,16 +11,16 @@ import styles from './menu.css'
 
 const names: Readonly<Record<Difficulty, string>> = {
 	apprentice: 'Apprentice',
-	default: 'Default',
-	experienced: 'Experienced',
+	samurai: 'Samurai',
+	daimyo: 'Daimyo',
 	shogun: 'Shogun',
 }
 
 /** What the slider says about a difficulty: its name and its share of the time. */
 const describe = (difficulty: Difficulty) => `${names[difficulty]}: ${Math.round(timeScales[difficulty] * 100)}% of the time`
 
-/** Where the default sits on the track, from `0` to `1`. */
-const defaultPlace = String(difficulties.indexOf('default') / (difficulties.length - 1))
+/** Where each stop between the ends sits on the track, from `0` to `1`. */
+const markPlaces = difficulties.slice(1, -1).map((difficulty) => String(difficulties.indexOf(difficulty) / (difficulties.length - 1)))
 
 export type DifficultySliderOptions = {
 	/** Shows the difficulty without letting it change, as during a run. */
@@ -57,19 +58,23 @@ export const DifficultySlider = component<DifficultySliderOptions>({
 		}
 		show(settings.value.difficulty)
 
+		const marks = markPlaces.map((place) => {
+			const mark = element('span', {
+				classes: styles.difficultyMark,
+				aria: {
+					hidden: 'true',
+				},
+			})
+			mark.style.setProperty('--place', place)
+			return mark
+		})
 		const track = element('div', {
 			classes: styles.difficultyTrack,
 			children: [
-				element('span', {
-					classes: styles.difficultyDefault,
-					aria: {
-						hidden: 'true',
-					},
-				}),
+				...marks,
 				slider,
 			],
 		})
-		track.style.setProperty('--default-place', defaultPlace)
 
 		append(
 			element('div', {

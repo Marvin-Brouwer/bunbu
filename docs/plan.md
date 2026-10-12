@@ -190,5 +190,5 @@ Decisions the docs don't make yet. Each has a default so nobody is blocked; chan
 | How do stage length and question count relate? The wireframe shows `860 / 1,500 m` with ambush ticks. | Stage length scales with the number of questions, ambushes evenly spaced. One run = one quiz on one stage. | B, D, E |
 | The progress bar shows "a block marks the boss". What is the boss? | No boss in M1 to M4. | B, E |
 | What does "Next stage" on the results screen do with the same quiz? | Restart the same quiz on the next stage. | G |
-| Exact difficulty values. | A slider over Apprentice `1.2`, Default `1`, Experienced `0.8` and Shogun `0.5`, and the quiz's own `timePerQuestion` when it has one, see [time limit](design/gameplay.md#time-limit). | A, G |
+| Exact difficulty values. | A slider over Apprentice `1.2`, Samurai `1` (the default), Daimyo `0.8` and Shogun `0.5`, and the quiz's own `timePerQuestion` when it has one, see [time limit](design/gameplay.md#time-limit). | A, G |
 | Sound and music. | None until after M4; the volume setting exists but does nothing yet. | — |

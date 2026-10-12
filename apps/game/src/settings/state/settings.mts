@@ -9,15 +9,15 @@
 import { createStore, type Store } from '@rooted/store'
 
 /** The difficulty, as the stops on its slider from easy to hard. */
-export const difficulties = ['apprentice', 'default', 'experienced', 'shogun'] as const
+export const difficulties = ['apprentice', 'samurai', 'daimyo', 'shogun'] as const
 
 export type Difficulty = (typeof difficulties)[number]
 
 /** How much of a question's time an ambush gives, per difficulty. */
 export const timeScales: Readonly<Record<Difficulty, number>> = {
 	apprentice: 1.2,
-	default: 1,
-	experienced: 0.8,
+	samurai: 1,
+	daimyo: 0.8,
 	shogun: 0.5,
 }
 
@@ -29,7 +29,7 @@ export type SettingsState = {
 	readonly volume: number
 }
 
-const initial: SettingsState = { difficulty: 'default', haptics: true, volume: 0.8 }
+const initial: SettingsState = { difficulty: 'samurai', haptics: true, volume: 0.8 }
 
 export type SettingsActions = {
 	/** How much of a question's time an ambush gives at the chosen difficulty. */

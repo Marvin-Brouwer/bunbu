@@ -129,7 +129,7 @@
 	font-weight: 400;
 }
 
-/* The difficulty: a slider over four stops from Apprentice to Shogun, with the default marked. */
+/* The difficulty: a slider over four stops from Apprentice to Shogun, the inner stops marked. */
 
 .difficulty {
 	display: grid;
@@ -164,11 +164,11 @@
 }
 
 /* The thumb travels a thumb's width less than the track, so the mark is placed the same way. */
-.difficultyDefault {
+.difficultyMark {
 	position: absolute;
 	top: -0.2rem;
 	bottom: -0.2rem;
-	left: calc(0.5rem + (100% - 1rem) * var(--default-place));
+	left: calc(0.5rem + (100% - 1rem) * var(--place));
 	width: 2px;
 	translate: -50% 0;
 	background: var(--ink);

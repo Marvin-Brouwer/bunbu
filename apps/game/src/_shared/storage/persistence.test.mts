@@ -219,7 +219,7 @@ describe('persistApp', () => {
 
 	it('starts from the defaults when nothing was saved', async () => {
 		await persistApp(stop.signal)
-		expect(settings.value).toMatchObject({ difficulty: 'default', haptics: true, volume: 0.8 })
+		expect(settings.value).toMatchObject({ difficulty: 'samurai', haptics: true, volume: 0.8 })
 		expect(lastRun.value.quiz).toBeUndefined()
 	})
 
