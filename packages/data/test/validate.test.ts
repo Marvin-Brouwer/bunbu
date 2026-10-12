@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { BunbuValidationError, validate, type BunbuData } from "../src";
 
-const modeline = "# yaml-language-server: $schema=https://raw.githubusercontent.com/Marvin-Brouwer/bunbu/main/schema/v1.json";
+const modeline = "# yaml-language-server: $schema=https://marvin-brouwer.github.io/bunbu/schema/v1.json";
 const designDoc = readFileSync(new URL("../../../docs/design/data-format.md", import.meta.url), "utf8");
 const yamlBlocks = [...designDoc.matchAll(/^(`{3,})yaml\n([\s\S]*?)^\1$/gm)].map((match) => match[2]!);
 
@@ -80,6 +80,10 @@ describe("validate", () => {
   it("requires the schema modeline", async () => {
     const error = await expectIssues(quiz(single).replace(modeline, "# just a comment"));
     expect(error.issues).toEqual([expect.objectContaining({ line: 1, message: expect.stringContaining("first line") })]);
+  });
+
+  it("accepts the raw GitHub schema URL as well", async () => {
+    await expectValid(quiz(single).replace(modeline, "# yaml-language-server: $schema=https://raw.githubusercontent.com/Marvin-Brouwer/bunbu/main/schema/v1.json"));
   });
 
   it("rejects an unknown schema version", async () => {

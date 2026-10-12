@@ -23,7 +23,7 @@ function fakeStorage(items: Record<string, string> = {}) {
 }
 
 const source = [
-	'# yaml-language-server: $schema=https://raw.githubusercontent.com/Marvin-Brouwer/bunbu/main/schema/v1.json',
+	'# yaml-language-server: $schema=https://marvin-brouwer.github.io/bunbu/schema/v1.json',
 	'id: saved',
 	'title: Saved',
 	'version: "1"',

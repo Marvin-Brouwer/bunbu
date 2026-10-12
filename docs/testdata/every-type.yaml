@@ -1,4 +1,4 @@
-# yaml-language-server: $schema=https://raw.githubusercontent.com/Marvin-Brouwer/bunbu/main/schema/v1.json
+# yaml-language-server: $schema=https://marvin-brouwer.github.io/bunbu/schema/v1.json
 
 # A sample quiz for development: one question of every type, so a screen can be built against
 # real content. See docs/design/data-format.md.

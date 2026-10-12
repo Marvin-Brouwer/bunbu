@@ -25,13 +25,19 @@ A general-purpose, file-based format for quizzes and practice tests.
 
 YAML is widely supported, easy to edit by hand, allows comments and multi-line strings without escaping, and can be validated with JSON Schema.
 
-The schema lives in the top-level `schema/` folder of this repository, with one file per format version (`schema/v1.json`, `schema/v2.json`, …). Quiz files reference it in their first line. The format version is the file name:
+The schema lives in the top-level `schema/` folder of this repository, with one file per format version (`schema/v1.json`, `schema/v2.json`, …). The site deploy copies that folder to GitHub Pages. Quiz files reference it in their first line. The format version is the file name:
+
+```yaml
+# yaml-language-server: $schema=https://marvin-brouwer.github.io/bunbu/schema/v1.json
+```
+
+The raw GitHub URL works just as well:
 
 ```yaml
 # yaml-language-server: $schema=https://raw.githubusercontent.com/Marvin-Brouwer/bunbu/main/schema/v1.json
 ```
 
-> **Later:** the `schema/` folder will be copied to GitHub Pages as part of the site deploy, and the Pages URL will replace the raw GitHub URL. Decide this before quiz files are published, because the URL ends up in every file.
+The app only reads the version from the end of the URL (`/v<n>.json`), so both URLs are accepted.
 
 ## Versioning
 
@@ -462,7 +468,7 @@ A `.bunbu` file keeps the quiz's content, not its YAML: comments and formatting 
 ## Full example
 
 ```yaml
-# yaml-language-server: $schema=https://raw.githubusercontent.com/Marvin-Brouwer/bunbu/main/schema/v1.json
+# yaml-language-server: $schema=https://marvin-brouwer.github.io/bunbu/schema/v1.json
 
 id: example
 title: Example quiz
