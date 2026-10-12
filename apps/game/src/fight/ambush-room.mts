@@ -3,16 +3,16 @@
  * whole width ([time limit](../../../../docs/design/gameplay.md#time-limit)). Plain numbers, so it
  * can be tested; the run screen lays the scroll out by it and the world frames the fight by it.
  *
- * When the screen is tall enough, the scroll stops short of the bottom and the camera frames the
- * fight in the room below it. When it isn't, the scroll goes down to the bottom and a low strip
- * above it shows the samurai and a ninja walking toward each other instead. Wider than the scroll,
- * the world shows beside it and needs neither.
+ * A low strip above the scroll shows the samurai and a ninja walking toward each other. When the
+ * screen is tall enough, the scroll also stops short of the bottom and the camera frames the fight
+ * in the room below it; when it isn't, the scroll goes down to the bottom and the strip alone shows
+ * the time. Wider than the scroll, the world shows beside it and needs neither.
  */
 
 export type AmbushRoom = {
 	/** CSS pixels kept free below the scroll for the fight, `0` when there is no room. */
 	readonly below: number
-	/** CSS pixels the duel strip takes above the scroll, `0` when it doesn't show. */
+	/** CSS pixels the duel strip takes above the scroll, with its gap to the scroll; `0` when it doesn't show. */
 	readonly strip: number
 }
 
@@ -28,17 +28,19 @@ export const ambushRoomConfig = {
 	/** Less room than this below the scroll is too small to see the fight in. */
 	minimumBelow: 9,
 	/** The room below never takes more than this share of the screen. */
-	largestBelow: 0.26,
+	largestBelow: 0.2,
 	/** The duel strip's height, with room at its top for the score box's line with the best score. */
 	strip: 3.5,
+	/** The gap between the duel strip and the scroll. */
+	stripGap: 0.5,
 }
 
 export const noRoom: AmbushRoom = { below: 0, strip: 0 }
 
 export function ambushRoomOf(width: number, height: number, rem = 16, config = ambushRoomConfig): AmbushRoom {
 	if (width <= 0 || height <= 0 || width > config.scrollWidth * rem) return noRoom
-	const spare = height - (config.scrollTop + config.scrollBottom + config.minimumScroll) * rem
+	const strip = (config.strip + config.stripGap) * rem
+	const spare = height - strip - (config.scrollTop + config.scrollBottom + config.minimumScroll) * rem
 	const below = Math.min(spare, height * config.largestBelow)
-	if (below >= config.minimumBelow * rem) return { below: Math.floor(below), strip: 0 }
-	return { below: 0, strip: config.strip * rem }
+	return { below: below >= config.minimumBelow * rem ? Math.floor(below) : 0, strip }
 }

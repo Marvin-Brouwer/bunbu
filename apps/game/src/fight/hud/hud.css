@@ -350,12 +350,16 @@
 .duel {
 	--fighter: min(2rem, var(--strip-height, 0px));
 	position: relative;
+	/* The strip's height includes its gap to the scroll, which it keeps clear below its ground. */
+	--gap: min(0.5rem, var(--strip-height, 0px));
 	height: var(--strip-height, 0px);
 	width: 100%;
 	max-width: 34rem;
 	margin-inline: auto;
 	/* The ground they walk on. With no room for the strip, its height is 0 and none of it shows. */
-	background: linear-gradient(rgb(24 18 26 / 60%), rgb(24 18 26 / 60%)) bottom / 100% 1.5px no-repeat;
+	background: linear-gradient(rgb(24 18 26 / 60%), rgb(24 18 26 / 60%)) 0 calc(100% - var(--gap)) / 100% 1.5px no-repeat;
+	/* A faint paper halo keeps the silhouettes readable on a dark sky as well as a light one. */
+	filter: drop-shadow(0 0 1.5px rgb(240 230 210 / 75%));
 	transition: opacity 300ms ease-out;
 }
 
@@ -370,7 +374,7 @@
 
 .fighter {
 	position: absolute;
-	bottom: 0;
+	bottom: var(--gap);
 	height: var(--fighter);
 	/* From the ends of the strip to the middle, where they stand nose to nose. */
 	--travel: calc(50% - var(--fighter) * 0.75 * 0.85);

@@ -32,7 +32,7 @@ One screen, no Submit button: **the swipe is the answer**.
 4. Every option is tagged with a **mark**: the swipe direction (← ↑ → …) of the ninja carrying it. The drawn answers are the **swipe zone**: swiping toward a mark picks that option. Only swipes on the answers count, so the question can be scrolled freely.
 5. The scroll rolls up, slow motion snaps back to full speed, and the slashes and blocks play.
 
-The answers are written in ink on lined paper, one per line with the arrow of its mark in front; the drawer shows no ninjas. Above them is one brush-lettered line on how to answer. Only the swipe zone blocks text selection; the question can be selected. The finger leaves a faint trace on the paper, and a pick cuts its answer in two: the line splits along the cut, leaning with the swipe, with a thin red edge between the halves. For `order` the place it was cut in is brushed next to it. The ambush is about the answers: the real ninjas creep in, in 3D, behind the scroll (see [time limit](#time-limit)), and what happens to them follows the answer.
+The answers are written in ink on lined paper, one per line with the arrow of its mark in front; the drawer shows no ninjas. Above them is one brush-lettered line on how to answer. Only the swipe zone blocks text selection; the question can be selected. The finger leaves a faint trace on the paper, and a pick cuts its answer in two: the line splits along the cut, leaning with the swipe, with a thin red edge between the halves. For `order` the place it was cut in is brushed next to it. The ambush is about the answers: the real ninjas creep in, in 3D, below the scroll (see [time limit](#time-limit)), and what happens to them follows the answer.
 
 <img src="screens/4a-single.png" alt="Single-answer ambush" width="195"> <img src="screens/4c-multiple.png" alt="Multiple-answer ambush" width="195">
 
@@ -66,6 +66,13 @@ Each ninja carries one option. A **slash** means "this option is picked", a **bl
 ## Time limit
 
 There is no timer bar: the ambush opens in slow motion and **the ninjas creeping in are the timer**.
+
+On a phone in portrait the scroll covers the whole width, so the ninjas have to be shown:
+
+- **Room below the scroll.** When the screen is tall enough, the scroll stops short of the bottom (at most a fifth of the screen, and only while the scroll keeps room to read). During the ambush the camera frames the fight in that room: the samurai near the bottom edge, the ninjas running in from just under the scroll. When the scroll rolls up, the view eases back.
+- **The duel strip.** A low strip between the HUD's top row and the scroll shows the samurai and a ninja as silhouettes against the sky, walking toward each other as the ninjas close in. They meet in the middle when the time is up. It shows on every phone in portrait, and is all there is when the screen is too short for the room below.
+
+Wider than the scroll (a tablet, landscape), the world shows beside it and needs neither.
 
 When the quiz sets [`timePerQuestion`](data-format.md#document-structure), that is the time, shared by the ambushes of a question (the rows of a `match`, the solutions of a `solutions`):
 
