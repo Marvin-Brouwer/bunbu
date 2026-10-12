@@ -11,6 +11,6 @@ describe("secondsOf", () => {
   });
 
   it("is undefined for what isn't a duration, or no time at all", () => {
-    for (const text of ["", "30", "30s1m", "1.5m", "0s", "0h0m"]) expect(secondsOf(text)).toBeUndefined();
+    for (const text of ["", "30", "30s1m", "1.5m", "0s", "0h0m", `${"9".repeat(400)}s`]) expect(secondsOf(text)).toBeUndefined();
   });
 });
