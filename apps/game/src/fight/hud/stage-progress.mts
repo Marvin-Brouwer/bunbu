@@ -7,7 +7,7 @@
 import { component } from '@rooted/components'
 import { questionsAnswered, type Quiz, type QuizState } from '../../_shared/state/quiz.mts'
 import { selection, stageNames } from '../../_shared/state/selection.mts'
-import { marksPassed, quarterMarks, type Run, type RunState } from '../state/run.mts'
+import { marksPassed, quarterMarks, stageDistanceOf, type Run, type RunState } from '../state/run.mts'
 import { formatWhole } from '../../_shared/numbers.mts'
 import styles from './hud.css'
 
@@ -54,7 +54,8 @@ export const StageProgress = component<StageProgressOptions>({
 		// The run changes every frame; the marks only when one is passed.
 		let passed = -1
 		const showRun = (state: RunState) => {
-			const fraction = state.stageLength === 0 ? 0 : state.distance / state.stageLength
+			const distance = stageDistanceOf(state)
+			const fraction = state.stageLength === 0 ? 0 : distance / state.stageLength
 			track.style.setProperty('--travelled', String(fraction))
 			const now = marksPassed(state)
 			if (now === passed) return

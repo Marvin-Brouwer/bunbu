@@ -117,7 +117,7 @@ function ambush(question: number, data = fixtureQuiz): RunGameState {
 	}))
 	return {
 		...state,
-		run: { ...state.run, phase: 'ambush', worldScale: runConfig.ambushWorldScale },
+		run: { ...state.run, phase: 'ambush', worldScale: runConfig.slowMotion.slowest, slowedFor: 60 },
 		ambush: { ...opening, open: true, openingLeft: 0, secondsLeft: opening.seconds * 0.6 },
 		ninjas: { ...noNinjas, active: ninjas },
 	}

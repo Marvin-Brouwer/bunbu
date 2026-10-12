@@ -7,7 +7,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createLife, shareOfOnePoint, type Life } from './life.mts'
 import { createRunGame } from './game.mts'
-import { createRun, marksPassed, runConfig, type Run } from './run.mts'
+import { createRun, marksPassed, runConfig, slowMotionOf, stageDistanceOf, type Run } from './run.mts'
 import { beats, createScore, pointsPerCorrect, type Score } from './score.mts'
 
 // Every test gets its own stores: a game mode creates them per run, so tests do the same.
@@ -35,14 +35,34 @@ describe('run', () => {
 		expect(run.value.distance).toBeCloseTo(runConfig.pace)
 	})
 
-	it('slows the world down during an ambush and does not cover ground', () => {
+	it('slows the world down more and more during an ambush, and runs on in slow motion', () => {
 		run.value.start(600)
 		run.value.tick(runConfig.introSeconds, runConfig.introSeconds)
 		run.value.beginAmbush()
 		const { distance } = run.value
-		run.value.tick(1, 1)
-		expect(run.value.worldScale).toBe(runConfig.ambushWorldScale)
-		expect(run.value.distance).toBe(distance)
+		run.value.tick(0.1, 1)
+		expect(run.value.worldScale).toBeCloseTo(slowMotionOf(1))
+		expect(run.value.distance).toBeCloseTo(distance + runConfig.pace * 0.1)
+		run.value.tick(0.01, 1)
+		expect(run.value.worldScale).toBeLessThan(slowMotionOf(1))
+	})
+
+	it('slows down hard at first, then ever less, never to a stop', () => {
+		expect(slowMotionOf(0)).toBe(1)
+		expect(slowMotionOf(runConfig.slowMotion.halfSpeedAfter)).toBeCloseTo(0.5)
+		expect(slowMotionOf(1) - slowMotionOf(2)).toBeGreaterThan(slowMotionOf(2) - slowMotionOf(3))
+		expect(slowMotionOf(600)).toBe(runConfig.slowMotion.slowest)
+	})
+
+	it('runs on past the end of the stage only in an ambush, and counts the stage up to its end', () => {
+		run.value.start(10)
+		run.value.tick(runConfig.introSeconds, runConfig.introSeconds)
+		run.value.tick(5, 5)
+		expect(run.value.distance).toBe(10)
+		run.value.beginAmbush()
+		run.value.tick(0.5, 1)
+		expect(run.value.distance).toBeGreaterThan(10)
+		expect(stageDistanceOf(run.value)).toBe(10)
 	})
 
 	it('counts the run down from 3 when resuming, then returns to the phase it paused in', () => {
@@ -64,11 +84,11 @@ describe('run', () => {
 		run.value.beginAmbush()
 		run.value.pause()
 		run.value.resume()
-		run.value.tick(runConfig.countdownSeconds * runConfig.ambushWorldScale, runConfig.countdownSeconds)
+		run.value.tick(runConfig.countdownSeconds * run.value.worldScale, runConfig.countdownSeconds)
 		expect(run.value.phase).toBe('ambush')
 		expect(run.value.countdown).toBe(0)
 
-		run.value.tick(runConfig.ambushWorldScale, 1)
+		run.value.tick(run.value.worldScale, 1)
 		expect(run.value.elapsed).toBeCloseTo(runConfig.introSeconds + 1)
 	})
 

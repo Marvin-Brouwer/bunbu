@@ -237,7 +237,7 @@ describe('openAmbush', () => {
 
 describe('tickRun', () => {
 	// An ambush slows the world down, but its time limit runs on real time.
-	const tickReal = (seconds: number) => { tickRun(game, seconds * runConfig.ambushWorldScale, seconds) }
+	const tickReal = (seconds: number) => { tickRun(game, seconds * game.run.value.worldScale, seconds) }
 
 	it('lets the ninjas creep in as the ambush time runs out', () => {
 		openSingle()

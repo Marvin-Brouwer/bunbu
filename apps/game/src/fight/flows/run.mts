@@ -14,7 +14,7 @@ import { settings } from '../../settings/state/settings.mts'
 import type { RunGame } from '../state/game.mts'
 import { highScores } from '../state/highscores.mts'
 import { lastRun } from '../state/lastrun.mts'
-import { runConfig } from '../state/run.mts'
+import { runConfig, stageDistanceOf } from '../state/run.mts'
 import { pointOf, type HighScore } from '../state/score.mts'
 import { stageResults } from '../state/stage-results.mts'
 import { missShare, openAmbush, settleOutcome, tickAmbush, tickOutcome } from './ambush.mts'
@@ -91,7 +91,7 @@ export function recordRun(game: RunGame): void {
 	const fallen = game.life.value.empty()
 	lastRun.value.save(quiz.id, quiz.version, game.quiz.value.misses())
 	// The stage can't change during a run: the fight setup is the only place it is chosen.
-	stageResults.value.submit(quiz.id, quiz.version, selection.value.stage, { distance: game.run.value.distance, cleared: !fallen })
+	stageResults.value.submit(quiz.id, quiz.version, selection.value.stage, { distance: stageDistanceOf(game.run.value), cleared: !fallen })
 	const { points, correct, answered } = game.score.value
 	const seconds = game.run.value.elapsed + game.run.value.recovery
 	game.score.value.settle(!fallen && highScores.value.submit(quiz.id, quiz.version, { points, seconds, correct, answered }))

@@ -57,7 +57,7 @@ describe('the run', () => {
 		runToAmbush()
 		expect(game.run.value.distance).toBeCloseTo(ambushAt(0))
 		expect(game.ambush.value.open).toBe(true)
-		expect(game.run.value.worldScale).toBe(runConfig.ambushWorldScale)
+		expect(game.run.value.phase).toBe('ambush')
 	})
 
 	it('does not spring one during the intro', () => {

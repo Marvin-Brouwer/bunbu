@@ -28,7 +28,10 @@ const backRowOpacity = 0.5
 const entranceSeconds = 0.4
 /** Extra metres beyond the normal starting spot, so the entrance can be seen along the path. */
 const entranceDistance = 8
-/** Keep a newly entering ninja in the ambush's deliberate slow motion during the hit outcome. */
+/**
+ * How fast a ninja runs into view, in the ambush's slow motion: steady, while the world keeps
+ * slowing down, so they are in when the time starts.
+ */
 const entranceScale = 0.15
 /** When the time ran out, the halves of the scroll fall before the ninjas strike. */
 const strikeDelaySeconds = 0.65
@@ -238,7 +241,7 @@ export function createNinjasView(parent: Group, make: () => Body): NinjasView {
 					entry.approach = Math.min(1, Math.max(0, entry.approach + approachDelta))
 					entry.targetApproach = ninja.approach
 				}
-				const entranceDelta = delta > 0 ? Math.min(worldDelta, delta * entranceScale) : 0
+				const entranceDelta = delta * entranceScale
 				entry.entrance = Math.min(1, entry.entrance + entranceDelta / entranceSeconds)
 				if (entry.sequence === ninja.sequence) {
 					entry.time += delta
