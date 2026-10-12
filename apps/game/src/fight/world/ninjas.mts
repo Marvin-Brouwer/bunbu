@@ -100,6 +100,18 @@ export function markOf(ninja: Ninja, options: readonly AmbushOption[]): Mark | u
 /** A mark for a ninja that never had options to go by, spread out by its id. */
 const markById = (id: number): Mark => marks[(id * 2) % marks.length] ?? 'up'
 
+/**
+ * The side a ninja flees to, `1` right of the path and `-1` left: away from the path on the side it
+ * stands, so the samurai doesn't run into it. One in the middle picks a side by its `id`.
+ */
+export function fleeSideOf(x: number, id: number): 1 | -1 {
+	if (Math.abs(x) > 0.3) return x > 0 ? 1 : -1
+	return id % 2 === 0 ? 1 : -1
+}
+
+/** The angle from `from` to `to`, the short way round. */
+const turnBetween = (from: number, to: number) => Math.atan2(Math.sin(to - from), Math.cos(to - from))
+
 /** How close a ninja is, what it shows, and how high it leaps. */
 export type Motion = {
 	readonly approach: number
