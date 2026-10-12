@@ -30,6 +30,8 @@
 .layer.scroll {
 	align-content: start;
 	padding: 3.5rem 0.75rem 0;
+	/* Room for the fight below the scroll, or for the duel strip above it (ambush-room.mts). */
+	--scroll-reserve: calc(var(--room-below, 0px) + var(--strip-height, 0px));
 }
 
 .layer.overlays {

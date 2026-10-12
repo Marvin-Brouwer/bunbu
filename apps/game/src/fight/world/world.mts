@@ -14,7 +14,7 @@ import { loadModel } from '../../canvas/models.mts'
 import type { View } from '../../canvas/stage.mts'
 import type { Viewport } from '../../canvas/viewport.mts'
 import type { RunGame } from '../state/game.mts'
-import { runFraming, viewOnPath } from './camera.mts'
+import { framedIn, runFraming, viewOnPath } from './camera.mts'
 import { skyRadius } from './landscape.mts'
 import { createStageWorld } from './stages.mts'
 import { selection } from '../../_shared/state/selection.mts'
@@ -41,7 +41,14 @@ const beyond = 150
 /** The short way round from `from` to `to`, in radians. */
 const shortWay = (from: number, to: number) => Math.atan2(Math.sin(to - from), Math.cos(to - from))
 
-export function createRunWorld(game: RunGame, viewport: Viewport): View {
+/** How quickly the camera moves the fight into the room below the scroll and back, per second. */
+const reframe = 3
+
+/**
+ * `roomBelow` is how many CSS pixels below the scroll an ambush keeps free for the fight
+ * ([ambush room](../ambush-room.mts)); during an ambush the camera frames the fight in there.
+ */
+export function createRunWorld(game: RunGame, viewport: Viewport, roomBelow: () => number = () => 0): View {
 	const { renderer, camera } = viewport
 	const scene = new Scene()
 	const overlay = new Scene()
@@ -118,6 +125,8 @@ export function createRunWorld(game: RunGame, viewport: Viewport): View {
 	let since = 0
 	let turnedTo = 0
 	let first = true
+	// From 0, the whole screen, to 1, the fight framed in the room below the scroll.
+	let framed = 0
 	const position = new Vector3()
 	const target = new Vector3()
 	const look = new Vector3()
@@ -154,7 +163,13 @@ export function createRunWorld(game: RunGame, viewport: Viewport): View {
 			else samurai.show(finish.samurai.pose, finish.samurai.time, cycle)
 			samurai.grey(finish?.samurai.pose === 'fallen' ? Math.min(1, finish.samurai.time / poseSeconds.fallen) : 0)
 
-			const view = viewOnPath(path, run.distance, camera.aspect, fallen)
+			// During an ambush the fight moves into the room below the scroll, if there is any; when
+			// the scroll rolls up it fills the screen again.
+			const { clientWidth: width, clientHeight: height } = renderer.domElement
+			const below = roomBelow()
+			framed = below > 0 ? framed + ((ambush.open ? 1 : 0) - framed) * damp(delta, reframe) : 0
+			const frame = framedIn(width, height, height - (height - below) * framed, runFraming.fov)
+			const view = viewOnPath(path, run.distance, frame.aspect, fallen)
 
 			// The ninjas first: they keep the mark each came from after the ambush's options are gone.
 			ninjas.draw(game.ninjas.value.active, ambush.options, view.frame, delta, worldDelta, ambush.openingLeft > 0, since)
@@ -198,6 +213,11 @@ export function createRunWorld(game: RunGame, viewport: Viewport): View {
 				position.lerp(target, damp(delta))
 				look.lerp(lookAt, damp(delta))
 			}
+			camera.fov = frame.fov
+			camera.aspect = width / frame.height
+			if (frame.height === height) camera.clearViewOffset()
+			else camera.setViewOffset(width, frame.height, 0, 0, width, height)
+			camera.updateProjectionMatrix()
 			camera.position.copy(position)
 			camera.lookAt(look)
 			camera.updateMatrixWorld()
@@ -230,6 +250,8 @@ export function createRunWorld(game: RunGame, viewport: Viewport): View {
 			overlay.clear()
 			camera.fov = before.fov
 			camera.far = before.far
+			camera.clearViewOffset()
+			camera.aspect = renderer.domElement.clientWidth / Math.max(1, renderer.domElement.clientHeight)
 			camera.position.copy(before.position)
 			camera.quaternion.copy(before.quaternion)
 			camera.updateProjectionMatrix()

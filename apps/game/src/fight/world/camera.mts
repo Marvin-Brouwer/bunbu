@@ -73,3 +73,30 @@ export function viewOnPath(path: Path, distance: number, aspect: number, fallen:
 	}
 	return { frame, position: at(spot.position), look: at(spot.look) }
 }
+
+/** How the camera's picture is framed to a band at the foot of the screen. */
+export type Framed = {
+	/** The band's aspect, which the camera frames the fight for. */
+	readonly aspect: number
+	/** The vertical field of view of the whole picture, so the band gets `fov`. */
+	readonly fov: number
+	/** The height of the whole picture, centred on the band; the screen is its top `height` pixels. */
+	readonly height: number
+}
+
+/**
+ * Frames the fight in the bottom `band` pixels of a `width` × `height` screen, as if the band were
+ * the screen: the camera's picture is centred on the band and as large as it has to be for the
+ * band to get `fov`, and the screen shows its top part (three.js `setViewOffset`). Above the band
+ * the world goes on, behind the scroll. A band as high as the screen is the usual picture.
+ */
+export function framedIn(width: number, height: number, band: number, fov: number): Framed {
+	const bandHeight = Math.min(height, Math.max(1, band))
+	const pictureHeight = 2 * height - bandHeight
+	const halfTan = Math.tan((fov * Math.PI) / 360) * (pictureHeight / bandHeight)
+	return {
+		aspect: width / bandHeight,
+		fov: (Math.atan(halfTan) * 360) / Math.PI,
+		height: pictureHeight,
+	}
+}

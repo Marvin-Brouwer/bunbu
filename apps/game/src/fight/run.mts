@@ -8,6 +8,7 @@
  */
 
 import { component } from '@rooted/components'
+import { resizeObserver } from '@rooted/observers'
 import { tickRun } from './flows/run.mts'
 import { commitAmbush } from './flows/ambush.mts'
 import { play } from '../canvas/loop.mts'
@@ -16,6 +17,8 @@ import { show } from '../canvas/stage.mts'
 import type { RunGame } from './state/game.mts'
 import { pausable } from './state/run.mts'
 import { Hud } from './hud/hud.mts'
+import { DuelStrip } from './hud/duel-strip.mts'
+import { ambushRoomOf, noRoom, type AmbushRoom } from './ambush-room.mts'
 import { Scroll } from '../_shared/scroll/scroll.mts'
 import { RunOverlays } from './overlays/overlays.mts'
 import { createRunWorld } from './world/world.mts'
@@ -56,7 +59,7 @@ export const RunScreen = component<RunScreenOptions>({
 
 		// The run's layers over the canvas, back to front. The tracks mount here, one line each,
 		// handing their component `game` (and the overlays `leave`).
-		append(
+		const run = append(
 			element('div', {
 				classes: styles.run,
 				children: [
@@ -76,13 +79,18 @@ export const RunScreen = component<RunScreenOptions>({
 							styles.layer,
 							styles.scroll,
 						],
-						children: create(Scroll, {
-							ambush: game.ambush,
-							quiz: game.quiz,
-							label: 'AMBUSH',
-							commit: () => { commitAmbush(game) },
-							held: () => game.run.value.phase !== 'ambush' || game.run.value.countdown > 0 || game.ambush.value.openingLeft > 0,
-						}),
+						children: [
+							create(DuelStrip, {
+								ambush: game.ambush,
+							}),
+							create(Scroll, {
+								ambush: game.ambush,
+								quiz: game.quiz,
+								label: 'AMBUSH',
+								commit: () => { commitAmbush(game) },
+								held: () => game.run.value.phase !== 'ambush' || game.run.value.countdown > 0 || game.ambush.value.openingLeft > 0,
+							}),
+						],
 					}),
 					element('div', {
 						'data-layer': 'overlays',
@@ -100,6 +108,21 @@ export const RunScreen = component<RunScreenOptions>({
 			})
 		)
 
-		show((viewport) => createRunWorld(game, viewport), signal)
+		// Where the ambush shows the ninjas closing in: the fight below the scroll when there is room,
+		// the duel strip above it when there isn't. The layout and the world's framing both follow it.
+		let room: AmbushRoom = noRoom
+		resizeObserver({
+			targets: run,
+			signal,
+			on: {
+				resize() {
+					room = ambushRoomOf(run.clientWidth, run.clientHeight)
+					run.style.setProperty('--room-below', `${room.below}px`)
+					run.style.setProperty('--strip-height', `${room.strip}px`)
+				},
+			},
+		})
+
+		show((viewport) => createRunWorld(game, viewport, () => room.below), signal)
 	},
 })

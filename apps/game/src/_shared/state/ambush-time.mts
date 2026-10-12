@@ -1,6 +1,7 @@
 /**
  * How long an ambush lasts, and how far the ninjas have crept in. There is no timer bar: the
- * ninjas creeping in are the timer ([time limit](../../../../../docs/design/gameplay.md#time-limit)).
+ * ninjas creeping in are the timer, below the scroll and in the duel strip above it
+ * ([time limit](../../../../../docs/design/gameplay.md#time-limit)).
  *
  * ```text
  * ambushSeconds = timePerQuestion / ambushes of the question × timeScale, when the quiz sets it

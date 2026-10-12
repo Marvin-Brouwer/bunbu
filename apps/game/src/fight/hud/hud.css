@@ -341,3 +341,50 @@
 	from { opacity: 0; }
 	to { opacity: 1; }
 }
+
+/*
+ * The duel strip: the samurai and a ninja walking toward each other above the scroll, meeting in
+ * the middle when the time is up. Silhouettes on the sky, standing on one thin line.
+ */
+
+.duel {
+	--fighter: min(2rem, var(--strip-height, 0px));
+	position: relative;
+	/* The strip's height includes its gap to the scroll, which it keeps clear below its ground. */
+	--gap: min(0.5rem, var(--strip-height, 0px));
+	height: var(--strip-height, 0px);
+	width: 100%;
+	max-width: 34rem;
+	margin-inline: auto;
+	/* The ground they walk on. With no room for the strip, its height is 0 and none of it shows. */
+	background: linear-gradient(rgb(24 18 26 / 60%), rgb(24 18 26 / 60%)) 0 calc(100% - var(--gap)) / 100% 1.5px no-repeat;
+	/* A faint paper halo keeps the silhouettes readable on a dark sky as well as a light one. */
+	filter: drop-shadow(0 0 1.5px rgb(240 230 210 / 75%));
+	transition: opacity 300ms ease-out;
+}
+
+/* The life bar and the stage progress are behind the scroll during an ambush; over the strip they'd only be in the way. */
+.hud[data-ambush='true'] :is(.life, .progress) {
+	visibility: hidden;
+}
+
+.duel[data-open='false'] {
+	opacity: 0;
+}
+
+.fighter {
+	position: absolute;
+	bottom: var(--gap);
+	height: var(--fighter);
+	/* From the ends of the strip to the middle, where they stand nose to nose. */
+	--travel: calc(50% - var(--fighter) * 0.75 * 0.85);
+}
+
+.samurai {
+	left: calc(var(--travel) * var(--closing, 0));
+}
+
+.ninja {
+	right: calc(var(--travel) * var(--closing, 0));
+	transform: scaleX(-1);
+}

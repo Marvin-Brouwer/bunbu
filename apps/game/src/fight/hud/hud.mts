@@ -20,10 +20,10 @@ export type HudOptions = {
 export const Hud = component<HudOptions>({
 	name: 'hud',
 	styles,
-	onMount({ append, create, element, options }) {
+	onMount({ append, create, element, options, signal }) {
 		const { game } = options
 
-		append(
+		const hud = append(
 			element('div', {
 				classes: styles.hud,
 				children: [
@@ -54,5 +54,10 @@ export const Hud = component<HudOptions>({
 				life: game.life,
 			})
 		)
+
+		hud.dataset.ambush = String(game.ambush.value.open)
+		game.ambush.on('change', signal, ({ detail }) => {
+			hud.dataset.ambush = String(detail.state.open)
+		})
 	},
 })

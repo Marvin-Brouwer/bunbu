@@ -40,7 +40,7 @@ All layers are siblings in one fixed, full-viewport container, stacked with `z-i
 
 The `Application` component (`application.mts`) owns the container, the canvas and the renderer, and mounts once. The router renders the current screen over the canvas, so moving between screens never creates a new WebGL context. A screen puts its world on the canvas with `show(view, signal)` and the view is disposed when the screen unmounts; on a screen without a view the canvas is clear and the backdrop shows. The run's screen holds the HUD, scroll and overlay layers.
 
-The ninjas creeping in "behind the scroll" during an ambush needs nothing special: they are in the 3D world, the scroll is DOM above the canvas, so they are always under it. Where the scroll is transparent (its torn edges, gaps around it) you see them coming.
+The ninjas creeping in during an ambush are in the 3D world, the scroll is DOM above the canvas. On a narrow screen the run keeps room below the scroll (`fight/ambush-room.mts`), and the run's world frames the fight in that band with `camera.setViewOffset`: the picture is centred on the band and enlarged so the band gets the usual field of view, and the screen shows its top part (`framedIn` in `fight/world/camera.mts`).
 
 ## Renderer setup
 
