@@ -1,0 +1,197 @@
+/*
+ * D2 Study (docs/design/screens.md#d2-study): the card on the scroll, the correct answer in a grey
+ * band under the question, then Pause and Restart, the voice and the speed.
+ */
+
+/* The word being spoken: a grey background and an underline. */
+::highlight(spoken-word) {
+	background-color: rgb(31 28 24 / 18%);
+	text-decoration: underline 2px;
+	text-underline-offset: 0.15em;
+}
+
+.state {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: space-between;
+	gap: 0.25rem 1rem;
+	margin: -0.5rem 0 0;
+	font-family: var(--font-mono);
+	font-size: 0.8rem;
+	color: var(--ink-soft);
+}
+
+.status[data-playing='true'] {
+	color: var(--vermilion);
+	font-weight: 700;
+}
+
+.card {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	gap: 0.9rem;
+}
+
+.type {
+	justify-self: start;
+	margin: 0;
+	padding: 0.05rem 0.6rem;
+	border: 1px solid var(--ink-soft);
+	border-radius: 999px;
+	font-family: var(--font-mono);
+	font-size: 0.8rem;
+	color: var(--ink-soft);
+}
+
+.asked {
+	font-size: 1.1rem;
+	line-height: 1.45;
+}
+
+/* The last of what is asked is the question itself, as on the ambush scroll. */
+.asked:nth-last-child(2) {
+	font-weight: 600;
+}
+
+.correct {
+	display: grid;
+	gap: 0.4rem;
+	padding: 0.75rem 1rem;
+	border-left: 4px solid var(--ink);
+	background: var(--paper-shade);
+}
+
+.correctLabel {
+	margin: 0;
+	font-family: var(--font-mono);
+	font-size: 0.75rem;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	color: var(--ink-soft);
+}
+
+.answers {
+	display: grid;
+	gap: 0.5rem;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	font-size: 1.1rem;
+}
+
+ol.answers {
+	padding-left: 1.4em;
+	list-style: decimal;
+}
+
+/* A grid has no list marker, so a numbered answer stays a list item. */
+ol.answers .answer {
+	display: list-item;
+}
+
+.answer {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	gap: 0.15rem;
+}
+
+/* A solution or a match row, with its answer beside it. */
+.answerText {
+	font-weight: 700;
+}
+
+.answers[data-type='solutions'] .answer,
+.answers[data-type='match'] .answer {
+	grid-template-columns: minmax(0, 1fr) auto;
+	align-items: baseline;
+	gap: 1rem;
+}
+
+.controls {
+	display: grid;
+	grid-template-columns: 3fr 2fr;
+	gap: 0.75rem;
+}
+
+.playButton {
+	display: grid;
+}
+
+.settings {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	gap: 0.75rem;
+}
+
+/* A control group: an ink frame around the control. */
+.group {
+	display: flex;
+	align-items: center;
+	min-height: 3rem;
+	border: var(--frame);
+	border-radius: var(--radius);
+	background: var(--paper-light);
+	box-sizing: border-box;
+}
+
+.voiceSelect {
+	width: 100%;
+	min-width: 0;
+	height: 100%;
+	padding: 0.6rem 0.75rem;
+	border: 0;
+	background: transparent;
+	color: inherit;
+	font: inherit;
+}
+
+.voiceSelect:focus-visible,
+.rateButton:focus-visible {
+	outline: 3px solid var(--indigo);
+	outline-offset: 2px;
+}
+
+.rate {
+	gap: 0.5rem;
+	padding: 0.35rem;
+}
+
+.rateValue {
+	min-width: 3.2rem;
+	font-family: var(--font-mono);
+	font-weight: 700;
+	text-align: center;
+}
+
+.rateButton {
+	width: 2.4rem;
+	height: 2.4rem;
+	border: none;
+	border-radius: var(--radius);
+	background: var(--paper-light);
+	color: var(--ink);
+	font: inherit;
+	font-size: 1.3rem;
+	font-weight: 700;
+	cursor: pointer;
+	box-shadow: var(--tile);
+}
+
+.rateButton:active {
+	translate: 0 var(--bevel-height);
+	box-shadow: none;
+}
+
+.rateButton:disabled {
+	background: var(--paper-shade);
+	color: var(--ink-faint);
+	cursor: default;
+	translate: none;
+	box-shadow: none;
+}
+
+.note {
+	margin: 0;
+	font-size: 0.85rem;
+	color: var(--ink-soft);
+}

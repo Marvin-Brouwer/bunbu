@@ -6,12 +6,13 @@ The dojo is where you learn without risk. It has two modes, Study and Practice, 
 
 Hands-free revision.
 
-- The word being spoken is highlighted to help with focus: a grey background and an underline.
-
 - Every question of the quiz with its correct answer, shuffled, read aloud by the browser Speech API on a loop.
-- What is read: the query, then "the answer is …". `multiple` lists all correct options, `order` gives the right sequence, `solutions` gives each solution with yes or no.
+- What is read: the query, then "the answer is …". `multiple` lists all correct options, `order` gives the right sequence, `solutions` gives each solution with yes or no, `match` each row with its answer. Code blocks are not read; an image is read by its alt text.
+- The word being spoken is highlighted to help with focus: a grey background and an underline. Where the browser doesn't say which word it is at, the word is guessed from the time spoken; where it can't mark text at all, there is no highlight.
 - Pronunciation uses the quiz's `pronunciations` and the built-in dictionaries (see [data format](data-format.md#pronunciations)).
-- Controls: **Pause** and **Restart** (reshuffle and start again from card 1), plus voice and speed. There is no previous/next.
+- Controls: **Pause** (then **Play**) and **Restart** (reshuffle and start again from card 1), plus **Voice** (the system's own for the quiz's `language`, or one of the voices for that language) and **Speed** (½× to 2×, in steps of ¼). There is no previous/next.
+- The screen stays on while studying, without going full screen. If the phone is locked anyway, the reading goes on where the phone allows it: the sentences ahead are handed to the phone's speech engine, so it reads on even when the browser puts the page to sleep (as on Android). Safari on an iPhone stops the speech when the phone locks; Study picks up again from the sentence it was on once the phone is unlocked.
+- If the browser won't start reading before a tap, as when Study is opened straight from a link, it shows paused, and **Play** starts it.
 
 <img src="screens/d2-study.png" alt="Study" width="195">
 
