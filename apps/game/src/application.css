@@ -48,9 +48,10 @@
 	 * dropped on:
 	 * - a button is a tile without a frame, white or red, standing on a bevel with a faint shadow,
 	 *   and sinks when pressed;
-	 * - a control group (a slider, a switch) and a choice (one of several, as a stage or a quiz)
-	 *   have an ink frame; a choice turns red and gets the 選 stamp when chosen;
-	 * - a panel that only tells has no frame;
+	 * - a choice (one of several, as a stage or a quiz) is a tile too; once chosen it gets a red
+	 *   frame and the 選 stamp;
+	 * - a control group (a slider, a switch) has an ink frame;
+	 * - a panel that only tells has no frame, but for the game's own title card;
 	 * - what can't be used now keeps its shape, faded.
 	 */
 	--frame-faded: 2px solid var(--ink-faint);

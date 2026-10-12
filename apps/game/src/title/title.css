@@ -15,8 +15,10 @@
 	overflow-y: auto;
 }
 
+/* The game's own title card keeps its ink frame. */
 .name {
 	display: flex;
+	border: var(--frame);
 	align-items: flex-end;
 	gap: 0.9rem;
 	justify-self: stretch;
