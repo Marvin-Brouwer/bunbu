@@ -82,6 +82,10 @@ describe("validate", () => {
     expect(error.issues).toEqual([expect.objectContaining({ line: 1, message: expect.stringContaining("first line") })]);
   });
 
+  it("accepts the schema from the site as well", async () => {
+    await expectValid(quiz(single).replace(modeline, "# yaml-language-server: $schema=https://marvin-brouwer.github.io/bunbu/schema/v1.json"));
+  });
+
   it("rejects an unknown schema version", async () => {
     const error = await expectIssues(quiz(single).replace("/v1.json", "/v99.json"));
     expect(error.issues[0]!.message).toBe("Unknown schema version v99");

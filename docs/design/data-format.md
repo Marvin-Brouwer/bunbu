@@ -31,7 +31,13 @@ The schema lives in the top-level `schema/` folder of this repository, with one 
 # yaml-language-server: $schema=https://raw.githubusercontent.com/Marvin-Brouwer/bunbu/main/schema/v1.json
 ```
 
-> **Later:** the `schema/` folder will be copied to GitHub Pages as part of the site deploy, and the Pages URL will replace the raw GitHub URL. Decide this before quiz files are published, because the URL ends up in every file.
+The site deploy also copies the `schema/` folder to GitHub Pages, so this line works just as well:
+
+```yaml
+# yaml-language-server: $schema=https://marvin-brouwer.github.io/bunbu/schema/v1.json
+```
+
+The app only reads the version from the end of the URL (`/v<n>.json`), so both URLs are accepted.
 
 ## Versioning
 
