@@ -19,6 +19,8 @@ export type LibraryState = {
 	readonly entries: readonly LibraryEntry[]
 	/** The quizzes added or removed this session, which a restore of the saved ones must not undo. */
 	readonly touched: readonly string[]
+	/** Whether the saved quizzes are back, so the title knows there is no quiz rather than one on its way. */
+	readonly restored: boolean
 }
 
 export type LibraryActions = {
@@ -39,6 +41,7 @@ const keyOf = (id: string, version: string) => JSON.stringify([id, version])
 export const library: Library = createStore<LibraryState & LibraryActions>({
 	entries: [],
 	touched: [],
+	restored: false,
 
 	add(loaded) {
 		const { entries, touched } = snapshot<LibraryState & LibraryActions>(library)
@@ -63,11 +66,11 @@ export const library: Library = createStore<LibraryState & LibraryActions>({
 		// One quiz per `id` + `version`, as in `add`: the last saved wins.
 		const older = new Map<string, LibraryEntry>()
 		for (const each of saved) older.set(keyOf(each.quiz.id, each.quiz.version), each)
-		const restored = [...older].filter(([key]) => !touched.includes(key))
-		library.update(() => ({ entries: [...restored.map(([, entry]) => entry), ...entries] }))
+		const kept = [...older].filter(([key]) => !touched.includes(key))
+		library.update(() => ({ entries: [...kept.map(([, entry]) => entry), ...entries], restored: true }))
 	},
 
 	reset() {
-		library.update(() => ({ entries: [], touched: [] }))
+		library.update(() => ({ entries: [], touched: [], restored: false }))
 	},
 })

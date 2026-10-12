@@ -1,21 +1,20 @@
 /**
  * 1 Title / menu ([screens.md](../../../../docs/design/screens.md#1-title--menu)), the router's
- * home at `/`: the name, the chosen quiz and its high score, and the way into a fight, the quizzes,
- * the dojo and the settings. Quizzes are chosen and loaded on a screen of their own, the stage and
+ * home at `/`: the name, the quiz card with the way into a fight and the quizzes, then the dojo, how
+ * to play and the settings. Quizzes are chosen and loaded on a screen of their own, the stage and
  * the difficulty on the fight screen, since only a fight needs them.
  */
 
-import { component } from '@rooted/components'
+import { component, environment } from '@rooted/components'
 import { href, Link } from '@rooted/router'
 import { CreditsRoute, HowToPlayRoute } from '../about/_routes.mts'
 import { DojoRoute } from '../dojo/_routes.mts'
-import { FightRoute } from '../fight/_routes.mts'
-import { QuizzesRoute } from '../quizzes/_routes.mts'
 import { SettingsRoute } from '../settings/_routes.mts'
 import { MenuButton } from '../_shared/menu/menu-button.mts'
 import { Placeholder } from '../_shared/placeholder.mts'
 import { selection, type SelectionState } from '../_shared/state/selection.mts'
 import { snapshot } from '../_shared/state/store.mts'
+import { library } from '../_shared/storage/library.mts'
 import { show } from '../canvas/stage.mts'
 import { ChosenQuizCard } from './chosen-quiz-card.mts'
 import { UpdateNotice } from './update-notice.mts'
@@ -26,41 +25,18 @@ export const Title = component({
 	name: 'title',
 	styles,
 	onMount({ append, create, element, signal }) {
-		// The chosen quiz, Fight and Quizzes follow the choice. Without a quiz, Fight leads to the quizzes.
+		// The quiz card follows the choice. It says it is loading until the saved quizzes are back,
+		// and always on the pre-rendered page, as the browser has to read them first.
 		const chosen = element('div', {
 			classes: styles.chosen,
 		})
 		const showChosen = () => {
 			const { quiz } = snapshot<SelectionState>(selection)
+			const loading = environment.is('preRenderer') || !library.value.restored
 			chosen.replaceChildren(
-				...quiz === undefined
-					? [
-						create(MenuButton, {
-							kind: 'primary',
-							label: 'Fight',
-							note: 'Choose a quiz first',
-							href: href.for(QuizzesRoute),
-						}),
-						create(MenuButton, {
-							label: 'Quizzes',
-							note: 'Choose or load a quiz',
-							href: href.for(QuizzesRoute),
-						}),
-					]
-					: [
-						create(ChosenQuizCard, {
-							quiz,
-						}),
-						create(MenuButton, {
-							kind: 'primary',
-							label: 'Fight',
-							href: href.for(FightRoute),
-						}),
-						create(MenuButton, {
-							label: 'Change quiz',
-							href: href.for(QuizzesRoute),
-						}),
-					],
+				create(ChosenQuizCard, {
+					quiz: quiz ?? (loading ? 'loading' : undefined),
+				})
 			)
 		}
 
@@ -100,11 +76,15 @@ export const Title = component({
 							create(UpdateNotice),
 							chosen,
 							element('div', {
-								classes: styles.pair,
+								classes: styles.row,
 								children: [
 									create(MenuButton, {
 										label: 'Dojo',
 										href: href.for(DojoRoute),
+									}),
+									create(MenuButton, {
+										label: 'How to play',
+										href: href.for(HowToPlayRoute),
 									}),
 									create(MenuButton, {
 										label: 'Settings',
@@ -114,16 +94,10 @@ export const Title = component({
 							}),
 							element('div', {
 								classes: styles.pages,
-								children: [
-									create(Link, {
-										href: href.for(HowToPlayRoute),
-										children: 'How to play',
-									}),
-									create(Link, {
-										href: href.for(CreditsRoute),
-										children: 'Credits',
-									}),
-								],
+								children: create(Link, {
+									href: href.for(CreditsRoute),
+									children: 'About the Bunbu app',
+								}),
 							}),
 						],
 					}),
@@ -133,6 +107,7 @@ export const Title = component({
 
 		showChosen()
 		selection.on('change', signal, showChosen)
+		library.on('change', signal, showChosen)
 		show(createTitleWorld, signal)
 	},
 })

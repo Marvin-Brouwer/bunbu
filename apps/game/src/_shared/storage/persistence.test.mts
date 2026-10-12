@@ -173,6 +173,15 @@ describe('persistApp', () => {
 		expect(lastRun.value.missesOf('a', '1')).toHaveLength(1)
 	})
 
+	it('tells when the saved quizzes are back, even when there are none', async () => {
+		const restoring = persistApp(stop.signal)
+		expect(library.value.restored).toBe(false)
+
+		await restoring
+
+		expect(library.value.restored).toBe(true)
+	})
+
 	it('saves every change, and what it saved is what it puts back', async () => {
 		await persistApp(stop.signal)
 		settings.value.setDifficulty('apprentice')
