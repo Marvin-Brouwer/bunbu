@@ -55,6 +55,16 @@
 	box-shadow: inset 0 0 0 1px var(--vermilion), var(--tile);
 }
 
+/* Pressed, it sinks onto its bevel like a button. */
+.stage:active:not(:has(input:disabled)) {
+	translate: 0 var(--bevel-height);
+	box-shadow: none;
+}
+
+.stage:active:has(input:checked) {
+	box-shadow: inset 0 0 0 1px var(--vermilion);
+}
+
 .stage:has(input:focus-visible) {
 	outline: 3px solid var(--indigo);
 	outline-offset: 2px;
