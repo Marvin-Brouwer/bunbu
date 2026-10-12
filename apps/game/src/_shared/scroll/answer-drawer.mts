@@ -26,7 +26,7 @@ export type AnswerDrawerOptions = {
 
 const labels = {
 	put: 'Tap or swipe up to answer',
-	drawn: 'Swipe down to read the question',
+	drawn: 'Tap or swipe down to read the question',
 } as const
 
 /** How far, in CSS pixels, the seal has to be dragged to count as a swipe instead of a tap. */

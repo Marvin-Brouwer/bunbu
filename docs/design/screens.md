@@ -55,7 +55,7 @@ A difficulty slider from **Apprentice** to **Shogun** over four stops (Apprentic
 
 ### 4 Ambush
 
-All variants: the scroll down to the bottom of the screen with the question, and the answer drawer at its foot: closed, an edge with the red hanko seal (答) and "Tap or swipe up to answer"; drawn, the answers on lined paper over the whole scroll, a brush-lettered line on how to answer above them, and "Swipe down to read the question" over the seal. The finger leaves a trace on the answers, and each pick splits its answer along a thin red cut. Slow motion, no timer bar. See [ambush](gameplay.md#ambush).
+All variants: the scroll down to the bottom of the screen with the question, and the answer drawer at its foot: closed, an edge with the red hanko seal (答) and "Tap or swipe up to answer"; drawn, the answers on lined paper over the whole scroll, a brush-lettered line on how to answer above them, and "Tap or swipe down to read the question" over the seal. The finger leaves a trace on the answers, and each pick splits its answer along a thin red cut. Slow motion, no timer bar. See [ambush](gameplay.md#ambush).
 
 The scroll's heading is the label, the question type, `2 OF 3` for the rounds of `solutions` and `match`, `CHOOSE n` for `multiple`, and the ninjas (`7 OPTIONS · 5 NINJAS` when some carry two). `yes-no` is always one ninja and doesn't say so.
 
