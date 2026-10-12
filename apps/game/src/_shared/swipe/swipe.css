@@ -102,7 +102,7 @@
 	stroke-width: 5;
 	stroke-linecap: round;
 	stroke-dasharray: 1;
-	animation: cut 140ms ease-out both;
+	animation: draw-slash 140ms ease-out both;
 	transition: opacity 400ms;
 }
 
@@ -111,7 +111,7 @@
 	opacity: 0;
 }
 
-@keyframes cut {
+@keyframes draw-slash {
 	from {
 		stroke-dashoffset: 1;
 	}
