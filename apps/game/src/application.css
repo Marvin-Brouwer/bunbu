@@ -44,18 +44,20 @@
 	--frame: 2px solid var(--ink);
 	--shadow: 0 2px 6px rgb(0 0 0 / 35%);
 	/*
-	 * One look per kind of control, and dashed lines only for the area a quiz file is dropped on:
-	 * - a button stands on a ledge of ink and sinks when pressed;
-	 * - a choice (one of several, as a stage or a quiz) is flat, with a round mark that fills red;
-	 * - a control group (a slider, a switch) and a panel that only tells are flat in a frame;
+	 * One look per kind of thing on a screen, and dashed lines only for the area a quiz file is
+	 * dropped on:
+	 * - a button is a tile without a frame, white or red, standing on a bevel with a faint shadow,
+	 *   and sinks when pressed;
+	 * - a control group (a slider, a switch) and a choice (one of several, as a stage or a quiz)
+	 *   have an ink frame; a choice turns red and gets the 選 stamp when chosen;
+	 * - a panel that only tells has no frame;
 	 * - what can't be used now keeps its shape, faded.
 	 */
-	--ledge-height: 0.2rem;
-	--ledge: 0 var(--ledge-height) 0 var(--ink);
-	--ledge-vermilion: 0 var(--ledge-height) 0 #6e1f0f;
 	--frame-faded: 2px solid var(--ink-faint);
-	--mark: 1.25rem;
-	--vermilion-tint: #f6e6dc;
+	--bevel-height: 0.2rem;
+	--tile-shadow: 0 0.3rem 0.6rem rgb(0 0 0 / 18%);
+	--tile: 0 var(--bevel-height) 0 var(--paper-edge), var(--tile-shadow);
+	--tile-vermilion: 0 var(--bevel-height) 0 #6e1f0f, var(--tile-shadow);
 
 	position: fixed;
 	inset: 0;

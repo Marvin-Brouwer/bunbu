@@ -42,14 +42,13 @@
 	flex: none;
 	width: 2.75rem;
 	height: 2.75rem;
-	border: var(--frame);
 	border-radius: var(--radius);
 	background: var(--paper-light);
 	color: inherit;
 	font-size: 1.5rem;
 	line-height: 1;
 	text-decoration: none;
-	box-shadow: var(--ledge);
+	box-shadow: var(--tile);
 }
 
 /* A numbered part of a screen: `1 · QUIZ`. */
@@ -94,7 +93,7 @@
 	justify-items: center;
 	gap: 0.15rem;
 	padding: 0.85rem 1rem;
-	border: var(--frame);
+	border: none;
 	border-radius: var(--radius);
 	background: var(--paper-light);
 	color: var(--ink);
@@ -104,25 +103,24 @@
 	text-align: center;
 	text-decoration: none;
 	cursor: pointer;
-	box-shadow: var(--ledge);
+	box-shadow: var(--tile);
 }
 
 .button.primary {
-	border-color: var(--vermilion);
 	background: var(--vermilion);
 	color: var(--paper-light);
 	font-size: 1.3rem;
-	box-shadow: var(--ledge-vermilion);
+	box-shadow: var(--tile-vermilion);
 }
 
 .button:active,
 .back:active {
-	translate: 0 var(--ledge-height);
+	translate: 0 var(--bevel-height);
 	box-shadow: none;
 }
 
 .button:disabled {
-	border-color: var(--ink-faint);
+	background: var(--paper-shade);
 	color: var(--ink-faint);
 	cursor: default;
 	translate: none;
@@ -139,6 +137,27 @@
 	font-family: var(--font-mono);
 	font-size: 0.8rem;
 	font-weight: 400;
+}
+
+/*
+ * A choice's 選 stamp: slapped on the top left corner of the choice once it is chosen. It follows
+ * the choice's radio, inside the choice or the card that has `position: relative`.
+ */
+.choiceStamp {
+	position: absolute;
+	top: -0.7rem;
+	left: -0.7rem;
+	display: none;
+	width: 2.1rem;
+	height: 2.1rem;
+	rotate: -8deg;
+	filter: drop-shadow(0 1px 1.5px rgb(0 0 0 / 30%));
+	pointer-events: none;
+}
+
+input:checked ~ .choiceStamp,
+input:checked ~ * .choiceStamp {
+	display: block;
 }
 
 /* The difficulty: a slider over four stops from Apprentice to Shogun, the inner stops marked. */
