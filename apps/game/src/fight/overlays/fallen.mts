@@ -5,6 +5,7 @@
  */
 
 import { component } from '@rooted/components'
+import type { Path } from '@rooted/router'
 import { formatDuration, formatWhole } from '../../_shared/numbers.mts'
 import { selection, stageNames } from '../../_shared/state/selection.mts'
 import { ScrollSheet } from '../../_shared/scroll/scroll-sheet.mts'
@@ -20,6 +21,8 @@ import styles from './overlays.css'
 export type FallenOptions = {
 	readonly game: RunGame
 	readonly restart: () => void
+	/** Leaves the run for another screen: Menu, Practise mistakes. */
+	readonly leave: (to: Path) => void
 }
 
 export const Fallen = component<FallenOptions>({
@@ -102,6 +105,7 @@ export const Fallen = component<FallenOptions>({
 					}),
 					footer: create(AfterRun, {
 						misses: misses.length,
+						leave: options.leave,
 						next: {
 							label: 'Rise again',
 							action: options.restart,

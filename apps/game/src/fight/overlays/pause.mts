@@ -5,6 +5,7 @@
  */
 
 import { component } from '@rooted/components'
+import { href, type Path } from '@rooted/router'
 import { MenuButton } from '../../_shared/menu/menu-button.mts'
 import { SettingsForm } from '../../_shared/menu/settings-form.mts'
 import { formatWhole } from '../../_shared/numbers.mts'
@@ -16,7 +17,8 @@ import styles from './overlays.css'
 export type PauseOptions = {
 	readonly game: RunGame
 	readonly restart: () => void
-	readonly leave: () => void
+	/** Leaves the run for another screen: Quit goes to the title. */
+	readonly leave: (to: Path) => void
 }
 
 export const Pause = component<PauseOptions>({
@@ -89,7 +91,7 @@ export const Pause = component<PauseOptions>({
 						}),
 						create(MenuButton, {
 							label: 'Quit',
-							action: options.leave,
+							action: () => { options.leave(href.path('/')) },
 						}),
 					],
 				}),

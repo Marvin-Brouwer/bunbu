@@ -26,8 +26,6 @@ import styles from './run.css'
 
 export type RunScreenOptions = {
 	readonly game: RunGame
-	/** Leaves the run for the select screen, from the pause menu. */
-	readonly leave: () => void
 	/** Starts a new run on the chosen quiz and stage: Restart stage, Next stage, Rise again. */
 	readonly restart: () => void
 }
@@ -58,7 +56,7 @@ export const RunScreen = component<RunScreenOptions>({
 		})
 
 		// The run's layers over the canvas, back to front. The tracks mount here, one line each,
-		// handing their component `game` (and the overlays `leave`).
+		// handing their component `game` (and the overlays `restart` and `leave`).
 		const run = append(
 			element('div', {
 				classes: styles.run,
@@ -101,7 +99,7 @@ export const RunScreen = component<RunScreenOptions>({
 						children: create(RunOverlays, {
 							game,
 							restart: options.restart,
-							leave: options.leave,
+							leave: guard.leave,
 						}),
 					}),
 				],

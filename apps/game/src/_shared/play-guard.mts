@@ -11,9 +11,12 @@
  *
  * Both only pause while `pausable` says so. When there is nothing to pause, as on the results,
  * Back goes on back without stopping.
+ *
+ * **Leaving** for another screen, from a menu, takes the play's place in history, so Back from
+ * there doesn't go into the play again.
  */
 
-import { navigate } from '@rooted/router'
+import { navigate, type Path } from '@rooted/router'
 
 export type PlayGuardOptions = {
 	readonly pause: () => void
@@ -24,6 +27,8 @@ export type PlayGuardOptions = {
 export type PlayGuard = {
 	/** Call when play resumes: back to full screen, and Back pauses again. */
 	readonly resumed: () => void
+	/** Leaves play for another screen, which takes its place in history. */
+	readonly leave: (to: Path) => void
 }
 
 /** The history state that marks the entry Back takes off to pause. */
@@ -86,10 +91,11 @@ function resumed() {
 
 export function guardPlay(options: PlayGuardOptions, signal: AbortSignal): PlayGuard {
 	active++
+	let leaving = false
 
 	// Back took the guard off: pause, or go on back when there is nothing to pause.
 	window.addEventListener('popstate', () => {
-		if (guarding()) return
+		if (leaving || guarding()) return
 		if (options.pausable()) options.pause()
 		else history.back()
 	}, { signal })
@@ -118,5 +124,11 @@ export function guardPlay(options: PlayGuardOptions, signal: AbortSignal): PlayG
 
 	keepScreenOn()
 	resumed()
-	return { resumed }
+	return {
+		resumed,
+		leave(to) {
+			leaving = true
+			navigate.replace(to)
+		},
+	}
 }

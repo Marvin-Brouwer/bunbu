@@ -83,7 +83,7 @@ All on a scroll over the dimmed world, like an ambush:
 - This run: quiz, stage, answered (`11 / 13`), distance.
 - **Resume**, **Restart stage**, **Settings**, **Quit** at the foot of the scroll. Settings open in place on the scroll; the difficulty only shows there, since it can't change halfway through a run.
 - Auto-pauses when the app goes to the background or a call comes in. 3-2-1 countdown on resume.
-- Also pauses on **Back** and when the player leaves full screen. On a phone (a touch screen without a mouse or trackpad) a run, and [practice](dojo.md#practice), plays full screen; resuming goes full screen again, and **Back** while paused leaves the run. The screen stays on during a run and practice, full screen or not, so it doesn't dim or lock mid fight.
+- Also pauses on **Back** and when the player leaves full screen. On a phone (a touch screen without a mouse or trackpad) a run, and [practice](dojo.md#practice), plays full screen; resuming goes full screen again, and **Back** while paused leaves the run. The screen stays on during a run and practice, full screen or not, so it doesn't dim or lock mid fight. **Quit** here, and **Menu** or **Practise mistakes** on the results, go to the title (or the dojo) in the run's place in history, so Back from there never goes into the run again.
 
 ### 7 Finished: results and mistakes
 
