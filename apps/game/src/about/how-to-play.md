@@ -17,7 +17,7 @@ When ninjas spring out, the world slows down and a scroll unrolls with the quest
 - **Several answers, or an order:** swipe each one, then lift your finger and wait a moment to strike. For an order, swipe them in the right order. A swipe is final.
 - **Yes or no:** swipe up for yes, down for no.
 
-Take too long and the ninjas strike first. Novice has no time limit.
+Take too long and the ninjas strike first. The difficulty sets how long they wait: Apprentice gives you a little more time, Shogun half.
 
 ## The life bar
 

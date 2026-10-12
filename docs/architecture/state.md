@@ -47,7 +47,7 @@ App-wide:
 
 | Store       | Holds                                              | Example actions                          |
 | ----------- | -------------------------------------------------- | ---------------------------------------- |
-| `settings`  | Difficulty (`timeScale`), haptics on/off, volume   | `setDifficulty(level)`, `setHaptics(on)` |
+| `settings`  | Difficulty (`timeScale`), haptics on/off, volume   | `setTimeScale(scale)`, `setHaptics(on)` |
 | `selection` | The quiz and stage chosen on the select screen     | `chooseQuiz(quiz)`, `chooseStage(stage)` |
 
 Two more app-wide stores hold what outlives a run: `highScores` (per quiz `id` + `version`) and `lastRun` (the misses, for "practise mistakes"). A small `library` store holds the quizzes the player loaded.

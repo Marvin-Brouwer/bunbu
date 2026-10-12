@@ -3,7 +3,8 @@
  * ninjas creeping in are the timer ([time limit](../../../../../docs/design/gameplay.md#time-limit)).
  *
  * ```text
- * ambushSeconds = ceil(read + answer) × timeScale, minimum 5 s
+ * ambushSeconds = timePerQuestion / ambushes of the question × timeScale, when the quiz sets it
+ *               = ceil(read + answer) × timeScale, minimum 5 s, when it doesn't
  * read          = words / 200 wpm (words in code count double)
  * answer        = base + per option, per kind
  * ```
@@ -49,10 +50,12 @@ export function wordsIn(markdown: string): number {
 
 /**
  * The time limit of an ambush in seconds, or `0` when there is none (`timeScale` is `undefined`
- * on Novice). `texts` is everything on the scroll: the query and every option.
+ * in the dojo). `texts` is everything on the scroll: the query and every option. `given` is the
+ * quiz's own time for this ambush, its share of `timePerQuestion`, which wins when there is one.
  */
-export function ambushSeconds(kind: AmbushKind, texts: readonly string[], options: number, timeScale: number | undefined): number {
+export function ambushSeconds(kind: AmbushKind, texts: readonly string[], options: number, timeScale: number | undefined, given?: number): number {
 	if (timeScale === undefined) return 0
+	if (given !== undefined) return given * timeScale
 	const { wordsPerMinute, answerSeconds, minimumSeconds } = ambushConfig
 	const read = (texts.reduce((total, text) => total + wordsIn(text), 0) / wordsPerMinute) * 60
 	const answer = answerSeconds[kind].base + answerSeconds[kind].perOption * options

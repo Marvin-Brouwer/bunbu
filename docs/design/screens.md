@@ -43,7 +43,7 @@ A screen of its own, so the title stays calm:
 1. **Quiz:** the chosen quiz, and which of its questions won't fit in a fight.
 2. **Stage:** Rice fields, Bamboo forest, Mountain temple, Castle town, Edo castle. Each shows its best distance and whether it was cleared.
 
-A Novice / Adept / Master selector (sets `timeScale`, see [time limit](gameplay.md#time-limit)) and **Start run**.
+A difficulty slider from **Apprentice** to **Shogun**, with the default marked in the middle (sets `timeScale`, see [time limit](gameplay.md#time-limit)), and **Start run**.
 
 ### 3 Running
 
@@ -156,4 +156,4 @@ Like 4A, with `PRACTICE · SINGLE · 8 / 40` and the running right vs wrong perc
 
 ## Notes
 
-- **Novice / Adept / Master** on screen 2 maps to `timeScale` (exact values to tune in playtests).
+- The difficulty slider on screen 2 maps to `timeScale`: Apprentice `1.2`, the middle `1`, Shogun `0.5`.

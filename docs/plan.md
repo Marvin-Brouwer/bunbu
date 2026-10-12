@@ -128,7 +128,7 @@ A good track for someone who'd rather not write TypeScript.
 
 Owns `title/`, `quizzes/`, `about/`, `settings/` (except `state/`), the `fight/` screens (fight setup, the run screen and its overlays: pause, results, fallen) and `application.mts`.
 
-- Title / menu (1), quiz and stage select (2) with quiz cards, **Load .yaml** and `.bunbu` through `validate` and `uncompress` from `@bunbu/data`, showing their errors to the user. Novice / Adept / Master.
+- Title / menu (1), quiz and stage select (2) with quiz cards, **Load .yaml** and `.bunbu` through `validate` and `uncompress` from `@bunbu/data`, showing their errors to the user. The difficulty slider, Apprentice to Shogun.
 - Pause (6), settings (difficulty, haptics, volume).
 - Static pages such as asset credits and how to play as `.md` files through [`@rooted/markdown`](https://github.com/Marvin-Brouwer/rooted/blob/main/docs/guide/markdown.md), which renders them at build time.
 - A "new version" notice on the title screen with [`@rooted/pwa`](https://github.com/Marvin-Brouwer/rooted/blob/main/docs/guide/pwa.md), so an update never lands in the middle of a run.
@@ -190,5 +190,5 @@ Decisions the docs don't make yet. Each has a default so nobody is blocked; chan
 | How do stage length and question count relate? The wireframe shows `860 / 1,500 m` with ambush ticks. | Stage length scales with the number of questions, ambushes evenly spaced. One run = one quiz on one stage. | B, D, E |
 | The progress bar shows "a block marks the boss". What is the boss? | No boss in M1 to M4. | B, E |
 | What does "Next stage" on the results screen do with the same quiz? | Restart the same quiz on the next stage. | G |
-| Exact Novice / Adept / Master values. | Novice `off`, Adept `1.5`, Master `1`, using the values in [time limit](design/gameplay.md#time-limit). | A, G |
+| Exact difficulty values. | A slider from Apprentice `1.2` through `1` in the middle (the default) to Shogun `0.5`, and the quiz's own `timePerQuestion` when it has one, see [time limit](design/gameplay.md#time-limit). | A, G |
 | Sound and music. | None until after M4; the volume setting exists but does nothing yet. | — |

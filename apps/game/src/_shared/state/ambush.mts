@@ -52,7 +52,7 @@ export type AmbushState = {
 	readonly options: readonly AmbushOption[]
 	/** How many options to choose, `0` when the count is not given away. */
 	readonly choose: number
-	/** The time limit in seconds, `0` when there is none (Novice). */
+	/** The time limit in seconds, `0` when there is none, as in the dojo. */
 	readonly seconds: number
 	readonly secondsLeft: number
 	/** Which of the question's ambushes this is, 1, 2, 3 …: "2 of 3" for `solutions`. */

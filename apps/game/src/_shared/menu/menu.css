@@ -129,55 +129,56 @@
 	font-weight: 400;
 }
 
-/* A choice of a few, side by side: Novice / Adept / Master. */
+/* The difficulty: a slider from Apprentice to Shogun, with the default marked in the middle. */
 
-.segments {
+.difficulty {
 	display: grid;
-	grid-auto-columns: 1fr;
-	grid-auto-flow: column;
+	gap: 0.35rem;
+	padding: 0.85rem 1rem;
 	border: var(--frame);
 	border-radius: var(--radius);
-	overflow: hidden;
 	background: var(--paper-light);
 }
 
-.segment {
-	display: grid;
-	place-items: center;
-	padding: 0.75rem 0.5rem;
-	font-weight: 700;
-	cursor: pointer;
-}
-
-.segment + .segment {
-	border-left: 1px solid var(--ink);
-}
-
-.segment:has(input:checked) {
-	background: var(--ink);
-	color: var(--paper-light);
-}
-
-.segment:has(input:disabled) {
-	cursor: default;
-}
-
-.segments:has(input:disabled) {
+.difficulty:has(input:disabled) {
 	border-style: dashed;
-}
-
-.segment:has(input:disabled:not(:checked)) {
 	color: var(--ink-soft);
 }
 
-.segment:has(input:focus-visible) {
-	outline: 3px solid var(--indigo);
-	outline-offset: -5px;
+.difficultyEnds {
+	display: flex;
+	justify-content: space-between;
+	font-weight: 700;
 }
 
-/* The radio itself is the whole segment. */
-.segment input {
+.difficultyTrack {
+	position: relative;
+	display: grid;
+}
+
+.difficultyTrack input {
+	position: relative;
+	width: 100%;
+	margin: 0;
+	accent-color: var(--vermilion);
+}
+
+.difficultyMiddle {
 	position: absolute;
-	opacity: 0;
-	pointer-events: none;
+	top: -0.2rem;
+	bottom: -0.2rem;
+	left: 50%;
+	width: 2px;
+	translate: -50% 0;
+	background: var(--ink);
+}
+
+.difficultyNote {
+	margin: 0;
+	font-size: 0.85rem;
+	text-align: center;
+}
+
+.difficultyTime {
+	font-family: var(--font-mono);
 }

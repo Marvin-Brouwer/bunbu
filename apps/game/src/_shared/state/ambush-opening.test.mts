@@ -133,6 +133,13 @@ describe('opening an ambush', () => {
 		expect(opening.options.map((option) => option.correct)).toEqual([false, true])
 	})
 
+	it('shares the time per question of the quiz between its ambushes', () => {
+		const quiz = { ...fixtureQuiz, timePerQuestion: '1m' }
+		const refs = [{ question: 1, part: 0 }, { question: 1, part: 1 }]
+		expect(openingOf(quiz, refs, { question: 1, part: 0 }, { timeScale: 1.2, random: seeded(1) }).seconds).toBe(36)
+		expect(openingOf(quiz, refs.slice(0, 1), { question: 1, part: 0 }, { timeScale: 0.5, random: seeded(1) }).seconds).toBe(30)
+	})
+
 	it('has no time limit without a time scale', () => {
 		const opening = openingOf(fixtureQuiz, refsOf(fixtureQuiz, [1]), { question: 1, part: 0 }, { timeScale: undefined, random: seeded(1) })
 		expect(opening.seconds).toBe(0)
@@ -178,6 +185,12 @@ describe('time limit', () => {
 		const words = Array.from({ length: 200 }, () => 'word').join(' ')
 		expect(ambushSeconds('single', [words], 4, 1)).toBe(64)
 		expect(ambushSeconds('single', [words], 4, 1.5)).toBe(96)
+	})
+
+	it('takes the time the quiz gives, times timeScale', () => {
+		expect(ambushSeconds('single', ['Which?'], 4, 1.2, 30)).toBe(36)
+		expect(ambushSeconds('single', ['Which?'], 4, 0.5, 30)).toBe(15)
+		expect(ambushSeconds('single', ['Which?'], 4, undefined, 30)).toBe(0)
 	})
 
 	it('is at least 5 seconds, and none without a time scale', () => {

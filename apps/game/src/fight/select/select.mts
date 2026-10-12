@@ -6,7 +6,7 @@
 
 import { component } from '@rooted/components'
 import { href } from '@rooted/router'
-import { DifficultyPicker } from '../../_shared/menu/difficulty-picker.mts'
+import { DifficultySlider } from '../../_shared/menu/difficulty-slider.mts'
 import { MenuButton } from '../../_shared/menu/menu-button.mts'
 import { MenuScreen } from '../../_shared/menu/menu-screen.mts'
 import { MenuSection } from '../../_shared/menu/menu-section.mts'
@@ -99,9 +99,7 @@ export const Select = component<SelectOptions>({
 					}),
 					create(MenuSection, {
 						label: 'Difficulty',
-						children: create(DifficultyPicker, {
-							name: 'difficulty',
-						}),
+						children: create(DifficultySlider, {}),
 					}),
 					element('div', {
 						classes: styles.start,
