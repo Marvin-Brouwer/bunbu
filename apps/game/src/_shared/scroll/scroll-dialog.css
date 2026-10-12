@@ -1,0 +1,40 @@
+/* A scroll over the dimmed screen (scroll-dialog.mts). */
+
+.scrollDialog {
+	width: min(100% - 1.5rem, 28rem);
+	max-width: none;
+	padding: 0;
+	border: none;
+	background: none;
+	color: var(--ink);
+	overflow: visible;
+}
+
+.scrollDialog::backdrop {
+	background: rgb(27 26 24 / 55%);
+}
+
+.dialogBody {
+	display: grid;
+	gap: 0.75rem;
+}
+
+.dialogBody p {
+	margin: 0;
+}
+
+.dialogBody p:empty {
+	display: none;
+}
+
+.dialogTitle {
+	margin: 0;
+	font-family: var(--font-display);
+	font-size: 1.75rem;
+}
+
+.dialogActions {
+	display: grid;
+	gap: 0.75rem;
+	padding: 0 1rem 1rem;
+}

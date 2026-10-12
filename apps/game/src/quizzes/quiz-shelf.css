@@ -22,7 +22,7 @@
 	color: var(--ink);
 }
 
-/* Choosing takes the card but for Remove. */
+/* Choosing takes the card but for its buttons. */
 .cardChoose {
 	display: grid;
 	align-content: start;
@@ -61,8 +61,14 @@
 	color: var(--ink-soft);
 }
 
-.remove {
-	margin: 0.45rem 0.45rem 0 0;
+.cardActions {
+	display: grid;
+	justify-items: end;
+	gap: 0.15rem;
+	padding: 0.45rem 0.45rem 0.45rem 0;
+}
+
+.cardAction {
 	padding: 0.3rem 0.5rem;
 	border: 1px solid transparent;
 	border-radius: var(--radius);
@@ -73,11 +79,11 @@
 	cursor: pointer;
 }
 
-.remove:hover {
+.cardAction:hover {
 	border-color: var(--ink-soft);
 }
 
-.remove:focus-visible {
+.cardAction:focus-visible {
 	outline: 3px solid var(--indigo);
 	outline-offset: 2px;
 }

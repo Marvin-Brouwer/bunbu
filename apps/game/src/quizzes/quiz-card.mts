@@ -1,11 +1,12 @@
 /**
- * One quiz on the quizzes screen: its title, version, pass mark and high score, or `new`, and
- * **Remove**, which asks for a second tap before it does.
+ * One quiz on the quizzes screen: its title, version, pass mark and high score, or `new`, with
+ * **Download** for its `.bunbu` file and **Remove**.
  */
 
 import type { BunbuData } from '@bunbu/data'
 import { component } from '@rooted/components'
 import { formatWhole } from '../_shared/numbers.mts'
+import { download, quizFileOf } from '../_shared/quiz/quiz-file.mts'
 import { highScores } from '../fight/state/highscores.mts'
 import { RemoveQuizButton } from './remove-quiz-button.mts'
 import styles from './quiz-shelf.css'
@@ -54,12 +55,32 @@ export const QuizCard = component<QuizCardOptions>({
 							}),
 						],
 					}),
-					remove === undefined
-						? undefined
-						: create(RemoveQuizButton, {
-							title: quiz.title,
-							remove,
-						}),
+					element('div', {
+						classes: styles.cardActions,
+						children: [
+							element('button', {
+								type: 'button',
+								classes: styles.cardAction,
+								textContent: 'Download',
+								aria: {
+									label: `Download ${quiz.title}`,
+								},
+								on: {
+									click() {
+										quizFileOf(quiz).then(download).catch((error: unknown) => {
+											console.error('[bunbu] the quiz could not be packed', error)
+										})
+									},
+								},
+							}),
+							remove === undefined
+								? undefined
+								: create(RemoveQuizButton, {
+									quiz,
+									remove,
+								}),
+						],
+					}),
 				],
 			})
 		)

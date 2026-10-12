@@ -1,47 +1,66 @@
 /**
- * **Remove** on a quiz card. The first tap only asks, "Tap again to remove", so a slip doesn't
- * throw a quiz away; moving on to anything else takes the question back.
+ * **Remove** on a quiz card. It asks first, on a scroll with Remove and Cancel, so a slip doesn't
+ * throw a quiz away.
  */
 
+import type { BunbuData } from '@bunbu/data'
 import { component } from '@rooted/components'
+import { MenuButton } from '../_shared/menu/menu-button.mts'
+import { ScrollDialog } from '../_shared/scroll/scroll-dialog.mts'
 import styles from './quiz-shelf.css'
 
 export type RemoveQuizButtonOptions = {
-	/** The quiz's title, for screen readers: the button only says Remove. */
-	readonly title: string
+	readonly quiz: BunbuData
 	readonly remove: () => void
 }
 
 export const RemoveQuizButton = component<RemoveQuizButtonOptions>({
 	name: 'remove-quiz-button',
 	styles,
-	onMount({ append, element, options }) {
-		let asking = false
+	onMount({ append, create, element, options }) {
+		const { quiz } = options
 
-		const button = element('button', {
-			type: 'button',
-			classes: styles.remove,
-			on: {
-				click() {
-					if (asking) {
-						options.remove()
-						return
-					}
-					ask(true)
+		const ask = () => {
+			const scroll: Element = create(ScrollDialog, {
+				title: 'Remove this quiz?',
+				closed: () => {
+					scroll.remove()
 				},
-				blur() {
-					ask(false)
-				},
-			},
-		})
-
-		const ask = (again: boolean) => {
-			asking = again
-			button.textContent = again ? 'Tap again to remove' : 'Remove'
-			button.setAttribute('aria-label', `${button.textContent}: ${options.title}`)
+				children: element('p', {
+					textContent: `${quiz.title} comes off your quizzes. Its high score stays, for if you load it again.`,
+				}),
+				footer: (close) => [
+					create(MenuButton, {
+						kind: 'primary',
+						label: 'Remove',
+						action: () => {
+							close()
+							options.remove()
+						},
+					}),
+					create(MenuButton, {
+						label: 'Cancel',
+						action: close,
+					}),
+				],
+			})
+			append(
+				scroll
+			)
 		}
 
-		ask(false)
-		append(button)
+		append(
+			element('button', {
+				type: 'button',
+				classes: styles.cardAction,
+				textContent: 'Remove',
+				aria: {
+					label: `Remove ${quiz.title}`,
+				},
+				on: {
+					click: ask,
+				},
+			})
+		)
 	},
 })
