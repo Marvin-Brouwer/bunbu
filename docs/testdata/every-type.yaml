@@ -10,6 +10,7 @@ language: en
 description: >-
   Development sample: one question of every type in the data format.
 passingScore: 70
+timePerQuestion: 1m30s
 
 pronunciations:
   GFM: G F M
