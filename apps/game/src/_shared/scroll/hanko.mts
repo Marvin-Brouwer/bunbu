@@ -8,8 +8,8 @@ import { component } from '@rooted/components'
 import styles from './scroll.css'
 
 export type HankoOptions = {
-	/** The character stamped on it; 答 by default. */
-	readonly character?: string
+	/** The character stamped on it, such as 答. */
+	readonly character: string
 }
 
 export const Hanko = component<HankoOptions>({
@@ -46,7 +46,7 @@ export const Hanko = component<HankoOptions>({
 							classes: styles.sealCharacter,
 							x: 24,
 							y: 25,
-							textContent: options.character ?? '答',
+							textContent: options.character,
 						}),
 					],
 				}),

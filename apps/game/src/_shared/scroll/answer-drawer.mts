@@ -79,7 +79,9 @@ export const AnswerDrawer = component<AnswerDrawerOptions>({
 				label,
 				element('span', {
 					classes: styles.seal,
-					children: create(Hanko),
+					children: create(Hanko, {
+						character: '答',
+					}),
 				}),
 			],
 		})
