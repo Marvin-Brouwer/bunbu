@@ -138,8 +138,9 @@
 .cut {
 	position: absolute;
 	inset: 0 -0.5rem;
-	background: var(--vermilion);
-	animation: cut 200ms ease-out forwards;
+	/* The blade's flash: white, the blood is for when the samurai is hit. */
+	background: white;
+	animation: cut-through 200ms ease-out forwards;
 }
 
 @keyframes unroll {
@@ -173,7 +174,7 @@
 }
 
 /* The cut runs along the line the halves split on, from left to right, and fades as they fall. */
-@keyframes cut {
+@keyframes cut-through {
 	from {
 		clip-path: polygon(0 calc(62% - 2px), 0 calc(62% - 2px), 0 calc(62% + 2px), 0 calc(62% + 2px));
 	}

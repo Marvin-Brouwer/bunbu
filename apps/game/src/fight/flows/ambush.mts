@@ -83,6 +83,9 @@ export function commitAmbush(game: RunGame): void {
 		const [first] = result.slain
 		if (first === undefined) game.shogun.value.block(result.blocked[0] ?? 0)
 		else game.shogun.value.strike(first)
+	} else if (result.outcome === 'unanswered') {
+		game.shogun.value.hurt()
+		game.ninjas.value.strikeUnanswered()
 	} else {
 		game.shogun.value.hurt()
 		for (const ninja of game.ninjas.value.active) game.ninjas.value.strike(ninja.id)

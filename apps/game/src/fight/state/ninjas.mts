@@ -22,6 +22,8 @@ export type Ninja = {
 	readonly pose: NinjaPose
 	/** Counts up on every pose change, so the renderer can start an effect without an event bus. */
 	readonly sequence: number
+	/** The one who slices through the scroll when the time runs out, before they all strike. */
+	readonly slicer?: boolean
 }
 
 /** What a ninja spawns with. */
@@ -48,6 +50,11 @@ export type NinjasActions = {
 	/** Moves every approaching ninja to `approach`, which the ambush derives from the time left. */
 	advance: (approach: number) => void
 	strike: (id: number) => void
+	/**
+	 * The time ran out: the first ninja in front slices through the scroll, then every one of them
+	 * strikes ([unanswered](../../../../../docs/design/gameplay.md#outcome)).
+	 */
+	strikeUnanswered: () => void
 	slay: (id: number) => void
 	block: (id: number) => void
 	flee: (id: number) => void
@@ -94,6 +101,13 @@ export function createNinjas(initial: NinjasState = noNinjas): Ninjas {
 		},
 
 		strike: (id) => { pose(id, 'strike') },
+		strikeUnanswered() {
+			const { active } = store.value
+			const slicer = active.find((ninja) => ninja.wave === 0)?.id
+			store.update(() => ({
+				active: active.map((ninja) => ({ ...ninja, pose: 'strike', sequence: ninja.sequence + 1, slicer: ninja.id === slicer })),
+			}))
+		},
 		slay: (id) => { pose(id, 'slain') },
 		block: (id) => { pose(id, 'blocked') },
 		flee: (id) => { pose(id, 'fleeing') },
