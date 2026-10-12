@@ -131,15 +131,27 @@ export const Scroll = component<ScrollOptions>({
 		}
 
 		let shown: AmbushState = noAmbush
+		// A new scroll that has not unrolled yet.
+		let due = false
 		const follow = (next: AmbushState) => {
 			const change = scrollChangeOf(shown, next)
-			const entranceFinished = shown.open && shown.openingLeft > 0 && next.openingLeft === 0
-			// Picks are followed by the options themselves.
-			if (change === 'unroll' || entranceFinished) {
-				if (next.openingLeft === 0) unroll(next)
+			if (change === 'unroll') due = true
+			// The first scroll of an ambush unrolls at once, as the world slows down and the view
+			// moves; the swipes and the time wait for the ninjas to come in. A next round's scroll
+			// waits for the one before it to roll up.
+			if (due && (next.openingLeft === 0 || (next.round === 1 && stage === 'hidden'))) {
+				due = false
+				unroll(next)
 			}
-			else if (change === 'slice') slice(next.open ? next : shown)
-			else if (change === 'roll-up') setStage('roll-up')
+			// Picks are followed by the options themselves.
+			else if (change === 'slice') {
+				due = false
+				slice(next.open ? next : shown)
+			}
+			else if (change === 'roll-up') {
+				due = false
+				setStage('roll-up')
+			}
 			shown = next
 		}
 

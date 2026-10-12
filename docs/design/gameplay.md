@@ -26,7 +26,7 @@ The run ends when the stage is cleared ([results](screens.md#7-finished-results-
 
 One screen, no Submit button: **the swipe is the answer**.
 
-1. The world freezes into slow motion. The ninjas run into view, one briefly winding up for a cut before the answer appears.
+1. The world freezes into slow motion and the scroll unrolls at once, as the view moves. The ninjas run into view, one briefly winding up for a cut; the swipes and the time start once they are in.
 2. The scroll opens down to the bottom of the screen with the query and any code; the question has the whole scroll and scrolls when it is long.
 3. The answers are in the **answer drawer** at the foot of the scroll. Closed, only its edge shows, with a red seal (a hanko stamped 答, "answer") and "Tap or swipe up to answer" above it. Tapping the seal or swiping it up draws the answers up over the whole scroll, the same swipe area for every question; swiping it down puts them away to read the question again.
 4. Every option is tagged with a **mark**: the swipe direction (← ↑ → …) of the ninja carrying it. The drawn answers are the **swipe zone**: swiping toward a mark picks that option. Only swipes on the answers count, so the question can be scrolled freely.
@@ -53,7 +53,7 @@ The solutions of a `solutions` question and the rows of a `match` are **rounds o
 
 Each ninja carries one option. A **slash** means "this option is picked", a **block** means "not picked". The answer is correct when every slash lands on a correct option and every block on an incorrect one. The same rule covers `yes-no` and `solutions`.
 
-Every ninja gets its own verdict from what was answered: **slain** when its option was rightly picked, **blocked** when it was rightly left alone, and it **strikes** when it was handled wrong (picked but not correct, or correct but not picked). The ninjas then come one after another, in the order their answers were given (unpicked ones last), about half a second apart: a slain one falls, a blocked one lunges in and the blades meet with a white flash before it is knocked back and flees, and a striking one lands its hit on the samurai.
+Every ninja gets its own verdict from what was answered: **slain** when its option was rightly picked, **blocked** when it was rightly left alone, and it **strikes** when it was handled wrong (picked but not correct, or correct but not picked). The ninjas then come one after another, in the order their answers were given (unpicked ones last), about half a second apart: a slain one falls, a blocked one lunges in and the blades meet with a white flash before it is knocked back and flees off to its side of the path, and a striking one lands its hit on the samurai.
 
 - **Correct:** every ninja is slain or blocked. `+100` pops up (see [score](#score)). The run resumes once the last one is dealt with.
 - **Wrong:** only the ninjas handled wrong strike, with a katana slice and blood spray, and vanish; the others are still slain or blocked. However many strike, it is one miss: the lost chunk flashes and drops off the life bar, with a haptic buzz (haptics can be turned off in the settings). No answer is shown and nothing needs tapping. The miss is saved for the review at the end.
@@ -69,7 +69,7 @@ Every ninja gets its own verdict from what was answered: **slain** when its opti
 
 ## Time limit
 
-There is no timer bar: the ambush opens in slow motion and **the ninjas creeping in are the timer**.
+There is no timer bar: the ambush opens in slow motion and **the ninjas creeping in are the timer**. They keep their distance, creeping about halfway in; just before the time runs out they stop and wind up, and when it does they charge in with a leap.
 
 On a phone in portrait the scroll covers the whole width, so the ninjas have to be shown:
 
