@@ -159,8 +159,12 @@
 /* Paused, and the end of practice: a scroll over the dimmed world. */
 .dialog {
 	display: grid;
-	align-content: center;
-	min-height: 100%;
+	/* Safe: taller than the screen, it starts at the top instead of above it. */
+	align-content: safe center;
+	/* A long quiz title makes the scroll tall: the dialog scrolls then, so its buttons stay in reach. */
+	height: 100%;
+	overflow-y: auto;
+	overscroll-behavior: contain;
 	padding: max(2rem, env(safe-area-inset-top)) max(0.75rem, env(safe-area-inset-right)) max(2rem, env(safe-area-inset-bottom)) max(0.75rem, env(safe-area-inset-left));
 	box-sizing: border-box;
 	background: rgb(27 26 24 / 55%);
