@@ -95,11 +95,11 @@ describe('practice', () => {
 		expect(game.ambush.value.at.question).toBe(1)
 	})
 
-	it('counts a wrong answer, and the dummy is hit', () => {
+	it('counts a wrong answer and moves on: no miss screen yet', () => {
 		const game = started()
 		pickWrong(game)
 		commitPractice(game)
-		expect(game.tally.value).toMatchObject({ right: 0, wrong: 1, missed: true })
+		expect(game.tally.value).toMatchObject({ right: 0, wrong: 1, missed: false })
 		expect(percentRight(game.tally.value)).toBe(0)
 	})
 

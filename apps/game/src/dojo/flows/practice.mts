@@ -90,7 +90,12 @@ export function commitPractice(game: PracticeGame, random: Random = Math.random)
 
 	game.quiz.value.record({ at: result.at, outcome: result.outcome, picked: result.picked })
 	if (result.outcome === 'correct') game.tally.value.addRight()
-	else game.tally.value.addWrong()
+	else {
+		game.tally.value.addWrong()
+		// There is no miss screen to show yet, so practice moves straight on and the dummy, which
+		// swings back while the miss screen shows, stands still.
+		game.tally.value.carryOn()
+	}
 
 	const next = game.quiz.value.current()
 	if (next?.question === result.at.question) openNextRound(game, next, options, random)
