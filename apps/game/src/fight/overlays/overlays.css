@@ -211,16 +211,6 @@
 	opacity: 0.6;
 }
 
-/* The message to send, on the scroll for sharing by hand. */
-.shareMessage {
-	margin: 0;
-	padding-left: 0.8rem;
-	border-left: 3px solid var(--vermilion);
-	font-style: italic;
-	overflow-wrap: anywhere;
-	user-select: text;
-}
-
 /* Fallen: the kanji and the name, the reason in vermilion. */
 
 .fallen {

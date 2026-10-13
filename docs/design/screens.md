@@ -94,7 +94,7 @@ All on a scroll over the dimmed world, like an ambush:
 One scroll over the world holds all of it; the buttons stay at its foot while the rest scrolls.
 
 - 勝 · `QUIZ PASSED · NEW HIGH SCORE` · score, with the previous best (`was 2,210`).
-- **Share**, at the top right of that header: dares a friend to beat the score. It sends a message with the score, the stage, the difficulty and a link to Bunbu, with the quiz file, through the phone's share sheet. Where the share sheet can't take the file, a scroll offers the message to copy and the quiz to download.
+- **Share**, at the top right of that header: dares a friend to beat the score with a picture of the quiz's title, this header and the three tiles below, with Bunbu's name and link. It opens the phone's share sheet with the picture; where that can't take a picture, the picture downloads.
 - `17 / 20 correct (85%) · 4:05`.
 - Breakdown: **Correct** (`17 × 100`), **Time** (tiebreak for the high score), **Distance** (stage cleared).
 - **Mistakes**: each miss with ✗ your pick, ✓ the right answer, the explanation and references.

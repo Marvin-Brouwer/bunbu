@@ -12,10 +12,10 @@ import { ScrollSheet } from '../../_shared/scroll/scroll-sheet.mts'
 import { snapshot } from '../../_shared/state/store.mts'
 import type { QuizActions, QuizState } from '../../_shared/state/quiz.mts'
 import type { RunGame } from '../state/game.mts'
-import { difficultyNames } from '../state/difficulty.mts'
 import { pointsIn, pointsPerCorrect } from '../state/score.mts'
 import { AfterRun } from './after-run.mts'
 import { Mistakes } from './mistakes.mts'
+import type { ScorePicture } from './score-picture.mts'
 import { ShareScoreButton } from './share-score-button.mts'
 import { StatTile } from './stat-tile.mts'
 import styles from './overlays.css'
@@ -36,13 +36,37 @@ export const Finished = component<FinishedOptions>({
 		if (quiz === undefined) return
 
 		const { points, correct, best, newBest, unlocked } = game.score.value
-		const { elapsed, stageLength, difficulty } = game.run.value
+		const { elapsed, stageLength } = game.run.value
 		const total = pointsIn(quiz, refs)
 		const misses = game.quiz.value.misses()
 		// The same quiz on the next stage that has a world (docs/plan.md#open-questions), or this one
 		// again after the last. Passing has unlocked it, now or before.
-		const { stage } = selection.value
-		const next = stages.slice(stages.indexOf(stage) + 1).find((later) => builtStages.has(later))
+		const next = stages.slice(stages.indexOf(selection.value.stage) + 1).find((stage) => builtStages.has(stage))
+		// The top of the results, which Share sends as a picture too.
+		const picture: ScorePicture = {
+			quizTitle: quiz.title,
+			verdict: newBest ? 'Quiz passed · new high score' : 'Quiz passed',
+			points: formatWhole(points),
+			was: best === undefined ? undefined : `${newBest ? 'was' : 'best'} ${formatWhole(best.points)}`,
+			summary: `${correct} / ${total} correct (${Math.round((correct / total) * 100)}%) · ${formatDuration(elapsed)}`,
+			tiles: [
+				{
+					label: 'Correct',
+					value: formatWhole(points),
+					note: `${correct} × ${pointsPerCorrect}`,
+				},
+				{
+					label: 'Time',
+					value: formatDuration(elapsed),
+					note: 'breaks a tie',
+				},
+				{
+					label: 'Distance',
+					value: `${formatWhole(stageLength)} m`,
+					note: 'stage cleared',
+				},
+			],
+		}
 
 		append(
 			element('section', {
@@ -70,55 +94,35 @@ export const Finished = component<FinishedOptions>({
 											children: [
 												element('h1', {
 													classes: styles.verdict,
-													textContent: newBest ? 'Quiz passed · new high score' : 'Quiz passed',
+													textContent: picture.verdict,
 												}),
 												element('span', {
 													classes: styles.total,
 													children: [
-														formatWhole(points),
-														best === undefined
+														picture.points,
+														picture.was === undefined
 															? undefined
 															: element('span', {
 																classes: styles.was,
-																textContent: newBest ? `was ${formatWhole(best.points)}` : `best ${formatWhole(best.points)}`,
+																textContent: picture.was,
 															}),
 													],
 												}),
 												element('span', {
 													classes: styles.summary,
-													textContent: `${correct} / ${total} correct (${Math.round((correct / total) * 100)}%) · ${formatDuration(elapsed)}`,
+													textContent: picture.summary,
 												}),
 											],
 										}),
 										create(ShareScoreButton, {
-											quiz,
-											points,
-											correct,
-											total,
-											stage: stageNames[stage],
-											difficulty: difficultyNames[difficulty],
+											quizId: quiz.id,
+											picture,
 										}),
 									],
 								}),
 								element('div', {
 									classes: styles.tiles,
-									children: [
-										create(StatTile, {
-											label: 'Correct',
-											value: formatWhole(points),
-											note: `${correct} × ${pointsPerCorrect}`,
-										}),
-										create(StatTile, {
-											label: 'Time',
-											value: formatDuration(elapsed),
-											note: 'breaks a tie',
-										}),
-										create(StatTile, {
-											label: 'Distance',
-											value: `${formatWhole(stageLength)} m`,
-											note: 'stage cleared',
-										}),
-									],
+									children: picture.tiles.map((tile) => create(StatTile, tile)),
 								}),
 								create(Mistakes, {
 									title: 'Mistakes',

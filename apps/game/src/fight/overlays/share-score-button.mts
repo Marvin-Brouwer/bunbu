@@ -1,127 +1,43 @@
 /**
- * **Share** on a passed quiz, to dare a friend to beat the score: the score as a message with a
- * link to Bunbu, and the quiz file with it, so the friend can play the same quiz. Through the
- * phone's share sheet where it takes the file; where it doesn't, a scroll offers the message to
- * copy and the quiz to download.
+ * **Share** on a passed quiz, to dare a friend to beat the score: a picture of the top of the
+ * results with the quiz's title ({@link scorePictureOf}), straight to the phone's share sheet.
+ * Where the share sheet can't take a picture, the picture downloads instead.
  */
 
-import type { BunbuData } from '@bunbu/data'
 import { component } from '@rooted/components'
-import { appLink } from '../../_shared/app-link.mts'
-import { MenuButton } from '../../_shared/menu/menu-button.mts'
-import { formatWhole } from '../../_shared/numbers.mts'
-import { download, quizFileOf } from '../../_shared/quiz/quiz-file.mts'
-import { ScrollDialog } from '../../_shared/scroll/scroll-dialog.mts'
+import { download } from '../../_shared/quiz/quiz-file.mts'
+import { scorePictureOf, type ScorePicture } from './score-picture.mts'
 import styles from './overlays.css'
 
 export type ShareScoreButtonOptions = {
-	readonly quiz: BunbuData
-	readonly points: number
-	readonly correct: number
-	readonly total: number
-	/** The names of the stage and the difficulty the run was played at. */
-	readonly stage: string
-	readonly difficulty: string
+	/** Names the picture's file. */
+	readonly quizId: string
+	readonly picture: ScorePicture
 }
 
-/** The message that goes with the quiz, in the player's own words. */
-const messageOf = (options: ShareScoreButtonOptions): string =>
-	`I passed ${options.quiz.title} with ${formatWhole(options.points)} points `
-	+ `(${options.correct} / ${options.total} correct) on ${options.stage} as ${options.difficulty}. `
-	+ `Can you beat that? Play it in Bunbu: Shogun Scholar: ${appLink()}`
-
-/** Hands the score and the quiz to the share sheet; returns the quiz file when it can't. */
-const share = async (quiz: BunbuData, message: string): Promise<File | undefined> => {
-	const file = await quizFileOf(quiz)
+/** Hands the picture to the share sheet, or downloads it where the share sheet can't take it. */
+const share = async (picture: File, title: string): Promise<void> => {
 	const shared = {
-		files: [file],
-		title: quiz.title,
-		text: message,
+		files: [picture],
+		title,
 	}
-	// Not every browser can share files, and not every share sheet takes a type it doesn't know.
-	if (!('canShare' in navigator) || !navigator.canShare(shared)) return file
+	if (!('canShare' in navigator) || !navigator.canShare(shared)) {
+		download(picture)
+		return
+	}
 	try {
 		await navigator.share(shared)
-		return undefined
 	} catch (error) {
 		// Closing the share sheet isn't a failure.
-		if (error instanceof DOMException && error.name === 'AbortError') return undefined
-		return file
-	}
-}
-
-/** Copies the message, and says whether it did. */
-const copy = async (message: string): Promise<string> => {
-	try {
-		await navigator.clipboard.writeText(message)
-		return 'Message copied.'
-	} catch {
-		return 'Select the message above and copy it.'
+		if (error instanceof DOMException && error.name === 'AbortError') return
+		download(picture)
 	}
 }
 
 export const ShareScoreButton = component<ShareScoreButtonOptions>({
 	name: 'share-score-button',
 	styles,
-	onMount({ append, create, element, options }) {
-		const message = messageOf(options)
-
-		/** How to share by hand: the message to copy, and the quiz, when there is a file to give. */
-		const byHand = (file: File | undefined) => {
-			const status = element('p', {
-				role: 'status',
-			})
-			const scroll: Element = create(ScrollDialog, {
-				title: 'Share your score',
-				closed: () => {
-					scroll.remove()
-				},
-				children: file === undefined
-					? element('p', {
-						textContent: 'Something went wrong while packing this quiz. Try again in a moment.',
-					})
-					: [
-						element('p', {
-							textContent: 'Send a friend this message and the quiz, in a chat or an email. They load the quiz under Quizzes and try to beat you.',
-						}),
-						element('blockquote', {
-							classes: styles.shareMessage,
-							textContent: message,
-						}),
-						status,
-					],
-				footer: (close) => [
-					...file === undefined
-						? []
-						: [
-							create(MenuButton, {
-								kind: 'primary',
-								label: 'Copy the message',
-								action: () => {
-									void copy(message).then((said) => {
-										status.textContent = said
-									})
-								},
-							}),
-							create(MenuButton, {
-								label: 'Download the quiz',
-								note: file.name,
-								action: () => {
-									download(file)
-								},
-							}),
-						],
-					create(MenuButton, {
-						label: 'Close',
-						action: close,
-					}),
-				],
-			})
-			append(
-				scroll
-			)
-		}
-
+	onMount({ append, element, options }) {
 		const button = element('button', {
 			type: 'button',
 			classes: styles.shareButton,
@@ -131,16 +47,16 @@ export const ShareScoreButton = component<ShareScoreButtonOptions>({
 			},
 			on: {
 				async click() {
-					// Compressing a large quiz takes a moment; one share per press.
 					button.disabled = true
-					const file = await share(options.quiz, message).catch((error: unknown) => {
+					try {
+						const picture = await scorePictureOf(options.picture, `${options.quizId}-score.png`, button)
+						await share(picture, options.picture.quizTitle)
+					} catch (error) {
 						// The reason is for whoever fixes it, not for the player.
 						console.error('[bunbu] the score could not be shared:', error)
-						return 'failed' as const
-					})
-					button.disabled = false
-					if (file === undefined) return
-					byHand(file === 'failed' ? undefined : file)
+					} finally {
+						button.disabled = false
+					}
 				},
 			},
 		})
