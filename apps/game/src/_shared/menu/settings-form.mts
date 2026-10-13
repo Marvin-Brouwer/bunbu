@@ -1,7 +1,8 @@
 /**
  * The settings: difficulty, haptics and volume, kept for every run. On the settings screen, and in
  * the pause menu without leaving the run ([6 Pause](../../../../../docs/design/screens.md#6-pause)),
- * where the difficulty only shows: it can't change halfway through a run.
+ * where the difficulty only shows: it can't change halfway through a run. Outside a run, also the
+ * voice and the speed of reading aloud, for the dojo's study.
  */
 
 import { component, environment } from '@rooted/components'
@@ -9,6 +10,7 @@ import { settings } from '../../settings/state/settings.mts'
 import { canBuzz } from '../haptics.mts'
 import { DifficultySlider } from './difficulty-slider.mts'
 import { MenuSection } from './menu-section.mts'
+import { SpeechSettings } from './speech-settings.mts'
 import styles from './settings-form.css'
 
 const percentOf = (volume: number) => `${Math.round(volume * 100)}%`
@@ -102,6 +104,7 @@ export const SettingsForm = component<SettingsFormOptions>({
 					}),
 				],
 			}),
+			...running ? [] : [create(SpeechSettings)],
 		)
 	},
 })

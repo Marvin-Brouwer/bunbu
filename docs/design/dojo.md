@@ -10,8 +10,10 @@ Hands-free revision.
 - What is read: the query, then "the answer is …". `multiple` lists all correct options, `order` gives the right sequence, `solutions` gives each solution with yes or no, `match` each row with its answer. Code blocks are not read; an image is read by its alt text.
 - The word being spoken is highlighted to help with focus: a grey background and an underline. Where the browser doesn't say which word it is at, the word is guessed from the time spoken; where it can't mark text at all, there is no highlight.
 - Pronunciation uses the quiz's `pronunciations` and the built-in dictionaries (see [data format](data-format.md#pronunciations)).
-- Controls: **Pause** (then **Play**) and **Restart** (reshuffle and start again from card 1), plus **Voice** (the system's own for the quiz's `language`, or one of the voices for that language) and **Speed** (½× to 2×, in steps of ¼). There is no previous/next.
-- The screen stays on while studying, without going full screen. If the phone is locked anyway, the reading goes on where the phone allows it: the sentences ahead are handed to the phone's speech engine, so it reads on even when the browser puts the page to sleep (as on Android). Safari on an iPhone stops the speech when the phone locks; Study picks up again from the sentence it was on once the phone is unlocked.
+- The card is plain text on the page, not on a scroll; it scrolls on its own when it is long, and follows the part being read.
+- Controls: **Pause** (then **Play**) and **Skip** docked at the bottom. Skip goes on to the next card, read aloud or not, so the cards can be gone through without sound. There is no previous.
+- A settings button at the top right opens the settings in place of the card, so the reading goes on while they change. Reading aloud has two settings there, kept with the others: **Voice** (the system's own for the quiz's `language`, or one of the voices for it, kept per language) and **Reading speed**, a slider from 0.5x to 3x in steps of 0.5 with a notch at each step.
+- The screen stays on while studying, without going full screen. Locking the phone stops the reading: browsers only speak while the page is on screen (Chrome on Android and Safari on an iPhone both stop). Study picks up again from the sentence it was on once the phone is unlocked.
 - If the browser won't start reading before a tap, as when Study is opened straight from a link, it shows paused, and **Play** starts it.
 
 <img src="screens/d2-study.png" alt="Study" width="195">

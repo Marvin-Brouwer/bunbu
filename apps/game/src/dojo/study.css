@@ -1,6 +1,6 @@
 /*
- * D2 Study (docs/design/screens.md#d2-study): the card on the scroll, the correct answer in a grey
- * band under the question, then Pause and Restart, the voice and the speed.
+ * D2 Study (docs/design/screens.md#d2-study): the card as text that scrolls on the page, the
+ * correct answer in a grey band under the question, Pause and Skip docked at the bottom.
  */
 
 /* The word being spoken: a grey background and an underline. */
@@ -10,12 +10,31 @@
 	text-underline-offset: 0.15em;
 }
 
+/* The text scrolls on its own, between the header and the dock. */
+.text {
+	flex: 1;
+	min-height: 0;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+	scrollbar-gutter: stable;
+	padding: 0.25rem 0 1rem;
+}
+
+.settings {
+	display: grid;
+	gap: 1.25rem;
+}
+
+.playButton {
+	display: grid;
+}
+
 .state {
 	display: flex;
 	flex-wrap: wrap;
 	justify-content: space-between;
 	gap: 0.25rem 1rem;
-	margin: -0.5rem 0 0;
+	margin: 0;
 	font-family: var(--font-mono);
 	font-size: 0.8rem;
 	color: var(--ink-soft);
@@ -105,89 +124,6 @@ ol.answers .answer {
 	grid-template-columns: minmax(0, 1fr) auto;
 	align-items: baseline;
 	gap: 1rem;
-}
-
-.controls {
-	display: grid;
-	grid-template-columns: 3fr 2fr;
-	gap: 0.75rem;
-}
-
-.playButton {
-	display: grid;
-}
-
-.settings {
-	display: grid;
-	grid-template-columns: minmax(0, 1fr) auto;
-	gap: 0.75rem;
-}
-
-/* A control group: an ink frame around the control. */
-.group {
-	display: flex;
-	align-items: center;
-	min-height: 3rem;
-	border: var(--frame);
-	border-radius: var(--radius);
-	background: var(--paper-light);
-	box-sizing: border-box;
-}
-
-.voiceSelect {
-	width: 100%;
-	min-width: 0;
-	height: 100%;
-	padding: 0.6rem 0.75rem;
-	border: 0;
-	background: transparent;
-	color: inherit;
-	font: inherit;
-}
-
-.voiceSelect:focus-visible,
-.rateButton:focus-visible {
-	outline: 3px solid var(--indigo);
-	outline-offset: 2px;
-}
-
-.rate {
-	gap: 0.5rem;
-	padding: 0.35rem;
-}
-
-.rateValue {
-	min-width: 3.2rem;
-	font-family: var(--font-mono);
-	font-weight: 700;
-	text-align: center;
-}
-
-.rateButton {
-	width: 2.4rem;
-	height: 2.4rem;
-	border: none;
-	border-radius: var(--radius);
-	background: var(--paper-light);
-	color: var(--ink);
-	font: inherit;
-	font-size: 1.3rem;
-	font-weight: 700;
-	cursor: pointer;
-	box-shadow: var(--tile);
-}
-
-.rateButton:active {
-	translate: 0 var(--bevel-height);
-	box-shadow: none;
-}
-
-.rateButton:disabled {
-	background: var(--paper-shade);
-	color: var(--ink-faint);
-	cursor: default;
-	translate: none;
-	box-shadow: none;
 }
 
 .note {

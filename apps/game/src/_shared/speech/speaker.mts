@@ -14,10 +14,10 @@
  *   ones queued are kept.
  *
  * It stops when its screen goes (the signal) and when the page is left. With `whileHidden: 'keep
- * reading'` it goes on while the page is hidden, as when the phone locks: it then hands the engine
- * the lines ahead, so it reads on even where the page itself is put to sleep. Where the browser
- * stops the speech anyway (Safari on an iPhone), it picks up again from the line it was on when
- * the page is back.
+ * reading'` it goes on while the page is hidden where the browser lets it: it then hands the engine
+ * the lines ahead, so it reads on even where the page itself is put to sleep. Phones stop the speech
+ * when they lock (Chrome on Android only speaks while it is on screen, as does Safari on an
+ * iPhone); it then picks up again from the line it was on when the page is back.
  */
 
 import { shownWordAt, wordStarts, type ShownRange, type SpokenLine } from './line.mts'
@@ -47,6 +47,22 @@ export function voicesFor(language: string): SpeechSynthesisVoice[] {
 	return speechSynthesis.getVoices()
 		.filter((voice) => primaryOf(voice.lang) === primaryOf(language))
 		.toSorted((first, second) => rank(first) - rank(second) || first.name.localeCompare(second.name))
+}
+
+/** The chosen voice for a language, when it is there; `undefined` for the system's own. */
+export function voiceFor(language: string, voiceURI: string | undefined): SpeechSynthesisVoice | undefined {
+	return voiceURI === undefined ? undefined : voicesFor(language).find((voice) => voice.voiceURI === voiceURI)
+}
+
+/** A language or a voice's language in words: `English`, `British English`. */
+export function languageName(tag: string): string {
+	try {
+		return new Intl.DisplayNames(['en'], { type: 'language' }).of(tag.replaceAll('_', '-')) ?? tag
+	}
+	catch {
+		// Not a language tag the browser knows.
+		return tag
+	}
 }
 
 /**
@@ -99,6 +115,10 @@ export type Speaker = {
 	/** Stops; {@link Speaker.resume} starts the line it was on again. */
 	readonly pause: () => void
 	readonly resume: () => void
+	/** Goes on from `place`: straight away while reading, from there on resuming while paused. */
+	readonly moveTo: (place: number) => void
+	/** The line it is on, or resumes from. */
+	readonly place: () => number
 	/** The voice, or `undefined` for the system's own for the language. Takes effect from the line being read. */
 	readonly setVoice: (voice: SpeechSynthesisVoice | undefined) => void
 	/** The speed, `1` is normal. Takes effect from the line being read. */
@@ -264,6 +284,11 @@ export function createSpeaker(options: SpeakerOptions, signal: AbortSignal): Spe
 		resume() {
 			play(current)
 		},
+		moveTo(place) {
+			if (playing) play(place)
+			else current = place
+		},
+		place: () => current,
 		setVoice(next) {
 			voice = next
 			if (playing) play(current)

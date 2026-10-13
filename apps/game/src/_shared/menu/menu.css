@@ -29,6 +29,39 @@
 	gap: 1rem;
 }
 
+.action {
+	margin-left: auto;
+}
+
+/* A screen with a dock doesn't scroll: its parts fill the room above the dock. */
+.screen[data-docked='true'] {
+	overflow: hidden;
+}
+
+.screen[data-docked='true'] .page {
+	height: 100%;
+	min-height: 0;
+	grid-template-rows: auto minmax(0, 1fr) auto;
+	padding-bottom: 0;
+}
+
+.parts {
+	display: flex;
+	flex-direction: column;
+	gap: 0.75rem;
+	min-height: 0;
+}
+
+.dock {
+	display: grid;
+	grid-auto-flow: column;
+	grid-auto-columns: 1fr;
+	gap: 0.75rem;
+	margin-inline: -1.25rem;
+	padding: 0.85rem 1.25rem max(1.25rem, env(safe-area-inset-bottom));
+	border-top: 1px solid var(--paper-edge);
+}
+
 .title {
 	margin: 0;
 	font-family: var(--font-display);
@@ -36,8 +69,12 @@
 	line-height: 1.15;
 }
 
-.back {
+/* The back link, and a button at the other end of the heading, as the study's settings. */
+.back,
+.headerButton {
 	display: grid;
+	border: 0;
+	cursor: pointer;
 	place-items: center;
 	flex: none;
 	width: 2.75rem;
@@ -114,7 +151,9 @@
 }
 
 .button:active,
-.back:active {
+.back:active,
+.headerButton:active,
+.headerButton[aria-pressed='true'] {
 	translate: 0 var(--bevel-height);
 	box-shadow: none;
 }
@@ -128,7 +167,8 @@
 }
 
 .button:focus-visible,
-.back:focus-visible {
+.back:focus-visible,
+.headerButton:focus-visible {
 	outline: 3px solid var(--indigo);
 	outline-offset: 2px;
 }
@@ -160,9 +200,9 @@ input:checked ~ * .choiceStamp {
 	display: block;
 }
 
-/* The difficulty: a slider over four stops from Apprentice to Shogun, the inner stops marked. */
+/* A slider over a few stops, the inner stops marked: the difficulty, the reading speed. */
 
-.difficulty {
+.slider {
 	display: grid;
 	gap: 0.35rem;
 	padding: 0.85rem 1rem;
@@ -171,12 +211,12 @@ input:checked ~ * .choiceStamp {
 	background: var(--paper-light);
 }
 
-.difficulty:has(input:disabled) {
+.slider:has(input:disabled) {
 	border: var(--frame-faded);
 	color: var(--ink-soft);
 }
 
-.difficultyEnds {
+.sliderEnds {
 	display: flex;
 	justify-content: space-between;
 	font-weight: 700;
@@ -187,7 +227,7 @@ input:checked ~ * .choiceStamp {
  * the marks, the fill up to the thumb, then the input with a clear track and only its thumb.
  * The thumb travels a thumb's width less than the track, so marks and fill are placed the same way.
  */
-.difficultyTrack {
+.sliderTrack {
 	--thumb: 1.1rem;
 	position: relative;
 	display: grid;
@@ -195,27 +235,27 @@ input:checked ~ * .choiceStamp {
 	height: var(--thumb);
 }
 
-.difficultyRail,
-.difficultyFill {
+.sliderRail,
+.sliderFill {
 	position: absolute;
 	left: 0;
 	height: 0.45rem;
 	border-radius: 999px;
 }
 
-.difficultyRail {
+.sliderRail {
 	right: 0;
 	border: 1px solid var(--ink-soft);
 	background: var(--paper);
 }
 
-.difficultyFill {
+.sliderFill {
 	width: calc(var(--thumb) / 2 + (100% - var(--thumb)) * var(--place));
 	background: var(--vermilion);
 }
 
 /* Taller than the rail, so a mark the fill covers still shows above and below it. */
-.difficultyMark {
+.sliderMark {
 	position: absolute;
 	top: 0;
 	bottom: 0;
@@ -225,7 +265,7 @@ input:checked ~ * .choiceStamp {
 	background: var(--ink);
 }
 
-.difficultyTrack input {
+.sliderTrack input {
 	position: relative;
 	width: 100%;
 	height: var(--thumb);
@@ -235,15 +275,15 @@ input:checked ~ * .choiceStamp {
 	cursor: pointer;
 }
 
-.difficultyTrack input::-webkit-slider-runnable-track {
+.sliderTrack input::-webkit-slider-runnable-track {
 	background: transparent;
 }
 
-.difficultyTrack input::-moz-range-track {
+.sliderTrack input::-moz-range-track {
 	background: transparent;
 }
 
-.difficultyTrack input::-webkit-slider-thumb {
+.sliderTrack input::-webkit-slider-thumb {
 	width: var(--thumb);
 	height: var(--thumb);
 	border: none;
@@ -252,7 +292,7 @@ input:checked ~ * .choiceStamp {
 	appearance: none;
 }
 
-.difficultyTrack input::-moz-range-thumb {
+.sliderTrack input::-moz-range-thumb {
 	width: var(--thumb);
 	height: var(--thumb);
 	border: none;
@@ -260,29 +300,29 @@ input:checked ~ * .choiceStamp {
 	background: var(--vermilion);
 }
 
-.difficultyTrack input:focus-visible {
+.sliderTrack input:focus-visible {
 	outline: 3px solid var(--indigo);
 	outline-offset: 2px;
 	border-radius: 999px;
 }
 
-.difficultyTrack:has(input:disabled) .difficultyFill {
+.sliderTrack:has(input:disabled) .sliderFill {
 	background: var(--ink-soft);
 }
 
-.difficultyTrack input:disabled {
+.sliderTrack input:disabled {
 	cursor: default;
 }
 
-.difficultyTrack input:disabled::-webkit-slider-thumb {
+.sliderTrack input:disabled::-webkit-slider-thumb {
 	background: var(--ink-soft);
 }
 
-.difficultyTrack input:disabled::-moz-range-thumb {
+.sliderTrack input:disabled::-moz-range-thumb {
 	background: var(--ink-soft);
 }
 
-.difficultyNote {
+.sliderNote {
 	margin: 0;
 	font-size: 0.85rem;
 	text-align: center;

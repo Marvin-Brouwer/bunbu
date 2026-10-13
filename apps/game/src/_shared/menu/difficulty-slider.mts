@@ -52,7 +52,7 @@ export const DifficultySlider = component<DifficultySliderOptions>({
 	styles,
 	onMount({ append, element, options, signal }) {
 		const note = element('p', {
-			classes: styles.difficultyNote,
+			classes: styles.sliderNote,
 		})
 		const slider = element('input', {
 			type: 'range',
@@ -72,7 +72,7 @@ export const DifficultySlider = component<DifficultySliderOptions>({
 			},
 		})
 		const fill = element('span', {
-			classes: styles.difficultyFill,
+			classes: styles.sliderFill,
 			aria: {
 				hidden: 'true',
 			},
@@ -88,7 +88,7 @@ export const DifficultySlider = component<DifficultySliderOptions>({
 		// The stops between the ends, on the rail and under the red fill.
 		const marks = difficulties.slice(1, -1).map((difficulty) => {
 			const mark = element('span', {
-				classes: styles.difficultyMark,
+				classes: styles.sliderMark,
 				aria: {
 					hidden: 'true',
 				},
@@ -97,10 +97,10 @@ export const DifficultySlider = component<DifficultySliderOptions>({
 			return mark
 		})
 		const track = element('div', {
-			classes: styles.difficultyTrack,
+			classes: styles.sliderTrack,
 			children: [
 				element('span', {
-					classes: styles.difficultyRail,
+					classes: styles.sliderRail,
 					aria: {
 						hidden: 'true',
 					},
@@ -113,10 +113,10 @@ export const DifficultySlider = component<DifficultySliderOptions>({
 
 		append(
 			element('div', {
-				classes: styles.difficulty,
+				classes: styles.slider,
 				children: [
 					element('div', {
-						classes: styles.difficultyEnds,
+						classes: styles.sliderEnds,
 						children: [
 							element('span', {
 								textContent: names.apprentice,

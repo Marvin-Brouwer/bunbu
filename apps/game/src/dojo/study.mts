@@ -1,7 +1,8 @@
 /**
  * D2 Study ([dojo.md](../../../../docs/design/dojo.md#study)): every question with its correct
- * answer, shuffled, read aloud on a loop, the spoken word highlighted. Pause, Restart, Voice and
- * Speed; no previous or next.
+ * answer, shuffled, read aloud on a loop, the spoken word highlighted. The text scrolls on the
+ * page; Pause and Skip are docked at the bottom, and the settings (the voice and the speed among
+ * them) open in place from the top right, so the reading goes on.
  *
  * The screen stays on while it is up, without going full screen. Locking the phone anyway doesn't
  * stop the reading where the phone lets it go on ([speaker](../_shared/speech/speaker.mts)).
@@ -12,26 +13,24 @@
 
 import { resolvePronunciations, type BunbuData } from '@bunbu/data'
 import { component, type CssClass } from '@rooted/components'
-import { Markdown } from '@rooted/markdown'
 import { href } from '@rooted/router'
-import { renderMarkdown } from '../_shared/markdown/render.mts'
 import { MenuButton } from '../_shared/menu/menu-button.mts'
 import { MenuScreen } from '../_shared/menu/menu-screen.mts'
-import { MenuSection } from '../_shared/menu/menu-section.mts'
-import { ScrollSheet } from '../_shared/scroll/scroll-sheet.mts'
-import scrollStyles from '../_shared/scroll/scroll.css'
+import { SettingsForm } from '../_shared/menu/settings-form.mts'
+import menuStyles from '../_shared/menu/menu.css'
 import { keepScreenOn } from '../_shared/screen-on.mts'
 import { pronouncerOf, type SpokenLine } from '../_shared/speech/line.mts'
 import { readableMarkdown, readableText, type Readable } from '../_shared/speech/readable.mts'
-import { canSpeak, createSpeaker, voicesFor, watchVoices } from '../_shared/speech/speaker.mts'
+import { canSpeak, createSpeaker, voiceFor, watchVoices } from '../_shared/speech/speaker.mts'
 import { shuffle } from '../_shared/state/random.mts'
 import { selection } from '../_shared/state/selection.mts'
 import { snapshot } from '../_shared/state/store.mts'
 import { QuizzesRoute } from '../quizzes/_routes.mts'
 import { DojoRoute } from './_routes.mts'
-import { fastest, rateStep, slowest, type ReadingState } from './state/study.mts'
-import { createStudyGame } from './state/study.mts'
+import { languageOf, settings } from '../settings/state/settings.mts'
+import { createStudyGame, type ReadingState } from './state/study.mts'
 import { studyCardOf, type StudyCard } from './state/study-card.mts'
+import { CardBlock } from './card-block.mts'
 import { blocksOf, linesOf } from './study-script.mts'
 import styles from './study.css'
 
@@ -44,7 +43,8 @@ type Entry = {
 	readonly line: SpokenLine
 }
 
-const rateOf = (rate: number) => `${rate}×`
+/** A cog, for the settings button. */
+const cog = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M19.4 13a7.6 7.6 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.4 7.4 0 0 0-1.7-1L15 3.3h-4l-.4 2.6a7.4 7.4 0 0 0-1.7 1l-2.5-1-2 3.5L6.6 11a7.6 7.6 0 0 0 0 2l-2.2 1.6 2 3.5 2.5-1a7.4 7.4 0 0 0 1.7 1l.4 2.6h4l.4-2.6a7.4 7.4 0 0 0 1.7-1l2.5 1 2-3.5zM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z" transform="translate(-1 0)"/></svg>'
 
 const sameWord = (first: ReadingState['word'], second: ReadingState['word']) => first?.block === second?.block
 	&& first?.start === second?.start
@@ -143,18 +143,11 @@ const StudySession = component<StudySessionOptions>({
 		}, signal)
 
 		// The card: its blocks of Markdown, each in an element of its own to find the spoken word in.
-		const sheet = element('div', {
+		const sheet = element('article', {
 			classes: styles.card,
 		})
 		let blockElements: HTMLElement[] = []
 		let readables: (Readable | undefined)[] = []
-		const markdownBlock = (source: string, classes: CssClass) => element('div', {
-			classes,
-			children: create(Markdown, {
-				source: renderMarkdown(source),
-				classes: scrollStyles.markdown,
-			}),
-		})
 
 		const showCard = (index: number) => {
 			const card = cardOf(index)
@@ -163,7 +156,10 @@ const StudySession = component<StudySessionOptions>({
 			blockElements = []
 			readables = []
 			const next = (classes: CssClass) => {
-				const block = markdownBlock(sources[blockElements.length] ?? '', classes)
+				const block = create(CardBlock, {
+					source: sources[blockElements.length] ?? '',
+					classes,
+				})
 				blockElements.push(block)
 				return block
 			}
@@ -216,6 +212,12 @@ const StudySession = component<StudySessionOptions>({
 		}
 		signal.addEventListener('abort', () => { highlight(undefined) }, { once: true })
 
+		/** Keeps the block being read in view, when the card is taller than the screen. */
+		const followBlock = (block: number) => {
+			// The block's host has no box of its own; its element inside has.
+			blockElements[block]?.firstElementChild?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+		}
+
 		const progress = element('span', {
 			classes: styles.progress,
 		})
@@ -234,17 +236,20 @@ const StudySession = component<StudySessionOptions>({
 			reading.value.pause()
 			speaker.pause()
 		}
-		const restart = () => {
-			shuffleQuiz()
-			reading.value.restart()
-			reading.value.play()
-			showCard(0)
-			showProgress(0)
-			speaker.play(0)
+		/** On to the next card, read aloud or not, so the cards can be gone through without sound. */
+		const skip = () => {
+			const card = reading.value.card
+			const from = speaker.place()
+			let place = from
+			while (entryAt(place)?.card === card && place < from + entries.length) place++
+			reading.value.reach(entryAt(place)?.card ?? 0)
+			speaker.moveTo(place)
 		}
 
 		const showPlaying = (playing: boolean) => {
-			status.textContent = playing ? '▶ playing · shuffled loop' : '❚❚ paused · shuffled loop'
+			status.textContent = !canSpeak()
+				? 'reading aloud doesn\'t work in this browser'
+				: playing ? '▶ playing · shuffled loop' : '❚❚ paused · shuffled loop'
 			status.dataset.playing = String(playing)
 			playButton.replaceChildren(
 				create(MenuButton, {
@@ -258,67 +263,74 @@ const StudySession = component<StudySessionOptions>({
 			progress.textContent = `${quiz.title} · ${card + 1} / ${game.quiz.value.order.length}`
 		}
 
-		// Voice: the system's own for the quiz's language, or one of the voices for it.
-		const voiceSelect = element('select', {
-			classes: styles.voiceSelect,
-			aria: {
-				label: 'Voice',
-			},
-			on: {
-				change(event) {
-					const uri = event.currentTarget.value
-					const voice = voicesFor(quiz.language).find((each) => each.voiceURI === uri)
-					reading.value.chooseVoice(voice?.voiceURI)
-					speaker.setVoice(voice)
-				},
-			},
+		// The text: the card, or the settings in its place.
+		const text = element('div', {
+			classes: styles.text,
+			children: sheet,
 		})
-		watchVoices(quiz.language, signal, (voices) => {
-			const chosen = reading.value.voice
-			voiceSelect.replaceChildren(
-				element('option', {
-					value: '',
-					textContent: `System (${quiz.language})`,
-				}),
-				...voices.map((voice) => element('option', {
-					value: voice.voiceURI,
-					selected: voice.voiceURI === chosen,
-					textContent: `${voice.name} (${voice.lang})`,
-				})),
-			)
-		})
-
-		// Speed: − 1.5× +
-		const rateValue = element('output', {
-			classes: styles.rateValue,
-			textContent: rateOf(reading.value.rate),
-		})
-		const rateButton = (label: string, name: string, step: number) => element('button', {
+		const settingsButton = element('button', {
 			type: 'button',
-			classes: styles.rateButton,
-			textContent: label,
+			classes: menuStyles.headerButton,
+			innerHTML: cog,
 			aria: {
-				label: name,
+				label: 'Settings',
+				pressed: 'false',
 			},
 			on: {
 				click() {
-					reading.value.setRate(reading.value.rate + step)
-					speaker.setRate(reading.value.rate)
+					showSettings(settingsButton.getAttribute('aria-pressed') !== 'true')
 				},
 			},
 		})
-		const slower = rateButton('−', 'Slower', -rateStep)
-		const faster = rateButton('+', 'Faster', rateStep)
-		const showRate = (rate: number) => {
-			rateValue.textContent = rateOf(rate)
-			slower.disabled = rate <= slowest
-			faster.disabled = rate >= fastest
+		const showSettings = (open: boolean) => {
+			settingsButton.setAttribute('aria-pressed', String(open))
+			text.scrollTop = 0
+			if (!open) {
+				text.replaceChildren(sheet)
+				return
+			}
+			text.replaceChildren(
+				element('div', {
+					classes: styles.settings,
+					children: [
+						create(SettingsForm, {
+							running: false,
+						}),
+						create(MenuButton, {
+							label: 'Done',
+							action: () => { showSettings(false) },
+						}),
+					],
+				}),
+			)
 		}
+
+		// The voice and the speed come from the settings, and follow them while reading.
+		const language = languageOf(quiz.language)
+		let voice: string | undefined
+		const followVoice = () => {
+			const chosen = voiceFor(quiz.language, settings.value.voices[language])?.voiceURI
+			if (chosen === voice) return
+			voice = chosen
+			speaker.setVoice(voiceFor(quiz.language, chosen))
+		}
+		let rate = settings.value.speechRate
+		speaker.setRate(rate)
+		settings.on('change', signal, ({ detail }) => {
+			if (detail.state.speechRate !== rate) {
+				rate = detail.state.speechRate
+				speaker.setRate(rate)
+			}
+			followVoice()
+		})
+		// Voices load late; the chosen one is taken once it is there.
+		watchVoices(quiz.language, signal, followVoice)
 
 		append(
 			create(MenuScreen, {
 				title: 'Study',
 				back: href.for(DojoRoute),
+				action: settingsButton,
 				children: [
 					element('p', {
 						classes: styles.state,
@@ -327,50 +339,13 @@ const StudySession = component<StudySessionOptions>({
 							status,
 						],
 					}),
-					create(ScrollSheet, {
-						children: sheet,
-					}),
-					element('div', {
-						classes: styles.controls,
-						children: [
-							playButton,
-							create(MenuButton, {
-								label: '⟲ Restart',
-								action: restart,
-							}),
-						],
-					}),
-					element('div', {
-						classes: styles.settings,
-						children: [
-							create(MenuSection, {
-								label: 'Voice',
-								children: element('label', {
-									classes: styles.group,
-									children: voiceSelect,
-								}),
-							}),
-							create(MenuSection, {
-								label: 'Speed',
-								children: element('div', {
-									classes: [
-										styles.group,
-										styles.rate,
-									],
-									children: [
-										slower,
-										rateValue,
-										faster,
-									],
-								}),
-							}),
-						],
-					}),
-					element('p', {
-						classes: styles.note,
-						textContent: canSpeak()
-							? 'Reads every question with its answer, in a shuffled loop. Restart shuffles again. It reads on when your phone locks, where your phone allows it.'
-							: 'Reading aloud doesn\'t work in this browser, but you can still go through the cards.',
+					text,
+				],
+				dock: [
+					playButton,
+					create(MenuButton, {
+						label: 'Skip',
+						action: skip,
 					}),
 				],
 			})
@@ -383,16 +358,21 @@ const StudySession = component<StudySessionOptions>({
 			if (state.card !== shown.card) {
 				showCard(state.card)
 				showProgress(state.card)
+				if (sheet.isConnected) text.scrollTop = 0
 			}
 			if (!sameWord(state.word, shown.word)) highlight(state.word)
+			if (state.word !== undefined && state.word.block !== shown.word?.block) followBlock(state.word.block)
 			if (state.playing !== shown.playing) showPlaying(state.playing)
-			if (state.rate !== shown.rate) showRate(state.rate)
 			shown = { ...state }
 		})
 
 		keepScreenOn(signal)
+		shuffleQuiz()
+		showCard(0)
+		showProgress(0)
 		showPlaying(false)
-		showRate(reading.value.rate)
-		restart()
+		if (!canSpeak()) return
+		reading.value.play()
+		speaker.play(0)
 	},
 })

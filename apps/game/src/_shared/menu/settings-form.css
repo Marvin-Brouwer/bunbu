@@ -1,4 +1,4 @@
-/* The settings (docs/design/screens.md#6-pause): difficulty, haptics and volume. */
+/* The settings (docs/design/screens.md#6-pause): difficulty, haptics, volume, and reading aloud. */
 
 .hint {
 	margin: 0;
@@ -51,4 +51,60 @@
 	min-width: 3.2rem;
 	font-family: var(--font-mono);
 	text-align: right;
+}
+
+/* The voice: a drop-down in an ink frame, with its own arrow. */
+.selectGroup {
+	position: relative;
+	display: block;
+	border: var(--frame);
+	border-radius: var(--radius);
+	background: var(--paper-light);
+}
+
+.selectGroup::after {
+	content: '';
+	position: absolute;
+	top: 50%;
+	right: 1rem;
+	width: 0.55rem;
+	height: 0.55rem;
+	border-right: 2px solid var(--ink);
+	border-bottom: 2px solid var(--ink);
+	translate: 0 -70%;
+	rotate: 45deg;
+	pointer-events: none;
+}
+
+.selectGroup:has(select:disabled) {
+	border: var(--frame-faded);
+	color: var(--ink-soft);
+}
+
+.selectGroup:has(select:disabled)::after {
+	border-color: var(--ink-faint);
+}
+
+.select {
+	display: block;
+	width: 100%;
+	padding: 0.85rem 2.75rem 0.85rem 1rem;
+	border: 0;
+	border-radius: var(--radius);
+	background: transparent;
+	color: inherit;
+	font: inherit;
+	font-weight: 700;
+	text-overflow: ellipsis;
+	appearance: none;
+	cursor: pointer;
+}
+
+.select:disabled {
+	cursor: default;
+}
+
+.select:focus-visible {
+	outline: 3px solid var(--indigo);
+	outline-offset: 2px;
 }
