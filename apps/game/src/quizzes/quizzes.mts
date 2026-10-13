@@ -1,6 +1,6 @@
 /**
  * Quizzes ([screens.md](../../../../docs/design/screens.md#1b-quizzes)): the loaded quizzes to
- * choose from, the area to drop or choose a quiz file, and what is wrong with a file or won't fit
+ * choose from, the button and area to load a quiz file, and what is wrong with a file or won't fit
  * in a fight. Kept off the title, so the title stays calm.
  */
 
