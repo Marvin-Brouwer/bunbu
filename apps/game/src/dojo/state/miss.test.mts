@@ -17,7 +17,7 @@ describe('verdictOf', () => {
 		expect(verdictOf('order', option('a', true, 1, 1))).toEqual({ sign: '✓', text: '1st' })
 		expect(verdictOf('order', option('b', true, 3, 2))).toEqual({ sign: '✗', text: '2nd, not 3rd' })
 		expect(verdictOf('order', option('c', true, 0, 3))).toEqual({ sign: '✗', text: '3rd, left out' })
-		expect(verdictOf('order', option('d', false, 4, 0))).toEqual({ sign: '✗', text: 'not in the order' })
+		expect(verdictOf('order', option('d', false, 4, 0))).toEqual({ sign: '✗', text: 'not in the order, not 4th' })
 		expect(verdictOf('order', option('e', false))).toBeUndefined()
 	})
 })

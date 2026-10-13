@@ -24,7 +24,7 @@ const place = (rank: number) => {
  */
 export function verdictOf(kind: AmbushKind, option: AmbushOption): OptionVerdict | undefined {
 	if (kind === 'order') {
-		if (option.rank === 0) return option.pick > 0 ? { sign: '✗', text: 'not in the order' } : undefined
+		if (option.rank === 0) return option.pick > 0 ? { sign: '✗', text: `not in the order, not ${place(option.pick)}` } : undefined
 		if (option.pick === option.rank) return { sign: '✓', text: place(option.rank) }
 		return { sign: '✗', text: option.pick > 0 ? `${place(option.rank)}, not ${place(option.pick)}` : `${place(option.rank)}, left out` }
 	}
