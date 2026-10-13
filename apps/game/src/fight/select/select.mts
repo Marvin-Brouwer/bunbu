@@ -13,11 +13,12 @@ import { MenuSection } from '../../_shared/menu/menu-section.mts'
 import { formatWhole } from '../../_shared/numbers.mts'
 import { FitNotice } from '../../_shared/quiz/quiz-notices.mts'
 import { fightable, fitNotesOf } from '../../_shared/quiz/read-quiz.mts'
-import { selection, type SelectionState } from '../../_shared/state/selection.mts'
+import { selection, stages, type SelectionState, type Stage } from '../../_shared/state/selection.mts'
 import { snapshot } from '../../_shared/state/store.mts'
 import { fixtureQuiz } from '../../_temp/quiz.mts'
 import { QuizzesRoute } from '../../quizzes/_routes.mts'
 import { highScores } from '../state/highscores.mts'
+import { stageResults } from '../state/stage-results.mts'
 import { StagePicker } from './stage-picker.mts'
 import styles from './select.css'
 
@@ -62,6 +63,14 @@ export const Select = component<SelectOptions>({
 		}
 
 		const best = highScores.value.of(quiz.id, quiz.version)
+		const { questionsPerTest } = quiz
+		const perRun = questionsPerTest !== undefined && questionsPerTest < quiz.questions.length
+			? `${formatWhole(questionsPerTest)} of ${formatWhole(quiz.questions.length)} per run`
+			: undefined
+
+		// A stage chosen on another quiz may still be locked on this one: the furthest open one instead.
+		const unlocked = (stage: Stage) => stageResults.value.unlocked(quiz.id, quiz.version, stage)
+		if (!unlocked(selection.value.stage)) selection.value.chooseStage(stages.findLast(unlocked) ?? stages[0])
 
 		append(
 			create(MenuScreen, {
@@ -83,8 +92,9 @@ export const Select = component<SelectOptions>({
 										textContent: [
 											`v${quiz.version}`,
 											`pass ${quiz.passingScore}%`,
+											perRun,
 											best === undefined ? 'new' : `best ${formatWhole(best.points)}`,
-										].join(' · '),
+										].filter((part) => part !== undefined).join(' · '),
 									}),
 								],
 							}),

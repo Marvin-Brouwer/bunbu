@@ -67,6 +67,7 @@ authors: [Jane Doe]       # optional
 license: CC-BY-4.0        # optional, SPDX identifier for the content
 passingScore: 70          # required, percentage (0-100) needed to pass
 timePerQuestion: 1m30s    # optional, how long a question may take in a fight
+questionsPerTest: 40      # optional, how many questions one run of the fight asks
 
 pronunciations: {}        # optional, see Pronunciations
 questions: []             # required, at least one question
@@ -75,6 +76,8 @@ questions: []             # required, at least one question
 `passingScore` is the percentage of points needed to pass. A question is either right or wrong, and worth one point when right. The proposed solutions in a `solutions` question and the rows of a `match` are each answered and counted as one point.
 
 `timePerQuestion` is how long a question may take in a fight: hours, minutes and seconds, in that order, each optional, such as `45s`, `3m`, `1m30s` or `1h`. A question asked in several rounds (the rows of a `match`, the solutions of a `solutions`) gets that time for all its rounds together. The difficulty scales it, see [time limit](gameplay.md#time-limit). Without it the game works the time out from the length of each question. The dojo has no time limit.
+
+`questionsPerTest` keeps a large quiz fun to fight: each run asks that many of its questions, picked at random, so a run is a test of its own. The pass mark counts the points of the questions asked. Without it, or when the quiz has no more questions than that, a run asks every question. Passing a test unlocks the next stage, see [stages](gameplay.md#stages). The dojo always uses every question.
 
 ## Markdown
 

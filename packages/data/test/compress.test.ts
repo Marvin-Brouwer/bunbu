@@ -45,6 +45,7 @@ const smallQuiz: BunbuData = {
   authors: ["Ada", "Grace"],
   license: "CC-BY-4.0",
   timePerQuestion: "1m30s",
+  questionsPerTest: 300,
   description: "Een **kleine** quiz met één vraag — en emoji 🎉" as BunbuData["description"],
   // fromEntries, because a literal __proto__ key would set the prototype instead.
   pronunciations: Object.fromEntries([["__proto__", "proto"], ["SQL", "sequel"]]),

@@ -1,7 +1,8 @@
 import type { BunbuData, Markdown } from '@bunbu/data'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { selection } from '../../_shared/state/selection.mts'
+import { selection, stages } from '../../_shared/state/selection.mts'
 import { fixtureQuiz } from '../../_temp/quiz.mts'
+import { seeded } from '../../_temp/random.mts'
 import { settings } from '../../settings/state/settings.mts'
 import { createRunGame, type RunGame } from '../state/game.mts'
 import { highScores } from '../state/highscores.mts'
@@ -11,7 +12,7 @@ import { runConfig } from '../state/run.mts'
 import { stageResults } from '../state/stage-results.mts'
 import { nextScrollSeconds } from '../../_shared/state/ambush.mts'
 import { commitAmbush, outcomeDelaySeconds } from './ambush.mts'
-import { ambushAt, endRun, metresPerAmbush, startRun, tickRun } from './run.mts'
+import { ambushAt, endRun, metresPerAmbush, startRun, testOf, tickRun } from './run.mts'
 
 let game: RunGame
 
@@ -229,13 +230,13 @@ describe('stage results', () => {
 	it('marks the stage cleared by a finished run, at its full length', () => {
 		play([true, true, true, true])
 
-		expect(stageResults.value.of('fixture', '1', 'castle-town')).toEqual({ distance: 4 * metresPerAmbush, cleared: true })
+		expect(stageResults.value.of('fixture', '1', 'rice-fields')).toEqual({ distance: 4 * metresPerAmbush, cleared: true })
 	})
 
 	it('keeps how far a fallen run got', () => {
 		play([false, false])
 
-		expect(stageResults.value.of('fixture', '1', 'castle-town')).toEqual({ distance: ambushAt(1), cleared: false })
+		expect(stageResults.value.of('fixture', '1', 'rice-fields')).toEqual({ distance: ambushAt(1), cleared: false })
 	})
 
 	it('keeps the best of the runs on a stage', () => {
@@ -244,16 +245,99 @@ describe('stage results', () => {
 
 		play([false, false])
 
-		expect(stageResults.value.of('fixture', '1', 'castle-town')).toMatchObject({ cleared: true })
+		expect(stageResults.value.of('fixture', '1', 'rice-fields')).toMatchObject({ cleared: true })
 	})
 
 	it('is per stage', () => {
-		selection.value.chooseStage('rice-fields')
+		selection.value.chooseStage('castle-town')
 
 		play([false, false])
 
-		expect(stageResults.value.of('fixture', '1', 'rice-fields')).toMatchObject({ cleared: false })
-		expect(stageResults.value.of('fixture', '1', 'castle-town')).toBeUndefined()
+		expect(stageResults.value.of('fixture', '1', 'castle-town')).toMatchObject({ cleared: false })
+		expect(stageResults.value.of('fixture', '1', 'rice-fields')).toBeUndefined()
+	})
+})
+
+describe('unlocking stages', () => {
+	it('opens only the first stage on a new quiz', () => {
+		expect(stages.filter((stage) => stageResults.value.unlocked('fixture', '1', stage))).toEqual(['rice-fields'])
+	})
+
+	it('unlocks the next stage when a run passes', () => {
+		play([true, true, true, true])
+
+		expect(stageResults.value.unlocked('fixture', '1', 'bamboo-forest')).toBe(true)
+		expect(stageResults.value.unlocked('fixture', '1', 'mountain-temple')).toBe(false)
+		expect(game.score.value.unlocked).toBe('bamboo-forest')
+	})
+
+	it('unlocks nothing when the samurai falls', () => {
+		play([false, false])
+
+		expect(stageResults.value.unlocked('fixture', '1', 'bamboo-forest')).toBe(false)
+		expect(game.score.value.unlocked).toBeUndefined()
+	})
+
+	it('tells only the run that unlocked it', () => {
+		play([true, true, true, true])
+		startRun(game, fixtureQuiz)
+
+		play([true, true, true, true])
+
+		expect(game.score.value.unlocked).toBeUndefined()
+	})
+
+	it('is per quiz version', () => {
+		play([true, true, true, true])
+
+		expect(stageResults.value.unlocked('fixture', '2', 'bamboo-forest')).toBe(false)
+	})
+
+	it('has nothing to unlock after the last stage', () => {
+		selection.value.chooseStage('edo-castle')
+
+		play([true, true, true, true])
+
+		expect(game.score.value.unlocked).toBeUndefined()
+	})
+})
+
+describe('a test', () => {
+	const many: BunbuData = { ...fixtureQuiz, questions: Array.from({ length: 10 }, () => fixtureQuiz.questions[0]!) }
+
+	it('asks every question in file order without a random', () => {
+		expect(testOf(many)).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+	})
+
+	it('asks every question, shuffled, with a random', () => {
+		const order = testOf(many, seeded(3))
+
+		expect(order).not.toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+		expect(order.toSorted((first, second) => first - second)).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+	})
+
+	it('asks a different order on another run', () => {
+		const random = seeded(3)
+
+		expect(testOf(many, random)).not.toEqual(testOf(many, random))
+	})
+
+	it('picks questionsPerTest of them at random', () => {
+		const order = testOf({ ...many, questionsPerTest: 4 }, seeded(3))
+
+		expect(order).toHaveLength(4)
+		expect(new Set(order).size).toBe(4)
+	})
+
+	it('asks them all when the quiz has fewer than questionsPerTest', () => {
+		expect(testOf({ ...many, questionsPerTest: 40 }, seeded(3))).toHaveLength(10)
+	})
+
+	it('makes the stage as long as the questions it asks', () => {
+		startRun(game, { ...many, questionsPerTest: 4 }, seeded(3))
+
+		expect(game.quiz.value.order).toHaveLength(4)
+		expect(game.run.value.stageLength).toBe(4 * metresPerAmbush)
 	})
 })
 

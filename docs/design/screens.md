@@ -40,8 +40,8 @@ A screen of its own, so the title stays calm:
 
 "Choose your path". The quiz is chosen on Quizzes (1b); the stage and the difficulty only matter to a fight, so they are chosen here:
 
-1. **Quiz:** the chosen quiz, and which of its questions won't fit in a fight.
-2. **Stage:** Rice fields, Bamboo forest, Mountain temple, Castle town, Edo castle. Each shows the best distance with the chosen quiz and whether it was cleared (`Best 860 m`, `Best 1,440 m · cleared`), or nothing before its first run. A stage is as long as the quiz, so this is per quiz.
+1. **Quiz:** the chosen quiz (`v3 · pass 70% · 40 of 260 per run` when it sets `questionsPerTest`), and which of its questions won't fit in a fight.
+2. **Stage:** Rice fields, Bamboo forest, Mountain temple, Castle town, Edo castle. Each shows the best distance with the chosen quiz and whether it was cleared (`Best 860 m`, `Best 1,440 m · cleared`), or nothing before its first run. A stage is as long as the test, so this is per quiz. A stage that is still locked ([stages](gameplay.md#stages)) can't be chosen: a lock covers its number and it says `Clear Rice fields to unlock`. When the chosen stage is locked for the chosen quiz, the furthest open one is chosen instead.
 
 A difficulty slider from **Apprentice** to **Shogun** over four stops (Apprentice, Samurai, Daimyo, Shogun), the inner two marked (sets `timeScale`, see [time limit](gameplay.md#time-limit)). Under it, the stop, and the time it gives when the quiz sets `timePerQuestion`: `Daimyo: 2m 24s per question`. Then **Start run**.
 
@@ -95,7 +95,7 @@ One scroll over the world holds all of it; the buttons stay at its foot while th
 - `17 / 20 correct (85%) · 4:05`.
 - Breakdown: **Correct** (`17 × 100`), **Time** (tiebreak for the high score), **Distance** (stage cleared).
 - **Mistakes**: each miss with ✗ your pick, ✓ the right answer, the explanation and references.
-- **Next stage**, **Practise mistakes**, **Menu**.
+- **Next stage** (with `Bamboo forest · unlocked` when this run unlocked it; **Run again** after the last stage), **Practise mistakes**, **Menu**.
 
 ### 8 Fallen
 

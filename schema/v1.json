@@ -45,6 +45,11 @@
       "type": "string",
       "pattern": "^(?=\\d)(?=.*[1-9])(\\d+h)?(\\d+m)?(\\d+s)?$"
     },
+    "questionsPerTest": {
+      "description": "How many questions one run of the fight asks, picked at random. Without it a run asks every question.",
+      "type": "integer",
+      "minimum": 1
+    },
     "pronunciations": {
       "description": "Written term mapped to the text the speech engine should say instead.",
       "type": "object",

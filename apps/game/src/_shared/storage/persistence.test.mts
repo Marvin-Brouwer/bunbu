@@ -274,7 +274,7 @@ describe('persistApp', () => {
 	it('saves the chosen quiz by id and version', async () => {
 		await persistApp(stop.signal)
 		selection.value.chooseQuiz(savedQuiz)
-		expect(read('selection')).toEqual({ quiz: { id: 'saved', version: '1' }, stage: 'castle-town' })
+		expect(read('selection')).toEqual({ quiz: { id: 'saved', version: '1' }, stage: 'rice-fields' })
 	})
 
 	it('forgets the chosen quiz when it is removed, and leaves another chosen one be', async () => {
@@ -286,7 +286,7 @@ describe('persistApp', () => {
 		selection.value.forgetQuiz('saved', '1')
 
 		expect(kept).toMatchObject({ id: 'saved' })
-		expect(read('selection')).toEqual({ stage: 'castle-town' })
+		expect(read('selection')).toEqual({ stage: 'rice-fields' })
 	})
 
 	it('keeps a quiz chosen while the saved ones are still being validated', async () => {

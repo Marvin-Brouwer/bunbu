@@ -28,8 +28,8 @@ export type SelectionState = {
 	readonly stage: Stage
 }
 
-// Castle town is the stage that is built so far; the others fall back to it until they are.
-const initial: SelectionState = { quiz: undefined, stage: 'castle-town' }
+// The first stage is the only one open on a new quiz ([stages](../../../../../docs/design/gameplay.md#stages)).
+const initial: SelectionState = { quiz: undefined, stage: 'rice-fields' }
 
 export type SelectionActions = {
 	chooseQuiz: (quiz: BunbuData) => void

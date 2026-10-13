@@ -22,6 +22,12 @@ Each question in the quiz triggers an **ambush**: ninjas attack, a papyrus scrol
 
 The run ends when the stage is cleared ([results](screens.md#7-finished-results-and-mistakes)) or when the pass mark is out of reach ([fallen](screens.md#8-fallen)).
 
+## Stages
+
+A run is a **test**: the quiz's questions in a random order, a different one every run. When the quiz sets [`questionsPerTest`](data-format.md#document-structure), a run asks only that many of them, picked at random each run, and the pass mark counts the points of those. The stage is as long as the questions it asks.
+
+The five stages are played in order: Rice fields, Bamboo forest, Mountain temple, Castle town, Edo castle. Only the first is open at the start. **Passing a test on a stage unlocks the next one**, per quiz (`id` + `version`, like the high score). Unlocking is no secret: a locked stage says which one to clear first.
+
 ## Ambush
 
 One screen, no Submit button: **the swipe is the answer**.
