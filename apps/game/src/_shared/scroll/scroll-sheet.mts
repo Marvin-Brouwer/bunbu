@@ -50,7 +50,10 @@ export const ScrollSheet = component<ScrollSheetOptions>({
 						],
 					}),
 					element('div', {
-						classes: styles.rod,
+						classes: styles.bottomRod,
+						children: element('div', {
+							classes: styles.rod,
+						}),
 					}),
 				],
 			})
