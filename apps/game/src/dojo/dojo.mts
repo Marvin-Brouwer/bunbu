@@ -27,6 +27,13 @@ import practiceArt from './practice-art.svg'
 import studyArt from './study-art.svg'
 import styles from './dojo.css'
 
+/**
+ * A click the browser should handle itself: another button than the main one, or with a key held,
+ * which opens the link in a new tab or window.
+ */
+const openedElsewhere = (event: MouseEvent) =>
+	event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey
+
 type ModeCardOptions = {
 	readonly title: string
 	readonly text: string
@@ -84,6 +91,7 @@ const ModeCard = component<ModeCardOptions>({
 							event.currentTarget.href = target().href
 						},
 						click(event) {
+							if (openedElsewhere(event)) return
 							event.preventDefault()
 							navigate(target())
 						},
@@ -108,6 +116,7 @@ const QuizPanel = component<{ readonly quiz: BunbuData }>({
 				},
 				on: {
 					click(event) {
+						if (openedElsewhere(event)) return
 						event.preventDefault()
 						navigate(href.for(QuizzesRoute))
 					},
@@ -119,7 +128,7 @@ const QuizPanel = component<{ readonly quiz: BunbuData }>({
 					}),
 					element('span', {
 						classes: styles.quizNote,
-						textContent: `v${quiz.version} · ${formatWhole(quiz.questions.length)} questions ▾`,
+						textContent: `v${quiz.version} · ${formatWhole(quiz.questions.length)} ${quiz.questions.length === 1 ? 'question' : 'questions'} ▾`,
 					}),
 				],
 			})
