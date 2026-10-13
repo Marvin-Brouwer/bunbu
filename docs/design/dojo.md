@@ -8,7 +8,7 @@ Hands-free revision.
 
 - Every question of the quiz with its correct answer, shuffled, read aloud by the browser Speech API on a loop.
 - What is read: the query, then "the answer is …". `multiple` lists all correct options, `order` gives the right sequence, `solutions` gives each solution with yes or no, `match` each row with its answer. Code blocks are not read; an image is read by its alt text.
-- The word being spoken is highlighted to help with focus: a grey background and an underline. Where the browser doesn't say which word it is at, the word is guessed from the time spoken, at the pace the voice read the sentences before (as on Android); where it can't mark text at all, there is no highlight.
+- The word being spoken is highlighted to help with focus: a grey background and an underline. Where the browser doesn't say which word it is at (as on Android), the whole sentence being read is highlighted instead; where it can't mark text at all, there is no highlight.
 - Pronunciation uses the quiz's `pronunciations` and the built-in dictionaries (see [data format](data-format.md#pronunciations)).
 - The card is plain text on the page, not on a scroll; it scrolls on its own when it is long, and follows the part being read.
 - Controls: **Pause** (then **Play**) and **Skip** docked at the bottom. Skip goes on to the next card, read aloud or not, so the cards can be gone through without sound. There is no previous.

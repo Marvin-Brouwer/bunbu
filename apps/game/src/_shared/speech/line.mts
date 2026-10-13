@@ -149,6 +149,21 @@ export function shownWordAt(line: SpokenLine, index: number, length?: number): S
 	}
 }
 
+/** Where on screen a whole line is: the stretch it covers in each of its blocks. */
+export function shownRangesOf(line: SpokenLine): ShownRange[] {
+	const ranges = new Map<number, ShownRange>()
+	for (const { source } of line.segments) {
+		if (source === undefined) continue
+		const known = ranges.get(source.block)
+		ranges.set(source.block, known === undefined ? source : {
+			block: source.block,
+			start: Math.min(known.start, source.start),
+			end: Math.max(known.end, source.end),
+		})
+	}
+	return [...ranges.values()]
+}
+
 /**
  * The sentences of a text, as character ranges without the space around them. Each is said as its
  * own line: short lines keep a pause between sentences, and some engines stop a long one halfway.
