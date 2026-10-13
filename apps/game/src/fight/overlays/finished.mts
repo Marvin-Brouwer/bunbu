@@ -1,7 +1,7 @@
 /**
  * 7 Finished ([screens.md](../../../../../docs/design/screens.md#7-finished-results-and-mistakes)):
- * the quiz is passed. The score, and the high score it beat; correct, time and distance; the
- * mistakes; then Next stage, all on one scroll over the world.
+ * the quiz is passed. The score, and the high score it beat, with Share to dare a friend to beat it;
+ * correct, time and distance; the mistakes; then Next stage, all on one scroll over the world.
  */
 
 import { component } from '@rooted/components'
@@ -15,6 +15,8 @@ import type { RunGame } from '../state/game.mts'
 import { pointsIn, pointsPerCorrect } from '../state/score.mts'
 import { AfterRun } from './after-run.mts'
 import { Mistakes } from './mistakes.mts'
+import type { ScorePicture } from './score-picture.mts'
+import { ShareScoreButton } from './share-score-button.mts'
 import { StatTile } from './stat-tile.mts'
 import styles from './overlays.css'
 
@@ -40,6 +42,31 @@ export const Finished = component<FinishedOptions>({
 		// The same quiz on the next stage that has a world (docs/plan.md#open-questions), or this one
 		// again after the last. Passing has unlocked it, now or before.
 		const next = stages.slice(stages.indexOf(selection.value.stage) + 1).find((stage) => builtStages.has(stage))
+		// The top of the results, which Share sends as a picture too.
+		const picture: ScorePicture = {
+			quizTitle: quiz.title,
+			verdict: newBest ? 'Quiz passed · new high score' : 'Quiz passed',
+			points: formatWhole(points),
+			was: best === undefined ? undefined : `${newBest ? 'was' : 'best'} ${formatWhole(best.points)}`,
+			summary: `${correct} / ${total} correct (${Math.round((correct / total) * 100)}%) · ${formatDuration(elapsed)}`,
+			tiles: [
+				{
+					label: 'Correct',
+					value: formatWhole(points),
+					note: `${correct} × ${pointsPerCorrect}`,
+				},
+				{
+					label: 'Time',
+					value: formatDuration(elapsed),
+					note: 'breaks a tie',
+				},
+				{
+					label: 'Distance',
+					value: `${formatWhole(stageLength)} m`,
+					note: 'stage cleared',
+				},
+			],
+		}
 
 		append(
 			element('section', {
@@ -67,47 +94,35 @@ export const Finished = component<FinishedOptions>({
 											children: [
 												element('h1', {
 													classes: styles.verdict,
-													textContent: newBest ? 'Quiz passed · new high score' : 'Quiz passed',
+													textContent: picture.verdict,
 												}),
 												element('span', {
 													classes: styles.total,
 													children: [
-														formatWhole(points),
-														best === undefined
+														picture.points,
+														picture.was === undefined
 															? undefined
 															: element('span', {
 																classes: styles.was,
-																textContent: newBest ? `was ${formatWhole(best.points)}` : `best ${formatWhole(best.points)}`,
+																textContent: picture.was,
 															}),
 													],
 												}),
 												element('span', {
 													classes: styles.summary,
-													textContent: `${correct} / ${total} correct (${Math.round((correct / total) * 100)}%) · ${formatDuration(elapsed)}`,
+													textContent: picture.summary,
 												}),
 											],
+										}),
+										create(ShareScoreButton, {
+											quizId: quiz.id,
+											picture,
 										}),
 									],
 								}),
 								element('div', {
 									classes: styles.tiles,
-									children: [
-										create(StatTile, {
-											label: 'Correct',
-											value: formatWhole(points),
-											note: `${correct} × ${pointsPerCorrect}`,
-										}),
-										create(StatTile, {
-											label: 'Time',
-											value: formatDuration(elapsed),
-											note: 'breaks a tie',
-										}),
-										create(StatTile, {
-											label: 'Distance',
-											value: `${formatWhole(stageLength)} m`,
-											note: 'stage cleared',
-										}),
-									],
+									children: picture.tiles.map((tile) => create(StatTile, tile)),
 								}),
 								create(Mistakes, {
 									title: 'Mistakes',
