@@ -5,10 +5,10 @@
 
 import type { BunbuData } from '@bunbu/data'
 import { component } from '@rooted/components'
-import { library, type LibraryState } from '../_shared/storage/library.mts'
+import { library, type LibraryEntry, type LibraryState } from '../_shared/storage/library.mts'
 import { selection, type SelectionState } from '../_shared/state/selection.mts'
 import { snapshot } from '../_shared/state/store.mts'
-import { fixtureQuiz } from '../_temp/quiz.mts'
+import { sampleQuizzes } from '../_temp/sample-quizzes.mts'
 import { LoadQuiz } from './load-quiz.mts'
 import { QuizCard } from './quiz-card.mts'
 import { FitNotice, LoadProblems } from '../_shared/quiz/quiz-notices.mts'
@@ -18,13 +18,14 @@ import styles from './quiz-shelf.css'
 const same = (quiz: BunbuData, other: BunbuData | undefined) => quiz.id === other?.id && quiz.version === other.version
 
 /**
- * The quizzes to choose from: the library, and in dev the fixture quiz when the library doesn't
- * have it. Only those in the library can be removed.
+ * The quizzes to choose from: the library, and in dev the `samples` (the fixture quiz and those in
+ * `docs/testdata/`) that the library doesn't have. Only those in the library can be removed; a
+ * sample joins it when it is chosen.
  */
-function quizzesIn(state: LibraryState): { quiz: BunbuData, kept: boolean }[] {
-	const quizzes = state.entries.map((entry) => ({ quiz: entry.quiz, kept: true }))
-	if (import.meta.env.DEV && !quizzes.some(({ quiz }) => same(quiz, fixtureQuiz))) quizzes.push({ quiz: fixtureQuiz, kept: false })
-	return quizzes
+function quizzesIn(state: LibraryState, samples: readonly LibraryEntry[]): { entry: LibraryEntry, kept: boolean }[] {
+	const kept = state.entries.map((entry) => ({ entry, kept: true }))
+	const extra = samples.filter((sample) => !state.entries.some(({ quiz }) => same(quiz, sample.quiz)))
+	return [...kept, ...extra.map((entry) => ({ entry, kept: false }))]
 }
 
 /** Takes a quiz out of the library, and unchooses it when it was chosen. Its high score stays. */
@@ -49,6 +50,8 @@ export const QuizShelf = component({
 		})
 
 		let failed: { readonly file: string, readonly problems: readonly string[] } | undefined
+		// Dev builds only: the samples come in once they are validated.
+		let samples: readonly LibraryEntry[] = []
 
 		const read = (file: File, result: ReadQuiz) => {
 			if ('problems' in result) {
@@ -74,11 +77,14 @@ export const QuizShelf = component({
 		const showShelf = (state: LibraryState) => {
 			const { quiz: chosen } = snapshot<SelectionState>(selection)
 			shelf.replaceChildren(
-				...quizzesIn(state).map(({ quiz, kept }) => create(QuizCard, {
-					quiz,
-					chosen: same(quiz, chosen),
-					choose: () => { selection.value.chooseQuiz(quiz) },
-					remove: kept ? () => { remove(quiz) } : undefined,
+				...quizzesIn(state, samples).map(({ entry, kept }) => create(QuizCard, {
+					quiz: entry.quiz,
+					chosen: same(entry.quiz, chosen),
+					choose: () => {
+						selection.value.chooseQuiz(entry.quiz)
+						if (!kept) library.value.add(entry)
+					},
+					remove: kept ? () => { remove(entry.quiz) } : undefined,
 				})),
 			)
 		}
@@ -100,6 +106,13 @@ export const QuizShelf = component({
 		library.on('change', signal, () => {
 			showShelf(snapshot<LibraryState>(library))
 		})
+		if (import.meta.env.DEV) {
+			void sampleQuizzes().then((found) => {
+				if (signal.aborted) return
+				samples = found
+				showShelf(snapshot<LibraryState>(library))
+			})
+		}
 		selection.on('change', signal, () => {
 			showNotices()
 		})

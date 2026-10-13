@@ -41,7 +41,7 @@ function questionsAsked(game: RunGame): number {
  * The questions one run asks, as indices into the quiz, in the order they are asked: a test
  * ([stages](../../../../../docs/design/gameplay.md#stages)). With `random` they are shuffled and,
  * when the quiz sets `questionsPerTest`, that many are picked from them; without it, tests and
- * fixtures get them in file order.
+ * get them in file order.
  */
 export function testOf(data: BunbuData, random?: Random): number[] {
 	const indices = data.questions.map((_, index) => index)
@@ -51,7 +51,7 @@ export function testOf(data: BunbuData, random?: Random): number[] {
 
 /**
  * Starts a run on a new test of `data`. The game passes `Math.random` for `random`; tests and
- * fixtures leave it out to ask the questions in file order. `difficulty` defaults to the one chosen
+ * leave it out to ask the questions in file order. `difficulty` defaults to the one chosen
  * for the quiz, `best` to its high score, which the HUD shows as the one to beat.
  */
 export function startRun(

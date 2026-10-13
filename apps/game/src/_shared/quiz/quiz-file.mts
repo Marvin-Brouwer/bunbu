@@ -1,7 +1,7 @@
 /**
  * A quiz as a `.bunbu` file ([sharing](../../../../../docs/design/data-format.md#sharing)), to
  * share or download: the one the library keeps, or packed on the spot for a quiz it doesn't have,
- * such as the dev fixture.
+ * such as the dev sample quizzes.
  */
 
 import { compress, fileExtension, mimeType, type BunbuData } from '@bunbu/data'

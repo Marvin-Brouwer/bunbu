@@ -16,7 +16,7 @@ export type QuizCardOptions = {
 	readonly quiz: BunbuData
 	readonly chosen: boolean
 	readonly choose: () => void
-	/** Takes the quiz out of the library. Without it there is no Remove, as for the dev fixture quiz. */
+	/** Takes the quiz out of the library. Without it there is no Remove, as for the dev sample quizzes. */
 	readonly remove?: () => void
 }
 

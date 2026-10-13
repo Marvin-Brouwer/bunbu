@@ -1,5 +1,5 @@
 /**
- * A repeatable random for tests and fixtures, so the same shuffle comes out every time. The game
+ * A repeatable random for tests, so the same shuffle comes out every time. The game
  * itself uses `Math.random`.
  */
 

@@ -39,7 +39,7 @@ The run's stores:
 | `shogun`   | Pose (`run`, `strike`, `block`, `hurt`, `fallen`), the target of a strike, when it started                            | `strike(ninjaId)`, `block(ninjaId)`, `hurt()`                      |
 | `ninjas`   | Active ninjas: id, carried options, mark, position along the approach, pose                                           | `spawn(wave)`, `advance(approach)`, `slay(id)`, `clear()`                |
 
-`createRunGame()` creates all of these together as one `RunGame`. Each store is a factory (`createLife(initial)`), so a test or a fixture can start it from any state.
+`createRunGame()` creates all of these together as one `RunGame`. Each store is a factory (`createLife(initial)`), so a test can start it from any state.
 
 The dojo reuses `quiz` and `ambush`. Practice adds a `tally` (right, wrong, missed) and has no life bar or score; study adds `reading` (card, playing, speech rate, spoken word).
 
@@ -60,7 +60,7 @@ Choosing a quiz and running it share one route, `/fight/`: the select screen sta
 
 A store is a [`@rooted/store`](https://github.com/Marvin-Brouwer/rooted/blob/main/docs/guide/state.md) store inside a plain TypeScript module with no dependency on three.js or the DOM. `value` is a frozen snapshot, `update` merges what the setter returns, and `on('change', signal, …)` fires when the state really changed.
 
-Each store is a factory, so a game mode creates its own and a test or fixture can start it from any state. The actions live on the state itself: `@rooted/store` keeps functions by reference when it snapshots, so `game.life.value.hit(share)` is how a flow changes the life bar. Nothing outside the store's own module calls `update`.
+Each store is a factory, so a game mode creates its own and a test can start it from any state. The actions live on the state itself: `@rooted/store` keeps functions by reference when it snapshots, so `game.life.value.hit(share)` is how a flow changes the life bar. Nothing outside the store's own module calls `update`.
 
 ```ts
 import { createStore, type Store } from '@rooted/store'
@@ -181,13 +181,13 @@ apps/game/src/
 	canvas/           the game loop (play() plugs a mode in), the viewport, show() for a world
 	_shared/          what several slices use
 		state/        quiz, ambush, selection, snapshot()
-	_temp/            the fixture quiz, until quizzes load for real
+	_temp/            the fixture quiz, and the sample quizzes the quizzes menu lists in dev
 	title/            the title menu (the router's home) and not-found
 	fight/            /fight/: quiz select, then the run
 		state/        the run's stores and createRunGame
 		flows/        functions that span the run's stores
 		world/        the run's 3D world: stage, samurai, ninjas, camera (reads state only)
-		_temp/        dev-only run states (fixtures.mts), through `/fight/?fixture=<name>`
+		_temp/        dev-only tools: unlock or lock every stage
 	dojo/             /dojo/, /dojo/study/, /dojo/practice/
 		state/        createPracticeGame, createStudyGame
 	settings/         /settings/

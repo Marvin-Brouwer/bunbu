@@ -2,7 +2,7 @@
  * The state of one run of the main game. The run route creates it when it mounts and drops it
  * when it unmounts, so nothing carries over between runs or into the dojo.
  *
- * Every store can start from a given state, which is how fixtures and tests set up a screen
+ * Every store can start from a given state, which is how tests set up a screen
  * without playing a run.
  */
 
@@ -24,7 +24,7 @@ export type RunGame = {
 	readonly ninjas: Ninjas
 }
 
-/** The state of every store in a run, for fixtures and tests. */
+/** The state of every store in a run, for tests. */
 export type RunGameState = {
 	readonly run: RunState
 	readonly quiz: QuizState
