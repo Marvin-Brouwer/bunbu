@@ -7,8 +7,8 @@ describe('hintOf', () => {
 		expect(hintOf({ kind: 'yes-no', choose: 1 })).toBe('Cut your answer')
 	})
 
-	it('says how many to cut for multiple, and to hold still to strike', () => {
-		expect(hintOf({ kind: 'multiple', choose: 2 })).toBe('Cut the 2 you choose, then hold still')
+	it('says how many to cut for multiple', () => {
+		expect(hintOf({ kind: 'multiple', choose: 2 })).toBe('Cut the 2 you choose')
 	})
 
 	it('keeps the count to itself when the question does', () => {

@@ -48,7 +48,7 @@ The answers are written in ink on lined paper, one per line with the arrow of it
 | ----------- | --------------------------- | --------------------------------------------------------------------------------------- |
 | `yes-no`    | 1                           | One swipe: ↑ yes (slash), ↓ no (block).                                                 |
 | `single`    | one per option              | One swipe toward the chosen option's mark.                                              |
-| `multiple`  | one per option              | Swipe toward each mark to pick it. Lifting between swipes is optional: ← lift → and one continuous ← → stroke both pick two marks. A pause of 0.8 s after lifting strikes. A swipe is final: swiping a marked mark again does nothing. |
+| `multiple`  | one per option              | Swipe toward each mark to pick it. Lifting between swipes is optional: ← lift → and one continuous ← → stroke both pick two marks. It strikes as soon as as many marks are picked as the scroll asks for; only when the count isn't given does a pause of 0.8 s after lifting strike. A swipe is final: swiping a marked mark again does nothing. |
 | `order`     | one per item                | Swipe every item in turn; numbered 1, 2, 3 …, it strikes once all are placed.           |
 | `solutions` | 1 per proposed solution     | One scroll per solution, answered like `yes-no` ("2 of 3" on the scroll).               |
 | `match`     | one per option              | One `single`-style scroll per row.                                                      |
