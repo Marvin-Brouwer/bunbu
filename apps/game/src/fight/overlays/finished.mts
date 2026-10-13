@@ -1,7 +1,7 @@
 /**
  * 7 Finished ([screens.md](../../../../../docs/design/screens.md#7-finished-results-and-mistakes)):
- * the quiz is passed. The score, and the high score it beat; correct, time and distance; the
- * mistakes; then Next stage, all on one scroll over the world.
+ * the quiz is passed. The score, and the high score it beat, with Share to dare a friend to beat it;
+ * correct, time and distance; the mistakes; then Next stage, all on one scroll over the world.
  */
 
 import { component } from '@rooted/components'
@@ -12,9 +12,11 @@ import { ScrollSheet } from '../../_shared/scroll/scroll-sheet.mts'
 import { snapshot } from '../../_shared/state/store.mts'
 import type { QuizActions, QuizState } from '../../_shared/state/quiz.mts'
 import type { RunGame } from '../state/game.mts'
+import { difficultyNames } from '../state/difficulty.mts'
 import { pointsIn, pointsPerCorrect } from '../state/score.mts'
 import { AfterRun } from './after-run.mts'
 import { Mistakes } from './mistakes.mts'
+import { ShareScoreButton } from './share-score-button.mts'
 import { StatTile } from './stat-tile.mts'
 import styles from './overlays.css'
 
@@ -34,12 +36,13 @@ export const Finished = component<FinishedOptions>({
 		if (quiz === undefined) return
 
 		const { points, correct, best, newBest, unlocked } = game.score.value
-		const { elapsed, stageLength } = game.run.value
+		const { elapsed, stageLength, difficulty } = game.run.value
 		const total = pointsIn(quiz, refs)
 		const misses = game.quiz.value.misses()
 		// The same quiz on the next stage that has a world (docs/plan.md#open-questions), or this one
 		// again after the last. Passing has unlocked it, now or before.
-		const next = stages.slice(stages.indexOf(selection.value.stage) + 1).find((stage) => builtStages.has(stage))
+		const { stage } = selection.value
+		const next = stages.slice(stages.indexOf(stage) + 1).find((later) => builtStages.has(later))
 
 		append(
 			element('section', {
@@ -86,6 +89,14 @@ export const Finished = component<FinishedOptions>({
 													textContent: `${correct} / ${total} correct (${Math.round((correct / total) * 100)}%) · ${formatDuration(elapsed)}`,
 												}),
 											],
+										}),
+										create(ShareScoreButton, {
+											quiz,
+											points,
+											correct,
+											total,
+											stage: stageNames[stage],
+											difficulty: difficultyNames[difficulty],
 										}),
 									],
 								}),

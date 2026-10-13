@@ -180,6 +180,47 @@
 	color: var(--ink-soft);
 }
 
+/* Share, at the top right of the header: red like Share on the title. */
+.shareButton {
+	align-self: start;
+	flex: none;
+	margin-left: auto;
+	padding: 0.5rem 0.9rem;
+	border: none;
+	border-radius: var(--radius);
+	background: var(--vermilion);
+	color: var(--paper-light);
+	font: inherit;
+	font-weight: 700;
+	cursor: pointer;
+	box-shadow: var(--tile-vermilion);
+}
+
+.shareButton:active {
+	translate: 0 var(--bevel-height);
+	box-shadow: none;
+}
+
+.shareButton:focus-visible {
+	outline: 3px solid var(--indigo);
+	outline-offset: 2px;
+}
+
+.shareButton:disabled {
+	cursor: progress;
+	opacity: 0.6;
+}
+
+/* The message to send, on the scroll for sharing by hand. */
+.shareMessage {
+	margin: 0;
+	padding-left: 0.8rem;
+	border-left: 3px solid var(--vermilion);
+	font-style: italic;
+	overflow-wrap: anywhere;
+	user-select: text;
+}
+
 /* Fallen: the kanji and the name, the reason in vermilion. */
 
 .fallen {

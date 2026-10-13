@@ -5,6 +5,7 @@
  */
 
 import { component } from '@rooted/components'
+import { appLink } from '../_shared/app-link.mts'
 import { MenuButton } from '../_shared/menu/menu-button.mts'
 import { download } from '../_shared/quiz/quiz-file.mts'
 import { ScrollDialog } from '../_shared/scroll/scroll-dialog.mts'
@@ -20,11 +21,9 @@ export type ShareFallbackOptions = {
 	readonly close: () => void
 }
 
-const appUrl = () => new URL(import.meta.env.BASE_URL, window.location.origin).href
-
 /** Shares a link to the game, or copies it where there is no share sheet; says which it did. */
 const shareApp = async (): Promise<string | undefined> => {
-	const url = appUrl()
+	const url = appLink()
 	if ('share' in navigator) {
 		try {
 			await navigator.share({
