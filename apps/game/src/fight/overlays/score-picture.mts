@@ -16,9 +16,10 @@ export type ScorePicture = {
 	readonly quizTitle: string
 	readonly verdict: string
 	readonly points: string
-	/** The high score beside the points: `was 2,210` or `best 2,210`. */
+	/** The high score it beat, beside the points: `was 2,210`. */
 	readonly was: string | undefined
-	readonly summary: string
+	/** The small lines under the points: the high score and the correct answers. */
+	readonly lines: readonly string[]
 	readonly tiles: readonly ScoreTile[]
 }
 
@@ -91,12 +92,12 @@ const draw = (context: CanvasRenderingContext2D, picture: ScorePicture, look: Re
 	}
 	y += gap
 
-	// The header: the seal, the verdict, the points and the summary.
+	// The header: the seal, the verdict, the points and the lines under them.
 	const seal = 58
 	const headlineX = padding + 16 + seal + 16
 	const headlineWidth = width - padding - 16 - headlineX
 	context.font = `13px ${look.mono}`
-	const summary = linesOf(context, picture.summary, headlineWidth)
+	const summary = picture.lines.flatMap((line) => linesOf(context, line, headlineWidth))
 	const headerHeight = Math.max(seal, 16 + 4 + 36 + summary.length * 17) + 32
 	box(context, padding, y, inner, headerHeight, look.paperLight, look.vermilion)
 	const sealX = padding + 16 + seal / 2
@@ -164,7 +165,7 @@ const draw = (context: CanvasRenderingContext2D, picture: ScorePicture, look: Re
 	y += 20
 	context.fillStyle = look.inkSoft
 	context.font = `12px ${look.mono}`
-	context.fillText(appLink().replace(/^https?:\/\//, ''), padding, y)
+	context.fillText(appLink(), padding, y)
 	return y + 16 + padding
 }
 

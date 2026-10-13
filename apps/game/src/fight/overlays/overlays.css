@@ -174,41 +174,12 @@
 	color: var(--ink-soft);
 }
 
+/* Under the points, a line each: the high score and the correct answers, as on the title's quiz card. */
 .summary {
+	display: grid;
 	font-family: var(--font-mono);
 	font-size: 0.85rem;
 	color: var(--ink-soft);
-}
-
-/* Share, at the top right of the header: red like Share on the title. */
-.shareButton {
-	align-self: start;
-	flex: none;
-	margin-left: auto;
-	padding: 0.5rem 0.9rem;
-	border: none;
-	border-radius: var(--radius);
-	background: var(--vermilion);
-	color: var(--paper-light);
-	font: inherit;
-	font-weight: 700;
-	cursor: pointer;
-	box-shadow: var(--tile-vermilion);
-}
-
-.shareButton:active {
-	translate: 0 var(--bevel-height);
-	box-shadow: none;
-}
-
-.shareButton:focus-visible {
-	outline: 3px solid var(--indigo);
-	outline-offset: 2px;
-}
-
-.shareButton:disabled {
-	cursor: progress;
-	opacity: 0.6;
 }
 
 /* Fallen: the kanji and the name, the reason in vermilion. */
@@ -280,4 +251,59 @@
 	display: grid;
 	gap: 0.75rem;
 	padding: 0 1rem 1rem;
+}
+
+/* Practise mistakes (when there are any) and Menu side by side, with Share at the end on a passed quiz. */
+.leaving {
+	display: flex;
+	gap: 0.75rem;
+}
+
+/* The components wrapping the buttons don't take part in the layout, so this is the buttons. */
+.leaving :is(a, button) {
+	flex: 1;
+	min-width: 0;
+}
+
+/* Share: a red tile with its icon, square beside Menu: as wide as Menu is tall. */
+.leaving .shareButton {
+	display: grid;
+	place-items: center;
+	align-content: center;
+	gap: 0.15rem;
+	flex: none;
+	width: 3rem;
+	padding: 0;
+	border: none;
+	border-radius: var(--radius);
+	background: var(--vermilion);
+	color: var(--paper-light);
+	font: inherit;
+	font-size: 0.6rem;
+	font-weight: 700;
+	cursor: pointer;
+	box-shadow: var(--tile-vermilion);
+}
+
+.shareButton:active {
+	translate: 0 var(--bevel-height);
+	box-shadow: none;
+}
+
+.shareButton:focus-visible {
+	outline: 3px solid var(--indigo);
+	outline-offset: 2px;
+}
+
+.shareButton:disabled {
+	cursor: progress;
+	opacity: 0.6;
+}
+
+/* The icon is a mask, so it takes the button's text colour. */
+.shareIcon {
+	width: 1.4rem;
+	height: 1.4rem;
+	background: currentcolor;
+	mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 15V3M7 8l5-5 5 5M5 12v9h14v-9'/%3E%3C/svg%3E") center / contain no-repeat;
 }
