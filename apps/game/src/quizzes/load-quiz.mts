@@ -2,13 +2,15 @@
  * Where a quiz file comes in: the Load quiz button chooses one, or a `.yaml` or `.bunbu` file is
  * dropped anywhere on the screen. The drop area under the button only says so; once a file is
  * dragged over the screen, it covers the whole screen. Touch phones don't drag files, so they only
- * get the button. Each file read goes to `read`, which the shelf turns into a new card or into the
+ * get the button. A quiz file opened with or shared to the installed app comes in the same way
+ * ({@link receiveOpenedQuizzes}). Each file read goes to `read`, which the shelf turns into a new card or into the
  * problems with the file.
  */
 
 import { fileExtension } from '@bunbu/data'
 import { component } from '@rooted/components'
 import { quizExtensions, readQuiz, type ReadQuiz } from '../_shared/quiz/read-quiz.mts'
+import { receiveOpenedQuizzes, takeSharedQuizzes } from './opened-quizzes.mts'
 import styles from './quiz-shelf.css'
 
 /** A file the browser couldn't read, such as one moved or deleted after it was chosen. */
@@ -130,6 +132,9 @@ export const LoadQuiz = component<LoadQuizOptions>({
 				],
 			}),
 		)
+
+		receiveOpenedQuizzes(readAll)
+		void takeSharedQuizzes().then(readAll)
 
 		if (touchPhone()) return
 
