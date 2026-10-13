@@ -106,8 +106,8 @@ export const RunScreen = component<RunScreenOptions>({
 			})
 		)
 
-		// Where the ambush shows the ninjas closing in: the fight below the scroll when there is room,
-		// the duel strip above it when there isn't. The layout and the world's framing both follow it.
+		// Where the ambush shows the ninjas closing in: the duel strip above the scroll, and the fight
+		// below it when there is room. The layout and the world's framing both follow it.
 		let room: AmbushRoom = noRoom
 		let pending = 0
 		resizeObserver({
