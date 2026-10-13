@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+	<!-- The tab icon: icon.svg without the ground, on a rounded tile, so it still reads at 16px. -->
+	<rect width="512" height="512" rx="96" fill="#f1e8d3"/>
+	<circle cx="256" cy="236" r="150" fill="#b3391f"/>
+	<g fill="#1f1c18">
+		<path d="M70 151 Q256 177 442 151 L424 185 Q256 203 88 185 Z"/>
+		<rect x="112" y="190" width="288" height="15"/>
+		<rect x="115" y="239" width="282" height="18"/>
+		<rect x="245.5" y="198" width="21" height="46"/>
+		<path d="M148 198 L175 198 L181 404 L145 404 Z"/>
+		<path d="M337 198 L364 198 L367 404 L331 404 Z"/>
+	</g>
+</svg>
