@@ -4,14 +4,12 @@
  */
 
 import { component } from '@rooted/components'
-import { href } from '@rooted/router'
 import { createPracticeGame } from './state/practice.mts'
 import { selection } from '../_shared/state/selection.mts'
 import { snapshot } from '../_shared/state/store.mts'
 import { goBack } from '../_shared/menu/back-link.mts'
 import { Placeholder } from '../_shared/placeholder.mts'
 import { show } from '../canvas/stage.mts'
-import { DojoRoute } from './_routes.mts'
 import { createDojoWorld } from './world.mts'
 
 export const Practice = component({
@@ -29,7 +27,7 @@ export const Practice = component({
 					{
 						label: 'Back',
 						action: () => {
-							goBack(href.for(DojoRoute))
+							goBack()
 						},
 					},
 				],

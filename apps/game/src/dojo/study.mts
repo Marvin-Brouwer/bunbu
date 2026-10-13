@@ -26,7 +26,6 @@ import { shuffle } from '../_shared/state/random.mts'
 import { selection } from '../_shared/state/selection.mts'
 import { snapshot } from '../_shared/state/store.mts'
 import { QuizzesRoute } from '../quizzes/_routes.mts'
-import { DojoRoute } from './_routes.mts'
 import { languageOf, settings } from '../settings/state/settings.mts'
 import { createStudyGame, type ReadingState } from './state/study.mts'
 import { studyCardOf, type StudyCard } from './state/study-card.mts'
@@ -55,7 +54,6 @@ const NoQuiz = component({
 		append(
 			create(MenuScreen, {
 				title: 'Study',
-				back: href.for(DojoRoute),
 				children: [
 					element('p', {
 						classes: styles.note,
@@ -315,7 +313,6 @@ const StudySession = component<StudySessionOptions>({
 		append(
 			create(MenuScreen, {
 				title: 'Study',
-				back: href.for(DojoRoute),
 				action: settingsButton,
 				children: [
 					element('p', {

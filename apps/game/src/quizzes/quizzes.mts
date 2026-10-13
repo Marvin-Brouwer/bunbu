@@ -5,7 +5,6 @@
  */
 
 import { component } from '@rooted/components'
-import { href } from '@rooted/router'
 import { MenuScreen } from '../_shared/menu/menu-screen.mts'
 import { QuizShelf } from './quiz-shelf.mts'
 
@@ -15,7 +14,6 @@ export const Quizzes = component({
 		append(
 			create(MenuScreen, {
 				title: 'Quizzes',
-				back: href.path('/'),
 				children: create(QuizShelf),
 			})
 		)

@@ -35,14 +35,12 @@ export const Select = component<SelectOptions>({
 		if (import.meta.env.DEV && selection.value.quiz === undefined) selection.value.chooseQuiz(fixtureQuiz)
 
 		const { quiz } = snapshot<SelectionState>(selection)
-		const title = href.path('/')
 
 		// A fight opened without a quiz sends the player to choose one.
 		if (quiz === undefined) {
 			append(
 				create(MenuScreen, {
 					title: 'Choose your path',
-					back: title,
 					children: create(MenuSection, {
 						label: 'Quiz',
 						children: [
@@ -72,7 +70,6 @@ export const Select = component<SelectOptions>({
 		append(
 			create(MenuScreen, {
 				title: 'Choose your path',
-				back: title,
 				children: [
 					create(MenuSection, {
 						label: 'Quiz',
