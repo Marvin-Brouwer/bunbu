@@ -131,6 +131,14 @@
 	text-transform: uppercase;
 }
 
+/* Dev only: unlock or lock every stage of the quiz. */
+.stageLocks {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 0.6rem;
+	margin-top: 0.6rem;
+}
+
 .start {
 	display: grid;
 	margin-top: 0.5rem;

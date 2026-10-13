@@ -31,6 +31,8 @@ export type StageResultsActions = {
 	unlocked: (id: string, version: string, stage: Stage) => boolean
 	/** Keeps `result` when it is better than the one kept. */
 	submit: (id: string, version: string, stage: Stage, result: StageResult) => void
+	/** Drops every result of a quiz, which locks its stages again. */
+	forget: (id: string, version: string) => void
 	/** Puts back what was saved. Anything already recorded this session is kept when it is better. */
 	restore: (saved: Readonly<Record<string, StageResult>>) => void
 	reset: () => void
@@ -81,6 +83,11 @@ export function createStageResults(initial: StageResultsState = noStageResults):
 			const key = stageResultKey(id, version, stage)
 			if (!betterResult(result, store.value.results[key])) return
 			store.update((state) => ({ results: { ...state.results, [key]: result } }))
+		},
+
+		forget(id, version) {
+			const kept = Object.entries(store.value.results).filter(([key]) => !stages.some((stage) => key === stageResultKey(id, version, stage)))
+			store.update(() => ({ results: Object.fromEntries(kept) }))
 		},
 
 		restore(saved) {

@@ -32,11 +32,16 @@ function resultOf(stage: Stage): string | undefined {
 	return result.cleared ? `${best} · cleared` : best
 }
 
+/** A stage chosen on another quiz may still be locked on this one: the furthest open one instead. */
+export function keepChosenUnlocked(): void {
+	if (!unlocked(selection.value.stage)) selection.value.chooseStage(stages.findLast(unlocked) ?? stages[0])
+}
+
 export const StagePicker = component({
 	name: 'stage-picker',
 	styles,
-	onMount({ append, create, element }) {
-		append(
+	onMount({ create, element, replace, signal }) {
+		const show = () => replace(
 			element('div', {
 				classes: styles.stages,
 				role: 'radiogroup',
@@ -110,5 +115,12 @@ export const StagePicker = component({
 				}),
 			})
 		)
+		show()
+
+		// Unlocking or locking from the dev tools changes the stages while they show.
+		stageResults.on('change', signal, () => {
+			keepChosenUnlocked()
+			show()
+		})
 	},
 })

@@ -103,7 +103,7 @@ answer        = yes-no:    1.5
 
 `solutions` and `match` use the `yes-no` and `single` rows, per solution or row, added up for the whole ambush. A round answered early leaves its time to the ones after it. The pause between two scrolls doesn't count.
 
-`timeScale` is the difficulty, a slider with four stops, the two inner ones marked on the track: **Apprentice** `1.2`, **Samurai** `1` (where a new player starts), **Daimyo** `0.8` and **Shogun** `0.5`. The dojo has no time limit.
+`timeScale` is the difficulty, a slider with four stops, the two inner ones marked on the track: **Apprentice** `1.2`, **Samurai** `1` (where a new player starts), **Daimyo** `0.8` and **Shogun** `0.5`. It is chosen on the [fight setup](screens.md#2-fight-setup) only, kept per quiz, and can't change during a run. The dojo has no time limit.
 
 All of these numbers are defaults. Make them configurable and tune them in playtests, including the 0.8 s commit pause.
 

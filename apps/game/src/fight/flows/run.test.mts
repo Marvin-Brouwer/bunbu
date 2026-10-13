@@ -4,6 +4,7 @@ import { selection, stages } from '../../_shared/state/selection.mts'
 import { fixtureQuiz } from '../../_temp/quiz.mts'
 import { seeded } from '../../_temp/random.mts'
 import { settings } from '../../settings/state/settings.mts'
+import { quizDifficulties } from '../state/difficulty.mts'
 import { createRunGame, type RunGame } from '../state/game.mts'
 import { highScores } from '../state/highscores.mts'
 import { lastRun } from '../state/lastrun.mts'
@@ -46,6 +47,7 @@ function play(rights: readonly boolean[]) {
 beforeEach(() => {
 	game = createRunGame()
 	settings.value.reset()
+	quizDifficulties.value.reset()
 	highScores.value.reset()
 	lastRun.value.reset()
 	stageResults.value.reset()
@@ -299,6 +301,20 @@ describe('unlocking stages', () => {
 		play([true, true, true, true])
 
 		expect(game.score.value.unlocked).toBeUndefined()
+	})
+})
+
+describe('the difficulty', () => {
+	it('is the one chosen for the quiz, kept for the whole run', () => {
+		const timed = { ...fixtureQuiz, timePerQuestion: '1m' }
+		quizDifficulties.value.choose('fixture', '1', 'shogun')
+		startRun(game, timed)
+		quizDifficulties.value.choose('fixture', '1', 'apprentice')
+
+		runToAmbush()
+
+		expect(game.run.value.difficulty).toBe('shogun')
+		expect(game.ambush.value.seconds).toBe(30)
 	})
 })
 

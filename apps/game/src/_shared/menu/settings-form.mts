@@ -1,14 +1,13 @@
 /**
- * The settings: difficulty, haptics and volume, kept for every run. On the settings screen, and in
- * the pause menu without leaving the run ([6 Pause](../../../../../docs/design/screens.md#6-pause)),
- * where the difficulty only shows: it can't change halfway through a run. Outside a run, also the
- * voice and the speed of reading aloud, for the dojo's study.
+ * The settings: haptics and volume, kept for every run. On the settings screen, and in the pause
+ * menu without leaving the run ([6 Pause](../../../../../docs/design/screens.md#6-pause)). Outside a
+ * run, also the voice and the speed of reading aloud, for the dojo's study. The difficulty is not
+ * here: it is chosen per quiz on the fight setup.
  */
 
 import { component, environment } from '@rooted/components'
 import { settings } from '../../settings/state/settings.mts'
 import { canBuzz } from '../haptics.mts'
-import { DifficultySlider } from './difficulty-slider.mts'
 import { MenuSection } from './menu-section.mts'
 import { SpeechSettings } from './speech-settings.mts'
 import styles from './settings-form.css'
@@ -16,7 +15,7 @@ import styles from './settings-form.css'
 const percentOf = (volume: number) => `${Math.round(volume * 100)}%`
 
 export type SettingsFormOptions = {
-	/** In the pause menu: the run's difficulty is shown but can't change halfway through. */
+	/** In the pause menu, which leaves out reading aloud. */
 	readonly running: boolean
 }
 
@@ -34,20 +33,6 @@ export const SettingsForm = component<SettingsFormOptions>({
 		})
 
 		append(
-			create(MenuSection, {
-				label: 'Difficulty',
-				children: [
-					create(DifficultySlider, {
-						disabled: running,
-					}),
-					element('p', {
-						classes: styles.hint,
-						textContent: running
-							? 'Set for this run. Change it before your next one.'
-							: 'How long an ambush waits for your answer. Apprentice gets a little more time, Shogun half. Samurai is the usual time.',
-					}),
-				],
-			}),
 			create(MenuSection, {
 				label: 'Haptics',
 				children: [

@@ -11,7 +11,7 @@ import { shuffle, type Random } from '../../_shared/state/random.mts'
 import { selection } from '../../_shared/state/selection.mts'
 import { snapshot } from '../../_shared/state/store.mts'
 import type { Outcome, QuestionRef, QuizActions, QuizState } from '../../_shared/state/quiz.mts'
-import { settings } from '../../settings/state/settings.mts'
+import { quizDifficulties, timeScales, type Difficulty } from '../state/difficulty.mts'
 import type { RunGame } from '../state/game.mts'
 import { highScores } from '../state/highscores.mts'
 import { lastRun } from '../state/lastrun.mts'
@@ -51,13 +51,14 @@ export function testOf(data: BunbuData, random?: Random): number[] {
 
 /**
  * Starts a run on a new test of `data`. The game passes `Math.random` for `random`; tests and
- * fixtures leave it out to ask the questions in file order. `best` defaults to the high score of
- * the quiz, which the HUD shows as the one to beat.
+ * fixtures leave it out to ask the questions in file order. `difficulty` defaults to the one chosen
+ * for the quiz, `best` to its high score, which the HUD shows as the one to beat.
  */
 export function startRun(
 	game: RunGame,
 	data: BunbuData,
 	random?: Random,
+	difficulty: Difficulty = quizDifficulties.value.of(data.id, data.version),
 	best: HighScore | undefined = highScores.value.of(data.id, data.version),
 ): void {
 	game.quiz.value.load(data, testOf(data, random), random)
@@ -66,7 +67,7 @@ export function startRun(
 	game.ambush.value.close()
 	game.ninjas.value.clear()
 	game.shogun.value.run()
-	game.run.value.start(game.quiz.value.order.length * metresPerAmbush)
+	game.run.value.start(game.quiz.value.order.length * metresPerAmbush, difficulty)
 }
 
 /**
@@ -167,7 +168,7 @@ export function tickRun(game: RunGame, worldDelta: number, realDelta: number): v
 		game.shogun.value.run()
 	}
 	if (game.quiz.value.current() !== undefined && distance >= ambushAt(questionsAsked(game)) - reached) {
-		openAmbush(game, settings.value.timeScale())
+		openAmbush(game, timeScales[game.run.value.difficulty])
 	}
 }
 
