@@ -250,11 +250,42 @@ export const PracticeAmbush = component<PracticeAmbushOptions>({
 				styles.overlays,
 			],
 		})
+		const top = element('div', {
+			classes: [
+				styles.layer,
+				styles.top,
+			],
+			children: create(PracticeBar, {
+				game,
+				quiz,
+			}),
+		})
+		const scroll = element('div', {
+			classes: [
+				styles.layer,
+				styles.scroll,
+			],
+			children: create(Scroll, {
+				ambush: game.ambush,
+				quiz: game.quiz,
+				label: 'PRACTICE',
+				commit: () => { commitPractice(game) },
+				held: () => !practising() || game.ambush.value.openingLeft > 0,
+				progress: (state) => progressOf(game, state.at),
+			}),
+		})
+		/** What a dialog over practice shuts off: nothing behind it can be reached until it closes. */
+		const behind = [top, scroll]
+
 		let phase: SessionPhase | undefined
+		/** Where the focus was before a dialog took it, to give it back when the dialog closes. */
+		let returnFocus: Element | null = null
 		const showPhase = (next: SessionPhase) => {
 			if (next === phase) return
 			if (next === 'practising' && phase !== undefined) guard.resumed()
 			phase = next
+			const modal = next === 'paused' || next === 'done'
+			if (modal && overlays.childElementCount === 0) returnFocus = document.activeElement
 			overlays.replaceChildren(
 				...next === 'paused'
 					? [create(PracticePause, { game, leave: guard.leave })]
@@ -262,36 +293,31 @@ export const PracticeAmbush = component<PracticeAmbushOptions>({
 						? [create(PracticeDone, { game, leave: guard.leave })]
 						: []
 			)
+			for (const layer of behind) layer.inert = modal
+			if (modal) {
+				// The dialog's buttons are there once it has mounted.
+				setTimeout(() => { overlays.querySelector('button')?.focus() })
+			}
+			else if (returnFocus !== null) {
+				// Back where it was; the pause button itself loses the focus as it is disabled while paused.
+				const before = returnFocus
+				returnFocus = null
+				// After the bar has enabled its buttons again.
+				setTimeout(() => {
+					const back = before instanceof HTMLElement && before.isConnected && before !== document.body
+						? before
+						: top.querySelector('button')
+					back?.focus()
+				})
+			}
 		}
 
 		append(
 			element('div', {
 				classes: styles.practice,
 				children: [
-					element('div', {
-						classes: [
-							styles.layer,
-							styles.top,
-						],
-						children: create(PracticeBar, {
-							game,
-							quiz,
-						}),
-					}),
-					element('div', {
-						classes: [
-							styles.layer,
-							styles.scroll,
-						],
-						children: create(Scroll, {
-							ambush: game.ambush,
-							quiz: game.quiz,
-							label: 'PRACTICE',
-							commit: () => { commitPractice(game) },
-							held: () => !practising() || game.ambush.value.openingLeft > 0,
-							progress: (state) => progressOf(game, state.at),
-						}),
-					}),
+					top,
+					scroll,
 					overlays,
 				],
 			})
