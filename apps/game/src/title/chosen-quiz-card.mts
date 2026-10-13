@@ -1,8 +1,8 @@
 /**
  * The quiz card on the title screen, and the way into a fight. While the saved quizzes come back it
  * says so; without a quiz it leads to the quizzes to select one. With one: its title, its high score
- * with the correct answers and run time (or that it has none yet), Share, which sends it on as a
- * `.bunbu` file, and Fight with Change quiz under it.
+ * with the difficulty it was set at, then the correct answers (or that it has none yet; the run
+ * time only breaks ties, so it isn't shown), Share, which sends it on as a `.bunbu` file, and Fight with Change quiz under it.
  */
 
 import type { BunbuData } from '@bunbu/data'
@@ -12,7 +12,7 @@ import { FightRoute } from '../fight/_routes.mts'
 import { highScores } from '../fight/state/highscores.mts'
 import { QuizzesRoute } from '../quizzes/_routes.mts'
 import { MenuButton } from '../_shared/menu/menu-button.mts'
-import { formatDuration, formatWhole } from '../_shared/numbers.mts'
+import { formatWhole } from '../_shared/numbers.mts'
 import { ShareQuizButton } from './share-quiz-button.mts'
 import styles from './title.css'
 
@@ -81,29 +81,34 @@ export const ChosenQuizCard = component<ChosenQuizCardOptions>({
 								classes: styles.quizTitle,
 								textContent: quiz.title,
 							}),
-							best === undefined
-								? element('span', {
-									classes: styles.note,
-									textContent: 'No high score yet',
-								})
-								: element('span', {
-									classes: styles.score,
-									children: [
-										element('span', {
-											classes: styles.points,
-											textContent: formatWhole(best.points),
-										}),
-										element('span', {
-											classes: styles.note,
-											textContent: `high score · ${best.correct} / ${best.answered} correct · ${formatDuration(best.seconds)}`,
-										}),
-									],
-								}),
 						],
 					}),
 					create(ShareQuizButton, {
 						quiz,
 					}),
+					// Under the title and Share, across the card, so a long line doesn't wrap beside Share.
+					best === undefined
+						? element('span', {
+							classes: [
+								styles.note,
+								styles.highScore,
+							],
+							textContent: 'No high score yet',
+						})
+						: element('span', {
+							classes: [
+								styles.note,
+								styles.highScore,
+							],
+							children: [
+								element('span', {
+									textContent: `high score · ${formatWhole(best.points)} · ${best.difficulty}`,
+								}),
+								element('span', {
+									textContent: `correct · ${best.correct} / ${best.answered}`,
+								}),
+							],
+						}),
 					element('div', {
 						classes: styles.chosenActions,
 						children: [

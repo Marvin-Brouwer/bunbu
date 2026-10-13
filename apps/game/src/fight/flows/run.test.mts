@@ -187,7 +187,7 @@ describe('high score', () => {
 	})
 
 	it('is the one to beat in the next run, and is kept when it is beaten by none', () => {
-		highScores.value.submit('fixture', '1', { points: 400, seconds: 1, correct: 4, answered: 4 })
+		highScores.value.submit('fixture', '1', { points: 400, seconds: 1, correct: 4, answered: 4, difficulty: 'samurai' })
 		startRun(game, fixtureQuiz)
 		expect(game.score.value.best).toMatchObject({ points: 400, seconds: 1 })
 
@@ -197,7 +197,7 @@ describe('high score', () => {
 	})
 
 	it('does not carry over to a run of a quiz without one', () => {
-		highScores.value.submit('fixture', '1', { points: 400, seconds: 1, correct: 4, answered: 4 })
+		highScores.value.submit('fixture', '1', { points: 400, seconds: 1, correct: 4, answered: 4, difficulty: 'samurai' })
 		startRun(game, fixtureQuiz)
 		expect(game.score.value.best).toBeDefined()
 
@@ -206,7 +206,7 @@ describe('high score', () => {
 	})
 
 	it('is per quiz version', () => {
-		highScores.value.submit('fixture', '1', { points: 400, seconds: 1, correct: 4, answered: 4 })
+		highScores.value.submit('fixture', '1', { points: 400, seconds: 1, correct: 4, answered: 4, difficulty: 'samurai' })
 		expect(highScores.value.of('fixture', '2')).toBeUndefined()
 		expect(highScores.value.of('other', '1')).toBeUndefined()
 	})

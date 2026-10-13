@@ -9,12 +9,13 @@
 
 import { component, optional } from '@rooted/components'
 import type { ElementChildren } from '@rooted/components/elements'
-import { Link, type Path } from '@rooted/router'
+import type { Path } from '@rooted/router'
+import { BackLink } from './back-link.mts'
 import styles from './menu.css'
 
 export type MenuScreenOptions = {
 	readonly title: string
-	/** Where the back link goes. */
+	/** Where the back link goes: back through the history when the player came from there. */
 	readonly back: Path
 	readonly children: ElementChildren
 	/** At the right of the heading, as a settings button. */
@@ -40,13 +41,8 @@ export const MenuScreen = component<MenuScreenOptions>({
 						element('header', {
 							classes: styles.header,
 							children: [
-								create(Link, {
-									href: options.back,
-									classes: styles.back,
-									aria: {
-										label: 'Back',
-									},
-									children: '‹',
+								create(BackLink, {
+									target: options.back,
 								}),
 								element('h1', {
 									classes: styles.title,

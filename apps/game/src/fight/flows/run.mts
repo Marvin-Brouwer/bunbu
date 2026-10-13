@@ -121,7 +121,8 @@ export function recordRun(game: RunGame): void {
 	stageResults.value.submit(quiz.id, quiz.version, stage, { distance: stageDistanceOf(game.run.value), cleared: !fallen })
 	const { points, correct, answered } = game.score.value
 	const seconds = game.run.value.elapsed + game.run.value.recovery
-	const newBest = !fallen && highScores.value.submit(quiz.id, quiz.version, { points, seconds, correct, answered })
+	const { difficulty } = game.run.value
+	const newBest = !fallen && highScores.value.submit(quiz.id, quiz.version, { points, seconds, correct, answered, difficulty })
 	game.score.value.settle(newBest, unlocks ? next : undefined)
 }
 

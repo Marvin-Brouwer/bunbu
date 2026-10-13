@@ -126,14 +126,15 @@ describe('parsing what was saved', () => {
 	})
 
 	it('keeps the high scores that are valid', () => {
-		const good = { points: 300, seconds: 61.5, correct: 3, answered: 4 }
+		const good = { points: 300, seconds: 61.5, correct: 3, answered: 4, difficulty: 'samurai' }
 		expect(parseHighScores({ a: good, b: { ...good, points: -1 }, c: 'x' })).toEqual({ a: good })
 		expect(parseHighScores([good])).toEqual({})
 		expect(parseHighScores({ a: { ...good, seconds: 0 } })).toEqual({})
+		expect(parseHighScores({ a: { ...good, difficulty: 'ronin' } })).toEqual({})
 	})
 
 	it('drops high scores that do not add up', () => {
-		const good = { points: 300, seconds: 61.5, correct: 3, answered: 4 }
+		const good = { points: 300, seconds: 61.5, correct: 3, answered: 4, difficulty: 'samurai' }
 		expect(parseHighScores({ a: { ...good, points: 999_999 }, b: { ...good, answered: 2 }, c: good })).toEqual({ c: good })
 	})
 
@@ -173,7 +174,7 @@ describe('persistApp', () => {
 	it('puts back what was saved before the first screen', async () => {
 		write('settings', { haptics: false, volume: 0.2 })
 		write('difficulties', { '["a","1"]': 'shogun' })
-		write('high-scores', { '["a","1"]': { points: 200, seconds: 30, correct: 2, answered: 2 } })
+		write('high-scores', { '["a","1"]': { points: 200, seconds: 30, correct: 2, answered: 2, difficulty: 'samurai' } })
 		write('last-run', { quiz: { id: 'a', version: '1' }, misses: [{ at: { question: 0, part: 0 }, outcome: 'unanswered', picked: [] }] })
 
 		await persistApp(stop.signal)
@@ -196,7 +197,7 @@ describe('persistApp', () => {
 	it('saves every change, and what it saved is what it puts back', async () => {
 		await persistApp(stop.signal)
 		quizDifficulties.value.choose('a', '1', 'apprentice')
-		highScores.value.submit('a', '1', { points: 100, seconds: 9, correct: 1, answered: 1 })
+		highScores.value.submit('a', '1', { points: 100, seconds: 9, correct: 1, answered: 1, difficulty: 'samurai' })
 		lastRun.value.save('a', '1', [{ at: { question: 2, part: 0 }, outcome: 'wrong', picked: [1] }])
 		stageResults.value.submit('a', '1', 'castle-town', { distance: 240, cleared: false })
 		stop.abort()
@@ -214,9 +215,9 @@ describe('persistApp', () => {
 	})
 
 	it('keeps the best of what was saved and what was earned meanwhile', async () => {
-		write('high-scores', { '["a","1"]': { points: 200, seconds: 30, correct: 2, answered: 2 } })
-		highScores.value.submit('a', '1', { points: 300, seconds: 50, correct: 3, answered: 3 })
-		highScores.value.submit('b', '1', { points: 100, seconds: 50, correct: 1, answered: 1 })
+		write('high-scores', { '["a","1"]': { points: 200, seconds: 30, correct: 2, answered: 2, difficulty: 'samurai' } })
+		highScores.value.submit('a', '1', { points: 300, seconds: 50, correct: 3, answered: 3, difficulty: 'samurai' })
+		highScores.value.submit('b', '1', { points: 100, seconds: 50, correct: 1, answered: 1, difficulty: 'samurai' })
 		await persistApp(stop.signal)
 		expect(highScores.value.of('a', '1')).toMatchObject({ points: 300 })
 		expect(highScores.value.of('b', '1')).toMatchObject({ points: 100 })

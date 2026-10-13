@@ -7,6 +7,7 @@ import type { BunbuData } from '@bunbu/data'
 import { createStore, type Store } from '@rooted/store'
 import type { QuestionRef } from '../../_shared/state/quiz.mts'
 import type { Stage } from '../../_shared/state/selection.mts'
+import type { Difficulty } from './difficulty.mts'
 
 /** Points for a correct answer. Wrong and unanswered score nothing. */
 export const pointsPerCorrect = 100
@@ -33,6 +34,8 @@ export type HighScore = {
 	readonly seconds: number
 	readonly correct: number
 	readonly answered: number
+	/** The difficulty the run was played at, shown with the score; it doesn't change which score wins. */
+	readonly difficulty: Difficulty
 }
 
 export type ScoreState = {

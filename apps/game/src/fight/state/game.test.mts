@@ -8,7 +8,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { createLife, shareOfOnePoint, type Life } from './life.mts'
 import { createRunGame } from './game.mts'
 import { createRun, marksPassed, runConfig, slowMotionOf, stageDistanceOf, type Run } from './run.mts'
-import { beats, createScore, pointsPerCorrect, type Score } from './score.mts'
+import { beats, createScore, pointsPerCorrect, type HighScore, type Score } from './score.mts'
 
 // Every test gets its own stores: a game mode creates them per run, so tests do the same.
 let run: Run
@@ -107,7 +107,7 @@ describe('score', () => {
 	})
 
 	it('breaks a tie on the shorter run time', () => {
-		const best = { points: 2000, seconds: 245, correct: 20, answered: 20 }
+		const best: HighScore = { points: 2000, seconds: 245, correct: 20, answered: 20, difficulty: 'samurai' }
 		expect(beats({ ...best, seconds: 240 }, best)).toBe(true)
 		expect(beats({ ...best, seconds: 250 }, best)).toBe(false)
 		expect(beats({ ...best, points: 2100, seconds: 999 }, best)).toBe(true)
