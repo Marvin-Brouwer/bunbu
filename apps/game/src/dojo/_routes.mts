@@ -1,4 +1,5 @@
 import { route } from '@rooted/router/routes'
+import type { Path } from '@rooted/router'
 
 /** D1 Dojo menu ([screens.md](../../../../docs/design/screens.md#d1-dojo-menu)). */
 export const DojoRoute = route`/dojo/`({
@@ -26,3 +27,18 @@ export const PracticeRoute = route`/${DojoRoute}/practice/`({
 	},
 	seo: { title: 'Practice' },
 })
+
+/** The query that ticks "Only my mistakes from the last run": `/dojo/?mistakes`, `/dojo/practice/?mistakes`. */
+const mistakesQuery = 'mistakes'
+
+/** `path` with "only my mistakes" ticked, or unticked when `ticked` is false. */
+export function withMistakes(path: Path, ticked = true): Path {
+	if (ticked) path.query.set(mistakesQuery, '')
+	else path.query.delete(mistakesQuery)
+	return path
+}
+
+/** Whether "only my mistakes" is ticked on `path`. */
+export function mistakesOnly(path: Path): boolean {
+	return path.query.has(mistakesQuery)
+}

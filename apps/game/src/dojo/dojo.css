@@ -1,0 +1,132 @@
+/*
+ * D1 Dojo menu (docs/design/screens.md#d1-dojo-menu): the chosen quiz, the Study and Practice
+ * cards with their art, and "only my mistakes" as a choice.
+ */
+
+/* The chosen quiz: a tile that leads to the quizzes, to change it. */
+.quiz {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 0.3rem 1rem;
+	padding: 0.85rem 1rem;
+	border-radius: var(--radius);
+	background: var(--paper-light);
+	color: inherit;
+	text-decoration: none;
+	box-shadow: var(--tile);
+}
+
+.quizTitle {
+	font-weight: 700;
+	font-size: 1.1rem;
+	line-height: 1.2;
+	overflow-wrap: anywhere;
+}
+
+.quizNote {
+	margin: 0;
+	font-family: var(--font-mono);
+	font-size: 0.75rem;
+	color: var(--ink-soft);
+}
+
+.cards {
+	display: grid;
+	gap: 1rem;
+}
+
+/* Study and Practice: a button-like tile, the art across the top. */
+.card {
+	display: grid;
+	overflow: hidden;
+	border-radius: var(--radius);
+	background: var(--paper-light);
+	color: inherit;
+	text-decoration: none;
+	box-shadow: var(--tile);
+}
+
+.art {
+	display: block;
+	width: 100%;
+	aspect-ratio: 8 / 3;
+	object-fit: cover;
+}
+
+.cardText {
+	display: grid;
+	gap: 0.3rem;
+	padding: 0.8rem 1rem 1rem;
+	line-height: 1.35;
+}
+
+.cardTitle {
+	font-family: var(--font-display);
+	font-size: 1.4rem;
+	font-weight: 700;
+}
+
+.quiz:active,
+a.card:active {
+	translate: 0 var(--bevel-height);
+	box-shadow: none;
+}
+
+.quiz:focus-visible,
+.card:focus-visible {
+	outline: 3px solid var(--indigo);
+	outline-offset: 2px;
+}
+
+/* Without a quiz, there is nothing to study or practise yet. */
+.card[aria-disabled='true'] {
+	background: var(--paper-shade);
+	color: var(--ink-faint);
+	box-shadow: none;
+}
+
+.card[aria-disabled='true'] .art {
+	opacity: 0.45;
+	filter: grayscale(1);
+}
+
+/* "Only my mistakes": a choice, so a tile that gets the red frame and the 選 stamp when ticked. */
+.mistakes {
+	position: relative;
+	display: flex;
+	align-items: center;
+	padding: 0.95rem 1rem;
+	border: 2px solid transparent;
+	border-radius: var(--radius);
+	background: var(--paper-light);
+	font-weight: 700;
+	cursor: pointer;
+	box-shadow: var(--tile);
+}
+
+.mistakes:has(input:checked) {
+	border-color: var(--vermilion);
+	box-shadow: inset 0 0 0 1px var(--vermilion), var(--tile);
+}
+
+.mistakes:active {
+	translate: 0 var(--bevel-height);
+	box-shadow: none;
+}
+
+.mistakes:active:has(input:checked) {
+	box-shadow: inset 0 0 0 1px var(--vermilion);
+}
+
+.mistakes:has(input:focus-visible) {
+	outline: 3px solid var(--indigo);
+	outline-offset: 2px;
+}
+
+.mistakes input {
+	position: absolute;
+	opacity: 0;
+	pointer-events: none;
+}
