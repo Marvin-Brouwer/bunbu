@@ -1,6 +1,7 @@
 /**
- * Dev only, on the fight setup: unlocks every stage of the chosen quiz, or locks them all again, so
- * the stage picker and the runs after it can be tried without passing every stage first.
+ * Dev only, on the fight setup: one button that unlocks every stage of the chosen quiz, or, once
+ * they are all open, locks them all again, so the stage picker and the runs after it can be tried
+ * without passing every stage first.
  */
 
 import type { BunbuData } from '@bunbu/data'
@@ -17,33 +18,36 @@ export type StageLocksOptions = {
 export const StageLocks = component<StageLocksOptions>({
 	name: 'stage-locks',
 	styles,
-	onMount({ append, create, element, options }) {
+	onMount({ create, element, options, replace, signal }) {
 		const { id, version } = options.quiz
+		const allOpen = () => stages.every((stage) => stageResults.value.unlocked(id, version, stage))
 
-		append(
+		const unlockAll = () => {
+			// A cleared result keeps the best distance there was; a new one counts as no distance.
+			for (const stage of stages) {
+				const distance = stageResults.value.of(id, version, stage)?.distance ?? 0
+				stageResults.value.submit(id, version, stage, { distance, cleared: true })
+			}
+		}
+
+		const show = () => replace(
 			element('div', {
 				classes: styles.stageLocks,
-				children: [
-					create(MenuButton, {
-						label: 'Unlock all',
-						note: 'dev',
-						action: () => {
-							// A cleared result keeps the best distance there was; a new one counts as no distance.
-							for (const stage of stages) {
-								const distance = stageResults.value.of(id, version, stage)?.distance ?? 0
-								stageResults.value.submit(id, version, stage, { distance, cleared: true })
-							}
-						},
-					}),
-					create(MenuButton, {
-						label: 'Lock all',
+				children: allOpen()
+					? create(MenuButton, {
+						label: 'Lock all stages',
 						note: 'dev · clears the results',
-						action: () => {
-							stageResults.value.forget(id, version)
-						},
+						action: () => { stageResults.value.forget(id, version) },
+					})
+					: create(MenuButton, {
+						label: 'Unlock all stages',
+						note: 'dev',
+						action: unlockAll,
 					}),
-				],
 			})
 		)
+		show()
+
+		stageResults.on('change', signal, show)
 	},
 })

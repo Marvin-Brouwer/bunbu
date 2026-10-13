@@ -45,7 +45,7 @@ A screen of its own, so the title stays calm:
 
 A difficulty slider from **Apprentice** to **Shogun** over four stops (Apprentice, Samurai, Daimyo, Shogun), the inner two marked (sets `timeScale`, see [time limit](gameplay.md#time-limit)). Under it, the stop, and the time it gives when the quiz sets `timePerQuestion`: `Daimyo: 2m 24s per question`. The difficulty is chosen here only, never in the settings, and kept per quiz (`id` + `version`): each test has its own, Samurai until another is chosen. Then **Start run**.
 
-In dev builds only, **Unlock all** and **Lock all** under the stages unlock every stage of the chosen quiz, or lock them again (which clears their results), to try them without playing them.
+In dev builds only, one button under the stages toggles them for the chosen quiz: **Unlock all stages** while any is locked, **Lock all stages** (which clears their results) once all are open, to try them without playing them.
 
 ### 3 Running
 
