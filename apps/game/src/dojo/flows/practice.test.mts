@@ -166,5 +166,6 @@ describe('percentRight', () => {
 	it('has none before the first answer, and rounds down', () => {
 		expect(percentRight({ right: 0, wrong: 0 })).toBeUndefined()
 		expect(percentRight({ right: 199, wrong: 1 })).toBe(99)
+		expect(percentRight({ right: 29, wrong: 71 })).toBe(29)
 	})
 })

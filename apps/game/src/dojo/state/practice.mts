@@ -39,7 +39,8 @@ export const noTally: TallyState = { right: 0, wrong: 0, missed: false }
  */
 export function percentRight({ right, wrong }: Pick<TallyState, 'right' | 'wrong'>): number | undefined {
 	const answered = right + wrong
-	return answered === 0 ? undefined : Math.floor((right / answered) * 100)
+	// Multiplied first, so an exact percentage isn't floored a point down by a rounding error (29 of 100).
+	return answered === 0 ? undefined : Math.floor((right * 100) / answered)
 }
 
 export function createTally(initial: TallyState = noTally): Tally {
