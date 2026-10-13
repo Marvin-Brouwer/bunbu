@@ -43,6 +43,8 @@ export function parseSettings(data: unknown): Partial<SettingsState> {
 }
 
 /** A score has to add up: edited points would otherwise become a high score nobody can beat. */
+const difficulty = type.enumerated(...difficulties)
+
 const highScore = type({
 	'+': 'delete',
 	points: 'number.integer >= 0',
@@ -50,6 +52,7 @@ const highScore = type({
 	seconds: 'number > 0',
 	correct: 'number.integer >= 0',
 	answered: 'number.integer >= 0',
+	difficulty,
 }).narrow((score) => score.points === score.correct * pointsPerCorrect && score.correct <= score.answered)
 
 /** The high scores that are valid, by quiz. */
@@ -58,8 +61,6 @@ export function parseHighScores(data: unknown): Record<string, HighScore> {
 	const checked = Object.entries(data).map(([key, score]) => [key, highScore(score)] as const)
 	return Object.fromEntries(checked.filter((entry): entry is readonly [string, HighScore] => passed(entry[1])))
 }
-
-const difficulty = type.enumerated(...difficulties)
 
 /** The difficulties that are valid, by quiz. */
 export function parseDifficulties(data: unknown): Record<string, Difficulty> {
