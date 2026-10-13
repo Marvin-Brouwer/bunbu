@@ -142,6 +142,8 @@
 	grid-template-columns: 1fr auto;
 	align-items: center;
 	gap: 0.9rem;
+	/* The button lines up with the cards' Download buttons under it: their padding and border. */
+	padding-inline-end: calc(0.75rem + 2px);
 }
 
 .loadText {
@@ -156,18 +158,6 @@
 .loadNote {
 	font-size: 0.85rem;
 	color: var(--ink-soft);
-}
-
-.loadButton {
-	width: 4.5rem;
-	height: 4.5rem;
-	gap: 0.3rem;
-	font-size: 0.6rem;
-}
-
-.loadButton .cardIcon {
-	width: 1.75rem;
-	height: 1.75rem;
 }
 
 /* The file picker behind the Load quiz button. */

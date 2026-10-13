@@ -108,10 +108,7 @@ export const LoadQuiz = component<LoadQuizOptions>({
 							}),
 							element('button', {
 								type: 'button',
-								classes: [
-									styles.cardAction,
-									styles.loadButton,
-								],
+								classes: styles.cardAction,
 								children: [
 									element('span', {
 										classes: [
