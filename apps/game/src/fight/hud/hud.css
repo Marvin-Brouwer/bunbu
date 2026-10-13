@@ -278,6 +278,28 @@
 	animation-delay: 800ms;
 }
 
+/* Red closing in from the edges when a blade lands on him, fading out. */
+.vignette {
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+	background: radial-gradient(ellipse at center, transparent 40%, rgb(150 20 18 / 45%) 75%, rgb(110 8 8 / 85%) 100%);
+	opacity: 0;
+	animation: vignette 900ms ease-out forwards;
+}
+
+@keyframes vignette {
+	0% {
+		opacity: 0;
+	}
+	10% {
+		opacity: 1;
+	}
+	100% {
+		opacity: 0;
+	}
+}
+
 @keyframes slice {
 	0% {
 		opacity: 0;

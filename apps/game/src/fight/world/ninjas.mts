@@ -51,6 +51,12 @@ const fleeAhead = 0.3
 const lungeSeconds = poseSeconds.strike * 0.6
 
 /**
+ * Seconds from a ninja's strike until its blade lands on the samurai: when it has closed in. The
+ * slicer first cuts the scroll and waits for the halves to fall.
+ */
+export const bladeLandsAfter = (slicer: boolean): number => (slicer ? strikeDelaySeconds : 0) + lungeSeconds
+
+/**
  * How far in the ninjas creep while the time runs, of the way from where they start to in reach:
  * they keep their distance, and charge in to strike from there.
  */

@@ -1,12 +1,13 @@
 /**
  * The run's HUD ([3 Running](../../../../../docs/design/screens.md#3-running)): the score with the
  * best to beat, the pause button, the life bar and the stage progress, plus the katana hit effect
- * on a hit. It only shows the run's stores; the pause button is its one control.
+ * and the red closing in on a hit. It only shows the run's stores; the pause button is its one control.
  */
 
 import { component } from '@rooted/components'
 import type { RunGame } from '../state/game.mts'
 import { HitFlash } from './hit-flash.mts'
+import { HitVignette } from './hit-vignette.mts'
 import { LifeBar } from './life-bar.mts'
 import { PauseButton } from './pause-button.mts'
 import { ScoreBox } from './score-box.mts'
@@ -47,6 +48,12 @@ export const Hud = component<HudOptions>({
 						quiz: game.quiz,
 					}),
 				],
+			})
+		)
+		append(
+			create(HitVignette, {
+				shogun: game.shogun,
+				ninjas: game.ninjas,
 			})
 		)
 		append(

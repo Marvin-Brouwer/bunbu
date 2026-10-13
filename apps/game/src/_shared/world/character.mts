@@ -23,7 +23,7 @@ import {
 } from 'three'
 import type { GLTF } from 'three/addons/loaders/GLTFLoader.js'
 import { clone } from 'three/addons/utils/SkeletonUtils.js'
-import { createFigure, type FigureParts } from './figure.mts'
+import { createFigure, hitGlow, type FigureParts } from './figure.mts'
 import { dress, type Armour } from './armour.mts'
 import { clipPlays, clipTimeOf, helmetFlight, rigOf, type FigurePose } from './poses.mts'
 
@@ -264,7 +264,10 @@ export function createCharacter(model: GLTF, look: Look): Body {
 					material.needsUpdate = true
 				}
 			}
-			for (const material of materials) material.opacity = opacity
+			for (const material of materials) {
+				material.opacity = opacity
+				material.emissive.copy(hitGlow).multiplyScalar(rig.flash)
+			}
 		},
 
 		grey(amount) {

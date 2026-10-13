@@ -23,9 +23,9 @@ import { createEffects } from './effects.mts'
 import { createPetals } from '../../_shared/world/petals.mts'
 import { createCharacter, ninjaLook, placeholderBody, samuraiLook, type Body } from '../../_shared/world/character.mts'
 import { createFigureParts } from '../../_shared/world/figure.mts'
-import { createNinjasView } from './ninjas.mts'
+import { bladeLandsAfter, createNinjasView } from './ninjas.mts'
 import { headingOf } from './placement.mts'
-import { finishingOf, poseSeconds } from '../../_shared/world/poses.mts'
+import { finishingOf, poseSeconds, type FigurePose } from '../../_shared/world/poses.mts'
 
 /** Metres per half a running cycle: one step, matched to the run clip at the run's pace. */
 const stepLength = 2.1
@@ -124,6 +124,10 @@ export function createRunWorld(game: RunGame, viewport: Viewport, roomBelow: () 
 
 	let seen = -1
 	let since = 0
+	// What he shows, and what he showed when the store last changed his pose: hurt, he keeps showing
+	// that while the blade is still on its way.
+	let shown: { pose: FigurePose; time: number } = { pose: 'idle', time: 0 }
+	let previous = shown
 	let turnedTo = 0
 	let first = true
 	// From 0, the whole screen, to 1, the fight framed in the room below the scroll.
@@ -156,13 +160,18 @@ export function createRunWorld(game: RunGame, viewport: Viewport, roomBelow: () 
 			} else {
 				seen = shogun.sequence
 				since = 0
+				previous = shown
 			}
 			const cycle = (run.distance / stepLength) * Math.PI
 			const fallen = shogun.pose === 'fallen'
 			// Falling, the samurai is finished off first and goes down as the blade lands.
 			const finish = fallen ? finishingOf(since) : undefined
-			if (finish === undefined) samurai.show(shogun.pose, since, cycle)
-			else samurai.show(finish.samurai.pose, finish.samurai.time, cycle)
+			// Hurt, he takes the hit when the blade lands, not when the ninja starts its strike.
+			const lands = shogun.pose === 'hurt' ? bladeLandsAfter(game.ninjas.value.active.some((ninja) => ninja.slicer === true)) : 0
+			if (finish !== undefined) shown = finish.samurai
+			else if (since < lands) shown = { pose: previous.pose, time: previous.time + since }
+			else shown = { pose: shogun.pose, time: since - lands }
+			samurai.show(shown.pose, shown.time, cycle)
 			samurai.grey(finish?.samurai.pose === 'fallen' ? Math.min(1, finish.samurai.time / poseSeconds.fallen) : 0)
 
 			// During an ambush the fight moves into the room below the scroll, if there is any; when
@@ -177,10 +186,10 @@ export function createRunWorld(game: RunGame, viewport: Viewport, roomBelow: () 
 			// They wind up to charge just before the time runs out.
 			ninjas.draw(game.ninjas.value.active, ambush.options, ambush.kind, view.frame, delta, worldDelta, ambush.open && ambush.seconds > 0 ? ambush.secondsLeft : undefined)
 
-			// He runs along the path, and turns toward the ninja he strikes or blocks, who stands square
+			// He runs along the path, and turns toward the ninja he strikes, blocks or is hit by, who stands square
 			// to the camera's way ahead.
 			const aimed = shogun.target === undefined ? undefined : ninjas.markOf(shogun.target)
-			const turnTo = (shogun.pose === 'strike' || shogun.pose === 'block') && aimed !== undefined
+			const turnTo = (shogun.pose === 'strike' || shogun.pose === 'block' || shogun.pose === 'hurt') && aimed !== undefined
 				? shortWay(here.heading, view.frame.heading + headingOf(aimed))
 				: 0
 			turnedTo += shortWay(turnedTo, turnTo) * damp(delta, 14)

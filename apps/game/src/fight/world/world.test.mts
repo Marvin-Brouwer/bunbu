@@ -9,10 +9,11 @@ import { marks } from '../../_shared/state/ambush.mts'
 import { distanceFor } from '../../canvas/framing.mts'
 import { cameraOf, runFraming, viewOnPath } from './camera.mts'
 import { dayFade, fadeToward, passTime, sky, type Daylight, type Light } from './landscape.mts'
-import { markOf } from './ninjas.mts'
+import { bladeLandsAfter, markOf } from './ninjas.mts'
 import { beside, createPath, roundLength } from './path.mts'
 import { headingOf, lungeOf, placementConfig, spotOf } from './placement.mts'
-import { clipPlays, clipTimeOf, finishing, finishingOf, helmetFlight, helmetRest, helmetSeconds, poseSeconds, rigOf } from '../../_shared/world/poses.mts'
+import { clipPlays, clipTimeOf, finishing, finishingOf, helmetFlight, helmetRest, helmetSeconds, hurtKnockBack, poseSeconds, rigOf } from '../../_shared/world/poses.mts'
+import { runConfig } from '../state/run.mts'
 
 describe('placement', () => {
 	it('puts a ninja where its mark points on screen', () => {
@@ -112,6 +113,22 @@ describe('poses', () => {
 		expect(rigOf('slain', poseSeconds.slain + poseSeconds.slainFade + 1).fade).toBe(0)
 	})
 
+	it('knocks the samurai back and lights him up when a blade lands, then puts him back where he stood', () => {
+		const struck = rigOf('hurt', 0)
+		expect(struck.flash).toBe(1)
+		const knocked = rigOf('hurt', poseSeconds.hurt * 0.25)
+		expect(knocked.shift).toBeCloseTo(-hurtKnockBack)
+		expect(knocked.flash).toBeLessThan(1)
+		const recovered = rigOf('hurt', poseSeconds.hurt)
+		expect(recovered.shift).toBeCloseTo(0)
+		expect(recovered.flash).toBeCloseTo(0)
+	})
+
+	it('plays the whole hit before the run holds no longer, after an answer or when the time ran out', () => {
+		expect(bladeLandsAfter(false) + poseSeconds.hurt).toBeLessThanOrEqual(runConfig.hitSeconds)
+		expect(bladeLandsAfter(true) + poseSeconds.hurt).toBeLessThanOrEqual(runConfig.slicedSeconds)
+	})
+
 	it('knocks a blocked ninja back, and has a fleeing one run off and vanish', () => {
 		expect(rigOf('blocked', poseSeconds.blocked).shift).toBeLessThan(0)
 		expect(rigOf('fleeing', 0.6).turn).toBeCloseTo(Math.PI)
@@ -151,6 +168,8 @@ describe('the fall', () => {
 		expect(finishingOf(0).ninja).toMatchObject({ pose: 'approach', distance: finishing.from })
 		expect(finishingOf(finishing.run).ninja).toMatchObject({ pose: 'strike', distance: finishing.reach })
 		expect(finishingOf(finishing.run).samurai.pose).toBe('hurt')
+		// Not hit again by the blade still on its way: he stands as the last hit left him.
+		expect(rigOf('hurt', finishingOf(0).samurai.time)).toEqual(rigOf('hurt', poseSeconds.hurt))
 		const down = finishingOf(finishing.run + poseSeconds.strike)
 		expect(down.samurai.pose).toBe('fallen')
 		expect(down.samurai.time).toBeGreaterThan(0)

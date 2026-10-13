@@ -65,6 +65,8 @@ export type Figure = {
 }
 
 const inkWash = new Color(0x8a8a86)
+/** The glow of a blade landing ({@link Rig.flash}), on the placeholder and the real model alike. */
+export const hitGlow = new Color(0xc8321e)
 
 export function createFigure(parts: FigureParts, colours: FigureColours): Figure {
 	const body = new MeshStandardMaterial({ color: colours.body, roughness: 0.85 })
@@ -146,7 +148,10 @@ export function createFigure(parts: FigureParts, colours: FigureColours): Figure
 					material.needsUpdate = true
 				}
 			}
-			for (const material of lit) material.opacity = opacity
+			for (const material of lit) {
+				material.opacity = opacity
+				material.emissive.copy(hitGlow).multiplyScalar(rig.flash)
+			}
 			shadow.opacity = 0.22 * opacity
 		},
 
