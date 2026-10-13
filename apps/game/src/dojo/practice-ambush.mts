@@ -1,7 +1,8 @@
 /**
  * D4 Practice ambush ([screens.md](../../../../docs/design/screens.md#d4-practice-ambush)): the
  * ambush's scroll and swipe zone, as in a run, over the dojo world. On top the pause button, the
- * running right vs wrong percentage and the speaker button. No timer, no life bar.
+ * running right vs wrong percentage and the speaker button. No timer, no life bar. A wrong answer
+ * shows the miss screen over the scroll's place until **Continue**.
  *
  * It plays like a run on a phone ([play guard](../_shared/play-guard.mts)): full screen, the screen
  * kept on, and Back or leaving full screen pauses. Back while paused, or after the last question,
@@ -18,9 +19,10 @@ import { Scroll } from '../_shared/scroll/scroll.mts'
 import { formatWhole } from '../_shared/numbers.mts'
 import { play } from '../canvas/loop.mts'
 import { DojoRoute } from './_routes.mts'
-import { commitPractice, practiseAgain, progressOf, tickPractice } from './flows/practice.mts'
+import { commitPractice, continuePractice, practiseAgain, progressOf, tickPractice } from './flows/practice.mts'
+import { missBlocksOf, PracticeMiss } from './practice-miss.mts'
 import { ReadAloud } from './read-aloud.mts'
-import { percentRight, type PracticeGame, type SessionPhase, type TallyState } from './state/practice.mts'
+import { percentRight, type Miss, type PracticeGame, type SessionPhase, type TallyState } from './state/practice.mts'
 import styles from './practice.css'
 
 /** `✓ 6 · ✗ 2 · 75% right`, or `no answers yet`. */
@@ -78,11 +80,20 @@ const PracticeBar = component<PracticeBarOptions>({
 						language: quiz.language,
 						// The quiz's own and the built-in dictionaries, as Study reads them.
 						pronunciations: resolvePronunciations(quiz),
+						// The card, or on the miss screen the right answer and the explanation.
 						blocks: () => {
+							const { missed } = game.tally.value
+							if (missed !== undefined) return missBlocksOf(quiz, missed)
 							const { query, options: answers } = game.ambush.value
 							return [query, ...answers.map((answer) => answer.answer)]
 						},
 						stopWhen(stop, until) {
+							// Continue leaves the miss screen that was read.
+							let missed = game.tally.value.missed
+							game.tally.on('change', until, ({ detail }) => {
+								if (detail.state.missed !== missed) stop()
+								missed = detail.state.missed
+							})
 							// Answering closes the scroll that was read.
 							game.ambush.on('change', until, ({ detail }) => {
 								if (!detail.state.open) stop()
@@ -245,6 +256,28 @@ export const PracticeAmbush = component<PracticeAmbushOptions>({
 			pausable: practising,
 		}, signal)
 
+		// The miss screen, until Continue.
+		const miss = element('div', {
+			classes: [
+				styles.layer,
+				styles.miss,
+			],
+		})
+		let shownMiss: Miss | undefined
+		const showMiss = (next: Miss | undefined) => {
+			if (next === shownMiss) return
+			shownMiss = next
+			miss.replaceChildren(
+				...next === undefined
+					? []
+					: [create(PracticeMiss, {
+						quiz,
+						miss: next,
+						carryOn: () => { continuePractice(game) },
+					})]
+			)
+		}
+
 		const overlays = element('div', {
 			classes: [
 				styles.layer,
@@ -278,7 +311,7 @@ export const PracticeAmbush = component<PracticeAmbushOptions>({
 			}),
 		})
 		/** What a dialog over practice shuts off: nothing behind it can be reached until it closes. */
-		const behind = [top, scroll]
+		const behind = [top, scroll, miss]
 
 		let phase: SessionPhase | undefined
 		/** Where the focus was before a dialog took it, to give it back when the dialog closes. */
@@ -327,10 +360,14 @@ export const PracticeAmbush = component<PracticeAmbushOptions>({
 				children: [
 					top,
 					scroll,
+					miss,
 					overlays,
 				],
 			})
 		)
+
+		showMiss(game.tally.value.missed)
+		game.tally.on('change', signal, ({ detail }) => { showMiss(detail.state.missed) })
 
 		showPhase(game.session.value.phase)
 		game.session.on('change', signal, ({ detail }) => { showPhase(detail.state.phase) })

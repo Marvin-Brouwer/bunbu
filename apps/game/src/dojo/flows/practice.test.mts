@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { fixtureQuiz } from '../../_temp/quiz.mts'
 import { seeded } from '../../_temp/random.mts'
 import { createPracticeGame, percentRight, type PracticeGame } from '../state/practice.mts'
-import { beginPractice, commitPractice, nextQuestionSeconds, practiceOrder, practiseAgain, preparePractice, progressOf, tickPractice } from './practice.mts'
+import { beginPractice, commitPractice, continuePractice, nextQuestionSeconds, practiceOrder, practiseAgain, preparePractice, progressOf, tickPractice } from './practice.mts'
 
 /** Picks the right answer on the open ambush: every correct option, in its place for `order`. */
 function pickRight(game: PracticeGame): void {
@@ -49,7 +49,7 @@ describe('practiceOrder', () => {
 
 describe('preparePractice', () => {
 	it('loads the quiz on the start screen with a fresh tally', () => {
-		const game = createPracticeGame({ tally: { right: 2, wrong: 1, missed: false } })
+		const game = createPracticeGame({ tally: { right: 2, wrong: 1, missed: undefined } })
 		preparePractice(game, fixtureQuiz, [1])
 		expect(game.quiz.value.order).toEqual([1])
 		expect(game.tally.value).toMatchObject({ right: 0, wrong: 0 })
@@ -112,12 +112,35 @@ describe('practice', () => {
 		expect(game.ambush.value.open).toBe(true)
 	})
 
-	it('counts a wrong answer and moves on: no miss screen yet', () => {
+	it('counts a wrong answer', () => {
 		const game = started()
 		pickWrong(game)
 		commitPractice(game)
-		expect(game.tally.value).toMatchObject({ right: 0, wrong: 1, missed: false })
+		expect(game.tally.value).toMatchObject({ right: 0, wrong: 1 })
 		expect(percentRight(game.tally.value)).toBe(0)
+	})
+
+	it('shows a miss until Continue, with the picks as they were answered', () => {
+		const game = started()
+		pickWrong(game)
+		commitPractice(game)
+		const { missed } = game.tally.value
+		expect(missed?.record).toMatchObject({ at: { question: 0, part: 0 }, outcome: 'wrong' })
+		expect(missed?.ambush.options.some((option) => option.pick > 0 && !option.correct)).toBe(true)
+		expect(game.ambush.value.open).toBe(false)
+
+		continuePractice(game)
+		expect(game.tally.value.missed).toBeUndefined()
+		expect(game.ambush.value).toMatchObject({ open: true, at: { question: 1 } })
+	})
+
+	it("doesn't continue while paused", () => {
+		const game = started()
+		pickWrong(game)
+		commitPractice(game)
+		game.session.value.pause()
+		continuePractice(game)
+		expect(game.tally.value.missed).toBeDefined()
 	})
 
 	it('never runs out of time', () => {
@@ -172,6 +195,7 @@ describe('practice', () => {
 		beginPractice(game)
 		pickWrong(game)
 		commitPractice(game)
+		continuePractice(game)
 		expect(game.ambush.value).toMatchObject({ open: true, round: 2, rounds: 2 })
 		pickRight(game)
 		commitPractice(game)
