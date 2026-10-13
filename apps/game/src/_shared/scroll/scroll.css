@@ -22,11 +22,16 @@
 }
 
 .paper {
+	--rod-height: 0.85rem;
+	position: relative;
 	display: grid;
+	box-sizing: border-box;
 	width: 100%;
 	max-width: 34rem;
 	margin-inline: auto;
-	grid-template-rows: auto 1fr auto;
+	/* The bottom rod hangs over the paper (see .bottomRod), in the room kept for it at the foot. */
+	padding-bottom: var(--rod-height);
+	grid-template-rows: auto 1fr;
 	/* Keeps the rods against the sheet while it grows, instead of sharing out the space left. */
 	align-content: start;
 	/* `--scroll-reserve` is room a mode keeps free above or below the scroll, like the run's ambush room. */
@@ -39,7 +44,7 @@
 }
 
 .rod {
-	height: 0.85rem;
+	height: var(--rod-height);
 	margin: 0 -0.35rem;
 	border-radius: 999px;
 	background: linear-gradient(var(--wood-light), var(--wood) 60%, var(--ink));
@@ -51,6 +56,18 @@
 	overflow: hidden;
 	background: linear-gradient(90deg, var(--paper-shade), var(--paper) 5%, var(--paper) 95%, var(--paper-shade));
 	border-inline: 1px solid var(--paper-edge);
+}
+
+/*
+ * Laid over the whole paper with the rod at its foot, so unrolling can move the rod by the height
+ * of the paper, from just under the top rod down to its place.
+ */
+.bottomRod {
+	position: absolute;
+	inset: 0;
+	display: grid;
+	align-content: end;
+	pointer-events: none;
 }
 
 .paper[data-footer='true'] .sheet {
@@ -98,13 +115,22 @@
 	line-height: 1.4;
 }
 
-/* Unroll: the sheet grows from the top rod down. */
+/*
+ * Unroll: the sheet falls open from the top rod down, the bottom rod pulling it. The sheet keeps
+ * its full size and shows more of itself as the rod goes, so it reads from the top, footer last.
+ */
 .scroll[data-stage='unroll'] {
 	animation: settle 420ms;
 }
 
-.scroll[data-stage='unroll'] .paper {
-	animation: unroll 420ms ease-out;
+.scroll[data-stage='unroll'] .sheet,
+.paper[data-unroll='true'] .sheet {
+	animation: unroll-sheet 420ms ease-out;
+}
+
+.scroll[data-stage='unroll'] .bottomRod,
+.paper[data-unroll='true'] .bottomRod {
+	animation: unroll-rod 420ms ease-out;
 }
 
 /* Roll up: the sheet winds back onto the top rod, then the rods go. */
@@ -112,8 +138,14 @@
 	animation: vanish 620ms forwards;
 }
 
-.scroll[data-stage='roll-up'] .paper {
-	animation: unroll 360ms ease-in reverse forwards;
+.scroll[data-stage='roll-up'] .sheet,
+.answeredScroll .sheet {
+	animation: unroll-sheet 360ms ease-in reverse forwards;
+}
+
+.scroll[data-stage='roll-up'] .bottomRod,
+.answeredScroll .bottomRod {
+	animation: unroll-rod 360ms ease-in reverse forwards;
 }
 
 /*
@@ -150,17 +182,8 @@
 	pointer-events: none;
 }
 
-.answeredScroll .paper {
-	animation: unroll 360ms ease-in reverse forwards;
-}
-
 .scroll:not([data-stage='reveal']) .answeredScroll {
 	display: none;
-}
-
-/* A sheet shown on its own, such as the pause menu or the results, unrolls once. */
-.paper[data-unroll='true'] {
-	animation: unroll 420ms ease-out;
 }
 
 /* Sliced: a cut across the scroll, then the halves fall apart. */
@@ -191,13 +214,24 @@
 	animation: cut-through 200ms ease-out forwards;
 }
 
-@keyframes unroll {
+@keyframes unroll-sheet {
 	from {
-		grid-template-rows: auto 0fr auto;
+		clip-path: inset(0 0 100% 0);
 	}
 
 	to {
-		grid-template-rows: auto 1fr auto;
+		clip-path: inset(0);
+	}
+}
+
+/* From under the top rod, both rods' height below the top of the paper, to the foot of the paper. */
+@keyframes unroll-rod {
+	from {
+		translate: 0 calc(-100% + 2 * var(--rod-height));
+	}
+
+	to {
+		translate: 0 0;
 	}
 }
 
@@ -254,7 +288,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-	.paper[data-unroll='true'],
+	.paper[data-unroll='true'] > *,
 	.scroll[data-stage],
 	.scroll[data-stage] * {
 		animation-duration: 1ms !important;
