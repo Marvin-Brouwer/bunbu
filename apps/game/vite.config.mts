@@ -1,3 +1,4 @@
+import { fileExtension, mimeType } from '@bunbu/data'
 import { rootedManifest } from '@rooted/application'
 import { githubPagesAdapter } from '@rooted-adapters/github-pages'
 import { rootedMarkdown } from '@rooted/markdown/vite'
@@ -14,7 +15,33 @@ export default rootedManifest({
 		theme_color: '#ffffff',
 		background_color: '#ffffff',
 		display: 'standalone',
+		// Opening a `.bunbu` file with the installed app (desktop Chrome and Edge) lands on the quizzes
+		// screen, which loads it like a chosen file (src/quizzes/opened-quizzes.mts).
+		file_handlers: [
+			{
+				action: 'quizzes/',
+				accept: { [mimeType]: [fileExtension] },
+			},
+		],
+		// Sharing a quiz file to the installed app (Android). A phone doesn't know what a `.bunbu` file
+		// is, so it hands it over as any file; the quizzes screen turns away what isn't a quiz.
+		share_target: {
+			action: 'quizzes/shared',
+			method: 'POST',
+			enctype: 'multipart/form-data',
+			params: {
+				files: [
+					{
+						name: 'quiz',
+						accept: [mimeType, fileExtension, 'application/octet-stream'],
+					},
+				],
+			},
+		},
 	},
+	// The shared file arrives as a POST to the action above, which a static site can't take: the
+	// service worker keeps it (public/receive-shared-quizzes.js).
+	workerScripts: ['receive-shared-quizzes.js'],
 	// The service worker only precaches scripts, styles and pages; the bundled brush font and the 3D
 	// models are kept the first time they load, so they are there offline after that.
 	runtimeCaching: [
