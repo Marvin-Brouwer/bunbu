@@ -7,8 +7,8 @@
  * - **Pause** cancels and resumes from the start of the line: Android's engine has no real pause
  *   (pausing stops it), and others don't always resume.
  * - **The spoken word** comes from the engine's word boundaries. Android and some online voices
- *   send none; there the word is guessed from the time spoken, at the pace measured from the lines
- *   read so far.
+ *   send none; there the word is guessed from the time spoken, at the pace measured from every line
+ *   read so far, with code, numbers and abbreviations weighed as they are said.
  * - **A new voice or speed** restarts the line once the change settles, not on every step of a
  *   slider: Android's engine doesn't stop at once, and many restarts in a row read the line over
  *   each other.
@@ -24,8 +24,8 @@
  * iPhone); it then picks up again from the line it was on when the page is back.
  */
 
-import { shownWordAt, wordStarts, type ShownRange, type SpokenLine } from './line.mts'
-import { paceAfter, unheardPace } from './pace.mts'
+import { shownWordAt, type ShownRange, type SpokenLine } from './line.mts'
+import { paceAfter, spokenWords, unheardPace } from './pace.mts'
 
 /** The engine's errors for speech that was stopped on purpose, by `cancel`. */
 const stopped = new Set<string>(['canceled', 'interrupted'])
@@ -174,13 +174,13 @@ export function createSpeaker(options: SpeakerOptions, signal: AbortSignal): Spe
 
 	/** Guesses the word from the time spoken, for engines without word boundaries. */
 	const guess = (line: SpokenLine) => {
-		const starts = wordStarts(line.text)
+		const { words } = spokenWords(line.text)
 		const began = performance.now()
 		let shown = -1
 		stopGuessing()
 		guessing = setInterval(() => {
-			const reached = (performance.now() - began) / 1000 * pace.charactersPerSecond * rate
-			const word = starts.findLast((start) => start <= reached) ?? 0
+			const reached = (performance.now() - began) / 1000 * pace.perSecond * rate
+			const word = words.findLast(({ before }) => before <= reached)?.start ?? 0
 			if (word === shown) return
 			shown = word
 			options.onWord?.(shownWordAt(line, word))
@@ -222,7 +222,7 @@ export function createSpeaker(options: SpeakerOptions, signal: AbortSignal): Spe
 		}
 		utterance.addEventListener('end', () => {
 			if (ours === generation && !boundaries && began !== undefined) {
-				pace = paceAfter(pace, line.text.length, (performance.now() - began) / 1000, utterance.rate)
+				pace = paceAfter(pace, spokenWords(line.text).weight, (performance.now() - began) / 1000, utterance.rate)
 			}
 			done()
 		})
