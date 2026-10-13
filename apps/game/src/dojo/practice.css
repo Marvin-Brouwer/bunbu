@@ -214,8 +214,11 @@
 
 /* D5: the missed question's scroll, over the scroll layer's place, until Continue. */
 .layer.miss {
+	/* Below the bar and its share of the top safe area, as the scroll. */
+	--safe-top: max(0px, env(safe-area-inset-top) - 0.4rem);
+	--scroll-reserve: var(--safe-top);
 	align-content: start;
-	padding: 3.5rem 0.75rem 0;
+	padding: calc(3.5rem + var(--safe-top)) 0.75rem 0;
 	color: var(--ink);
 }
 
