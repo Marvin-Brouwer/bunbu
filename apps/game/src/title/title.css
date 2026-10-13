@@ -172,9 +172,17 @@
 	box-shadow: var(--tile-vermilion);
 }
 
-.panelButton:active {
+.panelButton:active:not(:disabled) {
 	translate: 0 var(--bevel-height);
 	box-shadow: none;
+}
+
+/* Taking the update: pressed in, and not to be pressed again. */
+.panelButton:disabled {
+	translate: 0 var(--bevel-height);
+	box-shadow: none;
+	opacity: 0.7;
+	cursor: progress;
 }
 
 /* How to play and the credits: small, under the menu. */
