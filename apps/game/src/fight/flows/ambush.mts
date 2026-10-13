@@ -94,8 +94,9 @@ export function commitAmbush(game: RunGame, random: Random = Math.random): void 
 	let hold = runConfig.slicedSeconds
 	if (result.outcome === 'unanswered') {
 		missRoundsLeft(game, result.at)
-		game.shogun.value.hurt()
+		// The slicer first, so whoever shows his hit knows which blade lands on him.
 		game.ninjas.value.strikeUnanswered()
+		game.shogun.value.hurt()
 	} else {
 		// The ninjas show what was answered, one after another in the order they were answered:
 		// he slashes the ones rightly picked and blocks the ones rightly left, and only the ones
