@@ -1,16 +1,12 @@
 /**
  * The back link at the top left of a menu screen. It goes back through the history, as the
  * browser's Back does, so the two never disagree on where back is. Only when there is no page
- * before this one (the screen was opened by its address) does it go to `target`.
+ * before this one (the screen was opened by its address) does it go to the title.
  */
 
 import { component } from '@rooted/components'
-import { navigate, type Path } from '@rooted/router'
+import { href, navigate } from '@rooted/router'
 import styles from './menu.css'
-
-export type BackLinkOptions = {
-	readonly target: Path
-}
 
 /** Whether there is a page of the game before this one in the history. */
 function canGoBack(): boolean {
@@ -18,21 +14,19 @@ function canGoBack(): boolean {
 	return history.length > 1
 }
 
-/** Back to the page before this one, or to `target` when there is none. */
-export function goBack(target: Path): void {
+/** Back to the page before this one, or to the title when there is none. */
+export function goBack(): void {
 	if (canGoBack()) history.back()
-	else navigate(target)
+	else navigate(href.path('/'))
 }
 
-export const BackLink = component<BackLinkOptions>({
+export const BackLink = component({
 	name: 'back-link',
 	styles,
-	onMount({ append, element, options }) {
-		const { target } = options
-
+	onMount({ append, element }) {
 		append(
 			element('a', {
-				href: target.href,
+				href: href.path('/').href,
 				classes: styles.back,
 				aria: {
 					label: 'Back',
@@ -41,7 +35,7 @@ export const BackLink = component<BackLinkOptions>({
 				on: {
 					click(event) {
 						event.preventDefault()
-						goBack(target)
+						goBack()
 					},
 				},
 			})

@@ -152,7 +152,6 @@ export const DojoMenu = component({
 			replace(
 				create(MenuScreen, {
 					title: '道場 · Dojo',
-					back: href.path('/'),
 					children: [
 						create(MenuSection, {
 							label: 'Quiz',

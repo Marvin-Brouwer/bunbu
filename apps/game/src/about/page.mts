@@ -6,7 +6,6 @@
 
 import { component } from '@rooted/components'
 import { Markdown } from '@rooted/markdown'
-import { href } from '@rooted/router'
 import { MenuScreen } from '../_shared/menu/menu-screen.mts'
 import styles from './page.css'
 
@@ -27,7 +26,6 @@ export const Page = component<PageOptions>({
 		append(
 			create(MenuScreen, {
 				title,
-				back: href.path('/'),
 				children: create(Markdown, {
 					source: options.source,
 					tag: 'article',
