@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 120">
+	<!-- The Study card's art: a calligraphy set on a low table, 文武 on the paper, a brush, an inkstone and a water dropper. -->
+	<rect width="320" height="120" fill="#e4d8bd"/>
+	<rect y="96" width="320" height="24" fill="#d6c7a6"/>
+	<!-- The low table. -->
+	<rect x="24" y="84" width="272" height="10" rx="1.5" fill="#6b4a2a"/>
+	<rect x="36" y="94" width="8" height="20" fill="#5a3e24"/>
+	<rect x="276" y="94" width="8" height="20" fill="#5a3e24"/>
+	<!-- The paper on its felt, 文武 written down it. -->
+	<rect x="54" y="80" width="98" height="5" fill="#2a2420"/>
+	<rect x="62" y="12" width="82" height="69" fill="#faf6ec" stroke="#8f8576" stroke-width="1.5"/>
+	<text x="103" y="43" font-family="'Hiragino Mincho ProN', 'Yu Mincho', 'Noto Serif CJK JP', serif" font-size="28" font-weight="700" text-anchor="middle" fill="#1f1c18">文</text>
+	<text x="103" y="73" font-family="'Hiragino Mincho ProN', 'Yu Mincho', 'Noto Serif CJK JP', serif" font-size="28" font-weight="700" text-anchor="middle" fill="#1f1c18">武</text>
+	<!-- The brush, laid across the inkstone's corner. -->
+	<path d="M166 58 L232 40" stroke="#8a5a36" stroke-width="5" stroke-linecap="round"/>
+	<path d="M166 58 L154 63 L163 54 Z" fill="#1f1c18"/>
+	<!-- The inkstone, with its well of ink. -->
+	<rect x="190" y="62" width="58" height="23" rx="4" fill="#3a3430"/>
+	<ellipse cx="219" cy="68" rx="20" ry="3.5" fill="#15110e"/>
+	<!-- The water dropper. -->
+	<path d="M262 84 C258 84 256 78 257 72 C258 66 262 62 266 62 C270 62 274 66 275 72 C276 78 274 84 270 84 Z" fill="#b3391f"/>
+</svg>
