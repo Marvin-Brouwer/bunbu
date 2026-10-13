@@ -60,8 +60,11 @@
 	grid-row: 3;
 }
 
-/* Dojo, How to play and Settings, side by side. */
+/* Dojo, How to play and Settings, side by side: small enough that each fits on one line on a narrow phone. */
 .row {
+	--button-font-size: 0.9rem;
+	--button-padding-inline: 0.4rem;
+
 	display: grid;
 	grid-template-columns: repeat(3, minmax(0, 1fr));
 	gap: 0.6rem;
@@ -125,20 +128,6 @@
 	font-weight: 700;
 	line-height: 1.2;
 	overflow-wrap: anywhere;
-}
-
-.score {
-	display: flex;
-	flex-wrap: wrap;
-	align-items: baseline;
-	gap: 0 0.6rem;
-}
-
-.points {
-	font-size: 1.6rem;
-	font-weight: 700;
-	line-height: 1.2;
-	font-variant-numeric: tabular-nums;
 }
 
 /* When Share can't reach the share sheet: the steps on the scroll. */

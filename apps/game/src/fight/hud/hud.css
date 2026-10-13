@@ -109,10 +109,11 @@
 	pointer-events: auto;
 }
 
-/* Two ink strokes. */
+/* Two ink strokes, a stroke's width apart. */
 .pause::before {
 	content: '';
-	width: 0.85rem;
+	box-sizing: border-box;
+	width: 0.9rem;
 	height: 1.1rem;
 	border-inline: 0.3rem solid currentcolor;
 }

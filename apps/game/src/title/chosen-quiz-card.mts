@@ -87,17 +87,14 @@ export const ChosenQuizCard = component<ChosenQuizCardOptions>({
 									textContent: 'No high score yet',
 								})
 								: element('span', {
-									classes: styles.score,
-									children: [
-										element('span', {
-											classes: styles.points,
-											textContent: formatWhole(best.points),
-										}),
-										element('span', {
-											classes: styles.note,
-											textContent: `high score · ${best.correct} / ${best.answered} correct · ${formatDuration(best.seconds)}`,
-										}),
-									],
+									classes: styles.note,
+									// Non-breaking spaces inside each part, so a narrow card wraps it at the dots only.
+									textContent: [
+										'high score',
+										formatWhole(best.points),
+										`${best.correct} / ${best.answered} correct`,
+										formatDuration(best.seconds),
+									].map((part) => part.replaceAll(' ', '\u00a0')).join(' · '),
 								}),
 						],
 					}),

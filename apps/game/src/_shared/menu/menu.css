@@ -129,13 +129,13 @@
 	align-content: center;
 	justify-items: center;
 	gap: 0.15rem;
-	padding: 0.85rem 1rem;
+	padding: 0.85rem var(--button-padding-inline, 1rem);
 	border: none;
 	border-radius: var(--radius);
 	background: var(--paper-light);
 	color: var(--ink);
 	font: inherit;
-	font-size: 1.1rem;
+	font-size: var(--button-font-size, 1.1rem);
 	font-weight: 700;
 	text-align: center;
 	text-decoration: none;
