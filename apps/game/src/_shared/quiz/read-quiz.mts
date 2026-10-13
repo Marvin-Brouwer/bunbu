@@ -1,7 +1,8 @@
 /**
  * Reading a quiz file the player loads on the quizzes screen: a `.yaml` file through `validate`, a
  * shared `.bunbu` file through `uncompress`. Either way the library keeps it as a `.bunbu` file. Both are untrusted input, so what goes wrong comes
- * back as problems to show the player, not as an error.
+ * back as problems to show the player, not as an error. A file named otherwise isn't read at all; a
+ * `.yaml` file without the schema line or a `.bunbu` file without Bunbu's first bytes stops there.
  */
 
 import {
@@ -35,8 +36,16 @@ export function describeIssue(issue: ValidationIssue): string {
 	return issue.message
 }
 
+/** The file names a quiz can have. */
+export const quizExtensions = ['.yaml', '.yml', fileExtension] as const
+
 export async function readQuiz(file: File): Promise<ReadQuiz> {
-	if (file.name.toLowerCase().endsWith(fileExtension)) {
+	const name = file.name.toLowerCase()
+	if (!quizExtensions.some((extension) => name.endsWith(extension))) {
+		return { problems: ['This is not a quiz. A quiz is a .yaml or .bunbu file.'] }
+	}
+
+	if (name.endsWith(fileExtension)) {
 		try {
 			const bytes = new Uint8Array(await file.arrayBuffer())
 			return { quiz: await uncompress(bytes), file: Immutable.from(bytes) }

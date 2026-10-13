@@ -47,6 +47,17 @@ describe('readQuiz', () => {
 		if (!('problems' in result)) expect.unreachable('read a damaged file')
 		expect(result.problems).toHaveLength(1)
 	})
+
+	it('turns away a file that is not named as a quiz', async () => {
+		const result = await readQuiz(file(everyType, 'every-type.txt'))
+		expect(result).toEqual({ problems: [expect.stringContaining('This is not a quiz')] })
+	})
+
+	it('stops at the schema line or the first bytes of a picture named as a quiz', async () => {
+		const png = new Uint8Array([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 0x0D])
+		expect(await readQuiz(file(png, 'photo.yaml'))).toEqual({ problems: [expect.stringContaining('first line must reference the schema')] })
+		expect(await readQuiz(file(png, 'photo.bunbu'))).toEqual({ problems: [expect.stringContaining('not a Bunbu quiz file')] })
+	})
 })
 
 describe('describeIssue', () => {
