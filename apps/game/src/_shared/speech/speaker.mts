@@ -7,7 +7,8 @@
  * - **Pause** cancels and resumes from the start of the line: Android's engine has no real pause
  *   (pausing stops it), and others don't always resume.
  * - **The spoken word** comes from the engine's word boundaries. Android and some online voices
- *   send none; there the word is guessed from the time spoken and the speed.
+ *   send none; there the word is guessed from the time spoken, at the pace measured from every line
+ *   read so far, with code, numbers and abbreviations weighed as they are said.
  * - **Voices** load late, after a `voiceschanged` event, or, on Safari, without one.
  * - **Lines** are short, a sentence at most, as Chrome stops some voices after 15 seconds.
  * - An utterance the page no longer holds can be dropped by the browser before it ends, so the
@@ -20,14 +21,13 @@
  * iPhone); it then picks up again from the line it was on when the page is back.
  */
 
-import { shownWordAt, wordStarts, type ShownRange, type SpokenLine } from './line.mts'
+import { shownWordAt, type ShownRange, type SpokenLine } from './line.mts'
+import { paceAfter, spokenWords, unheardPace } from './pace.mts'
 
 /** The engine's errors for speech that was stopped on purpose, by `cancel`. */
 const stopped = new Set<string>(['canceled', 'interrupted'])
 /** How long to wait for the engine to start before taking it as refused, as without a tap first. */
 const startTimeout = 3000
-/** Characters said per second at speed 1, to guess the spoken word without word boundaries. */
-const charactersPerSecond = 14
 /** How many lines to hand the engine ahead while the page is hidden. */
 const linesAheadHidden = 500
 
@@ -140,6 +140,8 @@ export function createSpeaker(options: SpeakerOptions, signal: AbortSignal): Spe
 	let boundaries = false
 	let guessing: ReturnType<typeof setInterval> | undefined
 	let waiting: ReturnType<typeof setTimeout> | undefined
+	/** How fast the voice reads, measured while guessing the word. */
+	let pace = unheardPace
 	const held = new Set<SpeechSynthesisUtterance>()
 
 	const stopGuessing = () => {
@@ -165,13 +167,13 @@ export function createSpeaker(options: SpeakerOptions, signal: AbortSignal): Spe
 
 	/** Guesses the word from the time spoken, for engines without word boundaries. */
 	const guess = (line: SpokenLine) => {
-		const starts = wordStarts(line.text)
+		const { words } = spokenWords(line.text)
 		const began = performance.now()
 		let shown = -1
 		stopGuessing()
 		guessing = setInterval(() => {
-			const reached = (performance.now() - began) / 1000 * charactersPerSecond * rate
-			const word = starts.findLast((start) => start <= reached) ?? 0
+			const reached = (performance.now() - began) / 1000 * pace.perSecond * rate
+			const word = words.findLast(({ before }) => before <= reached)?.start ?? 0
 			if (word === shown) return
 			shown = word
 			options.onWord?.(shownWordAt(line, word))
@@ -185,9 +187,11 @@ export function createSpeaker(options: SpeakerOptions, signal: AbortSignal): Spe
 		utterance.voice = voice ?? voicesFor(language)[0] ?? null
 		utterance.rate = rate
 		held.add(utterance)
+		let began: number | undefined
 
 		utterance.addEventListener('start', () => {
 			if (ours !== generation) return
+			began = performance.now()
 			clearTimeout(waiting)
 			current = place
 			options.onLine?.(place)
@@ -209,7 +213,12 @@ export function createSpeaker(options: SpeakerOptions, signal: AbortSignal): Spe
 			playing = false
 			options.onEnd?.()
 		}
-		utterance.addEventListener('end', done)
+		utterance.addEventListener('end', () => {
+			if (ours === generation && !boundaries && began !== undefined) {
+				pace = paceAfter(pace, spokenWords(line.text).weight, (performance.now() - began) / 1000, utterance.rate)
+			}
+			done()
+		})
 		utterance.addEventListener('error', (event) => {
 			if (stopped.has(event.error)) {
 				held.delete(utterance)

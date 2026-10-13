@@ -51,6 +51,10 @@
 	gap: 0.9rem;
 }
 
+.card[hidden] {
+	display: none;
+}
+
 .type {
 	justify-self: start;
 	margin: 0;

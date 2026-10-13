@@ -282,27 +282,29 @@ const StudySession = component<StudySessionOptions>({
 				},
 			},
 		})
+		// The settings while open. The card stays in the page, hidden: taken out and put back, its
+		// blocks would mount again and show their text twice.
+		let settingsPanel: HTMLElement | undefined
 		const showSettings = (open: boolean) => {
 			settingsButton.setAttribute('aria-pressed', String(open))
 			text.scrollTop = 0
-			if (!open) {
-				text.replaceChildren(sheet)
-				return
-			}
-			text.replaceChildren(
-				element('div', {
-					classes: styles.settings,
-					children: [
-						create(SettingsForm, {
-							running: false,
-						}),
-						create(MenuButton, {
-							label: 'Done',
-							action: () => { showSettings(false) },
-						}),
-					],
-				}),
-			)
+			sheet.hidden = open
+			settingsPanel?.remove()
+			settingsPanel = undefined
+			if (!open) return
+			settingsPanel = element('div', {
+				classes: styles.settings,
+				children: [
+					create(SettingsForm, {
+						running: false,
+					}),
+					create(MenuButton, {
+						label: 'Done',
+						action: () => { showSettings(false) },
+					}),
+				],
+			})
+			text.append(settingsPanel)
 		}
 
 		// The voice and the speed come from the settings, and follow them while reading.
@@ -358,7 +360,7 @@ const StudySession = component<StudySessionOptions>({
 			if (state.card !== shown.card) {
 				showCard(state.card)
 				showProgress(state.card)
-				if (sheet.isConnected) text.scrollTop = 0
+				if (!sheet.hidden) text.scrollTop = 0
 			}
 			if (!sameWord(state.word, shown.word)) highlight(state.word)
 			if (state.word !== undefined && state.word.block !== shown.word?.block) followBlock(state.word.block)

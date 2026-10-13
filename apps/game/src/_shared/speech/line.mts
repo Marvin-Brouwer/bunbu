@@ -166,8 +166,3 @@ export function sentencesOf(text: string): { readonly start: number; readonly en
 	}
 	return sentences
 }
-
-/** The start of every word in a text, to guess the spoken word when the engine doesn't say. */
-export function wordStarts(text: string): number[] {
-	return [...text.matchAll(/\S+/gu)].map((match) => match.index)
-}

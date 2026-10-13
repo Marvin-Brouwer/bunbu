@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { pronouncerOf, sentencesOf, shownWordAt, spokenLine, wordStarts, type SpokenLine } from './line.mts'
+import { pronouncerOf, sentencesOf, shownWordAt, spokenLine, type SpokenLine } from './line.mts'
 
 const shown = (text: string, block = 0, offset = 0) => ({ shown: text, block, offset })
 
@@ -81,11 +81,5 @@ describe('sentences', () => {
 	it('keeps a dot inside a word', () => {
 		const text = 'Use node.js here.'
 		expect(sentencesOf(text).map(({ start, end }) => text.slice(start, end))).toEqual(['Use node.js here.'])
-	})
-})
-
-describe('word starts', () => {
-	it('finds the start of every word', () => {
-		expect(wordStarts(' one two  three')).toEqual([1, 5, 10])
 	})
 })
