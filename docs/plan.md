@@ -79,7 +79,7 @@ Pure gesture logic with tests on recorded pointer sequences, plus the swipe zone
 - Pointer events in the swipe zone only, so the scroll's text above it keeps native scrolling. The zone is the scroll's footer.
 - Classify a stroke into the 8 directions, with a dead zone for taps and jitter.
 - One continuous stroke can pick several marks (← → in one go); lifting between swipes is optional.
-- 0.8 s pause after lifting commits for `multiple` and `order`; a single swipe commits at once for `yes-no` and `single`.
+- `multiple` commits once as many marks are cut as it asks for, `order` once every item has its place; a single swipe commits at once for `yes-no` and `single`.
 - Calls `ambush.pick()` and `ambush.commit()`, nothing else.
 - The swipe zone is the drawn answer drawer at the scroll's foot (issue #20): a line on how to answer, then the answers on lined paper with the finger's trace; a pick splits its answer along a red cut, and order numbers are brushed next to it.
 - Haptics through `navigator.vibrate`, behind the setting.

@@ -123,6 +123,6 @@ export const finish = (stroke: Stroke, available: readonly Mark[]): Mark | undef
 
 /**
  * Whether a pick strikes at once. `yes-no` and `single` hold one pick, so the swipe is the answer;
- * `multiple` and `order` strike after a pause once the pointer lifts.
+ * `multiple` and `order` strike once they are complete ([swipe-zone.mts](./swipe-zone.mts)).
  */
 export const strikesAtOnce = (kind: AmbushKind) => kind === 'yes-no' || kind === 'single'

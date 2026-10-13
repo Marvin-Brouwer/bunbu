@@ -106,8 +106,8 @@
 }
 
 .side {
-	display: flex;
-	flex-wrap: wrap;
+	display: grid;
+	grid-template-columns: auto minmax(0, 1fr);
 	align-items: baseline;
 	gap: 0.25rem;
 }
@@ -125,19 +125,28 @@
 }
 
 /*
- * A flex box, so the line break the markdown ends with doesn't show as a space before the comma.
- * Flex drops plain spaces at the edges too, hence the no-break spaces in the separators.
+ * The answers wrap next to the sign, each line ending on its separator. Flex boxes, so the line
+ * break the markdown ends with doesn't show as a space before the comma.
  */
+.choices {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: 0 1ch;
+	overflow-wrap: anywhere;
+}
+
 .choice {
 	display: inline-flex;
+	align-items: baseline;
 }
 
-.choice + .choice::before {
-	content: ',\00a0';
+.choice:not(:last-child)::after {
+	content: ',';
 }
 
-.side[data-ordered='true'] .choice + .choice::before {
-	content: '\00a0→\00a0';
+.side[data-ordered='true'] .choice:not(:last-child)::after {
+	content: '\00a0→';
 }
 
 .choice p {
@@ -153,8 +162,4 @@
 	padding: 0;
 	list-style: none;
 	font-size: 0.85rem;
-}
-
-.choices {
-	overflow-wrap: anywhere;
 }

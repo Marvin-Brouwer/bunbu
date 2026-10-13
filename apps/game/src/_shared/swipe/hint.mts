@@ -9,6 +9,6 @@ import type { AmbushState } from '../state/ambush.mts'
 export function hintOf(state: Pick<AmbushState, 'kind' | 'choose'>): string {
 	if (state.kind === 'yes-no' || state.kind === 'single') return 'Cut your answer'
 	if (state.kind === 'order') return 'Cut them all, in order'
-	if (state.choose > 0) return `Cut the ${state.choose} you choose, then hold still`
+	if (state.choose > 0) return `Cut the ${state.choose} you choose`
 	return 'Cut each answer you choose, then hold still'
 }

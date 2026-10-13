@@ -6,10 +6,11 @@
  * The pointer leaves a faint trace on the paper, and each pick cuts its answer in two
  * ([ScrollOption](../scroll/scroll-option.mts)).
  *
- * A swipe toward a mark picks it. `yes-no` and `single` strike at once, and `order` as soon as
- * every item has its place; `multiple` strikes once the pointer has been lifted for the commit
- * pause, and touching down again before that keeps the answer open. Lifting between swipes is optional: one continuous stroke can pick
- * several marks ([stroke.mts](./stroke.mts)).
+ * A swipe toward a mark picks it. `yes-no` and `single` strike at once, `order` as soon as every
+ * item has its place and `multiple` as soon as as many are cut as the scroll asks for. A `multiple`
+ * that doesn't give the count away strikes once the pointer has been lifted for the commit pause,
+ * and touching down again before that keeps the answer open. Lifting between swipes is optional:
+ * one continuous stroke can pick several marks ([stroke.mts](./stroke.mts)).
  *
  * The scroll puts it in its answer drawer, in the run and in dojo practice. It picks through the
  * ambush store and strikes through the mode's own `commit`, which spreads the result over the
@@ -39,11 +40,21 @@ export type SwipeZoneOptions = {
 
 const pointOf = (event: PointerEvent): Point => ({ x: event.clientX, y: event.clientY })
 
-const anyPicked = (state: AmbushState) => state.options.some((option) => option.pick > 0)
+const pickCount = (state: AmbushState) => state.options.filter((option) => option.pick > 0).length
 
-/** Whether the answer is complete: an `order` needs every item put in its place, the rest one pick. */
-const answered = (state: AmbushState) =>
-	state.kind === 'order' ? state.options.every((option) => option.pick > 0) : anyPicked(state)
+/**
+ * Whether the answer is complete: an `order` needs every item put in its place, a `multiple` as
+ * many picks as it asks for, the rest one pick.
+ */
+const answered = (state: AmbushState) => {
+	if (state.kind === 'order') return pickCount(state) === state.options.length
+	if (state.kind === 'multiple' && state.choose > 0) return pickCount(state) >= state.choose
+	return pickCount(state) > 0
+}
+
+/** Whether the answer strikes as soon as it is complete, rather than after the commit pause. */
+const strikesWhenAnswered = (state: AmbushState) =>
+	state.kind === 'order' || (state.kind === 'multiple' && state.choose > 0)
 
 const isPicked = (state: AmbushState, mark: Mark) =>
 	state.options.some((option) => option.mark === mark && option.pick > 0)
@@ -122,7 +133,8 @@ export const SwipeZone = component<SwipeZoneOptions>({
 			if (mark === undefined || !current.open || timeUp(current) || isPicked(current, mark)) return
 			current.pick(mark)
 			buzz(buzzes.pick)
-			if (strikesAtOnce(current.kind) || (current.kind === 'order' && answered(ambush.value))) strike()
+			const next = ambush.value
+			if (strikesAtOnce(next.kind) || (strikesWhenAnswered(next) && answered(next))) strike()
 		}
 
 		// `finishing` is false when the browser took the pointer over (pointercancel): the last
