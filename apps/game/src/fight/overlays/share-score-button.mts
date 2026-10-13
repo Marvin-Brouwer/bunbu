@@ -41,7 +41,12 @@ export const ShareScoreButton = component<ShareScoreButtonOptions>({
 		const button = element('button', {
 			type: 'button',
 			classes: styles.shareButton,
-			textContent: 'Share',
+			children: [
+				element('span', {
+					classes: styles.shareIcon,
+				}),
+				'Share',
+			],
 			aria: {
 				label: 'Share your score',
 			},

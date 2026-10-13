@@ -1,7 +1,8 @@
 /**
  * 7 Finished ([screens.md](../../../../../docs/design/screens.md#7-finished-results-and-mistakes)):
- * the quiz is passed. The score, and the high score it beat, with Share to dare a friend to beat it;
- * correct, time and distance; the mistakes; then Next stage, all on one scroll over the world.
+ * the quiz is passed. The score, and the high score it beat; correct, time and distance; the
+ * mistakes; then Next stage, and Share beside Menu to dare a friend to beat it, all on one scroll
+ * over the world.
  */
 
 import { component } from '@rooted/components'
@@ -16,7 +17,6 @@ import { pointsIn, pointsPerCorrect } from '../state/score.mts'
 import { AfterRun } from './after-run.mts'
 import { Mistakes } from './mistakes.mts'
 import type { ScorePicture } from './score-picture.mts'
-import { ShareScoreButton } from './share-score-button.mts'
 import { StatTile } from './stat-tile.mts'
 import styles from './overlays.css'
 
@@ -36,7 +36,7 @@ export const Finished = component<FinishedOptions>({
 		if (quiz === undefined) return
 
 		const { points, correct, best, newBest, unlocked } = game.score.value
-		const { elapsed, stageLength } = game.run.value
+		const { elapsed, stageLength, difficulty } = game.run.value
 		const total = pointsIn(quiz, refs)
 		const misses = game.quiz.value.misses()
 		// The same quiz on the next stage that has a world (docs/plan.md#open-questions), or this one
@@ -47,8 +47,14 @@ export const Finished = component<FinishedOptions>({
 			quizTitle: quiz.title,
 			verdict: newBest ? 'Quiz passed · new high score' : 'Quiz passed',
 			points: formatWhole(points),
-			was: best === undefined ? undefined : `${newBest ? 'was' : 'best'} ${formatWhole(best.points)}`,
-			summary: `${correct} / ${total} correct (${Math.round((correct / total) * 100)}%) · ${formatDuration(elapsed)}`,
+			was: newBest && best !== undefined ? `was ${formatWhole(best.points)}` : undefined,
+			// As on the title's quiz card; the time has a tile of its own.
+			lines: [
+				newBest || best === undefined
+					? `high score · ${formatWhole(points)} · ${difficulty}`
+					: `high score · ${formatWhole(best.points)} · ${best.difficulty}`,
+				`correct · ${correct} / ${total}`,
+			],
 			tiles: [
 				{
 					label: 'Correct',
@@ -110,13 +116,11 @@ export const Finished = component<FinishedOptions>({
 												}),
 												element('span', {
 													classes: styles.summary,
-													textContent: picture.summary,
+													children: picture.lines.map((line) => element('span', {
+														textContent: line,
+													})),
 												}),
 											],
-										}),
-										create(ShareScoreButton, {
-											quizId: quiz.id,
-											picture,
 										}),
 									],
 								}),
@@ -134,6 +138,10 @@ export const Finished = component<FinishedOptions>({
 					}),
 					footer: create(AfterRun, {
 						misses: misses.length,
+						share: {
+							quizId: quiz.id,
+							picture,
+						},
 						leave: options.leave,
 						next: next === undefined
 							? {
