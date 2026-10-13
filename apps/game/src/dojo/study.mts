@@ -284,15 +284,9 @@ const StudySession = component<StudySessionOptions>({
 			if (!open) return
 			settingsPanel = element('div', {
 				classes: styles.settings,
-				children: [
-					create(SettingsForm, {
-						running: false,
-					}),
-					create(MenuButton, {
-						label: 'Done',
-						action: () => { showSettings(false) },
-					}),
-				],
+				children: create(SettingsForm, {
+					running: false,
+				}),
 			})
 			text.append(settingsPanel)
 		}
