@@ -1,8 +1,9 @@
 """
 The temple kit: a temple hall, a five-storey pagoda, a stone lantern and a torii, in one GLB for the
-game (`apps/game/public/models/temple-kit.glb`). Built from code so it can be changed and run again:
+game (`assets/models/temple-kit.glb`, which `pnpm models` compresses into the game). Built from code so it can be changed and run again:
 
-    blender -b -P assets/blender/temple_kit.py -- <out.glb> [preview.png]
+    blender -b -P assets/blender/temple_kit.py -- assets/models/temple-kit.glb [preview.png]
+    pnpm models
 
 Every piece is written in the game's own frame: metres, y up, the front toward +z, standing on the
 ground at the origin. `at()` turns that into Blender's z-up frame; the glTF exporter turns it back.

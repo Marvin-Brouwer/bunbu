@@ -1,8 +1,9 @@
 """
 The stage kit: the buildings and props of the stages besides castle town, in one GLB for the game
-(`apps/game/public/models/stage-kit.glb`):
+(`assets/models/stage-kit.glb`, which `pnpm models` compresses into the game):
 
-    blender -b -P assets/blender/stage_kit.py -- <out.glb> [preview.png]
+    blender -b -P assets/blender/stage_kit.py -- assets/models/stage-kit.glb [preview.png]
+    pnpm models
 
 It builds on the temple kit's tools (`temple_kit.py`: the frame, the materials, the curved roofs), so
 the stages share one style with the temple. Each piece is a root named for it, in the game's frame.

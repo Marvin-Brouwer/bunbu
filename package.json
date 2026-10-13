@@ -5,6 +5,7 @@
   "scripts": {
     "postinstall": "pnpm --filter @bunbu/data build",
     "dev": "pnpm --filter @bunbu/game dev",
+    "models": "pnpm --filter @bunbu/assets models",
     "build": "pnpm -r build",
     "lint": "oxlint",
     "typecheck": "pnpm -r typecheck",

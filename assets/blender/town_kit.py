@@ -1,8 +1,9 @@
 """
 The town kit: the parts castle town stamps out for its houses, made with more care than code-built
-boxes can give them (`apps/game/public/models/town-kit.glb`):
+boxes can give them (`assets/models/town-kit.glb`, which `pnpm models` compresses into the game):
 
-    blender -b -P assets/blender/town_kit.py -- <out.glb> [preview.png]
+    blender -b -P assets/blender/town_kit.py -- assets/models/town-kit.glb [preview.png]
+    pnpm models
 
 Each part has exactly the size of the shape it replaces in `fight/world/castle-town.mts`, so the town
 places, stretches and colours it as before:
