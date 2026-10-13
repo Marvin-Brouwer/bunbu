@@ -150,7 +150,7 @@ export function passTime(lit: Lit, daylight: Daylight): StageView['passTime'] {
 	}
 
 	show(0)
-	// A run joined halfway (a fixture) starts at its own time of day instead of fading there.
+	// The first frame shows the time of day the run is at, rather than fading there.
 	let shown: number | undefined
 	return (marksPassed, delta) => {
 		const target = Math.min(marksPassed, last)

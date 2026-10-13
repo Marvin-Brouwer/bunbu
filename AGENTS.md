@@ -31,10 +31,10 @@ apps/game/src/
   application.mts  the Application: the canvas, the game loop and the router
   canvas/          the game loop (play() plugs a mode in), the viewport, show() for a world
   _shared/         what several slices use: state (quiz, ambush, selection), the scroll, the swipe zone, the menu parts, reading a quiz file, reading aloud (speech/), keeping the screen on, Placeholder, and in world/ the figures and the petals
-  _temp/           stand-ins until the real thing lands: the fixture quiz
+  _temp/           dev and test stand-ins: the fixture quiz, the sample quizzes for the quizzes menu
   title/           the title menu (the router's home) and not-found
   quizzes/         /quizzes/: choosing and loading quizzes
-  fight/           /fight/: stage and difficulty, then the run; state/, flows/, world; _temp/ fixtures
+  fight/           /fight/: stage and difficulty, then the run; state/, flows/, world; _temp/ dev tools
   dojo/            /dojo/: study and practice, each with its own game state
   settings/        /settings/ and the settings store
   about/           the game's own pages in Markdown: /how-to-play/, /credits/
@@ -66,9 +66,9 @@ Rules the linter enforces:
 Conventions the linter can't check:
 
 - A game mode's state is created when the mode starts and dropped when it ends or its route
-  unmounts. Only `settings`, `selection`, `highScores`, `lastRun` and the quiz `library` are
+  unmounts. Only `settings`, `selection`, `quizDifficulties`, `highScores`, `stageResults`, `lastRun` and the quiz `library` are
   app-wide. Flows take the game (`RunGame`) as an argument.
-- Change a store through its actions. Fixtures and tests start a store from a state by passing it
+- Change a store through its actions. Tests start a store from a state by passing it
   to the factory (`createRunGame({ life: … })`), not by writing to it.
 
 ## Folder ownership
@@ -94,14 +94,12 @@ request. No `oxlint-disable` without a comment saying why.
 ## Seeing your work
 
 ```sh
-pnpm dev                                  # the game
-pnpm dev  # then open /fight/?fixture=ambush-multiple
-pnpm dev  # then open /fight/?fixture=running&stage=rice-fields
+pnpm dev   # the game
 ```
 
-Fixtures put the stores into a named state without playing a run, so a screen can be built and
-screenshotted on its own. `/fight/?fixture=` with an unknown name logs the list. They are dev-only; add
-the ones your track needs in `apps/game/src/fight/_temp/fixtures.mts`.
+In dev builds the quizzes menu lists the sample quizzes from `docs/testdata/` (your own in
+`local/` too) next to the fixture quiz, so you can choose one and play without loading it. The
+fight setup has a button to unlock or lock every stage of the chosen quiz.
 
 ## Conventions
 

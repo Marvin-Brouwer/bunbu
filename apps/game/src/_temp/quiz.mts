@@ -1,6 +1,6 @@
 /**
- * A tiny quiz the fixtures build their states from, and the quiz a dev run starts on. Temporary:
- * it goes once quizzes load for real. The real samples are in `docs/testdata/`.
+ * A tiny quiz the tests build their states from, and the quiz a dev run starts on. The real
+ * samples are in `docs/testdata/`, and on the quizzes menu in dev builds (`sample-quizzes.mts`).
  */
 
 import type { BunbuData, Markdown } from '@bunbu/data'
@@ -53,7 +53,7 @@ export const fixtureQuiz: BunbuData = {
 	],
 }
 
-/** Seven options on seven marks, for the bundling fixture. */
+/** Seven options on seven marks, for the bundling tests. */
 export const manyOptions = [
 	'`GET`', '`HEAD`', '`POST`', '`PUT`', '`PATCH`', '`DELETE`', '`OPTIONS`',
 ].map((answer, index) => ({ answer: markdown(answer), correct: index < 3 }))

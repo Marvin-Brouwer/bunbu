@@ -1,6 +1,6 @@
 /**
  * Randomness for the rules that shuffle: the question order, the options, the marks and the
- * bundling of options onto ninjas. The game passes `Math.random`; tests and fixtures pass a
+ * bundling of options onto ninjas. The game passes `Math.random`; tests pass a
  * seeded one so the same opening comes out every time.
  */
 
