@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { fixtureQuiz } from '../../_temp/quiz.mts'
 import { seeded } from '../../_temp/random.mts'
 import { createPracticeGame, percentRight, type PracticeGame } from '../state/practice.mts'
-import { beginPractice, commitPractice, practiceOpeningSeconds, practiceOrder, practiseAgain, preparePractice, progressOf, tickPractice } from './practice.mts'
+import { beginPractice, commitPractice, nextQuestionSeconds, practiceOrder, practiseAgain, preparePractice, progressOf, tickPractice } from './practice.mts'
 
 /** Picks the right answer on the open ambush: every correct option, in its place for `order`. */
 function pickRight(game: PracticeGame): void {
@@ -83,16 +83,33 @@ describe('practice', () => {
 	it('opens the first question on Start, without a time limit', () => {
 		const game = started()
 		expect(game.session.value.phase).toBe('practising')
-		expect(game.ambush.value).toMatchObject({ open: true, at: { question: 0, part: 0 }, seconds: 0, openingLeft: practiceOpeningSeconds })
+		expect(game.ambush.value).toMatchObject({ open: true, at: { question: 0, part: 0 }, seconds: 0, openingLeft: 0 })
 		expect(progressOf(game, game.ambush.value.at)).toBe('1 / 4')
 	})
 
-	it('counts a right answer and moves on to the next question', () => {
+	it('counts a right answer and opens the next question once the scroll has rolled up', () => {
 		const game = started()
 		pickRight(game)
 		commitPractice(game)
 		expect(game.tally.value).toMatchObject({ right: 1, wrong: 0 })
-		expect(game.ambush.value.at.question).toBe(1)
+		// Nothing to answer while the answered scroll rolls up, so its swipe zone can't answer the next one.
+		expect(game.ambush.value.open).toBe(false)
+		tickPractice(game, nextQuestionSeconds / 2)
+		expect(game.ambush.value.open).toBe(false)
+		tickPractice(game, nextQuestionSeconds / 2)
+		expect(game.ambush.value).toMatchObject({ open: true, at: { question: 1 } })
+	})
+
+	it("doesn't open the next question while paused", () => {
+		const game = started()
+		pickRight(game)
+		commitPractice(game)
+		game.session.value.pause()
+		tickPractice(game, nextQuestionSeconds)
+		expect(game.ambush.value.open).toBe(false)
+		game.session.value.resume()
+		tickPractice(game, nextQuestionSeconds)
+		expect(game.ambush.value.open).toBe(true)
 	})
 
 	it('counts a wrong answer and moves on: no miss screen yet', () => {
@@ -124,6 +141,7 @@ describe('practice', () => {
 		for (let asked = 0; asked < 4; asked++) {
 			pickRight(game)
 			commitPractice(game)
+			tickPractice(game, nextQuestionSeconds)
 		}
 		expect(game.session.value.phase).toBe('done')
 		expect(game.ambush.value.open).toBe(false)

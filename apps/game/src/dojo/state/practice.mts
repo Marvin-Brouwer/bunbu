@@ -58,6 +58,11 @@ export type SessionPhase = 'start' | 'practising' | 'paused' | 'done'
 
 export type SessionState = {
 	readonly phase: SessionPhase
+	/**
+	 * Seconds until the next question opens, `0` when none is waiting: the scroll just answered rolls
+	 * up first, so its swipe zone is gone before there is a new question to answer.
+	 */
+	readonly nextIn: number
 }
 
 export type SessionActions = {
@@ -67,12 +72,16 @@ export type SessionActions = {
 	resume: () => void
 	/** The last question is answered. */
 	finish: () => void
+	/** The next question opens in `seconds`. */
+	waitForNext: (seconds: number) => void
+	/** Counts the wait for the next question down; `true` once it is up. */
+	countDown: (delta: number) => boolean
 }
 
 /** The store, with its actions on its state. Change it through those, not `update`. */
 export type Session = Store<SessionState & SessionActions>
 
-export const noSession: SessionState = { phase: 'start' }
+export const noSession: SessionState = { phase: 'start', nextIn: 0 }
 
 export function createSession(initial: SessionState = noSession): Session {
 	const store: Session = createStore<SessionState & SessionActions>({
@@ -82,7 +91,7 @@ export function createSession(initial: SessionState = noSession): Session {
 				refuse('session.begin', `phase is ${store.value.phase}`)
 				return
 			}
-			store.update(() => ({ phase: 'practising' }))
+			store.update(() => ({ phase: 'practising', nextIn: 0 }))
 		},
 		pause: () => {
 			if (store.value.phase !== 'practising') return
@@ -92,7 +101,15 @@ export function createSession(initial: SessionState = noSession): Session {
 			if (store.value.phase !== 'paused') return
 			store.update(() => ({ phase: 'practising' }))
 		},
-		finish: () => { store.update(() => ({ phase: 'done' })) },
+		finish: () => { store.update(() => ({ phase: 'done', nextIn: 0 })) },
+		waitForNext: (seconds) => { store.update(() => ({ nextIn: seconds })) },
+		countDown: (delta) => {
+			const { nextIn } = store.value
+			if (nextIn === 0) return false
+			const left = Math.max(0, nextIn - delta)
+			store.update(() => ({ nextIn: left }))
+			return left === 0
+		},
 	})
 	return store
 }

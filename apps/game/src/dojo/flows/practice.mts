@@ -1,7 +1,8 @@
 /**
  * Practice ([dojo.md](../../../../../docs/design/dojo.md#practice)): the ambush without the risk.
  * The same questions and rounds as a run, but no timer, no life bar and no score: each answer
- * counts toward the right vs wrong tally, and the next question opens once it is in.
+ * counts toward the right vs wrong tally, and the next question opens once the scroll answered
+ * has rolled up.
  */
 
 import type { BunbuData } from '@bunbu/data'
@@ -13,10 +14,10 @@ import { refuse, snapshot } from '../../_shared/state/store.mts'
 import type { PracticeGame } from '../state/practice.mts'
 
 /**
- * Seconds before a new scroll can be answered: the one answered rolls up first. No ninjas come in,
- * so it is shorter than a run's telegraph.
+ * Seconds after a right answer before the next question opens: the scroll answered rolls up first
+ * (its `vanish` in scroll.css), so its swipe zone can't answer a question not on screen yet.
  */
-export const practiceOpeningSeconds = 0.6
+export const nextQuestionSeconds = 0.65
 
 /**
  * The questions practice asks, as indices into the quiz: every question, or only `missed` when it
@@ -65,13 +66,18 @@ export function openPractice(game: PracticeGame, random: Random = Math.random): 
 	}
 	const { quiz, refs } = snapshot<QuizState & QuizActions>(game.quiz)
 	if (quiz === undefined) return
-	game.ambush.value.start(openingOf(quiz, refs, at, { timeScale: undefined, random }), practiceOpeningSeconds)
+	// No ninjas come in, so the scroll can be answered as soon as it is there.
+	game.ambush.value.start(openingOf(quiz, refs, at, { timeScale: undefined, random }), 0)
 }
 
-/** Counts the scroll's entrance down. There is no time limit, so nothing else runs out. */
-export function tickPractice(game: PracticeGame, realDelta: number): void {
+/**
+ * Counts down the wait for the next question, and opens it when it is up. There is no time limit,
+ * so nothing else runs out.
+ */
+export function tickPractice(game: PracticeGame, realDelta: number, random: Random = Math.random): void {
 	if (game.session.value.phase !== 'practising') return
 	game.ambush.value.tick(realDelta)
+	if (game.session.value.countDown(realDelta)) openPractice(game, random)
 }
 
 /**
@@ -97,9 +103,12 @@ export function commitPractice(game: PracticeGame, random: Random = Math.random)
 		game.tally.value.carryOn()
 	}
 
+	// The next round of the question at once, its scroll revealed under this one; the next
+	// question once this scroll has rolled up.
 	const next = game.quiz.value.current()
 	if (next?.question === result.at.question) openNextRound(game, next, options, random)
-	else openPractice(game, random)
+	else if (next === undefined) openPractice(game, random)
+	else game.session.value.waitForNext(nextQuestionSeconds)
 }
 
 /** The next round of a question, with the options that were in the round before still where they were. */
