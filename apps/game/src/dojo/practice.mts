@@ -17,7 +17,8 @@ import { selection } from '../_shared/state/selection.mts'
 import { snapshot } from '../_shared/state/store.mts'
 import { show } from '../canvas/stage.mts'
 import { QuizzesRoute } from '../quizzes/_routes.mts'
-import { DojoRoute, mistakesOnly } from './_routes.mts'
+import { DojoRoute, mistakesOnly, withMistakes } from './_routes.mts'
+import { goBack } from '../_shared/menu/back-link.mts'
 import { preparePractice } from './flows/practice.mts'
 import { PracticeStart } from './practice-start.mts'
 import { missedQuestions } from './state/mistakes.mts'
@@ -105,7 +106,7 @@ const PracticeSession = component<PracticeSessionOptions>({
 					links: [
 						{
 							label: 'Back',
-							action: () => { history.back() },
+							action: () => { goBack(withMistakes(href.for(DojoRoute), missed.length > 0)) },
 						},
 					],
 				})

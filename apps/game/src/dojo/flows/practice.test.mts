@@ -13,7 +13,9 @@ describe('practiceOrder', () => {
 	})
 
 	it('shuffles them with random', () => {
-		expect(practiceOrder(fixtureQuiz, undefined, seeded(3)).toSorted((first, second) => first - second)).toEqual(all)
+		const shuffled = practiceOrder(fixtureQuiz, undefined, seeded(3))
+		expect(shuffled).not.toEqual(all)
+		expect(shuffled.toSorted((first, second) => first - second)).toEqual(all)
 	})
 
 	it('asks only the mistakes when they are given', () => {
@@ -49,6 +51,7 @@ describe('session', () => {
 		session.value.pause()
 		expect(session.value.phase).toBe('paused')
 		session.value.resume()
+		expect(session.value.phase).toBe('practising')
 		session.value.finish()
 		expect(session.value.phase).toBe('done')
 	})

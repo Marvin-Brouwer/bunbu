@@ -18,6 +18,9 @@
 	gap: 1rem;
 	max-width: 34rem;
 	margin-inline: auto;
+	/* A long quiz title can make the heading tall: the screen scrolls then, so Start stays in reach. */
+	overflow-y: auto;
+	overscroll-behavior: contain;
 	padding: max(1.25rem, env(safe-area-inset-top)) max(1.25rem, env(safe-area-inset-right)) max(1.25rem, env(safe-area-inset-bottom)) max(1.25rem, env(safe-area-inset-left));
 	box-sizing: border-box;
 }
