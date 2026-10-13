@@ -114,6 +114,8 @@ describe('parsing what was saved', () => {
 		expect(parseSettings({ difficulty: 'novice' })).toEqual({})
 		expect(parseSettings({ difficulty: 'toString' })).toEqual({})
 		expect(parseSettings(undefined)).toEqual({})
+		expect(parseSettings({ speechRate: 2.5, voices: { en: 'daniel' } })).toEqual({ speechRate: 2.5, voices: { en: 'daniel' } })
+		expect(parseSettings({ speechRate: 1.25, voices: { en: 3 } })).toEqual({})
 	})
 
 	it('keeps the high scores that are valid', () => {

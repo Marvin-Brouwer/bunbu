@@ -14,7 +14,7 @@ import { highScores } from '../../fight/state/highscores.mts'
 import { lastRun, type LastRunState } from '../../fight/state/lastrun.mts'
 import { pointsPerCorrect, type HighScore } from '../../fight/state/score.mts'
 import { stageResults, type StageResult } from '../../fight/state/stage-results.mts'
-import { difficulties, settings, type SettingsState } from '../../settings/state/settings.mts'
+import { difficulties, settings, speechRates, type SettingsState } from '../../settings/state/settings.mts'
 import { builtStages, selection, stages, type Stage } from '../state/selection.mts'
 import { snapshot } from '../state/store.mts'
 import { library, type LibraryActions, type LibraryEntry, type LibraryState } from './library.mts'
@@ -31,6 +31,8 @@ const settingFields = {
 	difficulty: type.enumerated(...difficulties),
 	haptics: type('boolean'),
 	volume: type('0 <= number <= 1'),
+	speechRate: type.enumerated(...speechRates),
+	voices: type('Record<string, string>'),
 } satisfies Record<keyof SettingsState, Type>
 
 /** Settings are kept field by field: a field that is missing or invalid keeps its default. */
@@ -151,7 +153,7 @@ export function persistApp(signal: AbortSignal): Promise<void> {
 	const chosen = parseSelection(read('selection'))
 	if (chosen.stage !== undefined) selection.value.chooseStage(chosen.stage)
 
-	save(settings, 'settings', signal, ({ difficulty, haptics, volume }) => ({ difficulty, haptics, volume }))
+	save(settings, 'settings', signal, ({ difficulty, haptics, volume, speechRate, voices }) => ({ difficulty, haptics, volume, speechRate, voices }))
 	save(highScores, 'high-scores', signal, ({ scores }) => scores)
 	save(stageResults, 'stage-results', signal, ({ results }) => results)
 	save(lastRun, 'last-run', signal, ({ quiz, misses }) => ({ quiz, misses }))

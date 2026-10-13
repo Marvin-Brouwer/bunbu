@@ -14,10 +14,6 @@ export type ReadingState = {
 	/** Index into the quiz's `order` of the card on screen. */
 	readonly card: number
 	readonly playing: boolean
-	/** Speech rate, `1` is normal. */
-	readonly rate: number
-	/** The chosen voice by its `voiceURI`, or `undefined` for the system's own for the quiz's language. */
-	readonly voice: string | undefined
 	/** The word being spoken: a character range in one of the card's blocks of text, for the highlight. */
 	readonly word: { readonly block: number; readonly start: number; readonly end: number } | undefined
 }
@@ -27,11 +23,8 @@ export type ReadingActions = {
 	pause: () => void
 	/** Back to the first card. */
 	restart: () => void
-	/** The card the reading reached. */
+	/** The card the reading reached, or that was skipped to. */
 	reach: (card: number) => void
-	/** The speed, kept between {@link slowest} and {@link fastest}. */
-	setRate: (rate: number) => void
-	chooseVoice: (voice: string | undefined) => void
 	/** The word the speech engine reached, or `undefined` between words. */
 	speak: (word: ReadingState['word']) => void
 }
@@ -39,12 +32,7 @@ export type ReadingActions = {
 /** The store, with its actions on its state. Change it through those, not `update`. */
 export type Reading = Store<ReadingState & ReadingActions>
 
-export const notReading: ReadingState = { card: 0, playing: false, rate: 1, voice: undefined, word: undefined }
-
-export const slowest = 0.5
-export const fastest = 2
-/** How much the − and + of the speed change it. */
-export const rateStep = 0.25
+export const notReading: ReadingState = { card: 0, playing: false, word: undefined }
 
 export function createReading(initial: ReadingState = notReading): Reading {
 	const change = (next: Partial<ReadingState>) => { store.update(() => next) }
@@ -54,8 +42,6 @@ export function createReading(initial: ReadingState = notReading): Reading {
 		pause: () => { change({ playing: false }) },
 		restart: () => { change({ card: 0, word: undefined }) },
 		reach: (card) => { change({ card, word: undefined }) },
-		setRate: (rate) => { change({ rate: Math.min(fastest, Math.max(slowest, rate)) }) },
-		chooseVoice: (voice) => { change({ voice }) },
 		speak: (word) => { change({ word }) },
 	})
 	return store

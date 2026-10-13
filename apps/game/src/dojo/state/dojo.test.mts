@@ -11,14 +11,6 @@ describe('dojo', () => {
 		expect(Object.keys(practice)).not.toContain('life')
 	})
 
-	it('keeps the study speed between half and double', () => {
-		const study = createStudyGame()
-		study.reading.value.setRate(3)
-		expect(study.reading.value.rate).toBe(2)
-		study.reading.value.setRate(0.25)
-		expect(study.reading.value.rate).toBe(0.5)
-	})
-
 	it('restarts study at the first card', () => {
 		const study = createStudyGame()
 		study.reading.value.reach(3)

@@ -129,7 +129,7 @@ See [dojo.md](dojo.md) for the rules.
 - Progress (`12 / 40`), `▶ playing · shuffled loop`.
 - The word being spoken is highlighted: grey background and underline.
 - Card: type, query, and **Correct answer**. `multiple` lists all correct options, `order` the right sequence, `solutions` each solution with yes/no, `match` each row with its answer. (Questions have no category in the [data format](data-format.md#common-fields), so the card shows none.)
-- **Pause** (**Play** while paused), **Restart**, **Voice** (`System (en-US)`), **Speed** (`− 1.5× +`).
+- The card is text that scrolls on the page. **Pause** (**Play** while paused) and **Skip** are docked at the bottom; a settings button at the top right opens the settings in place, with the **Voice** and the **Reading speed** (a notched slider, `1.5x speed`). The wireframe's scroll, Restart and the controls under the card are gone.
 
 ### D3 Practice start
 

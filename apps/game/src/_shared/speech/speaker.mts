@@ -49,6 +49,22 @@ export function voicesFor(language: string): SpeechSynthesisVoice[] {
 		.toSorted((first, second) => rank(first) - rank(second) || first.name.localeCompare(second.name))
 }
 
+/** The chosen voice for a language, when it is there; `undefined` for the system's own. */
+export function voiceFor(language: string, voiceURI: string | undefined): SpeechSynthesisVoice | undefined {
+	return voiceURI === undefined ? undefined : voicesFor(language).find((voice) => voice.voiceURI === voiceURI)
+}
+
+/** A language or a voice's language in words: `English`, `British English`. */
+export function languageName(tag: string): string {
+	try {
+		return new Intl.DisplayNames(['en'], { type: 'language' }).of(tag.replaceAll('_', '-')) ?? tag
+	}
+	catch {
+		// Not a language tag the browser knows.
+		return tag
+	}
+}
+
 /**
  * Calls `listener` with the voices for `language` now and whenever they change. Safari fills the
  * list without telling, so it is looked at a few times while it is still empty.
@@ -99,6 +115,10 @@ export type Speaker = {
 	/** Stops; {@link Speaker.resume} starts the line it was on again. */
 	readonly pause: () => void
 	readonly resume: () => void
+	/** Goes on from `place`: straight away while reading, from there on resuming while paused. */
+	readonly moveTo: (place: number) => void
+	/** The line it is on, or resumes from. */
+	readonly place: () => number
 	/** The voice, or `undefined` for the system's own for the language. Takes effect from the line being read. */
 	readonly setVoice: (voice: SpeechSynthesisVoice | undefined) => void
 	/** The speed, `1` is normal. Takes effect from the line being read. */
@@ -264,6 +284,11 @@ export function createSpeaker(options: SpeakerOptions, signal: AbortSignal): Spe
 		resume() {
 			play(current)
 		},
+		moveTo(place) {
+			if (playing) play(place)
+			else current = place
+		},
+		place: () => current,
 		setVoice(next) {
 			voice = next
 			if (playing) play(current)
