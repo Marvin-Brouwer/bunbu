@@ -1,6 +1,7 @@
 import { component } from '@rooted/components'
 import { href } from '@rooted/router'
-import { back, Placeholder } from '../_shared/placeholder.mts'
+import { goBack } from '../_shared/menu/back-link.mts'
+import { Placeholder } from '../_shared/placeholder.mts'
 import { PracticeRoute, StudyRoute } from './_routes.mts'
 
 export const DojoMenu = component({
@@ -13,7 +14,12 @@ export const DojoMenu = component({
 				links: [
 					{ label: 'Study', href: href.for(StudyRoute) },
 					{ label: 'Practice', href: href.for(PracticeRoute) },
-					back,
+					{
+						label: 'Back',
+						action: () => {
+							goBack(href.path('/'))
+						},
+					},
 				],
 			})
 		)
