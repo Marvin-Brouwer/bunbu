@@ -182,7 +182,8 @@ export function createSpeaker(options: SpeakerOptions, signal: AbortSignal): Spe
 		const done = () => {
 			held.delete(utterance)
 			if (ours !== generation) return
-			options.onSaid?.([])
+			// Android can end a line after the next one started; that one is being said now.
+			if (current === place) options.onSaid?.([])
 			if (lineAt(place + 1) !== undefined) return
 			playing = false
 			options.onEnd?.()
