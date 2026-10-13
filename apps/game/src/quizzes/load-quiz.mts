@@ -1,5 +1,5 @@
 /**
- * Where a quiz file comes in: the Load a quiz button chooses one, or a `.yaml` or `.bunbu` file is
+ * Where a quiz file comes in: the Load quiz button chooses one, or a `.yaml` or `.bunbu` file is
  * dropped anywhere on the screen. The drop area under the button only says so; once a file is
  * dragged over the screen, it covers the whole screen. Touch phones don't drag files, so they only
  * get the button. Each file read goes to `read`, which the shelf turns into a new card or into the
@@ -8,7 +8,6 @@
 
 import { fileExtension } from '@bunbu/data'
 import { component } from '@rooted/components'
-import { MenuButton } from '../_shared/menu/menu-button.mts'
 import { quizExtensions, readQuiz, type ReadQuiz } from '../_shared/quiz/read-quiz.mts'
 import styles from './quiz-shelf.css'
 
@@ -33,7 +32,7 @@ export type LoadQuizOptions = {
 export const LoadQuiz = component<LoadQuizOptions>({
 	name: 'load-quiz',
 	styles,
-	onMount({ append, create, element, options, signal }) {
+	onMount({ append, element, options, signal }) {
 		// One file at a time, also across drops: a big batch doesn't hold every file in memory at once,
 		// and the file dropped or chosen last is always the one chosen in the end.
 		let queue = Promise.resolve()
@@ -86,14 +85,53 @@ export const LoadQuiz = component<LoadQuizOptions>({
 		})
 
 		append(
-			picker,
-			create(MenuButton, {
-				label: '+ Load a quiz',
-				action: () => {
-					picker.click()
-				},
+			element('div', {
+				classes: styles.loading,
+				children: [
+					picker,
+					element('div', {
+						classes: styles.load,
+						children: [
+							// Room for more ways to get a quiz later, such as a quiz builder.
+							element('div', {
+								classes: styles.loadText,
+								children: [
+									element('span', {
+										classes: styles.loadTitle,
+										textContent: 'Load a quiz',
+									}),
+									element('span', {
+										classes: styles.loadNote,
+										textContent: `A .yaml quiz you wrote, or a ${fileExtension} quiz someone shared`,
+									}),
+								],
+							}),
+							element('button', {
+								type: 'button',
+								classes: [
+									styles.cardAction,
+									styles.loadButton,
+								],
+								children: [
+									element('span', {
+										classes: [
+											styles.cardIcon,
+											styles.uploadIcon,
+										],
+									}),
+									'Load quiz',
+								],
+								on: {
+									click() {
+										picker.click()
+									},
+								},
+							}),
+						],
+					}),
+					drop,
+				],
 			}),
-			drop,
 		)
 
 		if (touchPhone()) return

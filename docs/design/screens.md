@@ -30,7 +30,7 @@ Wireframe source: the project's design canvas (`design/wireframes/*.dc.html` and
 
 A screen of its own, so the title stays calm:
 
-- A **Load a quiz** button to choose a `.yaml` or `.bunbu` file, and under it an area that says a file can be dropped. Dragging a file over the screen makes that area cover the whole screen, so the file can be dropped anywhere; it shrinks back on drop, when the file leaves the window, or on Escape. Touch phones don't drag files, so they only show the button.
+- A square red **Load quiz** button with an upload icon, with a line on what a quiz file is at its left, to choose a `.yaml` or `.bunbu` file, and under it an area that says a file can be dropped. Dragging a file over the screen makes that area cover the whole screen, so the file can be dropped anywhere; it shrinks back on drop, when the file leaves the window, or on Escape. Touch phones don't drag files, so they only show the button.
 - Why a file didn't load (by line), and which questions of the chosen quiz won't fit in a fight. Only `.yaml`, `.yml` and `.bunbu` files are read: a `.yaml` file must start with the schema line and a `.bunbu` file with Bunbu's own first bytes, or it is not a quiz.
 - The loaded quizzes as cards, one under the other, with title, `version`, pass mark and best score (`v3 · pass 70% · best 2,480`, or `new`). Tapping one chooses it. Two square red buttons with an icon and a small label sit side by side on each card: **Download** saves its `.bunbu` file, **Remove** asks first, on a scroll with **Remove** and **Cancel**; its high score and stage results stay, so they're back if it's loaded again.
 
