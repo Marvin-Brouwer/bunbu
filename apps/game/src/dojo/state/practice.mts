@@ -33,6 +33,15 @@ export type Tally = Store<TallyState & TallyActions>
 
 export const noTally: TallyState = { right: 0, wrong: 0, missed: false }
 
+/**
+ * The running right vs wrong percentage, rounded down so 99.5% is never shown as all right;
+ * `undefined` before the first answer. It isn't a score and isn't stored.
+ */
+export function percentRight({ right, wrong }: Pick<TallyState, 'right' | 'wrong'>): number | undefined {
+	const answered = right + wrong
+	return answered === 0 ? undefined : Math.floor((right / answered) * 100)
+}
+
 export function createTally(initial: TallyState = noTally): Tally {
 	const store: Tally = createStore<TallyState & TallyActions>({
 		...initial,

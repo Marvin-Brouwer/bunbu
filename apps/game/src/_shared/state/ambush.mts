@@ -94,8 +94,11 @@ export type AmbushResult = {
 }
 
 export type AmbushActions = {
-	/** Opens an ambush on a question. */
-	start: (opening: AmbushOpening) => void
+	/**
+	 * Opens an ambush on a question. `openingLeft` is the entrance before the scroll can be
+	 * answered: the ninja telegraph of a run by default, shorter in practice, where nobody comes in.
+	 */
+	start: (opening: AmbushOpening, openingLeft?: number) => void
 	/**
 	 * Opens the next round of the question just answered, in the same attack: the next scroll
 	 * comes after `nextScrollSeconds`, and the time goes on from `secondsLeft`.
@@ -160,8 +163,8 @@ export function createAmbush(initial: AmbushState = noAmbush): Ambush {
 	const store: Ambush = createStore<AmbushState & AmbushActions>({
 		...initial,
 
-		start(opening) {
-			store.update(() => ({ ...opening, open: true, openingLeft: openingSeconds, secondsLeft: opening.seconds }))
+		start(opening, openingLeft = openingSeconds) {
+			store.update(() => ({ ...opening, open: true, openingLeft, secondsLeft: opening.seconds }))
 		},
 
 		nextRound(opening, secondsLeft) {

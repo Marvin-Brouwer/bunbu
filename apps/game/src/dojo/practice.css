@@ -54,3 +54,150 @@
 	text-align: center;
 	color: var(--ink-soft);
 }
+
+/*
+ * D4 and D5: the layers over the dojo world, back to front, as in a run: the bar on top, the
+ * scroll with the swipe zone at its foot, the pause and the end of practice.
+ */
+.practice,
+.layer {
+	position: absolute;
+	inset: 0;
+}
+
+/* Layers pass pointer events through; what the player can touch turns them back on. */
+.layer {
+	pointer-events: none;
+	display: grid;
+}
+
+.layer > * {
+	pointer-events: auto;
+}
+
+.layer.top {
+	align-content: start;
+	z-index: 1;
+}
+
+.layer.scroll {
+	align-content: start;
+	padding: 3.5rem 0.75rem 0;
+}
+
+.layer.overlays {
+	align-content: stretch;
+	z-index: 2;
+}
+
+.layer.overlays:empty {
+	display: none;
+}
+
+/* Pause, the right vs wrong count and read aloud, in a row at the top. */
+.bar {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	padding: max(0.4rem, env(safe-area-inset-top)) max(0.75rem, env(safe-area-inset-right)) 0 max(0.75rem, env(safe-area-inset-left));
+	pointer-events: none;
+}
+
+.bar > * {
+	pointer-events: auto;
+}
+
+.iconButton {
+	display: grid;
+	place-items: center;
+	flex: none;
+	width: 2.75rem;
+	height: 2.75rem;
+	padding: 0;
+	border: var(--frame);
+	cursor: pointer;
+	box-shadow: var(--shadow);
+}
+
+.iconButton:disabled {
+	opacity: 0.5;
+	cursor: default;
+}
+
+.iconButton[aria-pressed='true'] {
+	background: var(--ink);
+	color: var(--paper-light);
+}
+
+.iconButton:focus-visible {
+	outline: 3px solid var(--indigo);
+	outline-offset: 2px;
+}
+
+/* Two ink strokes, a stroke's width apart. */
+.pause::before {
+	content: '';
+	box-sizing: border-box;
+	width: 0.9rem;
+	height: 1.1rem;
+	border-inline: 0.3rem solid currentcolor;
+}
+
+/* Not a score: plain, between the two buttons. */
+.tally {
+	flex: 1;
+	margin: 0;
+	padding: 0.45rem 0.6rem;
+	border: var(--frame);
+	font-family: var(--font-mono);
+	font-size: 0.8rem;
+	text-align: center;
+	font-variant-numeric: tabular-nums;
+	box-shadow: var(--shadow);
+}
+
+/* Paused, and the end of practice: a scroll over the dimmed world. */
+.dialog {
+	display: grid;
+	align-content: center;
+	min-height: 100%;
+	padding: max(2rem, env(safe-area-inset-top)) max(0.75rem, env(safe-area-inset-right)) max(2rem, env(safe-area-inset-bottom)) max(0.75rem, env(safe-area-inset-left));
+	box-sizing: border-box;
+	background: rgb(27 26 24 / 55%);
+	color: var(--ink);
+}
+
+.sheetBody {
+	display: grid;
+	align-content: start;
+	gap: 0.75rem;
+}
+
+.sheetBody p {
+	margin: 0;
+}
+
+.dialogTitle {
+	margin: 0;
+	font-family: var(--font-display);
+	font-size: 1.75rem;
+}
+
+.dialogNote {
+	font-family: var(--font-mono);
+	font-size: 0.8rem;
+	color: var(--ink-soft);
+}
+
+.percent {
+	font-family: var(--font-display);
+	font-size: 3rem;
+	font-weight: 700;
+	line-height: 1;
+}
+
+.actions {
+	display: grid;
+	gap: 0.75rem;
+	padding: 0 1rem 1rem;
+}

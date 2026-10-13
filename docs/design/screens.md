@@ -150,6 +150,10 @@ See [dojo.md](dojo.md) for the rules.
 
 Like 4A, with `PRACTICE · SINGLE · 8 / 40` and the running right vs wrong percentage. A speaker button reads the card aloud. No timer, no life bar, the dummies don't move.
 
+- On top, in a row: the pause button, `✓ 6 · ✗ 2 · 75% right` and the speaker button, which reads the query and the options and stops when pressed again or when the scroll closes.
+- Paused: a scroll with the quiz, the count so far, **Resume** and **Leave practice**. No 3-2-1, as there is no timer.
+- After the last question: **Practice done** with the final percentage and the right and wrong count, then **Again** (the same questions reshuffled, a fresh count) and **Dojo**.
+
 ### D5 Practice miss
 
 <img src="screens/d5-practice-miss.png" alt="Practice miss" width="195">
