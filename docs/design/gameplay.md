@@ -77,12 +77,10 @@ Every ninja gets its own verdict from what was answered: **slain** when its opti
 
 There is no timer bar: the ambush opens in slow motion and **the ninjas creeping in are the timer**. They keep their distance, creeping about halfway in; just before the time runs out they stop and wind up one after another, in a different order each time.
 
-On a phone in portrait the scroll covers the whole width, so the ninjas have to be shown:
+The ninjas close in on the samurai straight ahead, so the scroll hides them: on a phone in portrait it covers the whole width, and on a wider screen the fight is still behind it. So the ninjas have to be shown:
 
 - **Room below the scroll.** When the screen is tall enough, the scroll stops short of the bottom (at most a fifth of the screen, and only while the scroll keeps room to read). During the ambush the camera frames the fight in that room: the samurai near the bottom edge, the ninjas running in from just under the scroll. When the scroll rolls up, the view eases back.
-- **The duel strip.** A low strip between the HUD's top row and the scroll shows the samurai and a ninja as silhouettes against the sky, walking toward each other as the ninjas close in. They meet in the middle when the time is up. It shows on every phone in portrait, and is all there is when the screen is too short for the room below.
-
-Wider than the scroll (a tablet, landscape), the world shows beside it and needs neither.
+- **The duel strip.** A low strip between the HUD's top row and the scroll shows the samurai and a ninja as silhouettes against the sky, walking toward each other as the ninjas close in. They meet in the middle when the time is up. It shows on every screen, and is all there is when the screen is too short for the room below, or wider than the scroll (a tablet, landscape, a desktop), where the world shows beside the scroll and needs no room below it.
 
 When the quiz sets [`timePerQuestion`](data-format.md#document-structure), that is the time of the ambush, all its rounds together (the rows of a `match`, the solutions of a `solutions`):
 

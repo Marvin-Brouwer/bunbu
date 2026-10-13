@@ -21,8 +21,14 @@ describe('ambush room', () => {
 		expect(ambushRoomOf(375, 667)).toEqual({ below: 0, strip: (ambushRoomConfig.strip + ambushRoomConfig.stripGap) * 16 })
 	})
 
-	it('needs neither when the world shows beside the scroll', () => {
-		expect(ambushRoomOf(1024, 768)).toEqual(noRoom)
-		expect(ambushRoomOf(844, 390)).toEqual(noRoom)
+	it('shows only the duel strip when the world shows beside the scroll, where the fight is behind it', () => {
+		const onlyStrip = { below: 0, strip: (ambushRoomConfig.strip + ambushRoomConfig.stripGap) * 16 }
+		expect(ambushRoomOf(1024, 768)).toEqual(onlyStrip)
+		expect(ambushRoomOf(1914, 990)).toEqual(onlyStrip)
+		expect(ambushRoomOf(844, 390)).toEqual(onlyStrip)
+	})
+
+	it('has no room before the run is laid out', () => {
+		expect(ambushRoomOf(0, 0)).toEqual(noRoom)
 	})
 })
