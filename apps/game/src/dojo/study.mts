@@ -20,7 +20,7 @@ import { SettingsForm } from '../_shared/menu/settings-form.mts'
 import menuStyles from '../_shared/menu/menu.css'
 import { keepScreenOn } from '../_shared/screen-on.mts'
 import { pronouncerOf, type SpokenLine } from '../_shared/speech/line.mts'
-import { readableMarkdown, readableText, type Readable } from '../_shared/speech/readable.mts'
+import { readableMarkdown, readableText } from '../_shared/speech/readable.mts'
 import { canSpeak, createSpeaker, voiceFor, watchVoices } from '../_shared/speech/speaker.mts'
 import { shuffle } from '../_shared/state/random.mts'
 import { selection } from '../_shared/state/selection.mts'
@@ -36,6 +36,8 @@ import styles from './study.css'
 
 /** The highlight of what is being said ([CSS Custom Highlight API](https://developer.mozilla.org/docs/Web/API/CSS_Custom_Highlight_API)). */
 const highlightName = 'spoken-word'
+/** How many frames to look again for text that isn't on screen yet. */
+const highlightTries = 10
 
 /** Each line of the loop, with the card it is on. */
 type Entry = {
@@ -150,14 +152,12 @@ const StudySession = component<StudySessionOptions>({
 			classes: styles.card,
 		})
 		let blockElements: HTMLElement[] = []
-		let readables: (Readable | undefined)[] = []
 
 		const showCard = (index: number) => {
 			const card = cardOf(index)
 			if (card === undefined) return
 			const sources = blocksOf(card)
 			blockElements = []
-			readables = []
 			const next = (classes: CssClass) => {
 				const block = create(CardBlock, {
 					source: sources[blockElements.length] ?? '',
@@ -199,17 +199,24 @@ const StudySession = component<StudySessionOptions>({
 			)
 		}
 
-		/** Marks what is being said, where the browser can mark text. */
-		const highlight = (said: ReadingState['said']) => {
+		/**
+		 * Marks what is being said, where the browser can mark text. A new card's Markdown shows a
+		 * moment after the card, as its first line starts, so a range not there yet is looked for again
+		 * on the next frames.
+		 */
+		const highlight = (said: ReadingState['said'], triesLeft = highlightTries) => {
 			if (typeof CSS === 'undefined' || !('highlights' in CSS)) return
 			const ranges = said.flatMap(({ block, start, end }) => {
 				const host = blockElements[block]
 				if (host === undefined) return []
-				readables[block] ??= readableText(host)
-				return readables[block].rangeOf(start, end) ?? []
+				return readableText(host).rangeOf(start, end) ?? []
 			})
 			if (ranges.length === 0) CSS.highlights.delete(highlightName)
 			else CSS.highlights.set(highlightName, new Highlight(...ranges))
+			if (ranges.length === said.length || triesLeft === 0) return
+			requestAnimationFrame(() => {
+				if (sameSaid(reading.value.said, said)) highlight(said, triesLeft - 1)
+			})
 		}
 		signal.addEventListener('abort', () => { highlight([]) }, { once: true })
 
