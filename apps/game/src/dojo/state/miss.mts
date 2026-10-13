@@ -1,7 +1,7 @@
 /**
  * What the practice miss screen ([D5](../../../../../docs/design/screens.md#d5-practice-miss)) says
  * about a wrong answer: next to each option whether it was right and what the player picked, and
- * the line read aloud, "The answer is …".
+ * what is read aloud, "The answer is …".
  */
 
 import type { AmbushKind, AmbushOption, AmbushState } from '../../_shared/state/ambush.mts'
@@ -32,18 +32,16 @@ export function verdictOf(kind: AmbushKind, option: AmbushOption): OptionVerdict
 	return option.pick > 0 ? { sign: '✗', text: 'your pick' } : undefined
 }
 
-/** `A`, `A and B`, `A, B and C`. */
-function listOf(items: readonly string[], last = ' and '): string {
-	if (items.length <= 1) return items.join('')
-	return `${items.slice(0, -1).join(', ')}${last}${items.at(-1)}`
-}
-
-/** The right answer as a sentence of quiz Markdown, to read aloud: "The answer is `alt`." */
-export function answerLineOf(ambush: Pick<AmbushState, 'kind' | 'options'>): string {
+/**
+ * The right answer as it is read aloud: a lead, then each answer as its own block of quiz Markdown,
+ * in order for `order`. The answers are kept whole, so a code block in one stays a code block,
+ * which isn't read, as in Study.
+ */
+export function answerBlocksOf(ambush: Pick<AmbushState, 'kind' | 'options'>): string[] {
 	if (ambush.kind === 'order') {
 		const ordered = ambush.options.filter((option) => option.rank > 0).toSorted((first, second) => first.rank - second.rank)
-		return `The order is ${listOf(ordered.map((option) => option.answer), ', then ')}.`
+		return ['The order is:', ...ordered.map((option) => option.answer)]
 	}
 	const right = ambush.options.filter((option) => option.correct).map((option) => option.answer)
-	return right.length === 1 ? `The answer is ${right[0]}.` : `The answers are ${listOf(right)}.`
+	return [right.length === 1 ? 'The answer is:' : 'The answers are:', ...right]
 }

@@ -14,13 +14,13 @@ import { arrows } from '../_shared/scroll/heading.mts'
 import scrollStyles from '../_shared/scroll/scroll.css'
 import { ScrollSheet } from '../_shared/scroll/scroll-sheet.mts'
 import { reviewOf } from '../_shared/state/review.mts'
-import { answerLineOf, verdictOf } from './state/miss.mts'
+import { answerBlocksOf, verdictOf } from './state/miss.mts'
 import type { Miss } from './state/practice.mts'
 import styles from './practice.css'
 
 /** What the miss screen reads aloud: "The answer is …", then the explanations. */
 export function missBlocksOf(quiz: BunbuData, miss: Miss): string[] {
-	return [answerLineOf(miss.ambush), ...reviewOf(quiz, miss.record)?.explanations ?? []]
+	return [...answerBlocksOf(miss.ambush), ...reviewOf(quiz, miss.record)?.explanations ?? []]
 }
 
 const markdownOf = (source: MarkdownText | string) => ({

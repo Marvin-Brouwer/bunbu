@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { AmbushOption } from '../../_shared/state/ambush.mts'
-import { answerLineOf, verdictOf } from './miss.mts'
+import { answerBlocksOf, verdictOf } from './miss.mts'
 
 const option = (answer: string, correct: boolean, pick = 0, rank = 0): AmbushOption =>
 	({ answer, correct, mark: 'up', ninja: 0, pick, source: 0, rank })
@@ -22,15 +22,20 @@ describe('verdictOf', () => {
 	})
 })
 
-describe('answerLineOf', () => {
-	it('says the one answer, or all of them', () => {
-		expect(answerLineOf({ kind: 'single', options: [option('`alt`', true), option('`title`', false)] })).toBe('The answer is `alt`.')
-		expect(answerLineOf({ kind: 'multiple', options: [option('GET', true), option('HEAD', true), option('POST', false), option('PUT', true)] }))
-			.toBe('The answers are GET, HEAD and PUT.')
+describe('answerBlocksOf', () => {
+	it('leads into the one answer, or all of them, each a block of its own', () => {
+		expect(answerBlocksOf({ kind: 'single', options: [option('`alt`', true), option('`title`', false)] })).toEqual(['The answer is:', '`alt`'])
+		expect(answerBlocksOf({ kind: 'multiple', options: [option('GET', true), option('HEAD', true), option('POST', false)] }))
+			.toEqual(['The answers are:', 'GET', 'HEAD'])
 	})
 
-	it('says an order in its order', () => {
+	it('gives an order in its order', () => {
 		const options = [option('Inline', true, 0, 3), option('User agent', true, 0, 1), option('Author', true, 0, 2), option('None', false)]
-		expect(answerLineOf({ kind: 'order', options })).toBe('The order is User agent, Author, then Inline.')
+		expect(answerBlocksOf({ kind: 'order', options })).toEqual(['The order is:', 'User agent', 'Author', 'Inline'])
+	})
+
+	it('keeps a code block answer whole', () => {
+		const code = '```html\n<img alt="Sales">\n```'
+		expect(answerBlocksOf({ kind: 'single', options: [option(code, true)] })[1]).toBe(code)
 	})
 })
