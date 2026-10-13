@@ -80,9 +80,15 @@
 	z-index: 1;
 }
 
+/*
+ * Below the bar, which grows with a phone's top safe area: the scroll moves down by as much, and
+ * a filled scroll is that much shorter, so its foot stays on screen.
+ */
 .layer.scroll {
+	--safe-top: max(0px, env(safe-area-inset-top) - 0.4rem);
+	--scroll-reserve: var(--safe-top);
 	align-content: start;
-	padding: 3.5rem 0.75rem 0;
+	padding: calc(3.5rem + var(--safe-top)) 0.75rem 0;
 }
 
 .layer.overlays {

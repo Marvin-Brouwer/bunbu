@@ -271,7 +271,9 @@ export const PracticeAmbush = component<PracticeAmbushOptions>({
 				quiz: game.quiz,
 				label: 'PRACTICE',
 				commit: () => { commitPractice(game) },
-				held: () => !practising() || game.ambush.value.openingLeft > 0,
+				// Only the pause holds the swipes: no ninjas come in, so the short opening is only the
+				// answered scroll rolling up, and answering then is fine.
+				held: () => !practising(),
 				progress: (state) => progressOf(game, state.at),
 			}),
 		})
