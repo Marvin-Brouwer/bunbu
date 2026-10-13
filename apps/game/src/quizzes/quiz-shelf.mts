@@ -1,5 +1,5 @@
 /**
- * The area to drop or choose a quiz file, then why the last file didn't load and what won't fit in
+ * The button and area to load a quiz file, then why the last file didn't load and what won't fit in
  * a fight of the chosen quiz, then the loaded quizzes as cards, one to choose.
  */
 

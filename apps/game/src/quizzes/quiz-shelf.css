@@ -1,6 +1,6 @@
 /*
- * The quizzes screen (docs/design/screens.md#1b-quizzes): the area to drop or choose a quiz file,
- * and the quizzes as cards, one under the other.
+ * The quizzes screen (docs/design/screens.md#1b-quizzes): the button to load a quiz file, the area
+ * to drop one on, and the quizzes as cards, one under the other.
  */
 
 /* Quiz cards */
@@ -125,44 +125,55 @@
 	--icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 7h16M9 7V4h6v3M6 7l1 14h10l1-14M10 11v6M14 11v6'/%3E%3C/svg%3E");
 }
 
-.load {
-	position: relative;
+/* The file picker behind the Load a quiz button. */
+.picker {
+	display: none;
+}
+
+/* Only says where to drop: the Load a quiz button above chooses a file. */
+.drop {
 	display: grid;
+}
+
+.dropArea {
+	display: grid;
+	align-content: center;
 	justify-items: center;
 	gap: 0.2rem;
 	padding: 0.9rem 1rem;
 	border: 2px dashed var(--ink-soft);
 	border-radius: var(--radius);
-	background: var(--paper-light);
 	color: var(--ink);
 	text-align: center;
-	cursor: pointer;
 }
 
-.load[data-dragging='true'] {
+/* A file dragged over the screen: the area covers it, so the file can be dropped anywhere. */
+.dropArea[data-dragging='true'] {
+	position: fixed;
+	inset: 0.75rem;
+	z-index: 10;
 	border-color: var(--vermilion);
-	background: rgb(179 57 31 / 10%);
-}
-
-.load:has(input:focus-visible) {
-	outline: 3px solid var(--indigo);
-	outline-offset: 2px;
-}
-
-.load input {
-	position: absolute;
-	opacity: 0;
+	background: color-mix(in srgb, var(--paper-light) 92%, var(--vermilion));
+	box-shadow: 0 0 0 0.75rem rgb(0 0 0 / 35%);
+	font-size: 1.4rem;
 	pointer-events: none;
 }
 
-.loadTitle {
+.dropTitle {
 	font-weight: 700;
 }
 
-.loadNote {
+.dropNote {
 	font-family: var(--font-mono);
 	font-size: 0.75rem;
 	color: var(--ink-soft);
+}
+
+/* Touch phones don't drag files: they only get the button. */
+@media (hover: none) and (pointer: coarse) {
+	.drop {
+		display: none;
+	}
 }
 
 
