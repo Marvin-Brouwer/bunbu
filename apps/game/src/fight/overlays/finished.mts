@@ -13,7 +13,6 @@ import { ScrollSheet } from '../../_shared/scroll/scroll-sheet.mts'
 import { snapshot } from '../../_shared/state/store.mts'
 import type { QuizActions, QuizState } from '../../_shared/state/quiz.mts'
 import type { RunGame } from '../state/game.mts'
-import { difficultyNames } from '../state/difficulty.mts'
 import { pointsIn, pointsPerCorrect } from '../state/score.mts'
 import { AfterRun } from './after-run.mts'
 import { Mistakes } from './mistakes.mts'
@@ -52,8 +51,8 @@ export const Finished = component<FinishedOptions>({
 			// As on the title's quiz card; the time has a tile of its own.
 			lines: [
 				newBest || best === undefined
-					? `high score · ${formatWhole(points)} · ${difficultyNames[difficulty]}`
-					: `high score · ${formatWhole(best.points)} · ${difficultyNames[best.difficulty]}`,
+					? `high score · ${formatWhole(points)} · ${difficulty}`
+					: `high score · ${formatWhole(best.points)} · ${best.difficulty}`,
 				`correct · ${correct} / ${total}`,
 			],
 			tiles: [
