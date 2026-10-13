@@ -44,15 +44,15 @@ The world plays these clips, fitted to the state's timing (`_shared/world/poses.
 
 A replacement model needs clips with these names, or a change to that table.
 
-The **Castle town** stage uses, from Quaternius on Poly Pizza (CC0): the [maple trees](https://poly.pizza/m/iGFtQd0PJO) (five variants in one file), [bamboo](https://poly.pizza/m/xBPj13w3JQ) and the [torii gate](https://poly.pizza/m/7SyXZ62xR5). The town houses (machiya), stone lanterns, the bridge, the pagoda and the castle keep are built in code from simple shapes (`fight/world/castle-town.mts`): no free CC0 pack of Japanese town buildings turned up. The models are in `apps/game/public/models/`, compressed as the [web pipeline](#web-pipeline) says.
+The **Castle town** stage uses, from Quaternius on Poly Pizza (CC0): the [maple trees](https://poly.pizza/m/iGFtQd0PJO) (five variants in one file), [bamboo](https://poly.pizza/m/xBPj13w3JQ) and the [torii gate](https://poly.pizza/m/7SyXZ62xR5). The town houses (machiya), stone lanterns, the bridge, the pagoda and the castle keep are built in code from simple shapes (`fight/world/castle-town.mts`): no free CC0 pack of Japanese town buildings turned up. The models the game loads are in `apps/game/public/models/`, compressed from the originals in `assets/models/` as the [web pipeline](#web-pipeline) says.
 
 ### Our own models
 
 The **temple kit** (`temple-kit.glb`) is ours: a temple hall, a five-storey pagoda, a stone lantern and a torii, in one file with one node per piece (`Hall`, `Pagoda`, `StoneLantern`, `Torii`). It is made in Blender by a script, `assets/blender/temple_kit.py`, so it can be changed and made again rather than edited by hand:
 
 ```sh
-blender -b -P assets/blender/temple_kit.py -- kit.glb preview.png
-npx @gltf-transform/cli meshopt kit.glb apps/game/public/models/temple-kit.glb --level medium
+blender -b -P assets/blender/temple_kit.py -- assets/models/temple-kit.glb preview.png
+pnpm models
 ```
 
 The script writes the pieces in the game's own frame (metres, y up, the front toward +z, standing at the origin) and gives them plain colours rather than textures. The roofs are what code-built boxes can't do: they sweep up from low eaves to the ridge, and the corners lift. Each piece stays under 5k triangles. The title screen uses the kit, with its code-built buildings as the placeholders until the kit has loaded.
@@ -98,13 +98,13 @@ Old-school Japan props found on Poly Pizza, all from Quaternius (CC0) unless not
 
 ## Web pipeline
 
-- Compress every GLB with [gltf-transform](https://gltf-transform.dev/): WebP textures at 512 px at most, then meshopt geometry. `canvas/models.mts` decodes meshopt; the browser decodes WebP itself. KTX2 isn't used: the models have six small textures between them, and KTX2 would mean shipping the Basis transcoder for them.
+- Every model's original goes in `assets/models/`: the GLB as downloaded (or converted once from FBX), or as a Blender script in `assets/blender/` writes it. Never edit the game's copies in `apps/game/public/models/` by hand; change the original and run:
 
   ```sh
-  npx @gltf-transform/cli resize in.glb resized.glb --width 512 --height 512
-  npx @gltf-transform/cli webp resized.glb webp.glb
-  npx @gltf-transform/cli meshopt webp.glb out.glb --level medium
+  pnpm models
   ```
+
+  It compresses every original with [gltf-transform](https://gltf-transform.dev/) (`assets/compress-models.ts`): WebP textures at 512 px at most, then meshopt geometry at the medium level. `canvas/models.mts` decodes meshopt; the browser decodes WebP itself. KTX2 isn't used: the models have six small textures between them, and KTX2 would mean shipping the Basis transcoder for them.
 
   Don't use `optimize`: it joins and flattens meshes, which renames the nodes the world looks up by name (the bones, `MapleTree_1` and so on).
 - The service worker keeps each model the first time it loads, so the world has its models offline after that.

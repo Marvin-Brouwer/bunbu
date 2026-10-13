@@ -41,6 +41,7 @@ apps/game/src/
 docs/testdata/            sample quizzes every track develops against (local/ is git-ignored, for your own)
 packages/data/            @bunbu/data: reading, validating and sharing quizzes
 schema/                   the JSON Schema per format version
+assets/                   the 3D models' originals and their Blender scripts; `pnpm models` compresses them into the game
 ```
 
 The slice policy:

@@ -120,7 +120,7 @@ A good track for someone who'd rather not write TypeScript.
 - Ninja: check the Quaternius ninja next to the samurai, add missing clips (block, flee, hit) the same way.
 - Training dummy and bamboo sword for the dojo.
 - Stage props for the first stage: path, torii, rice fields, trees recoloured to blossom.
-- `gltf-transform optimize` script in the repo so every GLB is compressed the same way.
+- A script in the repo so every GLB is compressed the same way: `pnpm models` ([web pipeline](design/assets.md#web-pipeline)).
 - Agree on clip names with E up front (`run`, `strike`, `block`, `hurt`, `fallen`, …) and write them down in `assets.md`.
 - The attribution file, from the first CC-BY asset on.
 
