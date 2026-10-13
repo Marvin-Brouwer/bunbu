@@ -9,7 +9,6 @@ import type { BunbuData } from '@bunbu/data'
 import { component } from '@rooted/components'
 import { href } from '@rooted/router'
 import { FightRoute } from '../fight/_routes.mts'
-import { difficultyNames } from '../fight/state/difficulty.mts'
 import { highScores } from '../fight/state/highscores.mts'
 import { QuizzesRoute } from '../quizzes/_routes.mts'
 import { MenuButton } from '../_shared/menu/menu-button.mts'
@@ -103,7 +102,7 @@ export const ChosenQuizCard = component<ChosenQuizCardOptions>({
 							],
 							children: [
 								element('span', {
-									textContent: `high score · ${formatWhole(best.points)} · ${difficultyNames[best.difficulty]}`,
+									textContent: `high score · ${formatWhole(best.points)} · ${best.difficulty}`,
 								}),
 								element('span', {
 									textContent: `correct · ${best.correct} / ${best.answered}`,
