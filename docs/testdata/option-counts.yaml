@@ -12,6 +12,7 @@ description: >-
   Development sample: questions with 2, 3, 5, 6 and 8 options, a long code block and an image.
 passingScore: 60
 timePerQuestion: 2m
+questionsPerTest: 4
 
 questions:
   # 2 options.
