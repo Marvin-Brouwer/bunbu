@@ -6,10 +6,7 @@ import { describeIssue, fightable, fitNotesOf, readQuiz } from './read-quiz.mts'
 const sample = import.meta.glob<string>('../../../../../docs/testdata/every-type.yaml', { query: '?raw', import: 'default', eager: true })
 const everyType = Object.values(sample)[0]!
 
-const file = (contents: string | Uint8Array, name: string, type = '') => new File([typeof contents === 'string' ? contents : new Uint8Array(contents)], name, { type })
-
-const png = new Uint8Array([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 0x0D])
-const heic = new Uint8Array([0, 0, 0, 0x18, ...new TextEncoder().encode('ftypheic')])
+const file = (contents: string | Uint8Array, name: string) => new File([typeof contents === 'string' ? contents : new Uint8Array(contents)], name)
 
 const options = (correct: number, wrong: number) => [
 	...Array.from({ length: correct }, (_, index) => ({ answer: `right ${index}` as Markdown, correct: true })),
@@ -51,34 +48,15 @@ describe('readQuiz', () => {
 		expect(result.problems).toHaveLength(1)
 	})
 
-	it('says a picture is a picture, whatever its name', async () => {
-		const picture = [expect.stringContaining('This is a picture')]
-		expect(await readQuiz(file(png, 'photo.png'))).toEqual({ problems: picture })
-		expect(await readQuiz(file('', 'photo.jpg', 'image/jpeg'))).toEqual({ problems: picture })
-		expect(await readQuiz(file(png, 'renamed.yaml'))).toEqual({ problems: picture })
-		expect(await readQuiz(file(heic, 'renamed.bunbu'))).toEqual({ problems: picture })
-	})
-
-	it('turns away a file that is not a quiz file by its name', async () => {
+	it('turns away a file that is not named as a quiz', async () => {
 		const result = await readQuiz(file(everyType, 'every-type.txt'))
 		expect(result).toEqual({ problems: [expect.stringContaining('This is not a quiz')] })
 	})
 
-	it('turns away a quiz file name with a media type that is not a quiz', async () => {
-		const result = await readQuiz(file(everyType, 'every-type.yaml', 'application/pdf'))
-		expect(result).toEqual({ problems: [expect.stringContaining('This is not a quiz')] })
-	})
-
-	it('reads a quiz file with its media type or none the browser knows', async () => {
-		for (const type of ['', 'application/octet-stream', 'application/yaml', 'text/x-yaml']) {
-			expect(await readQuiz(file(everyType, 'every-type.yaml', type))).toHaveProperty('quiz')
-		}
-		expect(await readQuiz(file(await compress(fixtureQuiz), 'fixture.bunbu', 'application/vnd.bunbu'))).toHaveProperty('quiz')
-	})
-
-	it('turns away a .yaml file that holds no text', async () => {
-		const result = await readQuiz(file(new Uint8Array([0x00, 0xFF, 0xFE, 0x01]), 'binary.yml'))
-		expect(result).toEqual({ problems: [expect.stringContaining('This is not a quiz')] })
+	it('stops at the schema line or the first bytes of a picture named as a quiz', async () => {
+		const png = new Uint8Array([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 0x0D])
+		expect(await readQuiz(file(png, 'photo.yaml'))).toEqual({ problems: [expect.stringContaining('first line must reference the schema')] })
+		expect(await readQuiz(file(png, 'photo.bunbu'))).toEqual({ problems: [expect.stringContaining('not a Bunbu quiz file')] })
 	})
 })
 

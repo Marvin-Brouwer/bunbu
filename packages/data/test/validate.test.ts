@@ -98,6 +98,11 @@ describe("validate", () => {
     await expectValid(quiz(single).replace(modeline, "# yaml-language-server: $schema=https://raw.githubusercontent.com/Marvin-Brouwer/bunbu/main/schema/v1.json"));
   });
 
+  it("doesn't parse a file without the schema modeline", async () => {
+    const error = await expectIssues("\u0089PNG\r\n\u001a\n: : :\n\t- [ {");
+    expect(error.issues).toEqual([expect.objectContaining({ line: 1, message: expect.stringContaining("first line") })]);
+  });
+
   it("rejects an unknown schema version", async () => {
     const error = await expectIssues(quiz(single).replace("/v1.json", "/v99.json"));
     expect(error.issues[0]!.message).toBe("Unknown schema version v99");

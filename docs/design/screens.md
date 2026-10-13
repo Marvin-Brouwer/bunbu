@@ -31,7 +31,7 @@ Wireframe source: the project's design canvas (`design/wireframes/*.dc.html` and
 A screen of its own, so the title stays calm:
 
 - An area to drop a `.yaml` or `.bunbu` file on, or tap to choose one.
-- Why a file didn't load (by line), and which questions of the chosen quiz won't fit in a fight. Only `.yaml`, `.yml` and `.bunbu` files load, and only with a quiz media type or none the browser knows; a picture says it is a picture, and any other file says it is not a quiz, before Bunbu tries to read it.
+- Why a file didn't load (by line), and which questions of the chosen quiz won't fit in a fight. Only `.yaml`, `.yml` and `.bunbu` files are read: a `.yaml` file must start with the schema line and a `.bunbu` file with Bunbu's own first bytes, or it is not a quiz.
 - The loaded quizzes as cards, one under the other, with title, `version`, pass mark and best score (`v3 · pass 70% · best 2,480`, or `new`). Tapping one chooses it. Two square red buttons with an icon and a small label sit side by side on each card: **Download** saves its `.bunbu` file, **Remove** asks first, on a scroll with **Remove** and **Cancel**; its high score and stage results stay, so they're back if it's loaded again.
 
 ### 2 Fight setup

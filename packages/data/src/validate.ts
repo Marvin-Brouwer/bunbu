@@ -54,25 +54,25 @@ function getValidator(version: number): ValidateFunction | undefined {
 // `async` is part of the published API: a future schema version may load its validator on demand.
 // oxlint-disable-next-line typescript/require-await
 export async function validate(fileBlob: string): Promise<BunbuData | BunbuValidationError> {
-  const issues: ValidationIssue[] = [];
-
+  // Without a schema reference it is not a quiz file, so it isn't parsed: reading a picture or other
+  // binary file as YAML only adds a page of parser errors.
   const reference = readSchemaReference(fileBlob);
-  const schemaVersion = typeof reference === "string" ? undefined : reference.version;
-  if (typeof reference === "string") issues.push({ path: "", message: reference, line: 1 });
-  else if (!getValidator(reference.version)) {
-    issues.push({ path: "", message: `Unknown schema version v${reference.version}`, line: 1 });
+  if (typeof reference === "string") return new BunbuValidationError([{ path: "", message: reference, line: 1 }]);
+  if (!getValidator(reference.version)) {
+    return new BunbuValidationError([{ path: "", message: `Unknown schema version v${reference.version}`, line: 1 }]);
   }
 
+  const issues: ValidationIssue[] = [];
   const lineCounter = new LineCounter();
   const document = parseDocument(fileBlob, { lineCounter });
   for (const error of document.errors) {
     issues.push({ path: "", message: error.message.split("\n")[0]!, line: error.linePos?.[0].line });
   }
 
-  if (issues.length > 0 || schemaVersion === undefined) return new BunbuValidationError(issues);
+  if (issues.length > 0) return new BunbuValidationError(issues);
 
   const data: unknown = document.toJS();
-  const schemaIssues = checkData(data, schemaVersion, (pointer) => findLine(document, lineCounter, pointer));
+  const schemaIssues = checkData(data, reference.version, (pointer) => findLine(document, lineCounter, pointer));
   if (schemaIssues.length > 0) return new BunbuValidationError(schemaIssues);
 
   const quiz = data as BunbuData;

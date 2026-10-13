@@ -5,7 +5,7 @@
 
 import { fileExtension } from '@bunbu/data'
 import { component } from '@rooted/components'
-import { quizFileTypes, readQuiz, type ReadQuiz } from '../_shared/quiz/read-quiz.mts'
+import { quizExtensions, readQuiz, type ReadQuiz } from '../_shared/quiz/read-quiz.mts'
 import styles from './quiz-shelf.css'
 
 /** A file the browser couldn't read, such as one moved or deleted after it was chosen. */
@@ -39,7 +39,7 @@ export const LoadQuiz = component<LoadQuizOptions>({
 				children: [
 					element('input', {
 						type: 'file',
-						accept: quizFileTypes,
+						accept: quizExtensions.join(','),
 						multiple: true,
 						on: {
 							async change(event) {
