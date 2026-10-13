@@ -40,6 +40,8 @@ export type Rig = {
 	readonly drop: number
 	/** `1` fully there, `0` gone. */
 	readonly fade: number
+	/** `0` none, `1` lit up red the moment a blade lands on it. */
+	readonly flash: number
 }
 
 export const standingRig: Rig = {
@@ -55,13 +57,15 @@ export const standingRig: Rig = {
 	turn: 0,
 	drop: 0,
 	fade: 1,
+	flash: 0,
 }
 
 /** Seconds each one-off pose takes before it holds its last frame. */
 export const poseSeconds = {
 	strike: 0.3,
 	block: 0.15,
-	hurt: 0.25,
+	/** The hit, from the blade landing: knocked back, then back on his feet. */
+	hurt: 0.45,
 	fallen: 0.7,
 	slain: 0.5,
 	blocked: 0.25,
@@ -70,6 +74,11 @@ export const poseSeconds = {
 	/** How long a slain ninja lies there before it fades. */
 	slainFade: 0.6,
 } as const
+
+/** Metres the samurai is knocked back by a blade that lands. */
+export const hurtKnockBack = 0.5
+/** Seconds he stays lit up red after a blade lands. */
+const hurtFlashSeconds = 0.25
 
 /** `0` to `1` over `seconds`, held at `1` after. */
 const progress = (time: number, seconds: number) => Math.min(1, Math.max(0, time / seconds))
@@ -119,9 +128,18 @@ const rigs: Readonly<Record<FigurePose, (time: number, cycle: number) => Rig>> =
 	},
 	hurt: (time) => {
 		const hit = progress(time, poseSeconds.hurt)
-		// Knocked back hard, then half recovered.
-		const recoil = hit < 0.4 ? easeOut(hit / 0.4) : mix(1, 0.5, (hit - 0.4) / 0.6)
-		return { ...standingRig, lean: -0.45 * recoil, rise: -0.08 * recoil, stride: -0.3 * recoil, swordArm: mix(0.3, 1.1, recoil), guardArm: recoil }
+		// Knocked back hard, then he steps in again, back where he stood when the pose ends.
+		const recoil = hit < 0.25 ? easeOut(hit / 0.25) : 1 - easeOut((hit - 0.25) / 0.75)
+		return {
+			...standingRig,
+			lean: -0.45 * recoil,
+			rise: -0.08 * recoil,
+			stride: -0.3 * recoil,
+			swordArm: mix(0.3, 1.1, recoil),
+			guardArm: recoil,
+			shift: -hurtKnockBack * recoil,
+			flash: 1 - easeOut(progress(time, hurtFlashSeconds)),
+		}
 	},
 	fallen: (time) => {
 		const down = easeOut(progress(time, poseSeconds.fallen))
@@ -271,6 +289,7 @@ export function finishingOf(time: number): Finishing {
 	const ninja = time < finishing.run
 		? { pose: 'approach' as const, time, distance: mix(finishing.from, finishing.reach, easeOut(progress(time, finishing.run))) }
 		: { pose: 'strike' as const, time: time - finishing.run, distance: finishing.reach }
-	const samurai = time < lands ? { pose: 'hurt' as const, time } : { pose: 'fallen' as const, time: time - lands }
+	// Still on his feet from the hit that took his last life, until this blade lands.
+	const samurai = time < lands ? { pose: 'hurt' as const, time: poseSeconds.hurt + time } : { pose: 'fallen' as const, time: time - lands }
 	return { samurai, ninja }
 }
