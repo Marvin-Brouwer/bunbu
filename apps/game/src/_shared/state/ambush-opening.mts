@@ -121,9 +121,11 @@ export function openingOf(quiz: BunbuData, refs: readonly QuestionRef[], at: Que
 /**
  * The next round of the same attack, with every option that was in the round before still where
  * it was: the same ninja carries the same answer all attack long, as the rows of a `match` that
- * share one pool do. When the options differ, the round keeps its own places.
+ * share one pool do. When the options differ, the round keeps its own places. A `yes-no` round
+ * keeps its own too: every round asks the same yes and no, but of the next solution's own ninja.
  */
 export function inPlacesOf(opening: AmbushOpening, before: readonly AmbushOption[]): AmbushOpening {
+	if (opening.kind === 'yes-no') return opening
 	const same = opening.options.length === before.length
 		&& before.every((option) => opening.options.some((next) => next.answer === option.answer))
 	if (!same) return opening

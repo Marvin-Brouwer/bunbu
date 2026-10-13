@@ -154,6 +154,28 @@ describe('opening an ambush', () => {
 		expect(second.options.find((option) => option.correct)?.answer).toBe('two')
 	})
 
+	it('gives each solution of a solutions question its own ninja from one round to the next', () => {
+		const data: BunbuData = {
+			...fixtureQuiz,
+			questions: [{
+				type: 'solutions',
+				scenario: markdown('The key must stay secret.'),
+				query: markdown('Does this solution meet the goal?'),
+				options: [
+					{ answer: markdown('Put it in the bundle.'), correct: false },
+					{ answer: markdown('Proxy through the backend.'), correct: true },
+					{ answer: markdown('Keep it in local storage.'), correct: false },
+				],
+			}],
+		}
+		const refs = refsOf(data, [0])
+		const first = openingOf(data, refs, refs[0]!, settings())
+		const second = inPlacesOf(openingOf(data, refs, refs[1]!, settings()), first.options)
+		const third = inPlacesOf(openingOf(data, refs, refs[2]!, settings()), second.options)
+		const ninjas = (opening: AmbushOpening) => [...new Set(opening.options.map((option) => option.ninja))]
+		expect([first, second, third].map(ninjas)).toEqual([[0], [1], [2]])
+	})
+
 	it('adds up the time of every round without a time per question', () => {
 		const row = (text: string) => ({ text: markdown(text), answer: markdown(text) })
 		const data: BunbuData = {
