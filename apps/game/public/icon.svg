@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+	<!-- The app icon: the title screen's torii in ink against a red sun, on paper with the ground under it.
+	     Everything but the paper stays inside the middle 80% circle, so Android can crop it to any shape.
+	     app-icon.png is this picture at 512px: render it again when this changes. -->
+	<rect width="512" height="512" fill="#f1e8d3"/>
+	<g transform="translate(256 256) scale(0.88) translate(-256 -256)">
+		<circle cx="256" cy="236" r="150" fill="#b3391f"/>
+		<rect x="-200" y="392" width="912" height="300" fill="#c9b48c"/>
+		<g fill="#1f1c18">
+			<!-- kasagi, the curved top beam -->
+			<path d="M70 151 Q256 177 442 151 L424 185 Q256 203 88 185 Z"/>
+			<!-- shimaki, the beam under it -->
+			<rect x="112" y="190" width="288" height="15"/>
+			<!-- nuki, the lower beam, and the short post between the beams -->
+			<rect x="115" y="239" width="282" height="18"/>
+			<rect x="245.5" y="198" width="21" height="46"/>
+			<!-- the pillars, leaning in a little -->
+			<path d="M148 198 L175 198 L181 404 L145 404 Z"/>
+			<path d="M337 198 L364 198 L367 404 L331 404 Z"/>
+		</g>
+	</g>
+</svg>

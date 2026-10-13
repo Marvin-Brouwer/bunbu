@@ -15,6 +15,15 @@ export default rootedManifest({
 		theme_color: '#ffffff',
 		background_color: '#ffffff',
 		display: 'standalone',
+		// pwa-*.png are made from public/icon.svg at build time, with a see-through edge. A maskable icon
+		// must fill the whole square or Android shows a ring around it, so that one is app-icon.png:
+		// icon.svg as is, at 512px (Rooted's own maskable copy is padded with white).
+		icons: [
+			{ src: 'pwa-64x64.png', sizes: '64x64', type: 'image/png' },
+			{ src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' },
+			{ src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png' },
+			{ src: 'app-icon.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+		],
 		// Opening a `.bunbu` file with the installed app (desktop Chrome and Edge) lands on the quizzes
 		// screen, which loads it like a chosen file (src/quizzes/opened-quizzes.mts).
 		file_handlers: [
