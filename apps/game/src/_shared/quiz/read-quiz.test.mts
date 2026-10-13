@@ -64,6 +64,18 @@ describe('readQuiz', () => {
 		expect(result).toEqual({ problems: [expect.stringContaining('This is not a quiz')] })
 	})
 
+	it('turns away a quiz file name with a media type that is not a quiz', async () => {
+		const result = await readQuiz(file(everyType, 'every-type.yaml', 'application/pdf'))
+		expect(result).toEqual({ problems: [expect.stringContaining('This is not a quiz')] })
+	})
+
+	it('reads a quiz file with its media type or none the browser knows', async () => {
+		for (const type of ['', 'application/octet-stream', 'application/yaml', 'text/x-yaml']) {
+			expect(await readQuiz(file(everyType, 'every-type.yaml', type))).toHaveProperty('quiz')
+		}
+		expect(await readQuiz(file(await compress(fixtureQuiz), 'fixture.bunbu', 'application/vnd.bunbu'))).toHaveProperty('quiz')
+	})
+
 	it('turns away a .yaml file that holds no text', async () => {
 		const result = await readQuiz(file(new Uint8Array([0x00, 0xFF, 0xFE, 0x01]), 'binary.yml'))
 		expect(result).toEqual({ problems: [expect.stringContaining('This is not a quiz')] })

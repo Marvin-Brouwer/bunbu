@@ -40,11 +40,31 @@ export function describeIssue(issue: ValidationIssue): string {
 /** The file names a quiz can have. */
 export const quizExtensions = ['.yaml', '.yml', fileExtension] as const
 
+/** The media types a quiz file can have. */
+const quizMediaTypes = [mimeType, 'application/yaml', 'application/x-yaml', 'text/yaml', 'text/x-yaml']
+
+/**
+ * The media types a browser gives a file it has no media type for: Bunbu's own `.bunbu`, and
+ * `.yaml` on most systems.
+ */
+const unknownMediaTypes = ['', 'application/octet-stream']
+
 /**
  * What the file picker offers: the quiz extensions, and their media types for phones that pick by
  * media type.
  */
-export const quizFileTypes = [...quizExtensions, mimeType, 'application/yaml', 'application/x-yaml', 'text/yaml', 'text/x-yaml'].join(',')
+export const quizFileTypes = [...quizExtensions, ...quizMediaTypes].join(',')
+
+/**
+ * Whether the file is named and typed as a quiz. The browser takes the media type from the system,
+ * which mostly doesn't know a quiz's, so an unknown one passes and the extension decides.
+ */
+function isQuizFile(file: File): boolean {
+	const name = file.name.toLowerCase()
+	const type = file.type.toLowerCase()
+	return quizExtensions.some((extension) => name.endsWith(extension))
+		&& [...quizMediaTypes, ...unknownMediaTypes].includes(type)
+}
 
 const notAQuiz = 'This is not a quiz. A quiz is a .yaml or .bunbu file.'
 const aPicture = 'This is a picture, not a quiz. A quiz is a .yaml or .bunbu file.'
@@ -87,10 +107,9 @@ async function textOf(file: File): Promise<string | undefined> {
 export async function readQuiz(file: File): Promise<ReadQuiz> {
 	if (await isPicture(file)) return { problems: [aPicture] }
 
-	const name = file.name.toLowerCase()
-	if (!quizExtensions.some((extension) => name.endsWith(extension))) return { problems: [notAQuiz] }
+	if (!isQuizFile(file)) return { problems: [notAQuiz] }
 
-	if (name.endsWith(fileExtension)) {
+	if (file.name.toLowerCase().endsWith(fileExtension)) {
 		try {
 			const bytes = new Uint8Array(await file.arrayBuffer())
 			return { quiz: await uncompress(bytes), file: Immutable.from(bytes) }
