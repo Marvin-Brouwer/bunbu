@@ -256,12 +256,17 @@ export const PracticeAmbush = component<PracticeAmbushOptions>({
 			pausable: practising,
 		}, signal)
 
-		// The miss screen, until Continue.
+		// The miss screen, until Continue. It takes the focus when it shows, on Continue, so a screen
+		// reader says that the answer was missed and what to do next.
 		const miss = element('div', {
 			classes: [
 				styles.layer,
 				styles.miss,
 			],
+			role: 'region',
+			aria: {
+				label: 'Missed',
+			},
 		})
 		let shownMiss: Miss | undefined
 		const showMiss = (next: Miss | undefined) => {
@@ -276,6 +281,8 @@ export const PracticeAmbush = component<PracticeAmbushOptions>({
 						carryOn: () => { continuePractice(game) },
 					})]
 			)
+			// Its buttons are there once it has mounted.
+			if (next !== undefined) setTimeout(() => { miss.querySelector('button')?.focus() })
 		}
 
 		const overlays = element('div', {
