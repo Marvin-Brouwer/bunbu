@@ -6,9 +6,8 @@
  * What it smooths over, as the engines differ a lot:
  * - **Pause** cancels and resumes from the start of the line: Android's engine has no real pause
  *   (pausing stops it), and others don't always resume.
- * - **The spoken word** comes from the engine's word boundaries. Android and some online voices
- *   send none; there the word is guessed from the time spoken, at the pace measured from every line
- *   read so far, with code, numbers and abbreviations weighed as they are said.
+ * - **What is being said** is the word, from the engine's word boundaries. Android and some online
+ *   voices send none; there it is the whole line, which the engine does say when it starts.
  * - **Voices** load late, after a `voiceschanged` event, or, on Safari, without one.
  * - **Lines** are short, a sentence at most, as Chrome stops some voices after 15 seconds.
  * - An utterance the page no longer holds can be dropped by the browser before it ends, so the
@@ -21,8 +20,7 @@
  * iPhone); it then picks up again from the line it was on when the page is back.
  */
 
-import { shownWordAt, type ShownRange, type SpokenLine } from './line.mts'
-import { paceAfter, spokenWords, unheardPace } from './pace.mts'
+import { shownRangesOf, shownWordAt, type ShownRange, type SpokenLine } from './line.mts'
 
 /** The engine's errors for speech that was stopped on purpose, by `cancel`. */
 const stopped = new Set<string>(['canceled', 'interrupted'])
@@ -101,8 +99,11 @@ export type SpeakerOptions = {
 	readonly lineAt: (place: number) => SpokenLine | undefined
 	/** The engine started on the line at `place`. */
 	readonly onLine?: (place: number) => void
-	/** The word being spoken on screen, `undefined` between words or for words only said. */
-	readonly onWord?: (word: ShownRange | undefined) => void
+	/**
+	 * What is being said, on screen: the word, or the whole line where the engine doesn't say which
+	 * word; nothing between words or for words only said.
+	 */
+	readonly onSaid?: (said: readonly ShownRange[]) => void
 	/** Read to the end of the run. */
 	readonly onEnd?: () => void
 	/** Stopped without being asked: refused, as before the first tap, or stopped by a hidden page. */
@@ -136,26 +137,17 @@ export function createSpeaker(options: SpeakerOptions, signal: AbortSignal): Spe
 	let queued = 0
 	/** Bumped on every cancel, so events of the speech it cancelled are ignored. */
 	let generation = 0
-	/** Whether the engine sends word boundaries; until then the word is guessed. */
+	/** Whether the engine sends word boundaries; until then the whole line is shown as being said. */
 	let boundaries = false
-	let guessing: ReturnType<typeof setInterval> | undefined
 	let waiting: ReturnType<typeof setTimeout> | undefined
-	/** How fast the voice reads, measured while guessing the word. */
-	let pace = unheardPace
 	const held = new Set<SpeechSynthesisUtterance>()
-
-	const stopGuessing = () => {
-		clearInterval(guessing)
-		guessing = undefined
-	}
 
 	const cancel = () => {
 		generation++
-		stopGuessing()
 		clearTimeout(waiting)
 		held.clear()
 		if (canSpeak()) speechSynthesis.cancel()
-		options.onWord?.(undefined)
+		options.onSaid?.([])
 	}
 
 	const halt = () => {
@@ -165,21 +157,6 @@ export function createSpeaker(options: SpeakerOptions, signal: AbortSignal): Spe
 		options.onStop?.()
 	}
 
-	/** Guesses the word from the time spoken, for engines without word boundaries. */
-	const guess = (line: SpokenLine) => {
-		const { words } = spokenWords(line.text)
-		const began = performance.now()
-		let shown = -1
-		stopGuessing()
-		guessing = setInterval(() => {
-			const reached = (performance.now() - began) / 1000 * pace.perSecond * rate
-			const word = words.findLast(({ before }) => before <= reached)?.start ?? 0
-			if (word === shown) return
-			shown = word
-			options.onWord?.(shownWordAt(line, word))
-		}, 100)
-	}
-
 	const say = (place: number, line: SpokenLine) => {
 		const ours = generation
 		const utterance = new SpeechSynthesisUtterance(line.text)
@@ -187,38 +164,30 @@ export function createSpeaker(options: SpeakerOptions, signal: AbortSignal): Spe
 		utterance.voice = voice ?? voicesFor(language)[0] ?? null
 		utterance.rate = rate
 		held.add(utterance)
-		let began: number | undefined
 
 		utterance.addEventListener('start', () => {
 			if (ours !== generation) return
-			began = performance.now()
 			clearTimeout(waiting)
 			current = place
 			options.onLine?.(place)
-			if (!boundaries) guess(line)
+			if (!boundaries) options.onSaid?.(shownRangesOf(line))
 			fill()
 		})
 		utterance.addEventListener('boundary', (event) => {
 			if (ours !== generation || event.name !== 'word') return
 			boundaries = true
-			stopGuessing()
-			options.onWord?.(shownWordAt(line, event.charIndex, event.charLength))
+			const word = shownWordAt(line, event.charIndex, event.charLength)
+			options.onSaid?.(word === undefined ? [] : [word])
 		})
 		const done = () => {
 			held.delete(utterance)
 			if (ours !== generation) return
-			stopGuessing()
-			options.onWord?.(undefined)
+			options.onSaid?.([])
 			if (lineAt(place + 1) !== undefined) return
 			playing = false
 			options.onEnd?.()
 		}
-		utterance.addEventListener('end', () => {
-			if (ours === generation && !boundaries && began !== undefined) {
-				pace = paceAfter(pace, spokenWords(line.text).weight, (performance.now() - began) / 1000, utterance.rate)
-			}
-			done()
-		})
+		utterance.addEventListener('end', done)
 		utterance.addEventListener('error', (event) => {
 			if (stopped.has(event.error)) {
 				held.delete(utterance)

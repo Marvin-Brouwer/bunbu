@@ -1,6 +1,6 @@
 /**
  * D2 Study ([dojo.md](../../../../docs/design/dojo.md#study)): every question with its correct
- * answer, shuffled, read aloud on a loop, the spoken word highlighted. The text scrolls on the
+ * answer, shuffled, read aloud on a loop, what is being said highlighted. The text scrolls on the
  * page; Pause and Skip are docked at the bottom, and the settings (the voice and the speed among
  * them) open in place from the top right, so the reading goes on.
  *
@@ -34,7 +34,7 @@ import { CardBlock } from './card-block.mts'
 import { blocksOf, linesOf } from './study-script.mts'
 import styles from './study.css'
 
-/** The highlight of the spoken word ([CSS Custom Highlight API](https://developer.mozilla.org/docs/Web/API/CSS_Custom_Highlight_API)). */
+/** The highlight of what is being said ([CSS Custom Highlight API](https://developer.mozilla.org/docs/Web/API/CSS_Custom_Highlight_API)). */
 const highlightName = 'spoken-word'
 
 /** Each line of the loop, with the card it is on. */
@@ -46,9 +46,12 @@ type Entry = {
 /** A cog, for the settings button. */
 const cog = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M19.4 13a7.6 7.6 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.4 7.4 0 0 0-1.7-1L15 3.3h-4l-.4 2.6a7.4 7.4 0 0 0-1.7 1l-2.5-1-2 3.5L6.6 11a7.6 7.6 0 0 0 0 2l-2.2 1.6 2 3.5 2.5-1a7.4 7.4 0 0 0 1.7 1l.4 2.6h4l.4-2.6a7.4 7.4 0 0 0 1.7-1l2.5 1 2-3.5zM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z" transform="translate(-1 0)"/></svg>'
 
-const sameWord = (first: ReadingState['word'], second: ReadingState['word']) => first?.block === second?.block
-	&& first?.start === second?.start
-	&& first?.end === second?.end
+type SaidRange = ReadingState['said'][number]
+const sameRange = (first: SaidRange, second: SaidRange | undefined) => first.block === second?.block
+	&& first.start === second.start
+	&& first.end === second.end
+const sameSaid = (first: ReadingState['said'], second: ReadingState['said']) => first.length === second.length
+	&& first.every((range, index) => sameRange(range, second[index]))
 
 /** Asks for a quiz when none is chosen. */
 const NoQuiz = component({
@@ -134,8 +137,8 @@ const StudySession = component<StudySessionOptions>({
 				const card = entryAt(place)?.card
 				if (card !== undefined && card !== reading.value.card) reading.value.reach(card)
 			},
-			onWord(word) {
-				reading.value.speak(word)
+			onSaid(said) {
+				reading.value.speak(said)
 			},
 			onStop() {
 				reading.value.pause()
@@ -196,21 +199,19 @@ const StudySession = component<StudySessionOptions>({
 			)
 		}
 
-		/** Marks the spoken word, where the browser can mark text. */
-		const highlight = (word: ReadingState['word']) => {
+		/** Marks what is being said, where the browser can mark text. */
+		const highlight = (said: ReadingState['said']) => {
 			if (typeof CSS === 'undefined' || !('highlights' in CSS)) return
-			if (word === undefined) {
-				CSS.highlights.delete(highlightName)
-				return
-			}
-			const host = blockElements[word.block]
-			if (host === undefined) return
-			readables[word.block] ??= readableText(host)
-			const range = readables[word.block]?.rangeOf(word.start, word.end)
-			if (range === undefined) CSS.highlights.delete(highlightName)
-			else CSS.highlights.set(highlightName, new Highlight(range))
+			const ranges = said.flatMap(({ block, start, end }) => {
+				const host = blockElements[block]
+				if (host === undefined) return []
+				readables[block] ??= readableText(host)
+				return readables[block].rangeOf(start, end) ?? []
+			})
+			if (ranges.length === 0) CSS.highlights.delete(highlightName)
+			else CSS.highlights.set(highlightName, new Highlight(...ranges))
 		}
-		signal.addEventListener('abort', () => { highlight(undefined) }, { once: true })
+		signal.addEventListener('abort', () => { highlight([]) }, { once: true })
 
 		/** Keeps the block being read in view, when the card is taller than the screen. */
 		const followBlock = (block: number) => {
@@ -362,8 +363,9 @@ const StudySession = component<StudySessionOptions>({
 				showProgress(state.card)
 				if (!sheet.hidden) text.scrollTop = 0
 			}
-			if (!sameWord(state.word, shown.word)) highlight(state.word)
-			if (state.word !== undefined && state.word.block !== shown.word?.block) followBlock(state.word.block)
+			if (!sameSaid(state.said, shown.said)) highlight(state.said)
+			const block = state.said[0]?.block
+			if (block !== undefined && block !== shown.said[0]?.block) followBlock(block)
 			if (state.playing !== shown.playing) showPlaying(state.playing)
 			shown = { ...state }
 		})

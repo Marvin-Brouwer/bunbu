@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { pronouncerOf, sentencesOf, shownWordAt, spokenLine, type SpokenLine } from './line.mts'
+import { pronouncerOf, sentencesOf, shownRangesOf, shownWordAt, spokenLine, type SpokenLine } from './line.mts'
 
 const shown = (text: string, block = 0, offset = 0) => ({ shown: text, block, offset })
 
@@ -64,6 +64,13 @@ describe('the spoken word on screen', () => {
 		const at = line.text.indexOf('ORDER')
 		expect(shownWordAt(line, at, 'ORDER BY'.length)).toEqual({ block: 1, start: 0, end: 8 })
 		expect(shownWordAt(line, at, 'ORDER BY.'.length)).toEqual({ block: 1, start: 0, end: 8 })
+	})
+
+	it('finds a whole line in each of its blocks, without what is only said', () => {
+		expect(shownRangesOf(line)).toEqual([
+			{ block: 0, start: 0, end: texts[0]!.length },
+			{ block: 1, start: 0, end: texts[1]!.length },
+		])
 	})
 
 	it('maps pieces that start inside their block', () => {

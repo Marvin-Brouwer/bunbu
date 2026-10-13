@@ -14,8 +14,8 @@ describe('dojo', () => {
 	it('restarts study at the first card', () => {
 		const study = createStudyGame()
 		study.reading.value.reach(3)
-		study.reading.value.speak({ block: 0, start: 0, end: 3 })
+		study.reading.value.speak([{ block: 0, start: 0, end: 3 }])
 		study.reading.value.restart()
-		expect(study.reading.value).toMatchObject({ card: 0, word: undefined })
+		expect(study.reading.value).toMatchObject({ card: 0, said: [] })
 	})
 })

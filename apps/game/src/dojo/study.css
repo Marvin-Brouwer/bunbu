@@ -3,7 +3,7 @@
  * correct answer in a grey band under the question, Pause and Skip docked at the bottom.
  */
 
-/* The word being spoken: a grey background and an underline. */
+/* What is being said, a word or a sentence: a grey background and an underline. */
 ::highlight(spoken-word) {
 	background-color: rgb(31 28 24 / 18%);
 	text-decoration: underline 2px;
