@@ -7,7 +7,11 @@
  * - **Pause** cancels and resumes from the start of the line: Android's engine has no real pause
  *   (pausing stops it), and others don't always resume.
  * - **The spoken word** comes from the engine's word boundaries. Android and some online voices
- *   send none; there the word is guessed from the time spoken and the speed.
+ *   send none; there the word is guessed from the time spoken, at the pace measured from the lines
+ *   read so far.
+ * - **A new voice or speed** restarts the line once the change settles, not on every step of a
+ *   slider: Android's engine doesn't stop at once, and many restarts in a row read the line over
+ *   each other.
  * - **Voices** load late, after a `voiceschanged` event, or, on Safari, without one.
  * - **Lines** are short, a sentence at most, as Chrome stops some voices after 15 seconds.
  * - An utterance the page no longer holds can be dropped by the browser before it ends, so the
@@ -21,13 +25,14 @@
  */
 
 import { shownWordAt, wordStarts, type ShownRange, type SpokenLine } from './line.mts'
+import { paceAfter, unheardPace } from './pace.mts'
 
 /** The engine's errors for speech that was stopped on purpose, by `cancel`. */
 const stopped = new Set<string>(['canceled', 'interrupted'])
 /** How long to wait for the engine to start before taking it as refused, as without a tap first. */
 const startTimeout = 3000
-/** Characters said per second at speed 1, to guess the spoken word without word boundaries. */
-const charactersPerSecond = 14
+/** How long a new voice or speed has to stay before the line restarts with it. */
+const settleTime = 400
 /** How many lines to hand the engine ahead while the page is hidden. */
 const linesAheadHidden = 500
 
@@ -140,6 +145,9 @@ export function createSpeaker(options: SpeakerOptions, signal: AbortSignal): Spe
 	let boundaries = false
 	let guessing: ReturnType<typeof setInterval> | undefined
 	let waiting: ReturnType<typeof setTimeout> | undefined
+	let restarting: ReturnType<typeof setTimeout> | undefined
+	/** How fast the voice reads, measured while guessing the word. */
+	let pace = unheardPace
 	const held = new Set<SpeechSynthesisUtterance>()
 
 	const stopGuessing = () => {
@@ -151,6 +159,7 @@ export function createSpeaker(options: SpeakerOptions, signal: AbortSignal): Spe
 		generation++
 		stopGuessing()
 		clearTimeout(waiting)
+		clearTimeout(restarting)
 		held.clear()
 		if (canSpeak()) speechSynthesis.cancel()
 		options.onWord?.(undefined)
@@ -170,7 +179,7 @@ export function createSpeaker(options: SpeakerOptions, signal: AbortSignal): Spe
 		let shown = -1
 		stopGuessing()
 		guessing = setInterval(() => {
-			const reached = (performance.now() - began) / 1000 * charactersPerSecond * rate
+			const reached = (performance.now() - began) / 1000 * pace.charactersPerSecond * rate
 			const word = starts.findLast((start) => start <= reached) ?? 0
 			if (word === shown) return
 			shown = word
@@ -185,9 +194,11 @@ export function createSpeaker(options: SpeakerOptions, signal: AbortSignal): Spe
 		utterance.voice = voice ?? voicesFor(language)[0] ?? null
 		utterance.rate = rate
 		held.add(utterance)
+		let began: number | undefined
 
 		utterance.addEventListener('start', () => {
 			if (ours !== generation) return
+			began = performance.now()
 			clearTimeout(waiting)
 			current = place
 			options.onLine?.(place)
@@ -209,7 +220,12 @@ export function createSpeaker(options: SpeakerOptions, signal: AbortSignal): Spe
 			playing = false
 			options.onEnd?.()
 		}
-		utterance.addEventListener('end', done)
+		utterance.addEventListener('end', () => {
+			if (ours === generation && !boundaries && began !== undefined) {
+				pace = paceAfter(pace, line.text.length, (performance.now() - began) / 1000, utterance.rate)
+			}
+			done()
+		})
 		utterance.addEventListener('error', (event) => {
 			if (stopped.has(event.error)) {
 				held.delete(utterance)
@@ -237,6 +253,15 @@ export function createSpeaker(options: SpeakerOptions, signal: AbortSignal): Spe
 			say(queued, line)
 			queued++
 		}
+	}
+
+	/** Stops now and reads the line again once the voice or speed stays, see {@link settleTime}. */
+	const restartSettled = () => {
+		if (!playing) return
+		cancel()
+		restarting = setTimeout(() => {
+			if (playing) play(current)
+		}, settleTime)
 	}
 
 	const play = (place: number) => {
@@ -291,11 +316,11 @@ export function createSpeaker(options: SpeakerOptions, signal: AbortSignal): Spe
 		place: () => current,
 		setVoice(next) {
 			voice = next
-			if (playing) play(current)
+			restartSettled()
 		},
 		setRate(next) {
 			rate = next
-			if (playing) play(current)
+			restartSettled()
 		},
 	}
 }
