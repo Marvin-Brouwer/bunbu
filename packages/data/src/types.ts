@@ -14,6 +14,8 @@ export interface BunbuData {
   passingScore: number;
   /** How long a question may take in a fight, such as `3m` or `1m30s`. Read it with `secondsOf`. */
   timePerQuestion?: string;
+  /** How many questions one run of the fight asks, picked at random. Without it a run asks every question. */
+  questionsPerTest?: number;
   pronunciations?: Record<string, string>;
   questions: Question[];
 }

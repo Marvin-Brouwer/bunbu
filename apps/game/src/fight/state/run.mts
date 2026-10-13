@@ -3,12 +3,13 @@
  *
  * The samurai runs at a constant pace and the game never speeds up
  * ([core loop](../../../../../docs/design/gameplay.md#core-loop)). `worldScale` is the slow motion
- * during an ambush, not a difficulty setting: that is `timeScale` in [settings.mts](../settings.mts).
+ * during an ambush, not the difficulty: that is `timeScales` in [difficulty.mts](./difficulty.mts).
  * Finished and fallen are phases of the run, not routes: the results show over the run's world.
  */
 
 import { createStore, type Store } from '@rooted/store'
 import { refuse } from '../../_shared/state/store.mts'
+import { usualDifficulty, type Difficulty } from './difficulty.mts'
 
 export type RunPhase = 'idle' | 'intro' | 'running' | 'ambush' | 'paused' | 'finished' | 'fallen'
 
@@ -17,6 +18,8 @@ export const pausable: ReadonlySet<RunPhase> = new Set(['intro', 'running', 'amb
 
 export type RunState = {
 	readonly phase: RunPhase
+	/** The difficulty the run started with: it can't change halfway through. */
+	readonly difficulty: Difficulty
 	/** Run time in real seconds, slow motion included. Shown on the results and used as the high-score tiebreak. */
 	readonly elapsed: number
 	/** Metres covered of `stageLength`. */
@@ -35,7 +38,8 @@ export type RunState = {
 }
 
 export type RunActions = {
-	start: (stageLength: number) => void
+	/** Starts the intro; `difficulty` defaults to the usual one. */
+	start: (stageLength: number, difficulty?: Difficulty) => void
 	/**
 	 * Advances the run. Distance goes by `worldDelta`, which the loop has scaled by `worldScale`;
 	 * the run time and the resume countdown go by `realDelta`, the player's own time.
@@ -91,6 +95,7 @@ export function marksPassed({ distance, stageLength }: Pick<RunState, 'distance'
 
 export const notRunning: RunState = {
 	phase: 'idle',
+	difficulty: usualDifficulty,
 	elapsed: 0,
 	distance: 0,
 	stageLength: 0,
@@ -157,8 +162,8 @@ export function createRun(initial: RunState = notRunning): Run {
 	const store: Run = createStore<RunState & RunActions>({
 		...initial,
 
-		start(stageLength) {
-			store.update(() => ({ ...notRunning, phase: 'intro', stageLength }))
+		start(stageLength, difficulty = usualDifficulty) {
+			store.update(() => ({ ...notRunning, phase: 'intro', stageLength, difficulty }))
 		},
 
 		tick(worldDelta, realDelta) {

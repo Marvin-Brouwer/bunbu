@@ -2,21 +2,13 @@
  * The difficulty, a slider over four stops from Apprentice to Shogun that sets how long an ambush
  * waits ([time limit](../../../../../docs/design/gameplay.md#time-limit)). The stops between
  * the ends are marked; Samurai is where a new player starts.
- * On the fight screen and in the settings, both changing the same setting.
+ * Only on the fight setup, and kept per quiz: each test has its own difficulty.
  */
 
-import { secondsOf } from '@bunbu/data'
+import { secondsOf, type BunbuData } from '@bunbu/data'
 import { component } from '@rooted/components'
-import { difficulties, settings, timeScales, type Difficulty } from '../../settings/state/settings.mts'
-import { selection } from '../state/selection.mts'
+import { difficulties, difficultyNames, quizDifficulties, timeScales, type Difficulty } from '../../fight/state/difficulty.mts'
 import styles from './menu.css'
-
-const names: Readonly<Record<Difficulty, string>> = {
-	apprentice: 'Apprentice',
-	samurai: 'Samurai',
-	daimyo: 'Daimyo',
-	shogun: 'Shogun',
-}
 
 /** A time as the quiz format writes it, with spaces: `45s`, `2m 24s`, `1h 12m`. */
 function durationOf(seconds: number): string {
@@ -30,27 +22,28 @@ function durationOf(seconds: number): string {
 }
 
 /**
- * What the slider says about a difficulty: its name, and the time per question when the chosen
- * quiz sets one.
+ * What the slider says about a difficulty: its name, and the time per question when the quiz sets
+ * one.
  */
-function describe(difficulty: Difficulty): string {
-	const timePerQuestion = selection.value.quiz?.timePerQuestion
+function describe(quiz: BunbuData, difficulty: Difficulty): string {
+	const { timePerQuestion } = quiz
 	const seconds = timePerQuestion === undefined ? undefined : secondsOf(timePerQuestion)
-	if (seconds === undefined) return names[difficulty]
-	return `${names[difficulty]}: ${durationOf(seconds * timeScales[difficulty])} per question`
+	if (seconds === undefined) return difficultyNames[difficulty]
+	return `${difficultyNames[difficulty]}: ${durationOf(seconds * timeScales[difficulty])} per question`
 }
 
 const placeOf = (difficulty: Difficulty) => difficulties.indexOf(difficulty) / (difficulties.length - 1)
 
 export type DifficultySliderOptions = {
-	/** Shows the difficulty without letting it change, as during a run. */
-	readonly disabled?: boolean
+	/** The quiz the difficulty is chosen for. */
+	readonly quiz: BunbuData
 }
 
 export const DifficultySlider = component<DifficultySliderOptions>({
 	name: 'difficulty-slider',
 	styles,
 	onMount({ append, element, options, signal }) {
+		const { quiz } = options
 		const note = element('p', {
 			classes: styles.sliderNote,
 		})
@@ -59,15 +52,14 @@ export const DifficultySlider = component<DifficultySliderOptions>({
 			min: '0',
 			max: String(difficulties.length - 1),
 			step: '1',
-			value: String(difficulties.indexOf(settings.value.difficulty)),
-			disabled: options.disabled ?? false,
+			value: String(difficulties.indexOf(quizDifficulties.value.of(quiz.id, quiz.version))),
 			aria: {
 				label: 'Difficulty',
 			},
 			on: {
 				input(event) {
 					const difficulty = difficulties[Number(event.currentTarget.value)]
-					if (difficulty !== undefined) settings.value.setDifficulty(difficulty)
+					if (difficulty !== undefined) quizDifficulties.value.choose(quiz.id, quiz.version, difficulty)
 				},
 			},
 		})
@@ -80,10 +72,10 @@ export const DifficultySlider = component<DifficultySliderOptions>({
 		const show = (difficulty: Difficulty) => {
 			slider.value = String(difficulties.indexOf(difficulty))
 			fill.style.setProperty('--place', String(placeOf(difficulty)))
-			slider.setAttribute('aria-valuetext', describe(difficulty))
-			note.textContent = describe(difficulty)
+			slider.setAttribute('aria-valuetext', describe(quiz, difficulty))
+			note.textContent = describe(quiz, difficulty)
 		}
-		show(settings.value.difficulty)
+		show(quizDifficulties.value.of(quiz.id, quiz.version))
 
 		// The stops between the ends, on the rail and under the red fill.
 		const marks = difficulties.slice(1, -1).map((difficulty) => {
@@ -119,10 +111,10 @@ export const DifficultySlider = component<DifficultySliderOptions>({
 						classes: styles.sliderEnds,
 						children: [
 							element('span', {
-								textContent: names.apprentice,
+								textContent: difficultyNames.apprentice,
 							}),
 							element('span', {
-								textContent: names.shogun,
+								textContent: difficultyNames.shogun,
 							}),
 						],
 					}),
@@ -132,8 +124,8 @@ export const DifficultySlider = component<DifficultySliderOptions>({
 			}),
 		)
 
-		settings.on('change', signal, ({ detail }) => {
-			show(detail.state.difficulty)
+		quizDifficulties.on('change', signal, () => {
+			show(quizDifficulties.value.of(quiz.id, quiz.version))
 		})
 	},
 })

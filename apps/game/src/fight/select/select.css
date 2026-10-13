@@ -90,6 +90,25 @@
 	color: var(--ink-soft);
 }
 
+/* The lock covers the number of a stage that is still locked. */
+.stageDigit {
+	position: relative;
+}
+
+.stage[data-locked='true'] .stageDigit {
+	color: transparent;
+}
+
+.stageLock {
+	position: absolute;
+	inset: 50% auto auto 50%;
+	width: 1.1rem;
+	height: 1.1rem;
+	translate: -50% -55%;
+	background: var(--ink);
+	mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='4.5' y='10.5' width='15' height='10.5' rx='1.5'/%3E%3Cpath d='M8 10.5V7a4 4 0 0 1 8 0v3.5M12 14.5v3'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
 .stageText {
 	display: grid;
 	gap: 0.25rem;
@@ -110,6 +129,12 @@
 	font-weight: 400;
 	letter-spacing: 0.08em;
 	text-transform: uppercase;
+}
+
+/* Dev only: unlock or lock every stage of the quiz. */
+.stageLocks {
+	display: grid;
+	margin-top: 0.6rem;
 }
 
 .start {

@@ -43,7 +43,7 @@ export const Fight = component({
 				return
 			}
 			const game = createRunGame()
-			startRun(game, quiz)
+			startRun(game, quiz, Math.random)
 			showRun(game)
 		}
 

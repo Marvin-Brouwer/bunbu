@@ -7,16 +7,17 @@
  */
 
 import type { BunbuData } from '@bunbu/data'
+import { shuffle, type Random } from '../../_shared/state/random.mts'
 import { selection } from '../../_shared/state/selection.mts'
 import { snapshot } from '../../_shared/state/store.mts'
 import type { Outcome, QuestionRef, QuizActions, QuizState } from '../../_shared/state/quiz.mts'
-import { settings } from '../../settings/state/settings.mts'
+import { quizDifficulties, timeScales, type Difficulty } from '../state/difficulty.mts'
 import type { RunGame } from '../state/game.mts'
 import { highScores } from '../state/highscores.mts'
 import { lastRun } from '../state/lastrun.mts'
 import { runConfig, stageDistanceOf } from '../state/run.mts'
 import { pointOf, type HighScore } from '../state/score.mts'
-import { stageResults } from '../state/stage-results.mts'
+import { stageAfter, stageResults } from '../state/stage-results.mts'
 import { missShare, openAmbush, tickAmbush, tickOutcome } from './ambush.mts'
 
 /** Metres of path per ambush, until stage length and question count are decided (docs/plan.md). */
@@ -36,15 +37,37 @@ function questionsAsked(game: RunGame): number {
 	return new Set(refs.slice(0, answered).map((ref) => ref.question)).size
 }
 
-/** `best` defaults to the high score of the quiz, which the HUD shows as the one to beat. */
-export function startRun(game: RunGame, data: BunbuData, best: HighScore | undefined = highScores.value.of(data.id, data.version)): void {
-	game.quiz.value.load(data)
+/**
+ * The questions one run asks, as indices into the quiz, in the order they are asked: a test
+ * ([stages](../../../../../docs/design/gameplay.md#stages)). With `random` they are shuffled and,
+ * when the quiz sets `questionsPerTest`, that many are picked from them; without it, tests and
+ * fixtures get them in file order.
+ */
+export function testOf(data: BunbuData, random?: Random): number[] {
+	const indices = data.questions.map((_, index) => index)
+	const order = random === undefined ? indices : shuffle(indices, random)
+	return order.slice(0, data.questionsPerTest ?? order.length)
+}
+
+/**
+ * Starts a run on a new test of `data`. The game passes `Math.random` for `random`; tests and
+ * fixtures leave it out to ask the questions in file order. `difficulty` defaults to the one chosen
+ * for the quiz, `best` to its high score, which the HUD shows as the one to beat.
+ */
+export function startRun(
+	game: RunGame,
+	data: BunbuData,
+	random?: Random,
+	difficulty: Difficulty = quizDifficulties.value.of(data.id, data.version),
+	best: HighScore | undefined = highScores.value.of(data.id, data.version),
+): void {
+	game.quiz.value.load(data, testOf(data, random), random)
 	game.score.value.reset(best)
 	game.life.value.reset()
 	game.ambush.value.close()
 	game.ninjas.value.clear()
 	game.shogun.value.run()
-	game.run.value.start(game.quiz.value.order.length * metresPerAmbush)
+	game.run.value.start(game.quiz.value.order.length * metresPerAmbush, difficulty)
 }
 
 /**
@@ -79,7 +102,8 @@ export function runIsOver(game: RunGame): boolean {
 
 /**
  * Keeps what the run leaves behind, the moment its last answer is in: the misses for "practise
- * mistakes" and how far it got on its stage either way, and the high score when it passed. Saved then rather than when the run
+ * mistakes" and how far it got on its stage either way, and the high score and the next stage
+ * unlocked when it passed. Saved then rather than when the run
  * ends after the hold, so pausing or closing the app during the last strike or hit loses nothing.
  * The time is the run's time when it ends: now, plus the hold that is left, which a pause doesn't
  * add to. The run's own clock goes by whole frames, so it may pass that by part of the frame that
@@ -91,10 +115,14 @@ export function recordRun(game: RunGame): void {
 	const fallen = game.life.value.empty()
 	lastRun.value.save(quiz.id, quiz.version, game.quiz.value.misses())
 	// The stage can't change during a run: the fight setup is the only place it is chosen.
-	stageResults.value.submit(quiz.id, quiz.version, selection.value.stage, { distance: stageDistanceOf(game.run.value), cleared: !fallen })
+	const { stage } = selection.value
+	const next = stageAfter(stage)
+	const unlocks = !fallen && next !== undefined && !stageResults.value.unlocked(quiz.id, quiz.version, next)
+	stageResults.value.submit(quiz.id, quiz.version, stage, { distance: stageDistanceOf(game.run.value), cleared: !fallen })
 	const { points, correct, answered } = game.score.value
 	const seconds = game.run.value.elapsed + game.run.value.recovery
-	game.score.value.settle(!fallen && highScores.value.submit(quiz.id, quiz.version, { points, seconds, correct, answered }))
+	const newBest = !fallen && highScores.value.submit(quiz.id, quiz.version, { points, seconds, correct, answered })
+	game.score.value.settle(newBest, unlocks ? next : undefined)
 }
 
 /**
@@ -140,7 +168,7 @@ export function tickRun(game: RunGame, worldDelta: number, realDelta: number): v
 		game.shogun.value.run()
 	}
 	if (game.quiz.value.current() !== undefined && distance >= ambushAt(questionsAsked(game)) - reached) {
-		openAmbush(game, settings.value.timeScale())
+		openAmbush(game, timeScales[game.run.value.difficulty])
 	}
 }
 

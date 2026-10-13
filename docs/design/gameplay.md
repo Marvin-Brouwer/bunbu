@@ -22,6 +22,12 @@ Each question in the quiz triggers an **ambush**: ninjas attack, a papyrus scrol
 
 The run ends when the stage is cleared ([results](screens.md#7-finished-results-and-mistakes)) or when the pass mark is out of reach ([fallen](screens.md#8-fallen)).
 
+## Stages
+
+A run is a **test**: the quiz's questions in a random order, a different one every run. When the quiz sets [`questionsPerTest`](data-format.md#document-structure), a run asks only that many of them, picked at random each run, and the pass mark counts the points of those. The stage is as long as the questions it asks.
+
+The five stages are played in order: Rice fields, Bamboo forest, Mountain temple, Castle town, Edo castle. Only the first is open at the start. **Passing a test on a stage unlocks the next one**, per quiz (`id` + `version`, like the high score). Unlocking is no secret: a locked stage says which one to clear first.
+
 ## Ambush
 
 One screen, no Submit button: **the swipe is the answer**.
@@ -97,7 +103,7 @@ answer        = yes-no:    1.5
 
 `solutions` and `match` use the `yes-no` and `single` rows, per solution or row, added up for the whole ambush. A round answered early leaves its time to the ones after it. The pause between two scrolls doesn't count.
 
-`timeScale` is the difficulty, a slider with four stops, the two inner ones marked on the track: **Apprentice** `1.2`, **Samurai** `1` (where a new player starts), **Daimyo** `0.8` and **Shogun** `0.5`. The dojo has no time limit.
+`timeScale` is the difficulty, a slider with four stops, the two inner ones marked on the track: **Apprentice** `1.2`, **Samurai** `1` (where a new player starts), **Daimyo** `0.8` and **Shogun** `0.5`. It is chosen on the [fight setup](screens.md#2-fight-setup) only, kept per quiz, and can't change during a run. The dojo has no time limit.
 
 All of these numbers are defaults. Make them configurable and tune them in playtests, including the 0.8 s commit pause.
 

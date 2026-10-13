@@ -120,6 +120,7 @@ function midRun(answered: number, data = fixtureQuiz): RunGameState {
 			answered,
 			best: { points: 2210, seconds: 245, correct: 17, answered: 20 },
 			newBest: false,
+			unlocked: undefined,
 		},
 		run: {
 			...newRun.run,
@@ -239,6 +240,7 @@ export const fixtures: Readonly<Record<string, () => Fixture>> = {
 				answered: 4,
 				best: { points: 2 * pointsPerCorrect, seconds: 312, correct: 2, answered: 4 },
 				newBest: true,
+				unlocked: 'bamboo-forest',
 			},
 			run: { ...state.run, phase: 'finished', elapsed: 245, distance: state.run.stageLength },
 		}

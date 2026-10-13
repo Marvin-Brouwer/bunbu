@@ -1,4 +1,4 @@
-/** Settings, from the title: difficulty, haptics and volume ([6 Pause](../../../../docs/design/screens.md#6-pause)). */
+/** Settings, from the title: haptics, volume and reading aloud ([6 Pause](../../../../docs/design/screens.md#6-pause)). */
 
 import { component } from '@rooted/components'
 import { href } from '@rooted/router'

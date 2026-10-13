@@ -33,12 +33,12 @@ export const Finished = component<FinishedOptions>({
 		const { quiz, refs } = snapshot<QuizState & QuizActions>(game.quiz)
 		if (quiz === undefined) return
 
-		const { points, correct, best, newBest } = game.score.value
+		const { points, correct, best, newBest, unlocked } = game.score.value
 		const { elapsed, stageLength } = game.run.value
 		const total = pointsIn(quiz, refs)
 		const misses = game.quiz.value.misses()
 		// The same quiz on the next stage that has a world (docs/plan.md#open-questions), or this one
-		// again after the last.
+		// again after the last. Passing has unlocked it, now or before.
 		const next = stages.slice(stages.indexOf(selection.value.stage) + 1).find((stage) => builtStages.has(stage))
 
 		append(
@@ -127,7 +127,7 @@ export const Finished = component<FinishedOptions>({
 							}
 							: {
 								label: 'Next stage',
-								note: stageNames[next],
+								note: next === unlocked ? `${stageNames[next]} · unlocked` : stageNames[next],
 								action: () => {
 									selection.value.chooseStage(next)
 									options.restart()

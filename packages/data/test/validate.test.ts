@@ -77,6 +77,18 @@ describe("validate", () => {
     }
   });
 
+  it("accepts a number of questions per test", async () => {
+    const data = await expectValid(quiz(single).replace("passingScore: 70", "passingScore: 70\nquestionsPerTest: 40"));
+    expect(data.questionsPerTest).toBe(40);
+  });
+
+  it("rejects a number of questions per test that is not a whole number above zero", async () => {
+    for (const count of ["0", "-1", "2.5", "many"]) {
+      const error = await expectIssues(quiz(single).replace("passingScore: 70", `passingScore: 70\nquestionsPerTest: ${count}`));
+      expect(error.issues[0]?.path).toBe("/questionsPerTest");
+    }
+  });
+
   it("requires the schema modeline", async () => {
     const error = await expectIssues(quiz(single).replace(modeline, "# just a comment"));
     expect(error.issues).toEqual([expect.objectContaining({ line: 1, message: expect.stringContaining("first line") })]);

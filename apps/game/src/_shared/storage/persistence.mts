@@ -1,5 +1,5 @@
 /**
- * Keeps the app-wide stores: settings, high scores, how far each stage got, the last run's misses and the chosen quiz and
+ * Keeps the app-wide stores: settings, the difficulty per quiz, high scores, how far each stage got, the last run's misses and the chosen quiz and
  * stage in local storage, the loaded quizzes as `.bunbu` files in IndexedDB. Everything else starts fresh with every run
  * ([state](../../../../../docs/architecture/state.md#stores)).
  *
@@ -14,7 +14,8 @@ import { highScores } from '../../fight/state/highscores.mts'
 import { lastRun, type LastRunState } from '../../fight/state/lastrun.mts'
 import { pointsPerCorrect, type HighScore } from '../../fight/state/score.mts'
 import { stageResults, type StageResult } from '../../fight/state/stage-results.mts'
-import { difficulties, settings, speechRates, type SettingsState } from '../../settings/state/settings.mts'
+import { difficulties, quizDifficulties, type Difficulty } from '../../fight/state/difficulty.mts'
+import { settings, speechRates, type SettingsState } from '../../settings/state/settings.mts'
 import { builtStages, selection, stages, type Stage } from '../state/selection.mts'
 import { snapshot } from '../state/store.mts'
 import { library, type LibraryActions, type LibraryEntry, type LibraryState } from './library.mts'
@@ -28,7 +29,6 @@ import { read, write, type StoredKey } from './storage.mts'
 const passed = <T,>(result: T | type.errors): result is T => !(result instanceof type.errors)
 
 const settingFields = {
-	difficulty: type.enumerated(...difficulties),
 	haptics: type('boolean'),
 	volume: type('0 <= number <= 1'),
 	speechRate: type.enumerated(...speechRates),
@@ -57,6 +57,15 @@ export function parseHighScores(data: unknown): Record<string, HighScore> {
 	if (!isObject(data)) return {}
 	const checked = Object.entries(data).map(([key, score]) => [key, highScore(score)] as const)
 	return Object.fromEntries(checked.filter((entry): entry is readonly [string, HighScore] => passed(entry[1])))
+}
+
+const difficulty = type.enumerated(...difficulties)
+
+/** The difficulties that are valid, by quiz. */
+export function parseDifficulties(data: unknown): Record<string, Difficulty> {
+	if (!isObject(data)) return {}
+	const checked = Object.entries(data).map(([key, chosen]) => [key, difficulty(chosen)] as const)
+	return Object.fromEntries(checked.filter((entry): entry is readonly [string, Difficulty] => passed(entry[1])))
 }
 
 const stageResult = type({
@@ -146,6 +155,7 @@ function save<TState extends StateObject>(store: Store<TState>, key: StoredKey, 
  */
 export function persistApp(signal: AbortSignal): Promise<void> {
 	settings.value.restore(parseSettings(read('settings')))
+	quizDifficulties.value.restore(parseDifficulties(read('difficulties')))
 	highScores.value.restore(parseHighScores(read('high-scores')))
 	stageResults.value.restore(parseStageResults(read('stage-results')))
 	const saved = parseLastRun(read('last-run'))
@@ -153,7 +163,8 @@ export function persistApp(signal: AbortSignal): Promise<void> {
 	const chosen = parseSelection(read('selection'))
 	if (chosen.stage !== undefined) selection.value.chooseStage(chosen.stage)
 
-	save(settings, 'settings', signal, ({ difficulty, haptics, volume, speechRate, voices }) => ({ difficulty, haptics, volume, speechRate, voices }))
+	save(settings, 'settings', signal, ({ haptics, volume, speechRate, voices }) => ({ haptics, volume, speechRate, voices }))
+	save(quizDifficulties, 'difficulties', signal, (state) => state.chosen)
 	save(highScores, 'high-scores', signal, ({ scores }) => scores)
 	save(stageResults, 'stage-results', signal, ({ results }) => results)
 	save(lastRun, 'last-run', signal, ({ quiz, misses }) => ({ quiz, misses }))

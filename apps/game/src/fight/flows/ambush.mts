@@ -29,7 +29,7 @@ export function missShare(game: RunGame): number {
 
 /**
  * Springs the ambush for the question that is up next: the world slows down, the ninjas spawn
- * and the scroll opens. `timeScale` comes from the settings, `undefined` for no time limit.
+ * and the scroll opens. `timeScale` comes from the run's difficulty, `undefined` for no time limit.
  */
 export function openAmbush(game: RunGame, timeScale: number | undefined, random: Random = Math.random): void {
 	const at = game.quiz.value.current()

@@ -40,10 +40,12 @@ A screen of its own, so the title stays calm:
 
 "Choose your path". The quiz is chosen on Quizzes (1b); the stage and the difficulty only matter to a fight, so they are chosen here:
 
-1. **Quiz:** the chosen quiz, and which of its questions won't fit in a fight.
-2. **Stage:** Rice fields, Bamboo forest, Mountain temple, Castle town, Edo castle. Each shows the best distance with the chosen quiz and whether it was cleared (`Best 860 m`, `Best 1,440 m · cleared`), or nothing before its first run. A stage is as long as the quiz, so this is per quiz.
+1. **Quiz:** the chosen quiz (`v3 · pass 70% · 40 of 260 per run` when it sets `questionsPerTest`), and which of its questions won't fit in a fight.
+2. **Stage:** Rice fields, Bamboo forest, Mountain temple, Castle town, Edo castle. Each shows the best distance with the chosen quiz and whether it was cleared (`Best 860 m`, `Best 1,440 m · cleared`), or nothing before its first run. A stage is as long as the test, so this is per quiz. A stage that is still locked ([stages](gameplay.md#stages)) can't be chosen: a lock covers its number and it says `Clear Rice fields to unlock`. When the chosen stage is locked for the chosen quiz, the furthest open one is chosen instead.
 
-A difficulty slider from **Apprentice** to **Shogun** over four stops (Apprentice, Samurai, Daimyo, Shogun), the inner two marked (sets `timeScale`, see [time limit](gameplay.md#time-limit)). Under it, the stop, and the time it gives when the quiz sets `timePerQuestion`: `Daimyo: 2m 24s per question`. Then **Start run**.
+A difficulty slider from **Apprentice** to **Shogun** over four stops (Apprentice, Samurai, Daimyo, Shogun), the inner two marked (sets `timeScale`, see [time limit](gameplay.md#time-limit)). Under it, the stop, and the time it gives when the quiz sets `timePerQuestion`: `Daimyo: 2m 24s per question`. The difficulty is chosen here only, never in the settings, and kept per quiz (`id` + `version`): each test has its own, Samurai until another is chosen. Then **Start run**.
+
+In dev builds only, one button under the stages toggles them for the chosen quiz: **Unlock all stages** while any is locked, **Lock all stages** (which clears their results) once all are open, to try them without playing them.
 
 ### 3 Running
 
@@ -80,8 +82,8 @@ The scroll's heading is the label, the question type, `2 OF 3` for the rounds of
 
 All on a scroll over the dimmed world, like an ambush:
 
-- This run: quiz, stage, answered (`11 / 13`), distance.
-- **Resume**, **Restart stage**, **Settings**, **Quit** at the foot of the scroll. Settings open in place on the scroll; the difficulty only shows there, since it can't change halfway through a run.
+- This run: quiz, stage, difficulty, answered (`11 / 13`), distance.
+- **Resume**, **Restart stage**, **Settings**, **Quit** at the foot of the scroll. Settings open in place on the scroll; the difficulty isn't one of them, it is chosen before the run on [screen 2](#2-fight-setup).
 - Auto-pauses when the app goes to the background or a call comes in. 3-2-1 countdown on resume.
 - Also pauses on **Back** and when the player leaves full screen. On a phone (a touch screen without a mouse or trackpad) a run, and [practice](dojo.md#practice), plays full screen; resuming goes full screen again, and **Back** while paused leaves the run. The screen stays on during a run and practice, full screen or not, so it doesn't dim or lock mid fight. **Quit** here, and **Menu** or **Practise mistakes** on the results, go to the title (or the dojo) in the run's place in history, so Back from there never goes into the run again.
 
@@ -95,7 +97,7 @@ One scroll over the world holds all of it; the buttons stay at its foot while th
 - `17 / 20 correct (85%) · 4:05`.
 - Breakdown: **Correct** (`17 × 100`), **Time** (tiebreak for the high score), **Distance** (stage cleared).
 - **Mistakes**: each miss with ✗ your pick, ✓ the right answer, the explanation and references.
-- **Next stage**, **Practise mistakes**, **Menu**.
+- **Next stage** (with `Bamboo forest · unlocked` when this run unlocked it; **Run again** after the last stage), **Practise mistakes**, **Menu**.
 
 ### 8 Fallen
 

@@ -2,13 +2,14 @@ import { compress, validate, type BunbuData } from '@bunbu/data'
 import { Immutable } from '@rooted/store'
 import { IDBFactory } from 'fake-indexeddb'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { quizDifficulties } from '../../fight/state/difficulty.mts'
 import { highScores } from '../../fight/state/highscores.mts'
 import { stageResults } from '../../fight/state/stage-results.mts'
 import { lastRun } from '../../fight/state/lastrun.mts'
 import { settings } from '../../settings/state/settings.mts'
 import { selection } from '../state/selection.mts'
 import { library } from './library.mts'
-import { parseHighScores, parseLastRun, parseStageResults, parseLibrary, parseSelection, parseSettings, persistApp } from './persistence.mts'
+import { parseDifficulties, parseHighScores, parseLastRun, parseStageResults, parseLibrary, parseSelection, parseSettings, persistApp } from './persistence.mts'
 import { readQuizFiles, writeQuizFiles } from './quiz-files.mts'
 import { read, storedVersion, write } from './storage.mts'
 
@@ -68,6 +69,7 @@ beforeEach(() => {
 	vi.stubGlobal('indexedDB', new IDBFactory())
 	stop = new AbortController()
 	settings.value.reset()
+	quizDifficulties.value.reset()
 	highScores.value.reset()
 	lastRun.value.reset()
 	stageResults.value.reset()
@@ -109,10 +111,15 @@ describe('storage', () => {
 })
 
 describe('parsing what was saved', () => {
+	it('keeps the difficulties that are valid and drops the rest', () => {
+		expect(parseDifficulties({ '["a","1"]': 'shogun', '["b","1"]': 'novice', '["c","1"]': 'toString' })).toEqual({ '["a","1"]': 'shogun' })
+		expect(parseDifficulties('shogun')).toEqual({})
+	})
+
 	it('keeps the settings that are valid and drops the rest', () => {
-		expect(parseSettings({ difficulty: 'shogun', haptics: 'yes', volume: 3 })).toEqual({ difficulty: 'shogun' })
-		expect(parseSettings({ difficulty: 'novice' })).toEqual({})
-		expect(parseSettings({ difficulty: 'toString' })).toEqual({})
+		expect(parseSettings({ haptics: false, volume: 3 })).toEqual({ haptics: false })
+		expect(parseSettings({ difficulty: 'shogun' })).toEqual({})
+		expect(parseSettings({ toString: 'nonsense' })).toEqual({})
 		expect(parseSettings(undefined)).toEqual({})
 		expect(parseSettings({ speechRate: 2.5, voices: { en: 'daniel' } })).toEqual({ speechRate: 2.5, voices: { en: 'daniel' } })
 		expect(parseSettings({ speechRate: 1.25, voices: { en: 3 } })).toEqual({})
@@ -164,13 +171,15 @@ describe('parsing what was saved', () => {
 
 describe('persistApp', () => {
 	it('puts back what was saved before the first screen', async () => {
-		write('settings', { difficulty: 'shogun', haptics: false, volume: 0.2 })
+		write('settings', { haptics: false, volume: 0.2 })
+		write('difficulties', { '["a","1"]': 'shogun' })
 		write('high-scores', { '["a","1"]': { points: 200, seconds: 30, correct: 2, answered: 2 } })
 		write('last-run', { quiz: { id: 'a', version: '1' }, misses: [{ at: { question: 0, part: 0 }, outcome: 'unanswered', picked: [] }] })
 
 		await persistApp(stop.signal)
 
-		expect(settings.value).toMatchObject({ difficulty: 'shogun', haptics: false, volume: 0.2 })
+		expect(settings.value).toMatchObject({ haptics: false, volume: 0.2 })
+		expect(quizDifficulties.value.of('a', '1')).toBe('shogun')
 		expect(highScores.value.of('a', '1')).toMatchObject({ points: 200 })
 		expect(lastRun.value.missesOf('a', '1')).toHaveLength(1)
 	})
@@ -186,19 +195,19 @@ describe('persistApp', () => {
 
 	it('saves every change, and what it saved is what it puts back', async () => {
 		await persistApp(stop.signal)
-		settings.value.setDifficulty('apprentice')
+		quizDifficulties.value.choose('a', '1', 'apprentice')
 		highScores.value.submit('a', '1', { points: 100, seconds: 9, correct: 1, answered: 1 })
 		lastRun.value.save('a', '1', [{ at: { question: 2, part: 0 }, outcome: 'wrong', picked: [1] }])
 		stageResults.value.submit('a', '1', 'castle-town', { distance: 240, cleared: false })
 		stop.abort()
 
-		settings.value.reset()
+		quizDifficulties.value.reset()
 		highScores.value.reset()
 		lastRun.value.reset()
 		stageResults.value.reset()
 		await persistApp(session())
 
-		expect(settings.value.difficulty).toBe('apprentice')
+		expect(quizDifficulties.value.of('a', '1')).toBe('apprentice')
 		expect(highScores.value.of('a', '1')).toMatchObject({ points: 100, seconds: 9 })
 		expect(lastRun.value.missesOf('a', '1')).toEqual([{ at: { question: 2, part: 0 }, outcome: 'wrong', picked: [1] }])
 		expect(stageResults.value.of('a', '1', 'castle-town')).toEqual({ distance: 240, cleared: false })
@@ -243,7 +252,8 @@ describe('persistApp', () => {
 
 	it('starts from the defaults when nothing was saved', async () => {
 		await persistApp(stop.signal)
-		expect(settings.value).toMatchObject({ difficulty: 'samurai', haptics: true, volume: 0.8 })
+		expect(settings.value).toMatchObject({ haptics: true, volume: 0.8 })
+		expect(quizDifficulties.value.of('a', '1')).toBe('samurai')
 		expect(lastRun.value.quiz).toBeUndefined()
 	})
 
@@ -274,7 +284,7 @@ describe('persistApp', () => {
 	it('saves the chosen quiz by id and version', async () => {
 		await persistApp(stop.signal)
 		selection.value.chooseQuiz(savedQuiz)
-		expect(read('selection')).toEqual({ quiz: { id: 'saved', version: '1' }, stage: 'castle-town' })
+		expect(read('selection')).toEqual({ quiz: { id: 'saved', version: '1' }, stage: 'rice-fields' })
 	})
 
 	it('forgets the chosen quiz when it is removed, and leaves another chosen one be', async () => {
@@ -286,7 +296,7 @@ describe('persistApp', () => {
 		selection.value.forgetQuiz('saved', '1')
 
 		expect(kept).toMatchObject({ id: 'saved' })
-		expect(read('selection')).toEqual({ stage: 'castle-town' })
+		expect(read('selection')).toEqual({ stage: 'rice-fields' })
 	})
 
 	it('keeps a quiz chosen while the saved ones are still being validated', async () => {

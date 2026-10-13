@@ -6,20 +6,6 @@ beforeEach(() => {
 })
 
 describe('settings', () => {
-	it('starts as a samurai, with the full time', () => {
-		expect(settings.value.difficulty).toBe('samurai')
-		expect(settings.value.timeScale()).toBe(1)
-	})
-
-	it('maps the difficulty to a timeScale, from 120% to 50%', () => {
-		settings.value.setDifficulty('apprentice')
-		expect(settings.value.timeScale()).toBe(1.2)
-		settings.value.setDifficulty('daimyo')
-		expect(settings.value.timeScale()).toBe(0.8)
-		settings.value.setDifficulty('shogun')
-		expect(settings.value.timeScale()).toBe(0.5)
-	})
-
 	it('keeps the reading speed on a stop between half and triple', () => {
 		settings.value.setSpeechRate(1.6)
 		expect(settings.value.speechRate).toBe(1.5)
