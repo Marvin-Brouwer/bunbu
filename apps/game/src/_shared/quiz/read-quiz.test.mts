@@ -6,7 +6,10 @@ import { describeIssue, fightable, fitNotesOf, readQuiz } from './read-quiz.mts'
 const sample = import.meta.glob<string>('../../../../../docs/testdata/every-type.yaml', { query: '?raw', import: 'default', eager: true })
 const everyType = Object.values(sample)[0]!
 
-const file = (contents: string | Uint8Array, name: string) => new File([typeof contents === 'string' ? contents : new Uint8Array(contents)], name)
+const file = (contents: string | Uint8Array, name: string, type = '') => new File([typeof contents === 'string' ? contents : new Uint8Array(contents)], name, { type })
+
+const png = new Uint8Array([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 0x0D])
+const heic = new Uint8Array([0, 0, 0, 0x18, ...new TextEncoder().encode('ftypheic')])
 
 const options = (correct: number, wrong: number) => [
 	...Array.from({ length: correct }, (_, index) => ({ answer: `right ${index}` as Markdown, correct: true })),
@@ -46,6 +49,24 @@ describe('readQuiz', () => {
 		const result = await readQuiz(file(new Uint8Array([1, 2, 3, 4]), 'damaged.BUNBU'))
 		if (!('problems' in result)) expect.unreachable('read a damaged file')
 		expect(result.problems).toHaveLength(1)
+	})
+
+	it('says a picture is a picture, whatever its name', async () => {
+		const picture = [expect.stringContaining('This is a picture')]
+		expect(await readQuiz(file(png, 'photo.png'))).toEqual({ problems: picture })
+		expect(await readQuiz(file('', 'photo.jpg', 'image/jpeg'))).toEqual({ problems: picture })
+		expect(await readQuiz(file(png, 'renamed.yaml'))).toEqual({ problems: picture })
+		expect(await readQuiz(file(heic, 'renamed.bunbu'))).toEqual({ problems: picture })
+	})
+
+	it('turns away a file that is not a quiz file by its name', async () => {
+		const result = await readQuiz(file(everyType, 'every-type.txt'))
+		expect(result).toEqual({ problems: [expect.stringContaining('This is not a quiz')] })
+	})
+
+	it('turns away a .yaml file that holds no text', async () => {
+		const result = await readQuiz(file(new Uint8Array([0x00, 0xFF, 0xFE, 0x01]), 'binary.yml'))
+		expect(result).toEqual({ problems: [expect.stringContaining('This is not a quiz')] })
 	})
 })
 
