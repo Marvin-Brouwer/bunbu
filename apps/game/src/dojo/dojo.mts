@@ -20,7 +20,7 @@ import { formatWhole } from '../_shared/numbers.mts'
 import { selection, type SelectionState } from '../_shared/state/selection.mts'
 import { snapshot } from '../_shared/state/store.mts'
 import { library } from '../_shared/storage/library.mts'
-import { QuizzesRoute } from '../quizzes/_routes.mts'
+import { quizzesFromDojo } from '../quizzes/_routes.mts'
 import { mistakesOnly, PracticeRoute, StudyRoute, withMistakes } from './_routes.mts'
 import { missedQuestions } from './state/mistakes.mts'
 import practiceArt from './practice-art.svg'
@@ -110,7 +110,7 @@ const QuizPanel = component<{ readonly quiz: BunbuData }>({
 		append(
 			element('a', {
 				classes: styles.quiz,
-				href: href.for(QuizzesRoute).href,
+				href: quizzesFromDojo().href,
 				aria: {
 					label: `${quiz.title}, change quiz`,
 				},
@@ -118,7 +118,7 @@ const QuizPanel = component<{ readonly quiz: BunbuData }>({
 					click(event) {
 						if (openedElsewhere(event)) return
 						event.preventDefault()
-						navigate(href.for(QuizzesRoute))
+						navigate(quizzesFromDojo())
 					},
 				},
 				children: [
@@ -167,7 +167,7 @@ export const DojoMenu = component({
 										: create(MenuButton, {
 											kind: 'primary',
 											label: 'Select quiz',
-											href: href.for(QuizzesRoute),
+											href: quizzesFromDojo(),
 										}),
 								]
 								: create(QuizPanel, {

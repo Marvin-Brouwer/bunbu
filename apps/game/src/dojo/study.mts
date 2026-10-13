@@ -25,7 +25,7 @@ import { canSpeak, createSpeaker, voiceFor, watchVoices } from '../_shared/speec
 import { shuffle } from '../_shared/state/random.mts'
 import { selection } from '../_shared/state/selection.mts'
 import { snapshot } from '../_shared/state/store.mts'
-import { QuizzesRoute } from '../quizzes/_routes.mts'
+import { quizzesFromDojo } from '../quizzes/_routes.mts'
 import { DojoRoute } from './_routes.mts'
 import { languageOf, settings } from '../settings/state/settings.mts'
 import { createStudyGame, type ReadingState } from './state/study.mts'
@@ -64,7 +64,7 @@ const NoQuiz = component({
 					create(MenuButton, {
 						kind: 'primary',
 						label: 'Choose a quiz',
-						href: href.for(QuizzesRoute),
+						href: quizzesFromDojo(),
 					}),
 				],
 			})

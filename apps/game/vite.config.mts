@@ -14,7 +14,10 @@ export default rootedManifest({
 		short_name: 'Bunbu',
 		theme_color: '#ffffff',
 		background_color: '#ffffff',
+		// The installed app shows no browser or system bars, as a game would; where full screen isn't
+		// offered it falls back to its own window without the browser's address bar.
 		display: 'standalone',
+		display_override: ['fullscreen', 'standalone'],
 		// pwa-*.png are made from public/icon.svg at build time, with a see-through edge. A maskable icon
 		// must fill the whole square or Android shows a ring around it, so that one is app-icon.png:
 		// icon.svg as is, at 512px (Rooted's own maskable copy is padded with white).
