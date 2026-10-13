@@ -14,10 +14,10 @@
  *   ones queued are kept.
  *
  * It stops when its screen goes (the signal) and when the page is left. With `whileHidden: 'keep
- * reading'` it goes on while the page is hidden, as when the phone locks: it then hands the engine
- * the lines ahead, so it reads on even where the page itself is put to sleep. Where the browser
- * stops the speech anyway (Safari on an iPhone), it picks up again from the line it was on when
- * the page is back.
+ * reading'` it goes on while the page is hidden where the browser lets it: it then hands the engine
+ * the lines ahead, so it reads on even where the page itself is put to sleep. Phones stop the speech
+ * when they lock (Chrome on Android only speaks while it is on screen, as does Safari on an
+ * iPhone); it then picks up again from the line it was on when the page is back.
  */
 
 import { shownWordAt, wordStarts, type ShownRange, type SpokenLine } from './line.mts'
