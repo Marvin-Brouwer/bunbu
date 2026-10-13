@@ -20,9 +20,11 @@ const speakerIcon = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden
  * of plain words, such as "The answer is", is said as it is.
  */
 export function linesOfBlocks(blocks: readonly string[], pronouncer: Pronouncer): SpokenLine[] {
-	return blocks.flatMap((block) => {
-		const text = readableMarkdown(block)
-		return sentencesOf(text).map(({ start, end }) => spokenLine([{ said: text.slice(start, end) }], pronouncer))
+	// As shown text, not only said: the pronouncer only goes over what is shown. Nothing is
+	// highlighted here, so where it is shown doesn't matter.
+	return blocks.flatMap((source, block) => {
+		const text = readableMarkdown(source)
+		return sentencesOf(text).map(({ start, end }) => spokenLine([{ shown: text.slice(start, end), block, offset: start }], pronouncer))
 	})
 }
 
