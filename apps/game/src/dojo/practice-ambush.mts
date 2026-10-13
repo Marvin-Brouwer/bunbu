@@ -8,7 +8,7 @@
  * leaves practice.
  */
 
-import type { BunbuData } from '@bunbu/data'
+import { resolvePronunciations, type BunbuData } from '@bunbu/data'
 import { component } from '@rooted/components'
 import { href, type Path } from '@rooted/router'
 import { MenuButton } from '../_shared/menu/menu-button.mts'
@@ -76,7 +76,8 @@ const PracticeBar = component<PracticeBarOptions>({
 					tally,
 					create(ReadAloud, {
 						language: quiz.language,
-						pronunciations: quiz.pronunciations ?? {},
+						// The quiz's own and the built-in dictionaries, as Study reads them.
+						pronunciations: resolvePronunciations(quiz),
 						blocks: () => {
 							const { query, options: answers } = game.ambush.value
 							return [query, ...answers.map((answer) => answer.answer)]

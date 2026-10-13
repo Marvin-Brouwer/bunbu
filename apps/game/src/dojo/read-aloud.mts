@@ -29,6 +29,7 @@ export function linesOfBlocks(blocks: readonly string[], pronouncer: Pronouncer)
 export type ReadAloudOptions = {
 	/** The quiz's `language`, for the voice. */
 	readonly language: string
+	/** How terms are said: `resolvePronunciations` of the quiz, its own and the built-in dictionaries. */
 	readonly pronunciations: Readonly<Record<string, string>>
 	/** What to read, as quiz Markdown, block by block: read when the button is pressed. */
 	readonly blocks: () => readonly string[]
