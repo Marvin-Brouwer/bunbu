@@ -1,8 +1,7 @@
 /**
  * Quizzes ([screens.md](../../../../docs/design/screens.md#1b-quizzes)): the loaded quizzes to
  * choose from, the button and area to load a quiz file, and what is wrong with a file or won't fit
- * in a fight. Kept off the title, so the title stays calm. Opened from the title, the dojo and the
- * fight setup, so back goes to whichever came before.
+ * in a fight. Kept off the title, so the title stays calm.
  */
 
 import { component } from '@rooted/components'
@@ -17,7 +16,6 @@ export const Quizzes = component({
 			create(MenuScreen, {
 				title: 'Quizzes',
 				back: href.path('/'),
-				stepBack: true,
 				children: create(QuizShelf),
 			})
 		)

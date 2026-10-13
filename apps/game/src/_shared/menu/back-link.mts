@@ -1,9 +1,7 @@
 /**
- * The back link at the top left of a menu screen. When the page before this one in the history is
- * where it leads, it goes back to that entry, as the browser's Back does, so the two never disagree
- * on where back is. Otherwise (the screen was opened by its address, or reached another way) it
- * goes to `target` as a new entry. With `stepBack`, any page before this one counts, for a screen
- * reached from more than one place.
+ * The back link at the top left of a menu screen. It goes back through the history, as the
+ * browser's Back does, so the two never disagree on where back is. Only when there is no page
+ * before this one (the screen was opened by its address) does it go to `target`.
  */
 
 import { component } from '@rooted/components'
@@ -12,29 +10,17 @@ import styles from './menu.css'
 
 export type BackLinkOptions = {
 	readonly target: Path
-	/** Back to whichever page came before, as the browser's Back; `target` only when there is none. */
-	readonly stepBack?: boolean
 }
 
 /** Whether there is a page of the game before this one in the history. */
-function canStepBack(): boolean {
+function canGoBack(): boolean {
 	if ('navigation' in globalThis) return navigation.canGoBack
 	return history.length > 1
 }
 
-/** Whether the history entry before this one is at `target`. Without the Navigation API, there is no telling. */
-function cameFrom(target: Path): boolean {
-	if (!('navigation' in globalThis)) return false
-	const { currentEntry } = navigation
-	if (currentEntry === null) return false
-	const previous = navigation.entries()[currentEntry.index - 1]?.url
-	if (previous === undefined || previous === null) return false
-	return new URL(previous).pathname === new URL(target.href, location.href).pathname
-}
-
-/** Back to `target`: the entry before this one when that is `target`, else `target` as a new entry. */
+/** Back to the page before this one, or to `target` when there is none. */
 export function goBack(target: Path): void {
-	if (cameFrom(target)) history.back()
+	if (canGoBack()) history.back()
 	else navigate(target)
 }
 
@@ -42,7 +28,7 @@ export const BackLink = component<BackLinkOptions>({
 	name: 'back-link',
 	styles,
 	onMount({ append, element, options }) {
-		const { stepBack = false, target } = options
+		const { target } = options
 
 		append(
 			element('a', {
@@ -55,8 +41,7 @@ export const BackLink = component<BackLinkOptions>({
 				on: {
 					click(event) {
 						event.preventDefault()
-						if (stepBack && canStepBack()) history.back()
-						else goBack(target)
+						goBack(target)
 					},
 				},
 			})

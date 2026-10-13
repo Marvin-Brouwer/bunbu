@@ -17,8 +17,6 @@ export type MenuScreenOptions = {
 	readonly title: string
 	/** Where the back link goes: back through the history when the player came from there. */
 	readonly back: Path
-	/** Back to whichever page came before instead, as the browser's Back; `back` only when there is none. */
-	readonly stepBack?: boolean
 	readonly children: ElementChildren
 	/** At the right of the heading, as a settings button. */
 	readonly action?: ElementChildren
@@ -45,7 +43,6 @@ export const MenuScreen = component<MenuScreenOptions>({
 							children: [
 								create(BackLink, {
 									target: options.back,
-									stepBack: options.stepBack,
 								}),
 								element('h1', {
 									classes: styles.title,
