@@ -40,7 +40,8 @@ export function verdictOf(kind: AmbushKind, option: AmbushOption): OptionVerdict
 export function answerBlocksOf(ambush: Pick<AmbushState, 'kind' | 'options'>): string[] {
 	if (ambush.kind === 'order') {
 		const ordered = ambush.options.filter((option) => option.rank > 0).toSorted((first, second) => first.rank - second.rank)
-		return ['The order is:', ...ordered.map((option) => option.answer)]
+		// Every item after the first led by "then", as Study reads an order.
+		return ['The order is:', ...ordered.flatMap((option, index) => index === 0 ? [option.answer] : ['then', option.answer])]
 	}
 	const right = ambush.options.filter((option) => option.correct).map((option) => option.answer)
 	return [right.length === 1 ? 'The answer is:' : 'The answers are:', ...right]

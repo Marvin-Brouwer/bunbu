@@ -31,7 +31,7 @@ describe('answerBlocksOf', () => {
 
 	it('gives an order in its order', () => {
 		const options = [option('Inline', true, 0, 3), option('User agent', true, 0, 1), option('Author', true, 0, 2), option('None', false)]
-		expect(answerBlocksOf({ kind: 'order', options })).toEqual(['The order is:', 'User agent', 'Author', 'Inline'])
+		expect(answerBlocksOf({ kind: 'order', options })).toEqual(['The order is:', 'User agent', 'then', 'Author', 'then', 'Inline'])
 	})
 
 	it('keeps a code block answer whole', () => {
