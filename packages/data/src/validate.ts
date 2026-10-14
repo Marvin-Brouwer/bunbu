@@ -1,7 +1,8 @@
 import Ajv2020, { type ErrorObject, type ValidateFunction } from "ajv/dist/2020.js";
 import addFormats from "ajv-formats";
-import { LineCounter, parseDocument, type Document } from "yaml";
+import { isSeq, LineCounter, parseDocument, type Document } from "yaml";
 import schemaV1 from "../../../schema/v1.json" with { type: "json" };
+import { duplicateQuestions } from "./duplicates";
 import { isGfmMarkdown } from "./markdown";
 import { readSchemaReference } from "./modeline";
 import type { BunbuData } from "./types";
@@ -76,6 +77,7 @@ export async function validate(fileBlob: string): Promise<BunbuData | BunbuValid
   if (schemaIssues.length > 0) return new BunbuValidationError(schemaIssues);
 
   const quiz = data as BunbuData;
+  warnAboutDuplicates(quiz, (pointer) => findLine(document, lineCounter, pointer));
   // The schema types `version` as a string, but YAML parses an unquoted `version: 3` as a number.
   // oxlint-disable-next-line typescript/no-unnecessary-type-conversion
   return { ...quiz, version: String(quiz.version) };
@@ -123,6 +125,38 @@ function describe(error: ErrorObject): string {
     default:
       return error.message ?? `failed '${error.keyword}'`;
   }
+}
+
+/**
+ * A repeated question isn't an error: the quiz still works, and a reader can leave it out with
+ * `withoutDuplicates`. It is only reported, so whoever made the file can see it.
+ */
+function warnAboutDuplicates(quiz: BunbuData, lineOf: (pointer: string) => number | undefined): void {
+  const duplicates = duplicateQuestions(quiz);
+  if (duplicates.length === 0) return;
+  const where = (index: number) => {
+    const line = lineOf(`/questions/${index}`);
+    return line === undefined ? `question ${index + 1}` : `question ${index + 1} (line ${line})`;
+  };
+  console.warn(
+    `[bunbu] ${quiz.id} repeats ${duplicates.length === 1 ? "a question" : `${duplicates.length} questions`}:\n` +
+      duplicates.map(({ question, of }) => `- ${where(question)} repeats ${where(of)}`).join("\n"),
+  );
+}
+
+/**
+ * The 1-based line each question of a quiz file starts on, by its place in `questions`, to point at
+ * a question the file got right but a reader still reports, such as a duplicate.
+ */
+export function questionLines(fileBlob: string): (number | undefined)[] {
+  const lineCounter = new LineCounter();
+  const document = parseDocument(fileBlob, { lineCounter });
+  const questions = document.get("questions", true);
+  if (!isSeq(questions)) return [];
+  return questions.items.map((item) => {
+    const offset = (item as { range?: [number, number, number] } | null)?.range?.[0];
+    return offset === undefined ? undefined : lineCounter.linePos(offset).line;
+  });
 }
 
 function findLine(document: Document, lineCounter: LineCounter, pointer: string): number | undefined {
