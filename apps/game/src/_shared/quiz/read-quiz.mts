@@ -17,12 +17,15 @@ import {
 } from '@bunbu/data'
 import { Immutable } from '@rooted/store'
 import { fitOf, type Fit } from '../state/ambush-opening.mts'
+import type { TermsKind } from '../state/agreements.mts'
 
 export type ReadQuiz =
 	| {
 		readonly quiz: BunbuData
 		/** The quiz as a `.bunbu` file, which the library keeps and validates again when the app starts. */
 		readonly file: Immutable<Uint8Array>
+		/** The terms to agree to before it joins the library: a `.yaml` quiz is the player's own, a `.bunbu` quiz was shared. */
+		readonly terms: TermsKind
 	}
 	| {
 		/** What is wrong with the file, one line each. */
@@ -48,7 +51,7 @@ export async function readQuiz(file: File): Promise<ReadQuiz> {
 	if (name.endsWith(fileExtension)) {
 		try {
 			const bytes = new Uint8Array(await file.arrayBuffer())
-			return { quiz: await uncompress(bytes), file: Immutable.from(bytes) }
+			return { quiz: await uncompress(bytes), file: Immutable.from(bytes), terms: 'shared' }
 		} catch (error) {
 			if (error instanceof BunbuValidationError) return { problems: error.issues.map(describeIssue) }
 			if (error instanceof BunbuShareError) return { problems: [error.message] }
@@ -60,7 +63,7 @@ export async function readQuiz(file: File): Promise<ReadQuiz> {
 	const quiz = await validate(source)
 	if (quiz instanceof BunbuValidationError) return { problems: quiz.issues.map(describeIssue) }
 	// Kept as a `.bunbu` file: smaller, and the same bytes a share sends on.
-	return { quiz, file: Immutable.from(await compress(quiz)) }
+	return { quiz, file: Immutable.from(await compress(quiz)), terms: 'written' }
 }
 
 /** A question that won't play as written in a fight, by its place in the file (from `0`). */

@@ -35,6 +35,15 @@ A screen of its own, so the title stays calm:
 - Why a file didn't load (by line), and which questions of the chosen quiz won't fit in a fight. Only `.yaml`, `.yml` and `.bunbu` files are read: a `.yaml` file must start with the schema line and a `.bunbu` file with Bunbu's own first bytes, or it is not a quiz.
 - The loaded quizzes as cards, one under the other, with title, `version`, pass mark and best score (`v3 · pass 70% · best 2,480`, or `new`). Tapping one chooses it. Two square red buttons with an icon and a small label sit side by side on each card: **Download** saves its `.bunbu` file, **Remove** asks first, on a scroll with **Remove** and **Cancel**; its high score and stage results stay, so they're back if it's loaded again.
 
+#### Terms
+
+A quiz only joins the list once the player agrees to its terms, on a scroll with **I agree** and **Cancel**; Cancel (or Escape) leaves the quiz out. The terms are Markdown files with a `title` and a `version` in their frontmatter, in `apps/game/src/_shared/terms/`:
+
+- A `.yaml` quiz is one the player made (`written-quiz.md`): it is theirs to make and, when shared, theirs to share; its content was collected through legitimate means; they are responsible for what it says.
+- A `.bunbu` quiz was shared with them (`shared-quiz.md`): they got it through legitimate means; they are responsible for what it says.
+
+What was agreed is kept per quiz `id` + `version`, with the quiz's content and the terms' `version`. Loading the same quiz again asks again only when its content or the terms changed. When Bunbu opens and the terms changed since the player agreed to them, it asks again, once per set of terms, for every quiz agreed to under the old version: **I agree** keeps them, **Remove** takes them off the list, as Remove does.
+
 ### 2 Fight setup
 
 <img src="screens/2-quiz-stage.png" alt="Fight setup" width="195">

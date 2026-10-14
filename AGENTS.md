@@ -67,7 +67,7 @@ Rules the linter enforces:
 Conventions the linter can't check:
 
 - A game mode's state is created when the mode starts and dropped when it ends or its route
-  unmounts. Only `settings`, `selection`, `quizDifficulties`, `highScores`, `stageResults`, `lastRun` and the quiz `library` are
+  unmounts. Only `settings`, `selection`, `quizDifficulties`, `agreements`, `highScores`, `stageResults`, `lastRun` and the quiz `library` are
   app-wide. Flows take the game (`RunGame`) as an argument.
 - Change a store through its actions. Tests start a store from a state by passing it
   to the factory (`createRunGame({ life: … })`), not by writing to it.
