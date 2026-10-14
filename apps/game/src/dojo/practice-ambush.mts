@@ -291,9 +291,15 @@ export const PracticeAmbush = component<PracticeAmbushOptions>({
 			if (modal && overlays.childElementCount === 0) returnFocus = document.activeElement
 			overlays.replaceChildren(
 				...next === 'paused'
-					? [create(PracticePause, { game, leave: guard.leave })]
+					? [create(PracticePause, {
+						game,
+						leave: guard.leave,
+					})]
 					: next === 'done'
-						? [create(PracticeDone, { game, leave: guard.leave })]
+						? [create(PracticeDone, {
+							game,
+							leave: guard.leave,
+						})]
 						: []
 			)
 			for (const layer of behind) layer.inert = modal
