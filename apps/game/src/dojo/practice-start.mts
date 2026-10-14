@@ -5,12 +5,10 @@
  */
 
 import { component } from '@rooted/components'
-import { href } from '@rooted/router'
 import { BackLink } from '../_shared/menu/back-link.mts'
 import { MenuButton } from '../_shared/menu/menu-button.mts'
 import menuStyles from '../_shared/menu/menu.css'
 import { formatWhole } from '../_shared/numbers.mts'
-import { DojoRoute, withMistakes } from './_routes.mts'
 import styles from './practice.css'
 
 export type PracticeStartOptions = {
@@ -36,10 +34,7 @@ export const PracticeStart = component<PracticeStartOptions>({
 							styles.startHeader,
 						],
 						children: [
-							create(BackLink, {
-								// Back to the menu as it was left, the mistakes ticked or not.
-								target: withMistakes(href.for(DojoRoute), mistakesOnly),
-							}),
+							create(BackLink),
 							element('div', {
 								children: [
 									element('h1', {
