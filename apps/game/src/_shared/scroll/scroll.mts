@@ -9,7 +9,7 @@
  * answered. Without a `commit` the scroll only shows the ambush.
  */
 
-import { component } from '@rooted/components'
+import { component, type GenericComponent } from '@rooted/components'
 import { noAmbush, type Ambush, type AmbushState } from '../state/ambush.mts'
 import type { Quiz } from '../state/quiz.mts'
 import { headingOf } from './heading.mts'
@@ -31,6 +31,8 @@ export type ScrollOptions = {
 	readonly held?: () => boolean
 	/** How far the mode is, in place of the ninjas in the heading: `8 / 40` in practice. */
 	readonly progress?: (state: AmbushState) => string
+	/** Practice's read out loud for the scroll of `state`, after the query. */
+	readonly readAloud?: (state: AmbushState) => GenericComponent
 }
 
 /**
@@ -43,7 +45,7 @@ export const Scroll = component<ScrollOptions>({
 	name: 'scroll',
 	styles,
 	onMount({ append, create, element, options, signal }) {
-		const { ambush, quiz, label, commit, held, progress } = options
+		const { ambush, quiz, label, commit, held, progress, readAloud } = options
 
 		const heading = (state: AmbushState) => headingOf(label, state, quiz.value.question(state.at)?.type, progress?.(state))
 
@@ -79,6 +81,7 @@ export const Scroll = component<ScrollOptions>({
 		const paperOf = (state: AmbushState) => create(ScrollPaper, {
 					state,
 					heading: heading(state),
+					readAloud: readAloud?.(state),
 					drawer: create(AnswerDrawer, {
 						onDraw(next) {
 							drawn = next

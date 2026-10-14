@@ -58,14 +58,10 @@ describe('preparePractice', () => {
 })
 
 describe('session', () => {
-	it('goes from the start screen into practice, pauses and resumes', () => {
+	it('goes from the start screen into practice', () => {
 		const { session } = createPracticeGame()
-		session.value.pause()
 		expect(session.value.phase).toBe('start')
 		session.value.begin()
-		session.value.pause()
-		expect(session.value.phase).toBe('paused')
-		session.value.resume()
 		expect(session.value.phase).toBe('practising')
 		session.value.finish()
 		expect(session.value.phase).toBe('done')
@@ -100,18 +96,6 @@ describe('practice', () => {
 		expect(game.ambush.value).toMatchObject({ open: true, at: { question: 1 } })
 	})
 
-	it("doesn't open the next question while paused", () => {
-		const game = started()
-		pickRight(game)
-		commitPractice(game)
-		game.session.value.pause()
-		tickPractice(game, nextQuestionSeconds)
-		expect(game.ambush.value.open).toBe(false)
-		game.session.value.resume()
-		tickPractice(game, nextQuestionSeconds)
-		expect(game.ambush.value.open).toBe(true)
-	})
-
 	it('counts a wrong answer', () => {
 		const game = started()
 		pickWrong(game)
@@ -135,29 +119,11 @@ describe('practice', () => {
 		expect(game.ambush.value).toMatchObject({ open: true, at: { question: 1 } })
 	})
 
-	it("doesn't continue while paused", () => {
-		const game = started()
-		pickWrong(game)
-		commitPractice(game)
-		game.session.value.pause()
-		continuePractice(game)
-		expect(game.tally.value.missed).toBeDefined()
-	})
-
 	it('never runs out of time', () => {
 		const game = started()
 		tickPractice(game, 600)
 		expect(game.ambush.value).toMatchObject({ open: true, openingLeft: 0 })
 		expect(game.ambush.value.unanswered()).toBe(false)
-	})
-
-	it("doesn't answer while paused", () => {
-		const game = started()
-		pickRight(game)
-		game.session.value.pause()
-		commitPractice(game)
-		expect(game.tally.value.right).toBe(0)
-		expect(game.ambush.value.open).toBe(true)
 	})
 
 	it('is done after the last question, and Again starts over with a fresh tally', () => {

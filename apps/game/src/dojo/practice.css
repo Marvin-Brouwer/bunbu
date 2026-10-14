@@ -57,7 +57,7 @@
 
 /*
  * D4 and D5: the layers over the dojo world, back to front, as in a run: the bar on top, the
- * scroll with the swipe zone at its foot, the pause and the end of practice.
+ * scroll with the swipe zone at its foot, the miss screen and the end of practice.
  */
 .practice,
 .layer {
@@ -100,12 +100,13 @@
 	display: none;
 }
 
-/* Pause, the right vs wrong count and read aloud, in a row at the top. */
+/* Back and the right vs wrong count, in a row at the top. */
 .bar {
 	display: flex;
 	align-items: center;
 	gap: 0.5rem;
 	padding: max(0.4rem, env(safe-area-inset-top)) max(0.75rem, env(safe-area-inset-right)) 0 max(0.75rem, env(safe-area-inset-left));
+	color: var(--ink);
 	pointer-events: none;
 }
 
@@ -113,43 +114,7 @@
 	pointer-events: auto;
 }
 
-.iconButton {
-	display: grid;
-	place-items: center;
-	flex: none;
-	width: 2.75rem;
-	height: 2.75rem;
-	padding: 0;
-	border: var(--frame);
-	cursor: pointer;
-	box-shadow: var(--shadow);
-}
-
-.iconButton:disabled {
-	opacity: 0.5;
-	cursor: default;
-}
-
-.iconButton[aria-pressed='true'] {
-	background: var(--ink);
-	color: var(--paper-light);
-}
-
-.iconButton:focus-visible {
-	outline: 3px solid var(--indigo);
-	outline-offset: 2px;
-}
-
-/* Two ink strokes, a stroke's width apart. */
-.pause::before {
-	content: '';
-	box-sizing: border-box;
-	width: 0.9rem;
-	height: 1.1rem;
-	border-inline: 0.3rem solid currentcolor;
-}
-
-/* Not a score: plain, between the two buttons. */
+/* Not a score: plain, next to back. */
 .tally {
 	flex: 1;
 	margin: 0;
@@ -162,7 +127,7 @@
 	box-shadow: var(--shadow);
 }
 
-/* Paused, and the end of practice: a scroll over the dimmed world. */
+/* The end of practice: a scroll over the dimmed world. */
 .dialog {
 	display: grid;
 	/* Safe: taller than the screen, it starts at the top instead of above it. */
@@ -290,6 +255,33 @@
 	line-height: 1.45;
 }
 
-.missNote {
-	text-align: center;
+/* Read out loud: a line of brush lettering at the end of the scroll, pressed to read. */
+.readAloud {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.4rem;
+	padding: 0.25rem 0;
+	border: 0;
+	background: none;
+	color: var(--ink-soft);
+	font-family: var(--font-brush);
+	font-size: 1.1rem;
+	text-decoration: underline;
+	text-decoration-thickness: 1px;
+	text-underline-offset: 0.2em;
+	cursor: pointer;
+}
+
+.readAloud:disabled {
+	opacity: 0.5;
+	cursor: default;
+}
+
+.readAloud:focus-visible {
+	outline: 3px solid var(--indigo);
+	outline-offset: 2px;
+}
+
+.readAloudIcon {
+	display: grid;
 }

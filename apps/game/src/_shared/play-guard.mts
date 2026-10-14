@@ -1,6 +1,7 @@
 /**
- * Keeps the player in the game while they play, a fight or a practice: full screen on a phone, the
- * screen kept on, and Back pauses before it leaves.
+ * Keeps the player in the game while they play a fight: full screen on a phone, the screen kept on,
+ * and Back pauses before it leaves. Practice, which has nothing to pause, only keeps full screen
+ * and the screen on ({@link keepFullscreen}).
  *
  * - **Full screen** on a phone. Leaving full screen (the system's back gesture, or swiping down)
  *   pauses; resuming goes full screen again.
@@ -37,7 +38,7 @@ const guardKey = 'bunbu:playing'
 
 const guarding = () => (history.state as Record<string, unknown> | null)?.[guardKey] === true
 
-/** The guards of the play on screen; a restart starts the next before the last has gone. */
+/** The plays on screen; a restart starts the next before the last has gone. */
 let active = 0
 
 /**
@@ -65,8 +66,27 @@ function resumed() {
 	guard()
 }
 
-export function guardPlay(options: PlayGuardOptions, signal: AbortSignal): PlayGuard {
+/**
+ * Full screen on a phone and the screen kept on, until `signal` aborts. Left for another screen, not
+ * restarted, it leaves full screen again.
+ */
+export function keepFullscreen(signal: AbortSignal): void {
 	active++
+	signal.addEventListener('abort', () => {
+		active--
+		setTimeout(() => {
+			if (active > 0 || document.fullscreenElement === null) return
+			document.exitFullscreen().catch(() => {
+				// Already left.
+			})
+		})
+	}, { once: true })
+
+	keepScreenOn(signal)
+	enterFullscreen()
+}
+
+export function guardPlay(options: PlayGuardOptions, signal: AbortSignal): PlayGuard {
 	let leaving = false
 
 	// Back took the guard off: pause, or go on back when there is nothing to pause.
@@ -81,22 +101,15 @@ export function guardPlay(options: PlayGuardOptions, signal: AbortSignal): PlayG
 	}, { signal })
 
 	signal.addEventListener('abort', () => {
-		active--
-		// Left from a menu, not restarted: take the guard off, so Back doesn't stop on it later,
-		// and leave full screen. A restart keeps both for the next play.
+		// Left from a menu, not restarted: take the guard off, so Back doesn't stop on it later.
+		// A restart keeps it for the next play.
 		setTimeout(() => {
-			if (active > 0) return
-			if (guarding()) history.back()
-			if (document.fullscreenElement !== null) {
-				document.exitFullscreen().catch(() => {
-					// Already left.
-				})
-			}
+			if (active === 0 && guarding()) history.back()
 		})
 	}, { once: true })
 
-	keepScreenOn(signal)
-	resumed()
+	keepFullscreen(signal)
+	guard()
 	return {
 		resumed,
 		leave(to) {

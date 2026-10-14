@@ -1,11 +1,11 @@
 /**
  * D5 Practice miss ([screens.md](../../../../docs/design/screens.md#d5-practice-miss)): the scroll
  * of the question just missed, `PRACTICE · MISSED`, with ✓ next to the right answer and ✗ next to
- * the wrong pick, then the explanation. Meanwhile the dummy swings back in the world. No life lost:
- * **Continue** moves on.
+ * the wrong pick, then the explanation and read out loud. Meanwhile the dummy swings back in the
+ * world. **Continue** moves on.
  */
 
-import type { BunbuData, Markdown as MarkdownText } from '@bunbu/data'
+import { resolvePronunciations, type BunbuData, type Markdown as MarkdownText } from '@bunbu/data'
 import { component } from '@rooted/components'
 import { Markdown } from '@rooted/markdown'
 import { renderMarkdown } from '../_shared/markdown/render.mts'
@@ -14,6 +14,7 @@ import { arrows } from '../_shared/scroll/heading.mts'
 import scrollStyles from '../_shared/scroll/scroll.css'
 import { ScrollSheet } from '../_shared/scroll/scroll-sheet.mts'
 import { reviewOf } from '../_shared/state/review.mts'
+import { ReadAloud } from './read-aloud.mts'
 import { answerBlocksOf, verdictOf } from './state/miss.mts'
 import type { Miss } from './state/practice.mts'
 import styles from './practice.css'
@@ -88,23 +89,19 @@ export const PracticeMiss = component<PracticeMissOptions>({
 						classes: styles.explanation,
 						children: create(Markdown, markdownOf(explanation)),
 					})),
+					create(ReadAloud, {
+						language: quiz.language,
+						pronunciations: resolvePronunciations(quiz),
+						blocks: () => missBlocksOf(quiz, miss),
+					}),
 				],
 				footer: element('div', {
 					classes: styles.actions,
-					children: [
-						create(MenuButton, {
-							kind: 'primary',
-							label: 'Continue',
-							action: options.carryOn,
-						}),
-						element('p', {
-							classes: [
-								styles.dialogNote,
-								styles.missNote,
-							],
-							textContent: 'no life lost',
-						}),
-					],
+					children: create(MenuButton, {
+						kind: 'primary',
+						label: 'Continue',
+						action: options.carryOn,
+					}),
 				}),
 			})
 		)

@@ -95,7 +95,7 @@ All on a scroll over the dimmed world, like an ambush:
 - This run: quiz, stage, difficulty, answered (`11 / 13`), distance.
 - **Resume**, **Restart stage**, **Settings**, **Quit** at the foot of the scroll. Settings open in place on the scroll; the difficulty isn't one of them, it is chosen before the run on [screen 2](#2-fight-setup).
 - Auto-pauses when the app goes to the background or a call comes in. 3-2-1 countdown on resume.
-- Also pauses on **Back** and when the player leaves full screen. On a phone (a touch screen without a mouse or trackpad) a run, and [practice](dojo.md#practice), plays full screen; resuming goes full screen again, and **Back** while paused leaves the run. The screen stays on during a run and practice, full screen or not, so it doesn't dim or lock mid fight. **Quit** here, and **Menu** or **Practise mistakes** on the results, go to the title (or the dojo) in the run's place in history, so Back from there never goes into the run again.
+- Also pauses on **Back** and when the player leaves full screen. On a phone (a touch screen without a mouse or trackpad) a run, and [practice](dojo.md#practice), plays full screen (practice doesn't pause); resuming goes full screen again, and **Back** while paused leaves the run. The screen stays on during a run and practice, full screen or not, so it doesn't dim or lock mid fight. **Quit** here, and **Menu** or **Practise mistakes** on the results, go to the title (or the dojo) in the run's place in history, so Back from there never goes into the run again.
 
 ### 7 Finished: results and mistakes
 
@@ -157,10 +157,10 @@ See [dojo.md](dojo.md) for the rules.
 
 <img src="screens/d4-practice.png" alt="Practice ambush" width="195">
 
-Like 4A, with `PRACTICE · SINGLE · 8 / 40` and the running right vs wrong percentage. A speaker button reads the card aloud. No timer, no life bar, the dummies don't move.
+Like 4A, with `PRACTICE · SINGLE · 8 / 40` and the running right vs wrong percentage. No timer, no life bar, no pause, the dummies don't move.
 
-- On top, in a row: the pause button, `✓ 6 · ✗ 2 · 75% right` and the speaker button, which reads the query and the options and stops when pressed again or when the scroll closes.
-- Paused: a scroll with the quiz, the count so far, **Resume** and **Leave practice**. No 3-2-1, as there is no timer.
+- On top, in a row: the back link, which leaves practice, and `✓ 6 · ✗ 2 · 75% right`.
+- At the end of the question, in brush lettering: **🔉 read out loud**, which reads the query and the options and stops when pressed again (it says **stop reading** then) or when the scroll closes.
 - After the last question: **Practice done** with the final percentage and the right and wrong count, then **Again** (the same questions reshuffled, a fresh count) and **Dojo**.
 
 ### D5 Practice miss
@@ -169,10 +169,9 @@ Like 4A, with `PRACTICE · SINGLE · 8 / 40` and the running right vs wrong perc
 
 - `PRACTICE · MISSED`. The options show ✓ correct and ✗ your pick, followed by the explanation.
 - The dummy swings back: thwack.
-- Speaker button reads "The answer is alt", then the explanation. No life lost.
+- **read out loud** at the end reads "The answer is alt", then the explanation, and stops on **Continue**.
 - **Continue**.
 - For `order` each item shows its right place, and the place given when that was wrong (`2nd, not 3rd`); an item that is not in the order at all shows the place it was given (`not in the order, not 4th`). The explanations are the ones the mistakes on the results show: the picked option's, the right option's, then the question's.
-- The speaker button is the one in the top row; on the miss screen it reads the miss, and stops on **Continue**.
 
 ## Notes
 

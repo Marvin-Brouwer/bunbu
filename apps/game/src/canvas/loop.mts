@@ -7,7 +7,7 @@
  * that comes back from the background cannot jump a run forward by minutes, and multiplied by the
  * mode's world scale, which is how slow motion works. The mode gets the real delta too: slow motion is
  * only visual, and timers the player plays against (the ambush) run on real time. While the mode is paused its update is
- * skipped; while the page is hidden the loop stops entirely and the mode is asked to pause.
+ * skipped; while the page is hidden the loop stops entirely and the mode is asked to pause, when it can.
  */
 
 import { drawFrame } from './stage.mts'
@@ -22,8 +22,11 @@ export type Mode = {
 	paused: () => boolean
 	/** `1` normally, lower for slow motion. */
 	worldScale: () => number
-	/** Called when the page goes to the background ([pause](../../../../docs/design/screens.md#6-pause)). */
-	pause: () => void
+	/**
+	 * Called when the page goes to the background ([pause](../../../../docs/design/screens.md#6-pause)).
+	 * Practice has nothing to pause.
+	 */
+	pause?: () => void
 }
 
 let mode: Mode | undefined
@@ -61,7 +64,7 @@ export function startLoop(signal: AbortSignal): void {
 
 	document.addEventListener('visibilitychange', () => {
 		if (document.hidden) {
-			mode?.pause()
+			mode?.pause?.()
 			stop()
 		} else if (frame === 0) {
 			start()

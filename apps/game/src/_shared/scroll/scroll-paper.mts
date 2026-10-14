@@ -1,6 +1,6 @@
 /**
  * The scroll of one ambush: the heading and the query on a {@link ScrollSheet}, with the answers
- * in the answer drawer at its foot. The question scrolls above the drawer's edge. The
+ * in the answer drawer at its foot. In practice, read out loud follows the query. The question scrolls above the drawer's edge. The
  * {@link Scroll} unrolls it, rolls it up, or cuts it in two.
  */
 
@@ -17,13 +17,15 @@ export type ScrollPaperOptions = {
 	readonly heading: string
 	/** The answer drawer with the answers. It stretches the scroll to the bottom of the screen. */
 	readonly drawer: GenericComponent
+	/** Practice's read out loud, after the query. */
+	readonly readAloud?: GenericComponent
 }
 
 export const ScrollPaper = component<ScrollPaperOptions>({
 	name: 'scroll-paper',
 	styles,
 	onMount({ append, create, element, options }) {
-		const { state, heading, drawer } = options
+		const { state, heading, drawer, readAloud } = options
 
 		append(
 			create(ScrollSheet, {
@@ -41,6 +43,7 @@ export const ScrollPaper = component<ScrollPaperOptions>({
 							classes: styles.markdown,
 						}),
 					}),
+					readAloud,
 				],
 			})
 		)

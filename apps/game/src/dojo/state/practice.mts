@@ -4,7 +4,7 @@
  * right vs wrong count. The practice route creates it when it mounts and drops it when it unmounts.
  *
  * The session goes from the start screen ([D3](../../../../../docs/design/screens.md#d3-practice-start))
- * into the ambushes, can pause, and is done after the last question.
+ * into the ambushes, and is done after the last question. It doesn't pause: there is no timer.
  */
 
 import { createAmbush, noAmbush, type Ambush, type AmbushState } from '../../_shared/state/ambush.mts'
@@ -60,7 +60,7 @@ export function createTally(initial: TallyState = noTally): Tally {
 	return store
 }
 
-export type SessionPhase = 'start' | 'practising' | 'paused' | 'done'
+export type SessionPhase = 'start' | 'practising' | 'done'
 
 export type SessionState = {
 	readonly phase: SessionPhase
@@ -74,8 +74,6 @@ export type SessionState = {
 export type SessionActions = {
 	/** **Start** on the start screen: into the ambushes. */
 	begin: () => void
-	pause: () => void
-	resume: () => void
 	/** The last question is answered. */
 	finish: () => void
 	/** The next question opens in `seconds`. */
@@ -98,14 +96,6 @@ export function createSession(initial: SessionState = noSession): Session {
 				return
 			}
 			store.update(() => ({ phase: 'practising', nextIn: 0 }))
-		},
-		pause: () => {
-			if (store.value.phase !== 'practising') return
-			store.update(() => ({ phase: 'paused' }))
-		},
-		resume: () => {
-			if (store.value.phase !== 'paused') return
-			store.update(() => ({ phase: 'practising' }))
 		},
 		finish: () => { store.update(() => ({ phase: 'done', nextIn: 0 })) },
 		waitForNext: (seconds) => { store.update(() => ({ nextIn: seconds })) },
