@@ -1,17 +1,18 @@
 /**
  * Practice ([dojo.md](../../../../../docs/design/dojo.md#practice)): the ambush without the risk.
  * The same questions and rounds as a run, but no timer, no life bar and no score: each answer
- * counts toward the right vs wrong tally, and the next question opens once the scroll answered
- * has rolled up.
+ * counts toward the right vs wrong tally. A right answer moves on; a wrong one shows the miss
+ * screen ([D5](../../../../../docs/design/screens.md#d5-practice-miss)) until **Continue**. The next
+ * question opens once the scroll answered has rolled up.
  */
 
 import type { BunbuData } from '@bunbu/data'
 import { fitOf, inPlacesOf, openingOf } from '../../_shared/state/ambush-opening.mts'
-import type { AmbushOption } from '../../_shared/state/ambush.mts'
-import type { QuestionRef, QuizActions, QuizState } from '../../_shared/state/quiz.mts'
+import type { AmbushActions, AmbushOption, AmbushState } from '../../_shared/state/ambush.mts'
+import type { AnswerRecord, QuestionRef, QuizActions, QuizState } from '../../_shared/state/quiz.mts'
 import { shuffle, type Random } from '../../_shared/state/random.mts'
 import { refuse, snapshot } from '../../_shared/state/store.mts'
-import type { PracticeGame } from '../state/practice.mts'
+import type { PracticeGame, TallyActions, TallyState } from '../state/practice.mts'
 
 /**
  * Seconds after a right answer before the next question opens: the scroll answered rolls up first
@@ -81,8 +82,8 @@ export function tickPractice(game: PracticeGame, realDelta: number, random: Rand
 }
 
 /**
- * Answers the open ambush: right or wrong goes on the tally, and the next round of the question, or
- * the next question, opens.
+ * Answers the open ambush: right or wrong goes on the tally. Right, the next round of the question,
+ * or the next question, opens; wrong, the miss screen shows first.
  */
 export function commitPractice(game: PracticeGame, random: Random = Math.random): void {
 	const { phase } = game.session.value
@@ -90,23 +91,43 @@ export function commitPractice(game: PracticeGame, random: Random = Math.random)
 		refuse('commitPractice', `phase is ${phase}`)
 		return
 	}
-	const { options } = game.ambush.value
+	const answered = snapshot<AmbushState & AmbushActions>(game.ambush)
 	const result = game.ambush.value.commit()
 	if (result === undefined) return
 
-	game.quiz.value.record({ at: result.at, outcome: result.outcome, picked: result.picked })
-	if (result.outcome === 'correct') game.tally.value.addRight()
-	else {
-		game.tally.value.addWrong()
-		// There is no miss screen to show yet, so practice moves straight on and the dummy, which
-		// swings back while the miss screen shows, stands still.
-		game.tally.value.carryOn()
+	const record: AnswerRecord = { at: result.at, outcome: result.outcome, picked: result.picked }
+	game.quiz.value.record(record)
+	if (result.outcome === 'correct') {
+		game.tally.value.addRight()
+		openNext(game, result.at, answered.options, random)
+		return
 	}
+	// The ambush as it was answered, picks and all, for the miss screen.
+	game.tally.value.addWrong({ ambush: { ...answered, open: false }, record })
+}
 
-	// The next round of the question at once, its scroll revealed under this one; the next
-	// question once this scroll has rolled up.
+/** **Continue** on the miss screen: on to the next round or question. */
+export function continuePractice(game: PracticeGame, random: Random = Math.random): void {
+	const { missed } = snapshot<TallyState & TallyActions>(game.tally)
+	if (missed === undefined) {
+		refuse('continuePractice', 'no miss is shown')
+		return
+	}
+	if (game.session.value.phase !== 'practising') {
+		refuse('continuePractice', `phase is ${game.session.value.phase}`)
+		return
+	}
+	game.tally.value.carryOn()
+	openNext(game, missed.record.at, missed.ambush.options, random)
+}
+
+/**
+ * After an answer to `at`: the next round of its question at once, its scroll revealed under this
+ * one; the next question once this scroll has rolled up, so its swipe zone can't answer it.
+ */
+function openNext(game: PracticeGame, at: QuestionRef, before: readonly AmbushOption[], random: Random): void {
 	const next = game.quiz.value.current()
-	if (next?.question === result.at.question) openNextRound(game, next, options, random)
+	if (next?.question === at.question) openNextRound(game, next, before, random)
 	else if (next === undefined) openPractice(game, random)
 	else game.session.value.waitForNext(nextQuestionSeconds)
 }

@@ -162,6 +162,8 @@ Like 4A, with `PRACTICE · SINGLE · 8 / 40` and the running right vs wrong perc
 - The dummy swings back: thwack.
 - Speaker button reads "The answer is alt", then the explanation. No life lost.
 - **Continue**.
+- For `order` each item shows its right place, and the place given when that was wrong (`2nd, not 3rd`); an item that is not in the order at all shows the place it was given (`not in the order, not 4th`). The explanations are the ones the mistakes on the results show: the picked option's, the right option's, then the question's.
+- The speaker button is the one in the top row; on the miss screen it reads the miss, and stops on **Continue**.
 
 ## Notes
 

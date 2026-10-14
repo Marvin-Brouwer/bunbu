@@ -1,11 +1,13 @@
 /**
  * A missed ambush as the mistakes scroll shows it
  * ([7 Finished](../../../../../docs/design/screens.md#7-finished-results-and-mistakes)): what was
- * asked, ✗ what the player picked, ✓ the right answer, the explanations and the references.
+ * asked, ✗ what the player picked, ✓ the right answer, the explanations and the references. The
+ * dojo's practice miss screen ([D5](../../../../../docs/design/screens.md#d5-practice-miss)) takes
+ * its explanations from it too.
  */
 
 import type { BunbuData, Markdown, Option, Question, Reference } from '@bunbu/data'
-import { choicesOf, type AnswerRecord } from '../../_shared/state/quiz.mts'
+import { choicesOf, type AnswerRecord } from './quiz.mts'
 
 export type ReviewReference = {
 	readonly text: string

@@ -211,3 +211,85 @@
 	gap: 0.75rem;
 	padding: 0 1rem 1rem;
 }
+
+/* D5: the missed question's scroll, over the scroll layer's place, until Continue. */
+.layer.miss {
+	/*
+	 * Below the bar and its share of the top safe area, as the scroll, and clear of the bottom safe
+	 * area, where a phone's home indicator would cover Continue.
+	 */
+	--safe-top: max(0px, env(safe-area-inset-top) - 0.4rem);
+	--scroll-reserve: calc(var(--safe-top) + env(safe-area-inset-bottom));
+	align-content: start;
+	padding: calc(3.5rem + var(--safe-top)) 0.75rem 0;
+	color: var(--ink);
+}
+
+.layer.miss:empty {
+	display: none;
+}
+
+.missOptions {
+	display: grid;
+	gap: 0.6rem;
+	margin: 0 0 0.9rem;
+	padding: 0;
+	list-style: none;
+}
+
+.missOption {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	padding: 0.55rem 0.75rem;
+	border: 2px solid var(--ink-faint);
+	border-radius: var(--radius);
+	background: var(--paper-light);
+}
+
+/* The right answer: framed in ink on grey. A wrong pick: framed in vermilion. */
+.missOption[data-verdict='right'] {
+	border-color: var(--ink);
+	background: var(--paper-shade);
+}
+
+.missOption[data-verdict='wrong'] {
+	border-color: var(--vermilion);
+}
+
+.missMark {
+	display: grid;
+	place-items: center;
+	flex: none;
+	width: 1.9rem;
+	height: 1.9rem;
+	background: var(--ink);
+	color: var(--paper-light);
+	font-weight: 700;
+}
+
+.missAnswer {
+	flex: 1;
+	min-width: 0;
+	font-weight: 600;
+}
+
+.missVerdict {
+	flex: none;
+	font-family: var(--font-mono);
+	font-size: 0.8rem;
+	font-weight: 700;
+}
+
+.missOption[data-verdict='wrong'] .missVerdict {
+	color: var(--vermilion);
+}
+
+.explanation {
+	margin-bottom: 0.6rem;
+	line-height: 1.45;
+}
+
+.missNote {
+	text-align: center;
+}

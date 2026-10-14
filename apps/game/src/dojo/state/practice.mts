@@ -8,21 +8,27 @@
  */
 
 import { createAmbush, noAmbush, type Ambush, type AmbushState } from '../../_shared/state/ambush.mts'
-import { createQuiz, noQuiz, type Quiz, type QuizState } from '../../_shared/state/quiz.mts'
+import { createQuiz, noQuiz, type AnswerRecord, type Quiz, type QuizState } from '../../_shared/state/quiz.mts'
 import { refuse } from '../../_shared/state/store.mts'
 import { createStore, type Store } from '@rooted/store'
+
+/** A wrong answer, as the miss screen shows it: the ambush with the player's picks, and what was recorded. */
+export type Miss = {
+	readonly ambush: AmbushState
+	readonly record: AnswerRecord
+}
 
 export type TallyState = {
 	readonly right: number
 	readonly wrong: number
 	/** Showing the miss screen ([D5](../../../../../docs/design/screens.md#d5-practice-miss)) until **Continue**. */
-	readonly missed: boolean
+	readonly missed: Miss | undefined
 }
 
 export type TallyActions = {
 	addRight: () => void
-	/** Counts a miss and shows the miss screen. */
-	addWrong: () => void
+	/** Counts a miss and shows the miss screen for it. */
+	addWrong: (miss: Miss) => void
 	/** Leaves the miss screen. */
 	carryOn: () => void
 	reset: () => void
@@ -31,7 +37,7 @@ export type TallyActions = {
 /** The store, with its actions on its state. Change it through those, not `update`. */
 export type Tally = Store<TallyState & TallyActions>
 
-export const noTally: TallyState = { right: 0, wrong: 0, missed: false }
+export const noTally: TallyState = { right: 0, wrong: 0, missed: undefined }
 
 /**
  * The running right vs wrong percentage, rounded down so 99.5% is never shown as all right;
@@ -47,8 +53,8 @@ export function createTally(initial: TallyState = noTally): Tally {
 	const store: Tally = createStore<TallyState & TallyActions>({
 		...initial,
 		addRight: () => { store.update(() => ({ right: store.value.right + 1 })) },
-		addWrong: () => { store.update(() => ({ wrong: store.value.wrong + 1, missed: true })) },
-		carryOn: () => { store.update(() => ({ missed: false })) },
+		addWrong: (miss) => { store.update(() => ({ wrong: store.value.wrong + 1, missed: miss })) },
+		carryOn: () => { store.update(() => ({ missed: undefined })) },
 		reset: () => { store.update(() => noTally) },
 	})
 	return store

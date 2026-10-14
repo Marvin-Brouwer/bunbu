@@ -10,7 +10,7 @@ import { component } from '@rooted/components'
 import { Markdown } from '@rooted/markdown'
 import { renderMarkdown } from '../../_shared/markdown/render.mts'
 import type { AnswerRecord } from '../../_shared/state/quiz.mts'
-import { reviewOf, type Review } from './review.mts'
+import { reviewOf, type Review } from '../../_shared/state/review.mts'
 import styles from './mistakes.css'
 
 export type MistakesOptions = {
