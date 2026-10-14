@@ -1,4 +1,5 @@
-export { validate, BunbuValidationError, type ValidationIssue } from "./validate";
+export { validate, questionLines, BunbuValidationError, type ValidationIssue } from "./validate";
+export { duplicateQuestions, withoutDuplicates, type DuplicateQuestion } from "./duplicates";
 export { compress, uncompress, fileExtension, mimeType } from "./share/compress";
 export { BunbuShareError, type BunbuShareErrorReason } from "./share/errors";
 export { secondsOf } from "./duration";

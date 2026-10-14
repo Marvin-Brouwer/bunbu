@@ -1,11 +1,12 @@
 /**
- * What the player should know about a quiz on the select screen: why a file didn't load, and which
+ * What the player should know about a quiz on the select screen: why a file didn't load, which
+ * questions a loaded file repeated, and which
  * questions of the chosen quiz won't play as written in a fight
  * ([more than 3 options](../../../../../docs/design/gameplay.md#more-than-3-options)).
  */
 
 import { component, match } from '@rooted/components'
-import type { FitNote } from './read-quiz.mts'
+import type { FitNote, RepeatedQuestion } from './read-quiz.mts'
 import styles from './quiz.css'
 
 export type LoadProblemsOptions = {
@@ -39,6 +40,51 @@ export const LoadProblems = component<LoadProblemsOptions>({
 		)
 	},
 })
+
+export type DuplicatesNoticeOptions = {
+	readonly file: string
+	readonly duplicates: readonly RepeatedQuestion[]
+}
+
+/** The questions a loaded file asked more than once, which the library keeps only once. */
+export const DuplicatesNotice = component<DuplicatesNoticeOptions>({
+	name: 'duplicates-notice',
+	styles,
+	onMount({ append, element, options }) {
+		const { file, duplicates } = options
+		append(
+			element('div', {
+				classes: styles.notice,
+				'data-severity': 'warning',
+				role: 'status',
+				children: [
+					element('p', {
+						classes: styles.noticeTitle,
+						textContent: duplicates.length === 1
+							? `${file} repeats a question, so 1 copy was left out`
+							: `${file} repeats questions, so ${duplicates.length} copies were left out`,
+					}),
+					element('ul', {
+						children: duplicates.map((duplicate) => element('li', {
+							classes: styles.issue,
+							textContent: describeRepeat(duplicate),
+						})),
+					}),
+				],
+			})
+		)
+	},
+})
+
+/** A question's number and the line it starts on: `3 (line 40)`, or just `3` when the line isn't known. */
+function numberAt(index: number, line: number | undefined): string {
+	return line === undefined ? `${index + 1}` : `${index + 1} (line ${line})`
+}
+
+/** `Question 3 (line 40) is the same as question 1 (line 9).` */
+function describeRepeat({ question, of, line, ofLine }: RepeatedQuestion): string {
+	return `Question ${numberAt(question, line)} is the same as question ${numberAt(of, ofLine)}.`
+}
 
 export type FitNoticeOptions = {
 	readonly notes: readonly FitNote[]
