@@ -6,7 +6,7 @@
 
 import { component } from '@rooted/components'
 import { href, type Path } from '@rooted/router'
-import { DojoRoute, withMistakes } from '../../dojo/_routes.mts'
+import { PracticeMistakesRoute } from '../../dojo/_routes.mts'
 import { MenuButton, type MenuButtonOptions } from '../../_shared/menu/menu-button.mts'
 import { ShareScoreButton, type ShareScoreButtonOptions } from './share-score-button.mts'
 import styles from './overlays.css'
@@ -41,8 +41,8 @@ export const AfterRun = component<AfterRunOptions>({
 								next,
 								create(MenuButton, {
 									label: 'Practise mistakes',
-									// The dojo menu with "only my mistakes" ticked, so Practice asks the run's misses.
-									action: () => { options.leave(withMistakes(href.for(DojoRoute))) },
+									// Practice on the run's misses.
+									action: () => { options.leave(href.for(PracticeMistakesRoute)) },
 								}),
 							],
 						}),

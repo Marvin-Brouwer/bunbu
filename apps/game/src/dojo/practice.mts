@@ -3,7 +3,7 @@
  * the ambushes, which pause and end over themselves. The practice session's state lives as long
  * as this screen: created on mount, dropped on unmount.
  *
- * `/dojo/practice/?mistakes` asks only the questions the last run on the quiz missed.
+ * On `/dojo/practice/mistakes/` it asks only the questions the last run on the quiz missed.
  */
 
 import type { BunbuData } from '@bunbu/data'
@@ -16,7 +16,6 @@ import { selection } from '../_shared/state/selection.mts'
 import { snapshot } from '../_shared/state/store.mts'
 import { show } from '../canvas/stage.mts'
 import { QuizzesRoute } from '../quizzes/_routes.mts'
-import { mistakesOnly } from './_routes.mts'
 import { beginPractice, preparePractice } from './flows/practice.mts'
 import { PracticeAmbush } from './practice-ambush.mts'
 import { PracticeStart } from './practice-start.mts'
@@ -49,13 +48,18 @@ const NoQuiz = component({
 	},
 })
 
+export type PracticeOptions = {
+	/** Only the questions the last run on the quiz missed. */
+	readonly mistakes: boolean
+}
+
 /**
  * The chosen quiz's practice, or the way to choose one. Opened straight from a link, the saved
  * quiz comes back a moment after the screen is up.
  */
-export const Practice = component({
+export const Practice = component<PracticeOptions>({
 	name: 'practice',
-	onMount({ create, replace, signal }) {
+	onMount({ create, options, replace, signal }) {
 		/** The quiz on screen, by id and version; `''` for none. */
 		let practising: string | undefined
 		const showQuiz = () => {
@@ -63,14 +67,19 @@ export const Practice = component({
 			const key = quiz === undefined ? '' : `${quiz.id}@${quiz.version}`
 			if (key === practising) return
 			practising = key
-			replace(quiz === undefined ? create(NoQuiz) : create(PracticeSession, { quiz }))
+			replace(quiz === undefined
+				? create(NoQuiz)
+				: create(PracticeSession, {
+					quiz,
+					mistakes: options.mistakes,
+				}))
 		}
 		selection.on('change', signal, showQuiz)
 		showQuiz()
 	},
 })
 
-type PracticeSessionOptions = {
+type PracticeSessionOptions = PracticeOptions & {
 	readonly quiz: BunbuData
 }
 
@@ -80,7 +89,7 @@ const PracticeSession = component<PracticeSessionOptions>({
 		const { quiz } = options
 		const game = createPracticeGame()
 		// Only the mistakes when they were asked for and the last run on this quiz made some.
-		const missed = mistakesOnly(href.url(location.href).path)
+		const missed = options.mistakes
 			? missedQuestions(lastRun.value.missesOf(quiz.id, quiz.version))
 			: []
 		preparePractice(game, quiz, missed.length > 0 ? missed : undefined, Math.random)

@@ -132,7 +132,7 @@ See [dojo.md](dojo.md) for the rules.
 - 道場 · **Dojo** · the chosen quiz (`v3 · 40 questions`), which leads to the quizzes to change it.
 - **Study** card, with calligraphy-set art (文武, brush, inkstone).
 - **Practice** card, with the training dummy from D3.
-- **Only my mistakes from the last run (3)**, counting questions, when the last run was on this quiz and version and missed some. A choice tile, not a checkbox: ticked, it gets the red frame and the 選 stamp. `/dojo/?mistakes` opens the menu with it ticked.
+- **Only my mistakes from the last run (3)**, counting questions, when the last run was on this quiz and version and missed some. A choice tile, not a checkbox: ticked, it gets the red frame and the 選 stamp, and Practice opens on `/dojo/practice/mistakes/`. The box is as it was left when coming back to the menu, and unticked on a new visit.
 - Without a quiz the cards can't be opened, and **Select quiz** leads to the quizzes.
 
 ### D2 Study

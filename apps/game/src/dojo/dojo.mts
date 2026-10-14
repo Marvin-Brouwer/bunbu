@@ -4,8 +4,8 @@
  * when the last run was on this quiz and missed some. Without a quiz the cards can't be opened,
  * and a line leads to the quizzes.
  *
- * `/dojo/?mistakes` opens it with the mistakes ticked, as **Practise mistakes** on the results does;
- * Practice then opens with them too.
+ * Ticked, Practice opens on `/dojo/practice/mistakes/`, as **Practise mistakes** on the results
+ * does. The box is kept on the menu's history entry, so coming back finds it as it was left.
  */
 
 import type { BunbuData } from '@bunbu/data'
@@ -21,11 +21,14 @@ import { selection, type SelectionState } from '../_shared/state/selection.mts'
 import { snapshot } from '../_shared/state/store.mts'
 import { library } from '../_shared/storage/library.mts'
 import { QuizzesRoute } from '../quizzes/_routes.mts'
-import { mistakesOnly, PracticeRoute, StudyRoute, withMistakes } from './_routes.mts'
+import { PracticeMistakesRoute, PracticeRoute, StudyRoute } from './_routes.mts'
 import { missedQuestions } from './state/mistakes.mts'
 import practiceArt from './practice-art.svg'
 import studyArt from './study-art.svg'
 import styles from './dojo.css'
+
+/** The menu's history entry keeps "only my mistakes" under this key. */
+const mistakesKey = 'bunbu:dojo-mistakes'
 
 /**
  * A click the browser should handle itself: another button than the main one, or with a key held,
@@ -140,14 +143,14 @@ export const DojoMenu = component({
 	name: 'dojo',
 	styles,
 	onMount({ create, element, replace, signal }) {
-		// Ticked by the link that opened the menu; the box changes it from there.
-		let mistakes = mistakesOnly(href.url(location.href).path)
+		// As it was left on this history entry; unticked on a new visit.
+		let mistakes = (history.state as Record<string, unknown> | null)?.[mistakesKey] === true
 
 		const show = () => {
 			const { quiz } = snapshot<SelectionState>(selection)
 			const loading = environment.is('preRenderer') || !library.value.restored
 			const missed = quiz === undefined ? 0 : missedQuestions(lastRun.value.missesOf(quiz.id, quiz.version)).length
-			const practice = () => missed > 0 && mistakes ? withMistakes(href.for(PracticeRoute)) : href.for(PracticeRoute)
+			const practice = () => href.for(missed > 0 && mistakes ? PracticeMistakesRoute : PracticeRoute)
 
 			replace(
 				create(MenuScreen, {
@@ -201,8 +204,8 @@ export const DojoMenu = component({
 										on: {
 											change(event) {
 												mistakes = event.currentTarget.checked
-												// In the address too, so coming back to the menu finds the box as it was left.
-												history.replaceState(history.state, '', withMistakes(href.url(location.href).path, mistakes).href)
+												// On the history entry, so coming back to the menu finds the box as it was left.
+												history.replaceState({ ...history.state as Record<string, unknown> | null, [mistakesKey]: mistakes }, '')
 											},
 										},
 									}),
