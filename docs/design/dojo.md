@@ -24,10 +24,10 @@ The ambush without the risk.
 
 - A start screen with the training dummy and a **Start** button. The same dummy is the Practice art on the dojo menu.
 - Then the [ambush](gameplay.md#ambush) without the stage: wooden training dummies instead of ninjas, a bamboo sword instead of a katana. The dummies don't move.
-- The card is shown. Reading aloud is a button press, not automatic.
-- A miss shows the right answer and the explanation; the speaker button reads them aloud. The dummy swings back. **Continue** moves on.
+- The card is shown. Reading aloud is a press on **read out loud** at the end of the question, not automatic.
+- A miss shows the right answer and the explanation; **read out loud** at the end reads them aloud. The dummy swings back. **Continue** moves on.
 - No life bar, no death and no timer.
-- It can pause, and plays full screen on a phone like a run: Back or leaving full screen pauses, resuming goes full screen again, and Back while paused leaves practice ([pause](screens.md#6-pause)).
+- It doesn't pause, as nothing is timed: the back link and Back leave practice. On a phone it plays full screen with the screen kept on, like a run.
 - A running right vs wrong percentage is shown, so you can see how you're doing. It is not a score and isn't stored.
 
 <img src="screens/d3-practice-start.png" alt="Practice start" width="195"> <img src="screens/d4-practice.png" alt="Practice ambush" width="195"> <img src="screens/d5-practice-miss.png" alt="Practice miss" width="195">

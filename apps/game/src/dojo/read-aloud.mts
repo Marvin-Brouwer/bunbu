@@ -1,5 +1,6 @@
 /**
- * The speaker button of practice ([D4](../../../../docs/design/screens.md#d4-practice-ambush),
+ * The read out loud line at the end of a practice scroll
+ * ([D4](../../../../docs/design/screens.md#d4-practice-ambush),
  * [D5](../../../../docs/design/screens.md#d5-practice-miss)): reads the card aloud when pressed,
  * never by itself. Pressed again while reading, it stops. The voice and the speed are the ones in
  * the settings, as for Study.
@@ -12,8 +13,8 @@ import { canSpeak, createSpeaker, voiceFor, watchVoices } from '../_shared/speec
 import { languageOf, settings } from '../settings/state/settings.mts'
 import styles from './practice.css'
 
-/** A speaker, for the read aloud button. */
-const speakerIcon = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" fill="currentColor"/><path d="M15.5 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11"/></svg>'
+/** A speaker, in front of the words. */
+const speakerIcon = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" fill="currentColor"/><path d="M15.5 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11"/></svg>'
 
 /**
  * The lines to read for quiz Markdown, a sentence each: `blocks` in turn, as on the card. A block
@@ -48,32 +49,34 @@ export const ReadAloud = component<ReadAloudOptions>({
 		let lines: SpokenLine[] = []
 		let reading = false
 
-		const button = append(
+		const words = element('span')
+		append(
 			element('button', {
 				type: 'button',
-				classes: [
-					styles.panel,
-					styles.iconButton,
-				],
+				classes: styles.readAloud,
 				disabled: !canSpeak(),
-				innerHTML: speakerIcon,
-				aria: {
-					label: 'Read aloud',
-					pressed: 'false',
-				},
 				on: {
 					click() {
 						if (reading) stop()
 						else start()
 					},
 				},
+				children: [
+					element('span', {
+						classes: styles.readAloudIcon,
+						innerHTML: speakerIcon,
+					}),
+					words,
+				],
 			})
 		)
 
+		/** The words say what pressing does: read, or stop reading. */
 		const show = (next: boolean) => {
 			reading = next
-			button.setAttribute('aria-pressed', String(next))
+			words.textContent = next ? 'stop reading' : 'read out loud'
 		}
+		show(false)
 
 		const speaker = createSpeaker({
 			language,

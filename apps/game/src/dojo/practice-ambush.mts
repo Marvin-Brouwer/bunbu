@@ -1,28 +1,28 @@
 /**
  * D4 Practice ambush ([screens.md](../../../../docs/design/screens.md#d4-practice-ambush)): the
- * ambush's scroll and swipe zone, as in a run, over the dojo world. On top the pause button, the
- * running right vs wrong percentage and the speaker button. No timer, no life bar. A wrong answer
- * shows the miss screen over the scroll's place until **Continue**.
+ * ambush's scroll and swipe zone, as in a run, over the dojo world, with read out loud after the
+ * query. On top the back link and the running right vs wrong percentage. No timer, no life bar and
+ * no pause. A wrong answer shows the miss screen over the scroll's place until **Continue**.
  *
- * It plays like a run on a phone ([play guard](../_shared/play-guard.mts)): full screen, the screen
- * kept on, and Back or leaving full screen pauses. Back while paused, or after the last question,
- * leaves practice.
+ * On a phone it plays full screen with the screen kept on, as a run
+ * ([keepFullscreen](../_shared/play-guard.mts)). Back leaves practice.
  */
 
 import { resolvePronunciations, type BunbuData } from '@bunbu/data'
 import { component } from '@rooted/components'
-import { href, type Path } from '@rooted/router'
+import { href, navigate } from '@rooted/router'
+import { BackLink } from '../_shared/menu/back-link.mts'
 import { MenuButton } from '../_shared/menu/menu-button.mts'
-import { guardPlay } from '../_shared/play-guard.mts'
+import { keepFullscreen } from '../_shared/play-guard.mts'
 import { ScrollSheet } from '../_shared/scroll/scroll-sheet.mts'
 import { Scroll } from '../_shared/scroll/scroll.mts'
 import { formatWhole } from '../_shared/numbers.mts'
 import { play } from '../canvas/loop.mts'
 import { DojoRoute } from './_routes.mts'
 import { commitPractice, continuePractice, practiseAgain, progressOf, tickPractice } from './flows/practice.mts'
-import { missBlocksOf, PracticeMiss } from './practice-miss.mts'
+import { PracticeMiss } from './practice-miss.mts'
 import { ReadAloud } from './read-aloud.mts'
-import { percentRight, type Miss, type PracticeGame, type SessionPhase, type TallyState } from './state/practice.mts'
+import { percentRight, type Miss, type PracticeGame, type TallyState } from './state/practice.mts'
 import styles from './practice.css'
 
 /** `✓ 6 · ✗ 2 · 75% right`, or `no answers yet`. */
@@ -32,34 +32,17 @@ function tallyText(tally: TallyState): string {
 	return `✓ ${formatWhole(tally.right)} · ✗ ${formatWhole(tally.wrong)} · ${percent}% right`
 }
 
-type PracticeBarOptions = {
+type PracticeScreenOptions = {
 	readonly game: PracticeGame
-	readonly quiz: BunbuData
 }
 
-/** The top of the screen: pause, the running right vs wrong count, and read aloud. */
-const PracticeBar = component<PracticeBarOptions>({
+/** The top of the screen: back, and the running right vs wrong count. */
+const PracticeBar = component<PracticeScreenOptions>({
 	name: 'practice-bar',
 	styles,
 	onMount({ append, create, element, options, signal }) {
-		const { game, quiz } = options
+		const { game } = options
 
-		const pause = element('button', {
-			type: 'button',
-			classes: [
-				styles.panel,
-				styles.iconButton,
-				styles.pause,
-			],
-			aria: {
-				label: 'Pause',
-			},
-			on: {
-				click() {
-					game.session.value.pause()
-				},
-			},
-		})
 		const tally = element('p', {
 			classes: [
 				styles.panel,
@@ -74,110 +57,22 @@ const PracticeBar = component<PracticeBarOptions>({
 			element('div', {
 				classes: styles.bar,
 				children: [
-					pause,
+					create(BackLink),
 					tally,
-					create(ReadAloud, {
-						language: quiz.language,
-						// The quiz's own and the built-in dictionaries, as Study reads them.
-						pronunciations: resolvePronunciations(quiz),
-						// The card, or on the miss screen the right answer and the explanation.
-						blocks: () => {
-							const { missed } = game.tally.value
-							if (missed !== undefined) return missBlocksOf(quiz, missed)
-							const { query, options: answers } = game.ambush.value
-							return [query, ...answers.map((answer) => answer.answer)]
-						},
-						stopWhen(stop, until) {
-							// Continue leaves the miss screen that was read.
-							let missed = game.tally.value.missed
-							game.tally.on('change', until, ({ detail }) => {
-								if (detail.state.missed !== missed) stop()
-								missed = detail.state.missed
-							})
-							// Answering closes the scroll that was read.
-							game.ambush.on('change', until, ({ detail }) => {
-								if (!detail.state.open) stop()
-							})
-							game.session.on('change', until, ({ detail }) => {
-								if (detail.state.phase !== 'practising') stop()
-							})
-						},
-					}),
 				],
 			})
 		)
 
 		const show = () => {
 			tally.textContent = tallyText(game.tally.value)
-			pause.disabled = game.session.value.phase !== 'practising'
 		}
 		show()
 		game.tally.on('change', signal, show)
-		game.session.on('change', signal, show)
-	},
-})
-
-type PracticeDialogOptions = {
-	readonly game: PracticeGame
-	readonly leave: (to: Path) => void
-}
-
-/** Paused: how practice is going, with Resume and Leave practice. */
-const PracticePause = component<PracticeDialogOptions>({
-	name: 'practice-pause',
-	styles,
-	onMount({ append, create, element, options }) {
-		const { game } = options
-		const { quiz, order } = game.quiz.value
-
-		append(
-			element('div', {
-				classes: styles.dialog,
-				role: 'dialog',
-				aria: {
-					label: 'Paused',
-					modal: 'true',
-				},
-				children: create(ScrollSheet, {
-					unroll: true,
-					children: element('div', {
-						classes: styles.sheetBody,
-						children: [
-							element('h2', {
-								classes: styles.dialogTitle,
-								textContent: 'Paused',
-							}),
-							element('p', {
-								classes: styles.dialogNote,
-								textContent: `${quiz?.title ?? ''} · ${formatWhole(order.length)} ${order.length === 1 ? 'question' : 'questions'}`,
-							}),
-							element('p', {
-								textContent: tallyText(game.tally.value),
-							}),
-						],
-					}),
-					footer: element('div', {
-						classes: styles.actions,
-						children: [
-							create(MenuButton, {
-								kind: 'primary',
-								label: 'Resume',
-								action: () => { game.session.value.resume() },
-							}),
-							create(MenuButton, {
-								label: 'Leave practice',
-								action: () => { options.leave(href.for(DojoRoute)) },
-							}),
-						],
-					}),
-				}),
-			})
-		)
 	},
 })
 
 /** After the last question: the final right vs wrong, then Again (reshuffled) and Dojo. */
-const PracticeDone = component<PracticeDialogOptions>({
+const PracticeDone = component<PracticeScreenOptions>({
 	name: 'practice-done',
 	styles,
 	onMount({ append, create, element, options }) {
@@ -221,7 +116,8 @@ const PracticeDone = component<PracticeDialogOptions>({
 							}),
 							create(MenuButton, {
 								label: 'Dojo',
-								action: () => { options.leave(href.for(DojoRoute)) },
+								// In practice's place in history, so Back from the dojo doesn't come back here.
+								action: () => { navigate.replace(href.for(DojoRoute)) },
 							}),
 						],
 					}),
@@ -247,14 +143,8 @@ export const PracticeAmbush = component<PracticeAmbushOptions>({
 			update: (_, realDelta) => { tickPractice(game, realDelta) },
 			paused: () => !practising(),
 			worldScale: () => 1,
-			pause: () => { game.session.value.pause() },
 		}, signal)
-
-		// Full screen on a phone, and Back pauses; both come back on Resume and on Again.
-		const guard = guardPlay({
-			pause: () => { game.session.value.pause() },
-			pausable: practising,
-		}, signal)
+		keepFullscreen(signal)
 
 		// The miss screen, until Continue. It takes the focus when it shows, on Continue, so a screen
 		// reader says that the answer was missed and what to do next.
@@ -298,7 +188,6 @@ export const PracticeAmbush = component<PracticeAmbushOptions>({
 			],
 			children: create(PracticeBar, {
 				game,
-				quiz,
 			}),
 		})
 		const scroll = element('div', {
@@ -311,51 +200,53 @@ export const PracticeAmbush = component<PracticeAmbushOptions>({
 				quiz: game.quiz,
 				label: 'PRACTICE',
 				commit: () => { commitPractice(game) },
-				// The pause, and the next round's scroll coming in under the answered one. A new
-				// question opens with no wait of its own: it comes once the answered scroll is gone.
+				// Done, and the next round's scroll coming in under the answered one. A new question
+				// opens with no wait of its own: it comes once the answered scroll is gone.
 				held: () => !practising() || game.ambush.value.openingLeft > 0,
 				progress: (state) => progressOf(game, state.at),
+				readAloud: (state) => create(ReadAloud, {
+					language: quiz.language,
+					// The quiz's own and the built-in dictionaries, as Study reads them.
+					pronunciations: resolvePronunciations(quiz),
+					blocks: () => [state.query, ...state.options.map((option) => option.answer)],
+					stopWhen(stop, until) {
+						// Answering closes the scroll that was read.
+						game.ambush.on('change', until, ({ detail }) => {
+							if (!detail.state.open) stop()
+						})
+					},
+				}),
 			}),
 		})
-		/** What a dialog over practice shuts off: nothing behind it can be reached until it closes. */
+		/** What the end of practice shuts off: nothing behind it can be reached until Again. */
 		const behind = [top, scroll, miss]
 
-		let phase: SessionPhase | undefined
-		/** Where the focus was before a dialog took it, to give it back when the dialog closes. */
+		let done: boolean | undefined
+		/** Where the focus was before the end of practice took it, to give it back on Again. */
 		let returnFocus: Element | null = null
-		const showPhase = (next: SessionPhase) => {
-			if (next === phase) return
-			if (next === 'practising' && phase !== undefined) guard.resumed()
-			phase = next
-			const modal = next === 'paused' || next === 'done'
-			if (modal && overlays.childElementCount === 0) returnFocus = document.activeElement
+		const showDone = (next: boolean) => {
+			if (next === done) return
+			done = next
+			if (next) returnFocus = document.activeElement
 			overlays.replaceChildren(
-				...next === 'paused'
-					? [create(PracticePause, {
+				...next
+					? [create(PracticeDone, {
 						game,
-						leave: guard.leave,
 					})]
-					: next === 'done'
-						? [create(PracticeDone, {
-							game,
-							leave: guard.leave,
-						})]
-						: []
+					: []
 			)
-			for (const layer of behind) layer.inert = modal
-			if (modal) {
+			for (const layer of behind) layer.inert = next
+			if (next) {
 				// The dialog's buttons are there once it has mounted.
 				setTimeout(() => { overlays.querySelector('button')?.focus() })
 			}
 			else if (returnFocus !== null) {
-				// Back where it was; the pause button itself loses the focus as it is disabled while paused.
 				const before = returnFocus
 				returnFocus = null
-				// After the bar has enabled its buttons again.
 				setTimeout(() => {
 					const back = before instanceof HTMLElement && before.isConnected && before !== document.body
 						? before
-						: top.querySelector('button')
+						: top.querySelector('a')
 					back?.focus()
 				})
 			}
@@ -376,7 +267,7 @@ export const PracticeAmbush = component<PracticeAmbushOptions>({
 		showMiss(game.tally.value.missed)
 		game.tally.on('change', signal, ({ detail }) => { showMiss(detail.state.missed) })
 
-		showPhase(game.session.value.phase)
-		game.session.on('change', signal, ({ detail }) => { showPhase(detail.state.phase) })
+		showDone(game.session.value.phase === 'done')
+		game.session.on('change', signal, ({ detail }) => { showDone(detail.state.phase === 'done') })
 	},
 })
