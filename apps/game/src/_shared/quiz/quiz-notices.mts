@@ -1,9 +1,11 @@
 /**
- * What the player should know about a quiz on the select screen: why a file didn't load, and which
+ * What the player should know about a quiz on the select screen: why a file didn't load, which
+ * questions a loaded file repeated, and which
  * questions of the chosen quiz won't play as written in a fight
  * ([more than 3 options](../../../../../docs/design/gameplay.md#more-than-3-options)).
  */
 
+import type { DuplicateQuestion } from '@bunbu/data'
 import { component, match } from '@rooted/components'
 import type { FitNote } from './read-quiz.mts'
 import styles from './quiz.css'
@@ -32,6 +34,40 @@ export const LoadProblems = component<LoadProblemsOptions>({
 						children: options.problems.map((problem) => element('li', {
 							classes: styles.issue,
 							textContent: problem,
+						})),
+					}),
+				],
+			})
+		)
+	},
+})
+
+export type DuplicatesNoticeOptions = {
+	readonly file: string
+	readonly duplicates: readonly DuplicateQuestion[]
+}
+
+/** The questions a loaded file asked more than once, which the library keeps only once. */
+export const DuplicatesNotice = component<DuplicatesNoticeOptions>({
+	name: 'duplicates-notice',
+	styles,
+	onMount({ append, element, options }) {
+		const { file, duplicates } = options
+		append(
+			element('div', {
+				classes: styles.notice,
+				'data-severity': 'warning',
+				role: 'status',
+				children: [
+					element('p', {
+						classes: styles.noticeTitle,
+						textContent: duplicates.length === 1
+							? `${file} repeats a question, so 1 copy was left out`
+							: `${file} repeats questions, so ${duplicates.length} copies were left out`,
+					}),
+					element('ul', {
+						children: duplicates.map(({ question, of }) => element('li', {
+							textContent: `Question ${question + 1} is the same as question ${of + 1}.`,
 						})),
 					}),
 				],

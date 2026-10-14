@@ -1,9 +1,9 @@
 /**
- * The button and area to load a quiz file, then why the last file didn't load and what won't fit in
- * a fight of the chosen quiz, then the loaded quizzes as cards, one to choose.
+ * The button and area to load a quiz file, then why the last file didn't load or which questions it
+ * repeated, and what won't fit in a fight of the chosen quiz, then the loaded quizzes as cards, one to choose.
  */
 
-import type { BunbuData } from '@bunbu/data'
+import type { BunbuData, DuplicateQuestion } from '@bunbu/data'
 import { component } from '@rooted/components'
 import { library, type LibraryEntry, type LibraryState } from '../_shared/storage/library.mts'
 import { selection, type SelectionState } from '../_shared/state/selection.mts'
@@ -11,7 +11,7 @@ import { snapshot } from '../_shared/state/store.mts'
 import { sampleQuizzes } from '../_temp/sample-quizzes.mts'
 import { LoadQuiz } from './load-quiz.mts'
 import { QuizCard } from './quiz-card.mts'
-import { FitNotice, LoadProblems } from '../_shared/quiz/quiz-notices.mts'
+import { DuplicatesNotice, FitNotice, LoadProblems } from '../_shared/quiz/quiz-notices.mts'
 import { fitNotesOf, type ReadQuiz } from '../_shared/quiz/read-quiz.mts'
 import styles from './quiz-shelf.css'
 
@@ -50,19 +50,23 @@ export const QuizShelf = component({
 		})
 
 		let failed: { readonly file: string, readonly problems: readonly string[] } | undefined
+		let repeated: { readonly file: string, readonly duplicates: readonly DuplicateQuestion[] } | undefined
 		// Dev builds only: the samples come in once they are validated.
 		let samples: readonly LibraryEntry[] = []
 
 		const read = (file: File, result: ReadQuiz) => {
 			if ('problems' in result) {
 				failed = { file: file.name, problems: result.problems }
+				repeated = undefined
 				showNotices()
 				return
 			}
 			failed = undefined
+			repeated = result.duplicates === undefined ? undefined : { file: file.name, duplicates: result.duplicates }
 			// Chosen first, so the new card comes in checked.
 			selection.value.chooseQuiz(result.quiz)
-			library.value.add(result)
+			library.value.add({ quiz: result.quiz, file: result.file })
+			showNotices()
 		}
 
 		append(
@@ -95,6 +99,9 @@ export const QuizShelf = component({
 				...failed === undefined
 					? []
 					: [create(LoadProblems, failed)],
+				...repeated === undefined
+					? []
+					: [create(DuplicatesNotice, repeated)],
 				...quiz === undefined
 					? []
 					: [create(FitNotice, { notes: fitNotesOf(quiz) })],

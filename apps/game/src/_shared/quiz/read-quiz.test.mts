@@ -1,5 +1,5 @@
-import { compress, uncompress, type BunbuData, type Markdown } from '@bunbu/data'
-import { describe, expect, it } from 'vitest'
+import { compress, uncompress, validate, type BunbuData, type Markdown } from '@bunbu/data'
+import { describe, expect, it, vi } from 'vitest'
 import { fixtureQuiz } from '../../_temp/quiz.mts'
 import { describeIssue, fightable, fitNotesOf, readQuiz } from './read-quiz.mts'
 
@@ -20,6 +20,21 @@ describe('readQuiz', () => {
 		expect(result.quiz.id).toBe('every-type')
 		// The file leaves out the built-in pronunciations, and reading it puts them all back.
 		expect(await uncompress(result.file.value)).toEqual({ ...result.quiz, pronunciations: expect.objectContaining(result.quiz.pronunciations) })
+	})
+
+	it('leaves out questions a .yaml quiz repeats, before packing it', async () => {
+		const quiz = await validate(everyType)
+		if (quiz instanceof Error) expect.unreachable(quiz.message)
+		const first = everyType.indexOf('\n  - type:')
+		const second = everyType.indexOf('\n  - type:', first + 1)
+		const repeated = everyType.slice(0, second) + everyType.slice(first, second) + everyType.slice(second)
+		const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+		const result = await readQuiz(file(repeated, 'repeated.yaml'))
+		warn.mockRestore()
+		if (!('quiz' in result)) expect.unreachable(result.problems.join('\n'))
+		expect(result.duplicates).toEqual([{ question: 1, of: 0 }])
+		expect(result.quiz.questions).toEqual(quiz.questions)
+		expect((await uncompress(result.file.value)).questions).toHaveLength(quiz.questions.length)
 	})
 
 	it('lists what is wrong with an invalid .yaml quiz, by line', async () => {

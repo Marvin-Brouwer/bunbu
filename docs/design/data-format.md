@@ -143,6 +143,8 @@ Questions have no id. They are identified by their position in `questions`. Prog
 | `source`      | no       | List of `text: url` entries for where the question comes from (origin and attribution). Plain text. |
 | `references`  | no       | List of `text: url` entries where the answer can be verified. Plain text, not Markdown.             |
 
+A question that repeats an earlier one, field for field apart from `source`, is a duplicate: the same question can come from more than one place. Duplicates are not an error, so `validate` accepts the quiz and only warns in the console. The game leaves them out when it loads a `.yaml` file (`withoutDuplicates`), so its library and the `.bunbu` file it makes keep each question once.
+
 ### Options
 
 Options are a **list**. Each option says itself whether it is correct, so there are no keys or positions to keep in sync, and the app can shuffle options freely.
