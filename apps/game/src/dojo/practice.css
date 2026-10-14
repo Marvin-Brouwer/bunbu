@@ -214,9 +214,12 @@
 
 /* D5: the missed question's scroll, over the scroll layer's place, until Continue. */
 .layer.miss {
-	/* Below the bar and its share of the top safe area, as the scroll. */
+	/*
+	 * Below the bar and its share of the top safe area, as the scroll, and clear of the bottom safe
+	 * area, where a phone's home indicator would cover Continue.
+	 */
 	--safe-top: max(0px, env(safe-area-inset-top) - 0.4rem);
-	--scroll-reserve: var(--safe-top);
+	--scroll-reserve: calc(var(--safe-top) + env(safe-area-inset-bottom));
 	align-content: start;
 	padding: calc(3.5rem + var(--safe-top)) 0.75rem 0;
 	color: var(--ink);
