@@ -311,9 +311,9 @@ export const PracticeAmbush = component<PracticeAmbushOptions>({
 				quiz: game.quiz,
 				label: 'PRACTICE',
 				commit: () => { commitPractice(game) },
-				// Only the pause holds the swipes: no ninjas come in, so the short opening is only the
-				// answered scroll rolling up, and answering then is fine.
-				held: () => !practising(),
+				// The pause, and the next round's scroll coming in under the answered one. A new
+				// question opens with no wait of its own: it comes once the answered scroll is gone.
+				held: () => !practising() || game.ambush.value.openingLeft > 0,
 				progress: (state) => progressOf(game, state.at),
 			}),
 		})

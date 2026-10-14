@@ -34,8 +34,9 @@ export type SwipeZoneOptions = {
 	/** Strikes: commits the ambush through the mode's flow, like `commitAmbush` in a run. */
 	readonly commit: () => void
 	/**
-	 * Whether the mode is paused or counting down to resume. A strike that comes due then waits
-	 * for another commit pause, so it never lands in the pause menu.
+	 * Whether the scroll can't be answered now: the mode is paused or counting down to resume, or
+	 * the scroll is still coming in (`openingLeft`). Swipes then pick nothing, and a strike that comes
+	 * due waits for another commit pause, so it never lands in the pause menu.
 	 */
 	readonly held?: () => boolean
 }
@@ -64,10 +65,15 @@ export const SwipeZone = component<SwipeZoneOptions>({
 		}
 		signal.addEventListener('abort', cancelStrike, { once: true })
 
+		/** The frame that checks the stroke under way for a hold. */
+		let watching = 0
+
 		const forgetStroke = () => {
+			cancelAnimationFrame(watching)
 			pointer = undefined
 			stroke = undefined
 		}
+		signal.addEventListener('abort', () => { cancelAnimationFrame(watching) }, { once: true })
 
 		const strike = () => {
 			cancelStrike()
@@ -108,6 +114,24 @@ export const SwipeZone = component<SwipeZoneOptions>({
 			trace.setAttribute('points', traced.map(({ x, y }) => `${x},${y}`).join(' '))
 		}
 
+		/**
+		 * Drops the stroke under way once a hold begins, checked every frame: a finger that lies still
+		 * through a whole hold sends no move, and lifting it afterwards would still answer.
+		 */
+		const watchForHold = () => {
+			const check = () => {
+				if (stroke === undefined) return
+				if (held()) {
+					forgetStroke()
+					clearTrace()
+					return
+				}
+				watching = requestAnimationFrame(check)
+			}
+			cancelAnimationFrame(watching)
+			watching = requestAnimationFrame(check)
+		}
+
 		const clearTrace = () => {
 			traced = []
 			trace.setAttribute('points', '')
@@ -116,6 +140,14 @@ export const SwipeZone = component<SwipeZoneOptions>({
 		// A swipe is final: swiping a mark that is picked already does nothing.
 		const choose = (mark: Mark | undefined) => {
 			const current = ambush.value
+			// Held, nothing is picked: a `single` or `yes-no` would strike at once, before the scroll
+			// can be answered. A stroke the hold caught halfway is dropped as a whole, so it can't pick
+			// once the hold is over either.
+			if (held()) {
+				forgetStroke()
+				clearTrace()
+				return
+			}
 			if (mark === undefined || !current.open || timeUp(current) || isPicked(current, mark)) return
 			current.pick(mark)
 			buzz(buzzes.pick)
@@ -140,12 +172,14 @@ export const SwipeZone = component<SwipeZoneOptions>({
 			'data-open': 'false',
 			on: {
 				pointerdown(event) {
-					if (pointer !== undefined || !ambush.value.open) return
+					// A stroke begun while held is never taken up: it would answer when the hold ends.
+					if (pointer !== undefined || !ambush.value.open || held()) return
 					cancelStrike()
 					pointer = event.pointerId
 					stroke = strokeAt(pointOf(event))
 					clearTrace()
 					traceTo(pointOf(event))
+					watchForHold()
 					// Keeps the stroke when the finger slides out of the zone, over the scroll.
 					event.currentTarget.setPointerCapture(event.pointerId)
 				},
