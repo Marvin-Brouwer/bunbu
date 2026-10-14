@@ -29,6 +29,8 @@ export type ScrollOptions = {
 	readonly commit?: () => void
 	/** Whether the mode is paused or counting down to resume; see {@link SwipeZone}. */
 	readonly held?: () => boolean
+	/** How far the mode is, in place of the ninjas in the heading: `8 / 40` in practice. */
+	readonly progress?: (state: AmbushState) => string
 }
 
 /**
@@ -41,9 +43,9 @@ export const Scroll = component<ScrollOptions>({
 	name: 'scroll',
 	styles,
 	onMount({ append, create, element, options, signal }) {
-		const { ambush, quiz, label, commit, held } = options
+		const { ambush, quiz, label, commit, held, progress } = options
 
-		const heading = (state: AmbushState) => headingOf(label, state, quiz.value.question(state.at)?.type)
+		const heading = (state: AmbushState) => headingOf(label, state, quiz.value.question(state.at)?.type, progress?.(state))
 
 		const scroll = append(
 			element('section', {

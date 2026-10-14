@@ -53,6 +53,12 @@ describe('headingOf', () => {
 	it('falls back to the kind of ambush without a question', () => {
 		expect(headingOf('PRACTICE', open, undefined)).toBe('PRACTICE · SINGLE · 3 NINJAS')
 	})
+
+	it('shows the progress in place of the ninjas', () => {
+		expect(headingOf('PRACTICE', open, 'single', '8 / 40')).toBe('PRACTICE · SINGLE · 8 / 40')
+		const solution = { ...open, kind: 'yes-no' as const, round: 2, rounds: 3, options: [option(0, 'up'), option(0, 'down')] }
+		expect(headingOf('PRACTICE', solution, 'solutions', '3 / 40')).toBe('PRACTICE · SOLUTIONS · 2 OF 3 · 3 / 40')
+	})
 })
 
 describe('scrollChangeOf', () => {

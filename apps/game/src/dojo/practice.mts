@@ -1,7 +1,7 @@
 /**
  * D3 to D5 Practice ([dojo.md](../../../../docs/design/dojo.md#practice)): the start screen, then
- * the ambushes. The practice session's state lives as long as this screen: created on mount,
- * dropped on unmount.
+ * the ambushes, which pause and end over themselves. The practice session's state lives as long
+ * as this screen: created on mount, dropped on unmount.
  *
  * `/dojo/practice/?mistakes` asks only the questions the last run on the quiz missed.
  */
@@ -12,14 +12,13 @@ import { href } from '@rooted/router'
 import { lastRun } from '../fight/state/lastrun.mts'
 import { MenuButton } from '../_shared/menu/menu-button.mts'
 import { MenuScreen } from '../_shared/menu/menu-screen.mts'
-import { Placeholder } from '../_shared/placeholder.mts'
 import { selection } from '../_shared/state/selection.mts'
 import { snapshot } from '../_shared/state/store.mts'
 import { show } from '../canvas/stage.mts'
 import { QuizzesRoute } from '../quizzes/_routes.mts'
 import { mistakesOnly } from './_routes.mts'
-import { goBack } from '../_shared/menu/back-link.mts'
-import { preparePractice } from './flows/practice.mts'
+import { beginPractice, preparePractice } from './flows/practice.mts'
+import { PracticeAmbush } from './practice-ambush.mts'
 import { PracticeStart } from './practice-start.mts'
 import { missedQuestions } from './state/mistakes.mts'
 import { createPracticeGame } from './state/practice.mts'
@@ -86,38 +85,29 @@ const PracticeSession = component<PracticeSessionOptions>({
 			: []
 		preparePractice(game, quiz, missed.length > 0 ? missed : undefined, Math.random)
 
-		const showPhase = () => {
-			if (game.session.value.phase === 'start') {
-				replace(
-					create(PracticeStart, {
-						title: quiz.title,
-						questions: game.quiz.value.order.length,
-						mistakesOnly: missed.length > 0,
-						start: () => { game.session.value.begin() },
-					})
-				)
-				return
-			}
-			replace(
-				create(Placeholder, {
-					title: 'Practice',
-					note: 'The scroll, the swipe zone and the right vs wrong count go here.',
-					links: [
-						{
-							label: 'Back',
-							action: () => { goBack() },
-						},
-					],
+		// The start screen, then the ambushes: these stay up through the pause and the end of
+		// practice, which show over them, so play is guarded from Start until practice is left.
+		const showPhase = (starting: boolean) => {
+			replace(starting
+				? create(PracticeStart, {
+					title: quiz.title,
+					questions: game.quiz.value.order.length,
+					mistakesOnly: missed.length > 0,
+					start: () => { beginPractice(game) },
 				})
-			)
+				: create(PracticeAmbush, {
+					game,
+					quiz,
+				}))
 		}
-		let phase = game.session.value.phase
+		let starting = game.session.value.phase === 'start'
 		game.session.on('change', signal, ({ detail }) => {
-			if (detail.state.phase === phase) return
-			phase = detail.state.phase
-			showPhase()
+			const next = detail.state.phase === 'start'
+			if (next === starting) return
+			starting = next
+			showPhase(starting)
 		})
-		showPhase()
+		showPhase(starting)
 
 		show((viewport) => createDojoWorld(viewport, game.tally), signal)
 	},

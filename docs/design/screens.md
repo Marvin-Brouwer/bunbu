@@ -64,7 +64,7 @@ The scroll's heading is the label, the question type, `2 OF 3` for the rounds of
 
 - **4A single:** `AMBUSH · SINGLE · 3 NINJAS`, options on ← ↑ →, "Cut your answer".
 - **4B solutions / yes-no:** `AMBUSH · SOLUTIONS · 2 OF 3`, scenario on the scroll, one ninja, ↑ yes (slash) / ↓ no (block).
-- **4C multiple / order:** `AMBUSH · MULTIPLE · CHOOSE 2`. Picked answers are cut through. Hint: "Cut the 2 you choose"; it strikes as soon as the second is cut. A swipe is final: swiping a cut answer again does nothing. For `order` ("Cut them all, in order") the place each answer was cut in is brushed next to it, and it strikes as soon as the last one is cut.
+- **4C multiple / order:** `AMBUSH · MULTIPLE · CHOOSE 2`. Picked answers are cut through. Hint: "Cut the 2 you choose"; it strikes as soon as the second is cut. A swipe is final: swiping a cut answer again does nothing. For `order` ("Cut them in order") the place each answer was cut in is brushed next to it, and it strikes as soon as the last item in the order is cut; its distractors are left uncut.
 - **4D many options:** `AMBUSH · 7 OPTIONS · 5 NINJAS`. Each option lists its mark; which ninja carries it isn't shown. 8 directions; front 3 strike in wave 1, back 2 in wave 2.
 
 <img src="screens/4a-single.png" alt="4A single" width="195"> <img src="screens/4b-solutions.png" alt="4B solutions" width="195"> <img src="screens/4c-multiple.png" alt="4C multiple" width="195"> <img src="screens/4d-many-options.png" alt="4D many options" width="195">
@@ -149,6 +149,10 @@ See [dojo.md](dojo.md) for the rules.
 <img src="screens/d4-practice.png" alt="Practice ambush" width="195">
 
 Like 4A, with `PRACTICE · SINGLE · 8 / 40` and the running right vs wrong percentage. A speaker button reads the card aloud. No timer, no life bar, the dummies don't move.
+
+- On top, in a row: the pause button, `✓ 6 · ✗ 2 · 75% right` and the speaker button, which reads the query and the options and stops when pressed again or when the scroll closes.
+- Paused: a scroll with the quiz, the count so far, **Resume** and **Leave practice**. No 3-2-1, as there is no timer.
+- After the last question: **Practice done** with the final percentage and the right and wrong count, then **Again** (the same questions reshuffled, a fresh count) and **Dojo**.
 
 ### D5 Practice miss
 

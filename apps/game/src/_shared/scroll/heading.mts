@@ -32,9 +32,10 @@ export function bundled(ambush: AmbushState): boolean {
  * The heading: the label (`AMBUSH` in a run, `PRACTICE` in the dojo), the question type, which
  * round of a `solutions` or `match` question this is, how many to choose for `multiple`, and the
  * ninjas.
- * `yes-no` is always one ninja, so it doesn't say so.
+ * `yes-no` is always one ninja, so it doesn't say so. With `progress`, as practice's `8 / 40`, that
+ * takes the ninjas' place.
  */
-export function headingOf(label: string, ambush: AmbushState, type: Question['type'] | undefined): string {
+export function headingOf(label: string, ambush: AmbushState, type: Question['type'] | undefined, progress?: string): string {
 	const ninjas = ninjaCount(ambush)
 	const parts = [
 		label,
@@ -42,7 +43,7 @@ export function headingOf(label: string, ambush: AmbushState, type: Question['ty
 		ambush.rounds > 1 ? `${ambush.round} OF ${ambush.rounds}` : undefined,
 		ambush.kind === 'multiple' && ambush.choose > 0 ? `CHOOSE ${ambush.choose}` : undefined,
 		bundled(ambush) ? `${ambush.options.length} OPTIONS` : undefined,
-		ambush.kind === 'yes-no' ? undefined : `${ninjas} ${ninjas === 1 ? 'NINJA' : 'NINJAS'}`,
+		progress ?? (ambush.kind === 'yes-no' ? undefined : `${ninjas} ${ninjas === 1 ? 'NINJA' : 'NINJAS'}`),
 	]
 	return parts.filter((part) => part !== undefined).join(' · ')
 }
