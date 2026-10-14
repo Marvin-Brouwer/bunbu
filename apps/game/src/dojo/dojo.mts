@@ -1,18 +1,14 @@
 /**
  * D1 Dojo menu ([screens.md](../../../../docs/design/screens.md#d1-dojo-menu)): the chosen quiz,
- * then Study and Practice, each a card with its art, and **Only my mistakes from the last run**
- * when the last run was on this quiz and missed some. Without a quiz the cards can't be opened,
- * and a line leads to the quizzes.
- *
- * Ticked, Practice opens on `/dojo/practice/mistakes/`, as **Practise mistakes** on the results
- * does. The box is kept on the menu's history entry, so coming back finds it as it was left.
+ * then Study, Practice all questions and, when the last run was on this quiz and missed some,
+ * Practice mistakes, each a card with its art. Without a quiz the cards can't be opened, and a
+ * line leads to the quizzes.
  */
 
 import type { BunbuData } from '@bunbu/data'
 import { component, environment } from '@rooted/components'
 import { href, navigate, type Path } from '@rooted/router'
 import { lastRun } from '../fight/state/lastrun.mts'
-import { ChoiceStamp } from '../_shared/menu/choice-stamp.mts'
 import { MenuButton } from '../_shared/menu/menu-button.mts'
 import { MenuScreen } from '../_shared/menu/menu-screen.mts'
 import { MenuSection } from '../_shared/menu/menu-section.mts'
@@ -27,9 +23,6 @@ import practiceArt from './practice-art.svg'
 import studyArt from './study-art.svg'
 import styles from './dojo.css'
 
-/** The menu's history entry keeps "only my mistakes" under this key. */
-const mistakesKey = 'bunbu:dojo-mistakes'
-
 /**
  * A click the browser should handle itself: another button than the main one, or with a key held,
  * which opens the link in a new tab or window.
@@ -41,11 +34,11 @@ type ModeCardOptions = {
 	readonly title: string
 	readonly text: string
 	readonly art: string
-	/** Where the card leads, read when it is opened; `undefined` while there is no quiz. */
-	readonly target: (() => Path) | undefined
+	/** Where the card leads; `undefined` while there is no quiz. */
+	readonly target: Path | undefined
 }
 
-/** Study or Practice: the art, the name and what it is, the whole card a link. */
+/** Study or a Practice: the art, the name and what it is, the whole card a link. */
 const ModeCard = component<ModeCardOptions>({
 	name: 'dojo-mode-card',
 	styles,
@@ -82,21 +75,13 @@ const ModeCard = component<ModeCardOptions>({
 				})
 				: element('a', {
 					classes: styles.card,
-					href: target().href,
+					href: target.href,
 					children,
 					on: {
-						// The target can change while the card shows, as when "only my mistakes" is ticked:
-						// the address is brought up to date before it is opened, in a new tab too.
-						pointerdown(event) {
-							event.currentTarget.href = target().href
-						},
-						focus(event) {
-							event.currentTarget.href = target().href
-						},
 						click(event) {
 							if (openedElsewhere(event)) return
 							event.preventDefault()
-							navigate(target())
+							navigate(target)
 						},
 					},
 				})
@@ -143,14 +128,10 @@ export const DojoMenu = component({
 	name: 'dojo',
 	styles,
 	onMount({ create, element, replace, signal }) {
-		// As it was left on this history entry; unticked on a new visit.
-		let mistakes = (history.state as Record<string, unknown> | null)?.[mistakesKey] === true
-
 		const show = () => {
 			const { quiz } = snapshot<SelectionState>(selection)
 			const loading = environment.is('preRenderer') || !library.value.restored
 			const missed = quiz === undefined ? 0 : missedQuestions(lastRun.value.missesOf(quiz.id, quiz.version)).length
-			const practice = () => href.for(missed > 0 && mistakes ? PracticeMistakesRoute : PracticeRoute)
 
 			replace(
 				create(MenuScreen, {
@@ -183,38 +164,24 @@ export const DojoMenu = component({
 									title: 'Study',
 									text: 'Every question with its correct answer, shuffled and read aloud on a loop. Hands-free.',
 									art: studyArt,
-									target: quiz === undefined ? undefined : () => href.for(StudyRoute),
+									target: quiz === undefined ? undefined : href.for(StudyRoute),
 								}),
 								create(ModeCard, {
-									title: 'Practice',
+									title: 'Practice all questions',
 									text: 'The ambush without the risk: no life bar, no death. A miss shows the right answer.',
 									art: practiceArt,
-									target: quiz === undefined ? undefined : practice,
+									target: quiz === undefined ? undefined : href.for(PracticeRoute),
 								}),
+								missed === 0
+									? undefined
+									: create(ModeCard, {
+										title: 'Practice mistakes',
+										text: `Only the ${missed === 1 ? 'question' : `${formatWhole(missed)} questions`} you missed in your last run.`,
+										art: practiceArt,
+										target: href.for(PracticeMistakesRoute),
+									}),
 							],
 						}),
-						missed === 0
-							? undefined
-							: element('label', {
-								classes: styles.mistakes,
-								children: [
-									element('input', {
-										type: 'checkbox',
-										checked: mistakes,
-										on: {
-											change(event) {
-												mistakes = event.currentTarget.checked
-												// On the history entry, so coming back to the menu finds the box as it was left.
-												history.replaceState({ ...history.state as Record<string, unknown> | null, [mistakesKey]: mistakes }, '')
-											},
-										},
-									}),
-									create(ChoiceStamp),
-									element('span', {
-										textContent: `Only my mistakes from the last run (${formatWhole(missed)})`,
-									}),
-								],
-							}),
 					],
 				})
 			)

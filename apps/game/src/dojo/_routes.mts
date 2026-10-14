@@ -30,8 +30,8 @@ export const PracticeRoute = route`/${DojoRoute}/practice/`({
 })
 
 /**
- * Practice on only the questions the last run on the quiz missed: "Only my mistakes from the last
- * run" on the dojo menu, and **Practise mistakes** on the results.
+ * Practice on only the questions the last run on the quiz missed: **Practice mistakes** on the dojo
+ * menu, and **Practise mistakes** on the results.
  */
 export const PracticeMistakesRoute = route`/${PracticeRoute}/mistakes/`({
 	async resolve({ create }) {

@@ -1,5 +1,5 @@
 /**
- * "Only my mistakes from the last run" ([practise mistakes](../../../../../docs/design/dojo.md#practise-mistakes)):
+ * Practice mistakes ([practise mistakes](../../../../../docs/design/dojo.md#practise-mistakes)):
  * the questions the last run got wrong or left unanswered, which practice is filtered to.
  */
 
