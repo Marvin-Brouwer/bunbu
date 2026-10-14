@@ -142,6 +142,7 @@ See [dojo.md](dojo.md) for the rules.
 - Quiz, question count, "mistakes only: off".
 - 3D training dummy holding a bamboo sword. "no timer · no life bar · no score".
 - **Start**.
+- Back goes back through the history, as every back link does: to the dojo menu when practice was opened from there, to the title when there is no page before it.
 
 ### D4 Practice ambush
 
