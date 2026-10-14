@@ -6,27 +6,14 @@
  */
 
 import { component } from '@rooted/components'
-import { pronouncerOf, sentencesOf, spokenLine, type Pronouncer, type SpokenLine } from '../_shared/speech/line.mts'
-import { readableMarkdown } from '../_shared/speech/readable.mts'
+import { pronouncerOf, type SpokenLine } from '../_shared/speech/line.mts'
 import { canSpeak, createSpeaker, voiceFor, watchVoices } from '../_shared/speech/speaker.mts'
 import { languageOf, settings } from '../settings/state/settings.mts'
+import { linesOfBlocks } from './read-aloud-script.mts'
 import styles from './practice.css'
 
 /** A speaker, for the read aloud button. */
 const speakerIcon = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" fill="currentColor"/><path d="M15.5 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11"/></svg>'
-
-/**
- * The lines to read for quiz Markdown, a sentence each: `blocks` in turn, as on the card. A block
- * of plain words, such as "The answer is", is said as it is.
- */
-export function linesOfBlocks(blocks: readonly string[], pronouncer: Pronouncer): SpokenLine[] {
-	// As shown text, not only said: the pronouncer only goes over what is shown. Nothing is
-	// highlighted here, so where it is shown doesn't matter.
-	return blocks.flatMap((source, block) => {
-		const text = readableMarkdown(source)
-		return sentencesOf(text).map(({ start, end }) => spokenLine([{ shown: text.slice(start, end), block, offset: start }], pronouncer))
-	})
-}
 
 export type ReadAloudOptions = {
 	/** The quiz's `language`, for the voice. */
