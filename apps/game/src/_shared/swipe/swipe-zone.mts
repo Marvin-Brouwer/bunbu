@@ -65,10 +65,15 @@ export const SwipeZone = component<SwipeZoneOptions>({
 		}
 		signal.addEventListener('abort', cancelStrike, { once: true })
 
+		/** The frame that checks the stroke under way for a hold. */
+		let watching = 0
+
 		const forgetStroke = () => {
+			cancelAnimationFrame(watching)
 			pointer = undefined
 			stroke = undefined
 		}
+		signal.addEventListener('abort', () => { cancelAnimationFrame(watching) }, { once: true })
 
 		const strike = () => {
 			cancelStrike()
@@ -107,6 +112,24 @@ export const SwipeZone = component<SwipeZoneOptions>({
 		const traceTo = (point: Point) => {
 			traced.push(onPaper(point))
 			trace.setAttribute('points', traced.map(({ x, y }) => `${x},${y}`).join(' '))
+		}
+
+		/**
+		 * Drops the stroke under way once a hold begins, checked every frame: a finger that lies still
+		 * through a whole hold sends no move, and lifting it afterwards would still answer.
+		 */
+		const watchForHold = () => {
+			const check = () => {
+				if (stroke === undefined) return
+				if (held()) {
+					forgetStroke()
+					clearTrace()
+					return
+				}
+				watching = requestAnimationFrame(check)
+			}
+			cancelAnimationFrame(watching)
+			watching = requestAnimationFrame(check)
 		}
 
 		const clearTrace = () => {
@@ -156,6 +179,7 @@ export const SwipeZone = component<SwipeZoneOptions>({
 					stroke = strokeAt(pointOf(event))
 					clearTrace()
 					traceTo(pointOf(event))
+					watchForHold()
 					// Keeps the stroke when the finger slides out of the zone, over the scroll.
 					event.currentTarget.setPointerCapture(event.pointerId)
 				},
