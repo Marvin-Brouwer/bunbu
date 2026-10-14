@@ -5,9 +5,8 @@
  * ([more than 3 options](../../../../../docs/design/gameplay.md#more-than-3-options)).
  */
 
-import type { DuplicateQuestion } from '@bunbu/data'
 import { component, match } from '@rooted/components'
-import type { FitNote } from './read-quiz.mts'
+import type { FitNote, RepeatedQuestion } from './read-quiz.mts'
 import styles from './quiz.css'
 
 export type LoadProblemsOptions = {
@@ -44,7 +43,7 @@ export const LoadProblems = component<LoadProblemsOptions>({
 
 export type DuplicatesNoticeOptions = {
 	readonly file: string
-	readonly duplicates: readonly DuplicateQuestion[]
+	readonly duplicates: readonly RepeatedQuestion[]
 }
 
 /** The questions a loaded file asked more than once, which the library keeps only once. */
@@ -66,8 +65,9 @@ export const DuplicatesNotice = component<DuplicatesNoticeOptions>({
 							: `${file} repeats questions, so ${duplicates.length} copies were left out`,
 					}),
 					element('ul', {
-						children: duplicates.map(({ question, of }) => element('li', {
-							textContent: `Question ${question + 1} is the same as question ${of + 1}.`,
+						children: duplicates.map((duplicate) => element('li', {
+							classes: styles.issue,
+							textContent: describeRepeat(duplicate),
 						})),
 					}),
 				],
@@ -75,6 +75,16 @@ export const DuplicatesNotice = component<DuplicatesNoticeOptions>({
 		)
 	},
 })
+
+/** A question's number and the line it starts on: `3 (line 40)`, or just `3` when the line isn't known. */
+function numberAt(index: number, line: number | undefined): string {
+	return line === undefined ? `${index + 1}` : `${index + 1} (line ${line})`
+}
+
+/** `Question 3 (line 40) is the same as question 1 (line 9).` */
+function describeRepeat({ question, of, line, ofLine }: RepeatedQuestion): string {
+	return `Question ${numberAt(question, line)} is the same as question ${numberAt(of, ofLine)}.`
+}
 
 export type FitNoticeOptions = {
 	readonly notes: readonly FitNote[]

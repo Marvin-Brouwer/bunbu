@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { duplicateQuestions, validate, withoutDuplicates, type BunbuData, type Markdown, type Question } from "../src";
+import { duplicateQuestions, questionLines, validate, withoutDuplicates, type BunbuData, type Markdown, type Question } from "../src";
 
 const modeline = "# yaml-language-server: $schema=https://marvin-brouwer.github.io/bunbu/schema/v1.json";
 
@@ -73,5 +73,12 @@ describe("validate", () => {
     expect(result).not.toBeInstanceOf(Error);
     expect((result as BunbuData).questions).toHaveLength(2);
     expect(warn).toHaveBeenCalledWith(expect.stringContaining("question 2 (line 12) repeats question 1 (line 9)"));
+  });
+});
+
+describe("questionLines", () => {
+  it("gives the line each question starts on", () => {
+    const file = `${modeline}\n\nid: test\ntitle: Test\nversion: 1\nlanguage: en\npassingScore: 70\nquestions:\n  - type: yes-no\n    query: One?\n    answer: yes\n  - type: yes-no\n    query: Two?\n    answer: no\n`;
+    expect(questionLines(file)).toEqual([9, 12]);
   });
 });

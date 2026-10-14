@@ -1,6 +1,6 @@
 import Ajv2020, { type ErrorObject, type ValidateFunction } from "ajv/dist/2020.js";
 import addFormats from "ajv-formats";
-import { LineCounter, parseDocument, type Document } from "yaml";
+import { isSeq, LineCounter, parseDocument, type Document } from "yaml";
 import schemaV1 from "../../../schema/v1.json" with { type: "json" };
 import { duplicateQuestions } from "./duplicates";
 import { isGfmMarkdown } from "./markdown";
@@ -142,6 +142,21 @@ function warnAboutDuplicates(quiz: BunbuData, lineOf: (pointer: string) => numbe
     `[bunbu] ${quiz.id} repeats ${duplicates.length === 1 ? "a question" : `${duplicates.length} questions`}:\n` +
       duplicates.map(({ question, of }) => `- ${where(question)} repeats ${where(of)}`).join("\n"),
   );
+}
+
+/**
+ * The 1-based line each question of a quiz file starts on, by its place in `questions`, to point at
+ * a question the file got right but a reader still reports, such as a duplicate.
+ */
+export function questionLines(fileBlob: string): (number | undefined)[] {
+  const lineCounter = new LineCounter();
+  const document = parseDocument(fileBlob, { lineCounter });
+  const questions = document.get("questions", true);
+  if (!isSeq(questions)) return [];
+  return questions.items.map((item) => {
+    const offset = (item as { range?: [number, number, number] } | null)?.range?.[0];
+    return offset === undefined ? undefined : lineCounter.linePos(offset).line;
+  });
 }
 
 function findLine(document: Document, lineCounter: LineCounter, pointer: string): number | undefined {

@@ -32,7 +32,7 @@ describe('readQuiz', () => {
 		const result = await readQuiz(file(repeated, 'repeated.yaml'))
 		warn.mockRestore()
 		if (!('quiz' in result)) expect.unreachable(result.problems.join('\n'))
-		expect(result.duplicates).toEqual([{ question: 1, of: 0 }])
+		expect(result.duplicates).toEqual([{ question: 1, of: 0, line: 38, ofLine: 19 }])
 		expect(result.quiz.questions).toEqual(quiz.questions)
 		expect((await uncompress(result.file.value)).questions).toHaveLength(quiz.questions.length)
 	})

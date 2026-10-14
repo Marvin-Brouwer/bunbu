@@ -3,7 +3,7 @@
  * repeated, and what won't fit in a fight of the chosen quiz, then the loaded quizzes as cards, one to choose.
  */
 
-import type { BunbuData, DuplicateQuestion } from '@bunbu/data'
+import type { BunbuData } from '@bunbu/data'
 import { component } from '@rooted/components'
 import { library, type LibraryEntry, type LibraryState } from '../_shared/storage/library.mts'
 import { selection, type SelectionState } from '../_shared/state/selection.mts'
@@ -12,7 +12,7 @@ import { sampleQuizzes } from '../_temp/sample-quizzes.mts'
 import { LoadQuiz } from './load-quiz.mts'
 import { QuizCard } from './quiz-card.mts'
 import { DuplicatesNotice, FitNotice, LoadProblems } from '../_shared/quiz/quiz-notices.mts'
-import { fitNotesOf, type ReadQuiz } from '../_shared/quiz/read-quiz.mts'
+import { fitNotesOf, type ReadQuiz, type RepeatedQuestion } from '../_shared/quiz/read-quiz.mts'
 import styles from './quiz-shelf.css'
 
 const same = (quiz: BunbuData, other: BunbuData | undefined) => quiz.id === other?.id && quiz.version === other.version
@@ -50,7 +50,7 @@ export const QuizShelf = component({
 		})
 
 		let failed: { readonly file: string, readonly problems: readonly string[] } | undefined
-		let repeated: { readonly file: string, readonly duplicates: readonly DuplicateQuestion[] } | undefined
+		let repeated: { readonly file: string, readonly duplicates: readonly RepeatedQuestion[] } | undefined
 		// Dev builds only: the samples come in once they are validated.
 		let samples: readonly LibraryEntry[] = []
 
