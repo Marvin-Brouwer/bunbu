@@ -22,12 +22,15 @@ import {
 } from '@bunbu/data'
 import { Immutable } from '@rooted/store'
 import { fitOf, type Fit } from '../state/ambush-opening.mts'
+import type { TermsKind } from '../state/agreements.mts'
 
 export type ReadQuiz =
 	| {
 		readonly quiz: BunbuData
 		/** The quiz as a `.bunbu` file, which the library keeps and validates again when the app starts. */
 		readonly file: Immutable<Uint8Array>
+		/** The terms to agree to before it joins the library: a `.yaml` quiz is the player's own, a `.bunbu` quiz was shared. */
+		readonly terms: TermsKind
 		/** The questions left out because they repeat an earlier one, by their place in the file read. */
 		readonly duplicates?: readonly RepeatedQuestion[]
 	}
@@ -61,7 +64,7 @@ export async function readQuiz(file: File): Promise<ReadQuiz> {
 	if (name.endsWith(fileExtension)) {
 		try {
 			const bytes = new Uint8Array(await file.arrayBuffer())
-			return { quiz: await uncompress(bytes), file: Immutable.from(bytes) }
+			return { quiz: await uncompress(bytes), file: Immutable.from(bytes), terms: 'shared' }
 		} catch (error) {
 			if (error instanceof BunbuValidationError) return { problems: error.issues.map(describeIssue) }
 			if (error instanceof BunbuShareError) return { problems: [error.message] }
@@ -74,7 +77,7 @@ export async function readQuiz(file: File): Promise<ReadQuiz> {
 	if (quiz instanceof BunbuValidationError) return { problems: quiz.issues.map(describeIssue) }
 	const kept = withoutDuplicates(quiz)
 	// Kept as a `.bunbu` file: smaller, and the same bytes a share sends on.
-	const read = { quiz: kept, file: Immutable.from(await compress(kept)) }
+	const read = { quiz: kept, file: Immutable.from(await compress(kept)), terms: 'written' as const }
 	const duplicates = duplicateQuestions(quiz)
 	if (duplicates.length === 0) return read
 	const lines = questionLines(source)

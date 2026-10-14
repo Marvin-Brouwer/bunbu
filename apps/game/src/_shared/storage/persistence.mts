@@ -1,5 +1,5 @@
 /**
- * Keeps the app-wide stores: settings, the difficulty per quiz, high scores, how far each stage got, the last run's misses and the chosen quiz and
+ * Keeps the app-wide stores: settings, the difficulty per quiz, the terms agreed to per quiz, high scores, how far each stage got, the last run's misses and the chosen quiz and
  * stage in local storage, the loaded quizzes as `.bunbu` files in IndexedDB. Everything else starts fresh with every run
  * ([state](../../../../../docs/architecture/state.md#stores)).
  *
@@ -16,6 +16,7 @@ import { pointsPerCorrect, type HighScore } from '../../fight/state/score.mts'
 import { stageResults, type StageResult } from '../../fight/state/stage-results.mts'
 import { difficulties, quizDifficulties, type Difficulty } from '../../fight/state/difficulty.mts'
 import { settings, speechRates, type SettingsState } from '../../settings/state/settings.mts'
+import { agreements, termsKinds, type Agreement } from '../state/agreements.mts'
 import { builtStages, selection, stages, type Stage } from '../state/selection.mts'
 import { snapshot } from '../state/store.mts'
 import { library, type LibraryActions, type LibraryEntry, type LibraryState } from './library.mts'
@@ -67,6 +68,20 @@ export function parseDifficulties(data: unknown): Record<string, Difficulty> {
 	if (!isObject(data)) return {}
 	const checked = Object.entries(data).map(([key, chosen]) => [key, difficulty(chosen)] as const)
 	return Object.fromEntries(checked.filter((entry): entry is readonly [string, Difficulty] => passed(entry[1])))
+}
+
+const agreement = type({
+	'+': 'delete',
+	content: 'string',
+	terms: type.enumerated(...termsKinds),
+	termsVersion: 'number',
+})
+
+/** The terms agreements that are valid, by quiz. One that isn't is asked again when that quiz loads. */
+export function parseAgreements(data: unknown): Record<string, Agreement> {
+	if (!isObject(data)) return {}
+	const checked = Object.entries(data).map(([key, agreed]) => [key, agreement(agreed)] as const)
+	return Object.fromEntries(checked.filter((entry): entry is readonly [string, Agreement] => passed(entry[1])))
 }
 
 const stageResult = type({
@@ -157,6 +172,7 @@ function save<TState extends StateObject>(store: Store<TState>, key: StoredKey, 
 export function persistApp(signal: AbortSignal): Promise<void> {
 	settings.value.restore(parseSettings(read('settings')))
 	quizDifficulties.value.restore(parseDifficulties(read('difficulties')))
+	agreements.value.restore(parseAgreements(read('agreements')))
 	highScores.value.restore(parseHighScores(read('high-scores')))
 	stageResults.value.restore(parseStageResults(read('stage-results')))
 	const saved = parseLastRun(read('last-run'))
@@ -166,6 +182,7 @@ export function persistApp(signal: AbortSignal): Promise<void> {
 
 	save(settings, 'settings', signal, ({ haptics, volume, speechRate, voices }) => ({ haptics, volume, speechRate, voices }))
 	save(quizDifficulties, 'difficulties', signal, (state) => state.chosen)
+	save(agreements, 'agreements', signal, (state) => state.agreed)
 	save(highScores, 'high-scores', signal, ({ scores }) => scores)
 	save(stageResults, 'stage-results', signal, ({ results }) => results)
 	save(lastRun, 'last-run', signal, ({ quiz, misses }) => ({ quiz, misses }))

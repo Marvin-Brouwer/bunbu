@@ -17,6 +17,7 @@ import { createViewport } from './canvas/viewport.mts'
 import { appRoutes } from './_routes.g.mts'
 import { addFonts } from './_shared/fonts.mts'
 import { persistApp } from './_shared/storage/persistence.mts'
+import { TermsCheck } from './_shared/terms/terms-check.mts'
 import styles from './application.css'
 import { NotFound, Title } from './title/title.mts'
 
@@ -47,6 +48,8 @@ export const Application = component({
 						classes: styles.screen,
 						children: create(Router),
 					}),
+					// When terms changed since the player agreed to them, they are asked again on opening.
+					create(TermsCheck),
 				],
 			})
 		)
