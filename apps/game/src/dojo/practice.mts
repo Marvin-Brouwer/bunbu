@@ -1,7 +1,7 @@
 /**
  * D3 to D5 Practice ([dojo.md](../../../../docs/design/dojo.md#practice)): the start screen, then
- * the ambushes, which pause and end over themselves. The practice session's state lives as long as this screen: created on mount,
- * dropped on unmount.
+ * the ambushes, which pause and end over themselves. The practice session's state lives as long
+ * as this screen: created on mount, dropped on unmount.
  *
  * `/dojo/practice/?mistakes` asks only the questions the last run on the quiz missed.
  */
@@ -16,7 +16,7 @@ import { selection } from '../_shared/state/selection.mts'
 import { snapshot } from '../_shared/state/store.mts'
 import { show } from '../canvas/stage.mts'
 import { QuizzesRoute } from '../quizzes/_routes.mts'
-import { DojoRoute, mistakesOnly } from './_routes.mts'
+import { mistakesOnly } from './_routes.mts'
 import { beginPractice, preparePractice } from './flows/practice.mts'
 import { PracticeAmbush } from './practice-ambush.mts'
 import { PracticeStart } from './practice-start.mts'
@@ -33,7 +33,6 @@ const NoQuiz = component({
 		append(
 			create(MenuScreen, {
 				title: 'Practice',
-				back: href.for(DojoRoute),
 				children: [
 					element('p', {
 						classes: styles.startNote,
