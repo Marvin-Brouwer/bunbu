@@ -34,8 +34,9 @@ export type SwipeZoneOptions = {
 	/** Strikes: commits the ambush through the mode's flow, like `commitAmbush` in a run. */
 	readonly commit: () => void
 	/**
-	 * Whether the mode is paused or counting down to resume. A strike that comes due then waits
-	 * for another commit pause, so it never lands in the pause menu.
+	 * Whether the scroll can't be answered now: the mode is paused or counting down to resume, or
+	 * the scroll is still coming in (`openingLeft`). Swipes then pick nothing, and a strike that comes
+	 * due waits for another commit pause, so it never lands in the pause menu.
 	 */
 	readonly held?: () => boolean
 }
@@ -116,7 +117,8 @@ export const SwipeZone = component<SwipeZoneOptions>({
 		// A swipe is final: swiping a mark that is picked already does nothing.
 		const choose = (mark: Mark | undefined) => {
 			const current = ambush.value
-			if (mark === undefined || !current.open || timeUp(current) || isPicked(current, mark)) return
+			// Held, nothing is picked: a `single` or `yes-no` would strike at once, before the scroll can be answered.
+			if (mark === undefined || !current.open || held() || timeUp(current) || isPicked(current, mark)) return
 			current.pick(mark)
 			buzz(buzzes.pick)
 			const next = ambush.value
