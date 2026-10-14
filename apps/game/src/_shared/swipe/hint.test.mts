@@ -16,6 +16,6 @@ describe('hintOf', () => {
 	})
 
 	it('asks for the order', () => {
-		expect(hintOf({ kind: 'order', choose: 3 })).toBe('Cut them all, in order')
+		expect(hintOf({ kind: 'order', choose: 3 })).toBe('Cut them in order')
 	})
 })

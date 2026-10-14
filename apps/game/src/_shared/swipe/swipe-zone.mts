@@ -6,10 +6,11 @@
  * The pointer leaves a faint trace on the paper, and each pick cuts its answer in two
  * ([ScrollOption](../scroll/scroll-option.mts)).
  *
- * A swipe toward a mark picks it. `yes-no` and `single` strike at once, `order` as soon as every
- * item has its place and `multiple` as soon as as many are cut as the scroll asks for. A `multiple`
- * that doesn't give the count away strikes once the pointer has been lifted for the commit pause,
- * and touching down again before that keeps the answer open. Lifting between swipes is optional:
+ * A swipe toward a mark picks it. `yes-no` and `single` strike at once, `order` as soon as each of
+ * its items has its place (its distractors left out) and `multiple` as soon as as many are cut as
+ * the scroll asks for ([answered.mts](./answered.mts)). A `multiple` that doesn't give the count
+ * away strikes once the pointer has been lifted for the commit pause, and touching down again
+ * before that keeps the answer open. Lifting between swipes is optional:
  * one continuous stroke can pick several marks ([stroke.mts](./stroke.mts)).
  *
  * The scroll puts it in its answer drawer, in the run and in dojo practice. It picks through the
@@ -22,6 +23,7 @@ import { buzz, buzzes } from '../haptics.mts'
 import { ambushConfig } from '../state/ambush-time.mts'
 import { timeUp, type Ambush, type AmbushState, type Mark } from '../state/ambush.mts'
 import { AnswerSheet } from './answer-sheet.mts'
+import { answered, strikesWhenAnswered } from './answered.mts'
 import { finish, follow, strikesAtOnce, strokeAt, type Point, type Stroke } from './stroke.mts'
 import styles from './swipe.css'
 
@@ -39,22 +41,6 @@ export type SwipeZoneOptions = {
 }
 
 const pointOf = (event: PointerEvent): Point => ({ x: event.clientX, y: event.clientY })
-
-const pickCount = (state: AmbushState) => state.options.filter((option) => option.pick > 0).length
-
-/**
- * Whether the answer is complete: an `order` needs every item put in its place, a `multiple` as
- * many picks as it asks for, the rest one pick.
- */
-const answered = (state: AmbushState) => {
-	if (state.kind === 'order') return pickCount(state) === state.options.length
-	if (state.kind === 'multiple' && state.choose > 0) return pickCount(state) >= state.choose
-	return pickCount(state) > 0
-}
-
-/** Whether the answer strikes as soon as it is complete, rather than after the commit pause. */
-const strikesWhenAnswered = (state: AmbushState) =>
-	state.kind === 'order' || (state.kind === 'multiple' && state.choose > 0)
 
 const isPicked = (state: AmbushState, mark: Mark) =>
 	state.options.some((option) => option.mark === mark && option.pick > 0)

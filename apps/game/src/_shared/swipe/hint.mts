@@ -8,7 +8,8 @@ import type { AmbushState } from '../state/ambush.mts'
 /** How to answer. One short line. */
 export function hintOf(state: Pick<AmbushState, 'kind' | 'choose'>): string {
 	if (state.kind === 'yes-no' || state.kind === 'single') return 'Cut your answer'
-	if (state.kind === 'order') return 'Cut them all, in order'
+	// Not "all": an order's distractors are to be left out.
+	if (state.kind === 'order') return 'Cut them in order'
 	if (state.choose > 0) return `Cut the ${state.choose} you choose`
 	return 'Cut each answer you choose, then hold still'
 }
