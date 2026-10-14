@@ -1,0 +1,56 @@
+/*
+ * D3 to D5 Practice (docs/design/screens.md#d3-practice-start): over the dojo world, so the
+ * training dummy shows between the parts.
+ */
+
+.panel {
+	border-radius: var(--radius);
+	background: var(--paper-light);
+	color: var(--ink);
+}
+
+/* D3: the heading at the top, the dummy in between, Start at the bottom in reach of a thumb. */
+.start {
+	position: absolute;
+	inset: 0;
+	display: grid;
+	grid-template-rows: auto 1fr auto;
+	gap: 1rem;
+	max-width: 34rem;
+	margin-inline: auto;
+	/* A long quiz title can make the heading tall: the screen scrolls then, so Start stays in reach. */
+	overflow-y: auto;
+	overscroll-behavior: contain;
+	padding: max(1.25rem, env(safe-area-inset-top)) max(1.25rem, env(safe-area-inset-right)) max(1.25rem, env(safe-area-inset-bottom)) max(1.25rem, env(safe-area-inset-left));
+	box-sizing: border-box;
+}
+
+.startHeader {
+	display: flex;
+	align-items: center;
+	gap: 1rem;
+	padding: 0.75rem;
+}
+
+.startNote {
+	margin: 0.2rem 0 0;
+	font-family: var(--font-mono);
+	font-size: 0.75rem;
+	color: var(--ink-soft);
+	overflow-wrap: anywhere;
+}
+
+.startFooter {
+	display: grid;
+	gap: 0.75rem;
+	grid-row: 3;
+}
+
+.startRules {
+	margin: 0;
+	padding: 0.5rem 1rem;
+	font-family: var(--font-mono);
+	font-size: 0.8rem;
+	text-align: center;
+	color: var(--ink-soft);
+}
