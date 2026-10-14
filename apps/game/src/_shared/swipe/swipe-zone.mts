@@ -117,8 +117,15 @@ export const SwipeZone = component<SwipeZoneOptions>({
 		// A swipe is final: swiping a mark that is picked already does nothing.
 		const choose = (mark: Mark | undefined) => {
 			const current = ambush.value
-			// Held, nothing is picked: a `single` or `yes-no` would strike at once, before the scroll can be answered.
-			if (mark === undefined || !current.open || held() || timeUp(current) || isPicked(current, mark)) return
+			// Held, nothing is picked: a `single` or `yes-no` would strike at once, before the scroll
+			// can be answered. A stroke the hold caught halfway is dropped as a whole, so it can't pick
+			// once the hold is over either.
+			if (held()) {
+				forgetStroke()
+				clearTrace()
+				return
+			}
+			if (mark === undefined || !current.open || timeUp(current) || isPicked(current, mark)) return
 			current.pick(mark)
 			buzz(buzzes.pick)
 			const next = ambush.value
@@ -142,7 +149,8 @@ export const SwipeZone = component<SwipeZoneOptions>({
 			'data-open': 'false',
 			on: {
 				pointerdown(event) {
-					if (pointer !== undefined || !ambush.value.open) return
+					// A stroke begun while held is never taken up: it would answer when the hold ends.
+					if (pointer !== undefined || !ambush.value.open || held()) return
 					cancelStrike()
 					pointer = event.pointerId
 					stroke = strokeAt(pointOf(event))
