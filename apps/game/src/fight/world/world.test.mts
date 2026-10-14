@@ -247,7 +247,7 @@ describe('camera', () => {
 		})
 
 		it(`keeps every ninja in view on a ${shape} round the path's corners too`, () => {
-			const path = createPath(roundLength * 2)
+			const path = createPath()
 			const offScreen = new Set<string>()
 			for (let distance = 0; distance < roundLength; distance++) {
 				const view = viewOnPath(path, distance, aspect, false)
@@ -275,7 +275,7 @@ describe('camera', () => {
 	}
 
 	it('looks along the path on a straight, and stays behind the samurai round a corner', () => {
-		const path = createPath(roundLength)
+		const path = createPath()
 		const [, height, back] = cameraOf(9 / 19.5, false).position
 		const straight = viewOnPath(path, 40, 9 / 19.5, false)
 		expect(straight.frame.heading).toBeCloseTo(0)

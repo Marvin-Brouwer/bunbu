@@ -3,9 +3,11 @@
  * mist: stepping stones on gravel winding between dense stands of bamboo, light falling in shafts
  * between the stalks, wayside shrines with stone Jizō beside them, and stone lanterns along the way.
  *
- * Laid out once, when the run starts, in stretches of path that are each their own `InstancedMesh`.
- * The bamboo, shrines and Jizō are from our stage kit (`assets/blender/stage_kit.py`), the lanterns
- * from the temple kit; thin green stalks stand in for the bamboo until the kit is in.
+ * Laid out when the run starts as a few blocks of a round of the path each, stitched together
+ * ahead of the samurai for as long as the run goes ([blocks](./blocks.mts)), in stretches of path
+ * that are each their own `InstancedMesh`. The bamboo, shrines and Jizō are from our stage kit
+ * (`assets/blender/stage_kit.py`), the lanterns from the temple kit; thin green stalks stand in for
+ * the bamboo until the kit is in.
  */
 
 import {
@@ -20,7 +22,6 @@ import {
 	Fog,
 	Group,
 	HemisphereLight,
-	InstancedMesh,
 	Mesh,
 	MeshBasicMaterial,
 	MeshStandardMaterial,
@@ -30,8 +31,9 @@ import {
 	type Scene,
 } from 'three'
 import type { GLTF } from 'three/addons/loaders/GLTFLoader.js'
+import { layBlocks } from './blocks.mts'
 import { Batch, chunkOf, placed, scatter, type Cursor } from './kit.mts'
-import { clearanceOf, facingPath, isFree, passTime, sky, skyRadius, stamp, strip, type Daylight, type Owned, type Planting, type StageView, type Taken } from './landscape.mts'
+import { addAll, clearanceOf, facingPath, isFree, passTime, sky, skyRadius, stamp, strip, type Daylight, type Owned, type Planting, type StageView, type Taken } from './landscape.mts'
 import { beside, type Leg, type Path } from './path.mts'
 
 const palette = {
@@ -131,8 +133,19 @@ function heightOf(model: Object3D): number {
 	return bounds.max.y - bounds.min.y
 }
 
-export function createBambooForest(scene: Scene, path: Path, from: number, to: number, models: Promise<BambooModels>): StageView {
-	const visualTo = Math.min(to, 2400)
+/** What a bamboo-forest block places once the models are in, and the stalks that stand in till then. */
+type BambooPending = {
+	readonly shrines: Planting[]
+	readonly jizos: Planting[]
+	readonly lanterns: Planting[]
+	readonly bamboo: Planting[]
+	readonly placeholders: Group
+}
+
+/** Metres a shrine and the Jizō beside it reach along the path from where it stands. */
+const shrineReach = 4
+
+export function createBambooForest(scene: Scene, path: Path, models: Promise<BambooModels>): StageView {
 	// Thick mist: the forest closes in, and what is far off is only a green haze.
 	const [first] = daylight
 	const fog = new Fog(first.fog, 22, 115)
@@ -163,85 +176,15 @@ export function createBambooForest(scene: Scene, path: Path, from: number, to: n
 	scene.add(ground)
 
 	const gravel = new Color(palette.gravel)
-	scene.add(strip(path, from, visualTo, owned, { half: () => pathHalfWidth, colour: () => gravel, y: 0.03 }))
-
-	const cursor: Cursor = { chunk: 0 }
-	const clear = clearanceOf(path, from, visualTo)
-	const taken: Taken = []
-
-	// Stepping stones down the middle of the path, a stride apart.
 	const stoneGeometry = new CylinderGeometry(0.45, 0.5, 0.12, 9)
 	const stoneMaterial = new MeshStandardMaterial({ color: 0xffffff, roughness: 1, flatShading: true })
 	owned.geometries.push(stoneGeometry)
 	owned.materials.push(stoneMaterial)
-	const stones = new Batch(stoneGeometry, stoneMaterial, cursor, { receive: true })
-	const stoneShade = new Color()
-	for (let distance = from, index = 0; distance < visualTo; distance += 0.95, index++) {
-		cursor.chunk = chunkOf(distance)
-		const at = beside(path.at(distance), (scatter(index) - 0.5) * 0.5)
-		stoneShade.setHex(palette.stone).multiplyScalar(0.85 + scatter(index + 7) * 0.25)
-		stones.add(placed(at.x, 0.05, at.z, scatter(index + 3) * 6.28, 0.8 + scatter(index + 5) * 0.4, 1, 0.7 + scatter(index + 9) * 0.3), stoneShade.clone())
-	}
-
-	// Shrines with Jizō beside them, and pairs of stone lanterns, along the way: placed before the
-	// bamboo so it keeps clear of them.
-	const shrines: Planting[] = []
-	const jizos: Planting[] = []
-	const lanterns: Planting[] = []
-	for (let distance = Math.max(from, 25), index = 0; distance < visualTo; distance += 70 + scatter(index * 3) * 30, index++) {
-		const point = path.at(distance)
-		const side = scatter(index + 11) > 0.5 ? 1 : -1
-		const chunk = chunkOf(distance)
-		const at = beside(point, side * (pathHalfWidth + 2.2))
-		shrines.push({ matrix: placed(at.x, 0, at.z, facingPath(point, side)), chunk })
-		taken.push({ x: at.x, z: at.z, radius: 3.2 })
-		const figures = 1 + Math.floor(scatter(index + 13) * 3)
-		for (let figure = 0; figure < figures; figure++) {
-			const spot = beside(point, side * (pathHalfWidth + 1.4), 1.3 + figure * 0.55)
-			jizos.push({ matrix: placed(spot.x, 0, spot.z, facingPath(point, side), 0.9 + scatter(index + figure) * 0.2), chunk })
-		}
-	}
-	for (let distance = Math.max(from, 50), index = 0; distance < visualTo; distance += 60, index++) {
-		const point = path.at(distance)
-		for (const side of [-1, 1]) {
-			const at = beside(point, side * (pathHalfWidth + 0.9))
-			if (!isFree(taken, at.x, at.z, 0.6)) continue
-			lanterns.push({ matrix: placed(at.x, 0, at.z, facingPath(point, side)), chunk: chunkOf(distance) })
-			taken.push({ x: at.x, z: at.z, radius: 1.2 })
-		}
-	}
-
-	// The bamboo: dense stands either side, with a clearing here and there.
-	const bamboo: Planting[] = []
-	for (let distance = from, index = 0; distance < visualTo; distance += 2.3, index++) {
-		const point = path.at(distance)
-		const chunk = chunkOf(distance)
-		for (const side of [-1, 1]) {
-			for (let out = pathHalfWidth + 1.2; out < forestDepth; out += 2.4) {
-				const seed = index * 37 + Math.round(out * 10) * 3 + side
-				if (scatter(seed) < 0.22) continue
-				const at = beside(point, side * (out + (scatter(seed + 1) - 0.5) * 1.6), (scatter(seed + 2) - 0.5) * 1.6)
-				if (!clear(at.x, at.z, distance, pathHalfWidth + 0.9, 20)) continue
-				if (!isFree(taken, at.x, at.z, 0.8)) continue
-				bamboo.push({ matrix: placed(at.x, 0, at.z, scatter(seed + 3) * 6.28, 0.8 + scatter(seed + 4) * 0.45), chunk })
-			}
-		}
-	}
-
 	// Thin green stalks stand in for the bamboo until the kit is in.
 	const stalkGeometry = new CylinderGeometry(0.06, 0.07, 10, 5).translate(0, 5, 0)
 	const stalkMaterial = new MeshStandardMaterial({ color: palette.stalk, roughness: 0.7 })
 	owned.geometries.push(stalkGeometry)
 	owned.materials.push(stalkMaterial)
-	const stalks = new Batch(stalkGeometry, stalkMaterial, cursor)
-	for (const { matrix, chunk } of bamboo) {
-		cursor.chunk = chunk
-		stalks.add(matrix)
-	}
-	const placeholders = new Group()
-	placeholders.add(...stalks.build())
-	scene.add(placeholders)
-
 	// Shafts of light slanting down between the stalks, across the path.
 	const shaftGeometry = new PlaneGeometry(3.2, 22).translate(0, 11, 0)
 	const shaftMaterial = new MeshBasicMaterial({
@@ -257,37 +200,110 @@ export function createBambooForest(scene: Scene, path: Path, from: number, to: n
 	if (shaftMaterial.map !== null) owned.textures.push(shaftMaterial.map)
 	owned.geometries.push(shaftGeometry)
 	owned.materials.push(shaftMaterial)
-	const shafts = new Group()
-	for (let distance = Math.max(from, 10), index = 0; distance < visualTo; distance += 26 + scatter(index) * 20, index++) {
-		const at = beside(path.at(distance), (scatter(index + 1) - 0.5) * 6)
-		const shaft = new Mesh(shaftGeometry, shaftMaterial)
-		shaft.position.set(at.x, 0, at.z)
-		shaft.rotation.set(0, scatter(index + 2) * Math.PI, 0.35)
-		shaft.renderOrder = 3
-		shafts.add(shaft)
-	}
-	scene.add(shafts)
 
-	const laid = new Group()
-	laid.add(...stones.build())
-	scene.add(laid)
+	// The forest, a round of the path at a time ([blocks](./blocks.mts)).
+	const blocks = layBlocks<BambooPending>(path, (from, to, base) => {
+		const group = new Group()
+		group.add(strip(path, from, to, owned, { half: () => pathHalfWidth, colour: () => gravel, y: 0.03 }))
 
-	const modelled = new Group()
-	scene.add(modelled)
+		const cursor: Cursor = { chunk: 0 }
+		const clear = clearanceOf(path, from - 60, to + 60)
+		const taken: Taken = []
+
+		// Stepping stones down the middle of the path, a stride apart.
+		const stones = new Batch(stoneGeometry, stoneMaterial, cursor, { receive: true })
+		const stoneShade = new Color()
+		for (let distance = from, index = base; distance < to; distance += 0.95, index++) {
+			cursor.chunk = chunkOf(distance)
+			const at = beside(path.at(distance), (scatter(index) - 0.5) * 0.5)
+			stoneShade.setHex(palette.stone).multiplyScalar(0.85 + scatter(index + 7) * 0.25)
+			stones.add(placed(at.x, 0.05, at.z, scatter(index + 3) * 6.28, 0.8 + scatter(index + 5) * 0.4, 1, 0.7 + scatter(index + 9) * 0.3), stoneShade.clone())
+		}
+
+		// Shrines with Jizō beside them, and pairs of stone lanterns, along the way: placed before the
+		// bamboo so it keeps clear of them.
+		const shrines: Planting[] = []
+		const jizos: Planting[] = []
+		const lanterns: Planting[] = []
+		for (let distance = from + 25, index = base; distance + shrineReach <= to; distance += 70 + scatter(index * 3) * 30, index++) {
+			const point = path.at(distance)
+			const side = scatter(index + 11) > 0.5 ? 1 : -1
+			const chunk = chunkOf(distance)
+			const at = beside(point, side * (pathHalfWidth + 2.2))
+			shrines.push({ matrix: placed(at.x, 0, at.z, facingPath(point, side)), chunk })
+			taken.push({ x: at.x, z: at.z, radius: 3.2 })
+			const figures = 1 + Math.floor(scatter(index + 13) * 3)
+			for (let figure = 0; figure < figures; figure++) {
+				const spot = beside(point, side * (pathHalfWidth + 1.4), 1.3 + figure * 0.55)
+				jizos.push({ matrix: placed(spot.x, 0, spot.z, facingPath(point, side), 0.9 + scatter(index + figure) * 0.2), chunk })
+			}
+		}
+		for (let distance = from + 50; distance + 1.2 <= to; distance += 60) {
+			const point = path.at(distance)
+			for (const side of [-1, 1]) {
+				const at = beside(point, side * (pathHalfWidth + 0.9))
+				if (!isFree(taken, at.x, at.z, 0.6)) continue
+				lanterns.push({ matrix: placed(at.x, 0, at.z, facingPath(point, side)), chunk: chunkOf(distance) })
+				taken.push({ x: at.x, z: at.z, radius: 1.2 })
+			}
+		}
+
+		// The bamboo: dense stands either side, with a clearing here and there. A clump strays up to
+		// 0.8 m along the path, so the first and last keep that far in from the block's ends.
+		const bamboo: Planting[] = []
+		for (let distance = from + 1, index = base; distance + 1 <= to; distance += 2.3, index++) {
+			const point = path.at(distance)
+			const chunk = chunkOf(distance)
+			for (const side of [-1, 1]) {
+				for (let out = pathHalfWidth + 1.2; out < forestDepth; out += 2.4) {
+					const seed = index * 37 + Math.round(out * 10) * 3 + side
+					if (scatter(seed) < 0.22) continue
+					const at = beside(point, side * (out + (scatter(seed + 1) - 0.5) * 1.6), (scatter(seed + 2) - 0.5) * 1.6)
+					if (!clear(at.x, at.z, distance, pathHalfWidth + 0.9, 20)) continue
+					if (!isFree(taken, at.x, at.z, 0.8)) continue
+					bamboo.push({ matrix: placed(at.x, 0, at.z, scatter(seed + 3) * 6.28, 0.8 + scatter(seed + 4) * 0.45), chunk })
+				}
+			}
+		}
+
+		const stalks = new Batch(stalkGeometry, stalkMaterial, cursor)
+		for (const { matrix, chunk } of bamboo) {
+			cursor.chunk = chunk
+			stalks.add(matrix)
+		}
+		const placeholders = new Group()
+		addAll(placeholders, stalks.build())
+
+		for (let distance = from + 10, index = base; distance < to; distance += 26 + scatter(index) * 20, index++) {
+			const at = beside(path.at(distance), (scatter(index + 1) - 0.5) * 6)
+			const shaft = new Mesh(shaftGeometry, shaftMaterial)
+			shaft.position.set(at.x, 0, at.z)
+			shaft.rotation.set(0, scatter(index + 2) * Math.PI, 0.35)
+			shaft.renderOrder = 3
+			group.add(shaft)
+		}
+
+		addAll(group, [...stones.build(), placeholders])
+		return { group, pending: { shrines, jizos, lanterns, bamboo, placeholders } }
+	})
+	scene.add(blocks.group)
+
 	let disposed = false
 	void models.then((loaded) => {
 		if (disposed) return
 		const clump = loaded.kit?.scene.getObjectByName('BambooClump')
-		if (clump !== undefined) {
-			modelled.add(...stamp(clump, bamboo, heightOf(clump), false, owned))
-			placeholders.visible = false
-		}
 		const shrine = loaded.kit?.scene.getObjectByName('Shrine')
-		if (shrine !== undefined) modelled.add(...stamp(shrine, shrines, heightOf(shrine), true, owned))
 		const jizo = loaded.kit?.scene.getObjectByName('Jizo')
-		if (jizo !== undefined) modelled.add(...stamp(jizo, jizos, heightOf(jizo), true, owned))
 		const lantern = loaded.temple?.scene.getObjectByName('StoneLantern')
-		if (lantern !== undefined) modelled.add(...stamp(lantern, lanterns, heightOf(lantern), true, owned))
+		for (const { group, pending } of blocks.laid) {
+			if (clump !== undefined) {
+				addAll(group, stamp(clump, pending.bamboo, heightOf(clump), false, owned))
+				pending.placeholders.visible = false
+			}
+			if (shrine !== undefined) addAll(group, stamp(shrine, pending.shrines, heightOf(shrine), true, owned))
+			if (jizo !== undefined) addAll(group, stamp(jizo, pending.jizos, heightOf(jizo), true, owned))
+			if (lantern !== undefined) addAll(group, stamp(lantern, pending.lanterns, heightOf(lantern), true, owned))
+		}
 	}).catch((error: unknown) => {
 		console.warn('[bunbu] the bamboo forest\'s models could not be read; the stand-ins stay', error)
 	})
@@ -295,7 +311,8 @@ export function createBambooForest(scene: Scene, path: Path, from: number, to: n
 	return {
 		passTime: passTime({ scene, fog, backdrop, ambient, sun }, daylight),
 
-		follow(x, z) {
+		follow(x, z, distance) {
+			blocks.follow(distance)
 			ground.position.set(x, 0, z)
 			backdrop.position.set(x, 0, z)
 			sun.position.set(x + sunFrom.x, sunFrom.y, z + sunFrom.z)
@@ -307,7 +324,7 @@ export function createBambooForest(scene: Scene, path: Path, from: number, to: n
 			for (const made of owned.geometries) made.dispose()
 			for (const made of owned.materials) made.dispose()
 			for (const made of owned.textures) made.dispose()
-			for (const child of [...laid.children, ...placeholders.children, ...modelled.children]) if (child instanceof InstancedMesh) child.dispose()
+			blocks.dispose()
 			sun.dispose()
 		},
 	}

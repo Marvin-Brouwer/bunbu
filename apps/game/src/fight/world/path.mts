@@ -1,6 +1,6 @@
 /**
  * The way the samurai runs: not a straight line but streets with corners, then the winding path
- * through a garden, over and over for as long as the stage is. Plain numbers, so it can be tested.
+ * through a garden, over and over for as long as the run goes. Plain numbers, so it can be tested.
  *
  * The run store only knows how far he has come (`distance`); this turns that into where he is and
  * which way he faces. The path is made of legs: straight ones, and arcs that turn by a fixed angle.
@@ -60,10 +60,10 @@ type LaidLeg = Leg & {
 }
 
 export type Path = {
-	/** Where the path is `distance` metres along. Before the start it carries on straight back. */
+	/** Where the path is `distance` metres along, for any distance: it repeats its round both ways, for ever. */
 	at: (distance: number) => PathPoint
-	/** Metres the path is laid out for; past that it carries on straight. */
-	readonly length: number
+	/** Metres in one round. Each round starts where the last one ended, facing the same way. */
+	readonly round: number
 }
 
 /** Moves `along` metres from a point on a leg that turns `curvature` radians per metre. */
@@ -80,44 +80,46 @@ function travel(x: number, z: number, heading: number, curvature: number, along:
 }
 
 /**
- * Lays the path out for at least `length` metres, starting at the origin facing `-z`, repeating
- * `round`. A round should turn as much left as right, so the path keeps its way and never crosses itself.
+ * The path that repeats `round` for as long as the run goes, starting at the origin facing `-z`. A
+ * round has to turn as much left as right, so each one starts facing the way the last one did: the
+ * path keeps its way, never crosses itself, and every round is the one before moved on.
  */
-export function createPath(length: number, round: readonly Leg[] = townRound): Path {
+export function createPath(round: readonly Leg[] = townRound): Path {
 	const legs: LaidLeg[] = []
 	let start = 0
 	let point = { x: 0, z: 0, heading: 0 }
-	while (start < length) {
-		for (const leg of round) {
-			legs.push({ ...leg, start, ...point })
-			point = travel(point.x, point.z, point.heading, leg.turn / leg.length, leg.length)
-			start += leg.length
-		}
+	for (const leg of round) {
+		legs.push({ ...leg, start, ...point })
+		point = travel(point.x, point.z, point.heading, leg.turn / leg.length, leg.length)
+		start += leg.length
 	}
-	const end = { ...point, start }
+	if (!(start > 0)) throw new RangeError('a round of the path needs a length')
+	// A round that ends turned would make the next one start off the end of this one.
+	if (Math.abs(Math.atan2(Math.sin(point.heading), Math.cos(point.heading))) > 1e-9) {
+		throw new RangeError('a round of the path has to turn as much left as right')
+	}
+	// Where a round ends, and so how far each round moves the next one on.
+	const across = { x: point.x, z: point.z }
+	const length = start
 
 	return {
-		length: start,
+		round: length,
 
 		at(distance) {
-			if (distance <= 0) {
-				const first = legs[0]
-				return { ...travel(0, 0, 0, 0, distance), zone: first?.zone ?? 'street' }
-			}
-			if (distance >= end.start) {
-				return { ...travel(end.x, end.z, end.heading, 0, distance - end.start), zone: 'street' }
-			}
+			const turns = Math.floor(distance / length)
+			const along = distance - turns * length
 			// Binary search for the leg the distance falls in.
 			let low = 0
 			let high = legs.length - 1
 			while (low < high) {
 				const middle = (low + high + 1) >> 1
-				if ((legs[middle]?.start ?? 0) <= distance) low = middle
+				if ((legs[middle]?.start ?? 0) <= along) low = middle
 				else high = middle - 1
 			}
 			const leg = legs[low]
 			if (leg === undefined) return { x: 0, z: 0, heading: 0, zone: 'street' }
-			return { ...travel(leg.x, leg.z, leg.heading, leg.turn / leg.length, distance - leg.start), zone: leg.zone }
+			const here = travel(leg.x, leg.z, leg.heading, leg.turn / leg.length, along - leg.start)
+			return { x: here.x + across.x * turns, z: here.z + across.z * turns, heading: here.heading, zone: leg.zone }
 		},
 	}
 }

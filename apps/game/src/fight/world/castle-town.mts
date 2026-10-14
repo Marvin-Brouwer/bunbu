@@ -5,8 +5,10 @@
  * and a torii at the gate. The path turns corners and winds through the gardens ({@link Path}).
  *
  * The houses and props are made here from simple shapes; the trees, bamboo and torii are Quaternius
- * models (CC0), added once they have loaded. Everything is laid out once, when the run starts, in
- * stretches of path that are each their own `InstancedMesh`, so only what is in view is drawn.
+ * models (CC0), added once they have loaded. Everything is laid out when the run starts as a few
+ * blocks of a round of the path each, stitched together ahead of the samurai for as long as the run
+ * goes ([blocks](./blocks.mts)), in stretches of path that are each their own `InstancedMesh`, so
+ * only what is in view is drawn.
  */
 
 import {
@@ -22,7 +24,6 @@ import {
 	Fog,
 	Group,
 	HemisphereLight,
-	InstancedMesh,
 	Matrix4,
 	Mesh,
 	MeshBasicMaterial,
@@ -35,9 +36,10 @@ import {
 	type Scene,
 } from 'three'
 import type { GLTF } from 'three/addons/loaders/GLTFLoader.js'
+import { layBlocks } from './blocks.mts'
 import { Batch, chunkOf, gableGeometry, glowTexture, partOf, placed, scatter, slatsTexture, within, type Cursor } from './kit.mts'
 import { beside, type Path, type PathPoint } from './path.mts'
-import { clearanceOf, facingPath, fogFar, isFree, passTime, sky, skyRadius, stamp, strip, type Daylight, type Owned, type Planting, type StageView, type Taken } from './landscape.mts'
+import { addAll, clearanceOf, facingPath, fogFar, isFree, passTime, sky, skyRadius, stamp, strip, type Daylight, type Owned, type Planting, type StageView, type Taken } from './landscape.mts'
 
 export { fogFar, skyRadius, type StageView }
 
@@ -335,8 +337,9 @@ function castle(town: Town, frame: Matrix4): void {
 }
 
 
-/** The models placed once they are in: maples, bamboo, the torii. */
+/** What a block of the town places once the models are in: maples, bamboo, the torii; and its houses, to reshape with the kit. */
 type Pending = {
+	readonly town: Town
 	readonly maples: Planting[]
 	readonly bamboo: Planting[]
 	readonly torii: Planting[]
@@ -345,20 +348,32 @@ type Pending = {
 /** Stretches of their own for landmarks far off the path, so each is culled on its own. */
 const landmarkChunks = 100_000
 
+/** Metres a garden's trees reach along the path, which the last of them keep clear of the block's end. */
+const treeReach = 3
+
 /** The stretches of path that run through a garden, from where they start to where they end. */
 function gardensOf(path: Path, from: number, to: number): { start: number; end: number }[] {
 	const gardens: { start: number; end: number }[] = []
-	for (let distance = from; distance < to; distance += 1) {
+	// By whole metres from `from`, which needn't be a whole number, so a garden is never split by rounding.
+	let previous = Number.NaN
+	for (let metre = 0; from + metre < to; metre++) {
+		const distance = from + metre
 		if (path.at(distance).zone !== 'garden') continue
 		const last = gardens.at(-1)
-		if (last?.end === distance - 1) last.end = distance
+		if (last !== undefined && previous === metre - 1) last.end = distance
 		else gardens.push({ start: distance, end: distance })
+		previous = metre
 	}
 	return gardens
 }
 
-function lay(path: Path, from: number, to: number): { town: Town; pending: Pending; owned: Owned; group: Group; shopLight: MeshStandardMaterial } {
-	const owned: Owned = { geometries: [], materials: [], textures: [] }
+/** One kind of piece of the town: its shape, what it is made of, and its shadows. */
+type Shape = { readonly geometry: BufferGeometry; readonly material: Material; readonly shadows?: { cast?: boolean; receive?: boolean } }
+
+/** The shapes and materials every block of the town is built from, made once for all of them. */
+type Shapes = Readonly<Record<Exclude<keyof Town, 'glows'>, Shape>>
+
+function shapesOf(owned: Owned): { shapes: Shapes; shopLight: MeshStandardMaterial } {
 	const geometry = <T extends BufferGeometry>(made: T) => {
 		owned.geometries.push(made)
 		return made
@@ -371,47 +386,74 @@ function lay(path: Path, from: number, to: number): { town: Town; pending: Pendi
 	owned.textures.push(slats)
 	slats.repeat.set(3, 1)
 
-	const cursor: Cursor = { chunk: 0 }
 	const box = geometry(new BoxGeometry(1, 1, 1))
 	const lit = (roughness = 0.85) => material(new MeshStandardMaterial({ roughness, flatShading: true }))
 	// Shops open at dusk: warm light from inside shows through the lattice, brighter as night falls.
 	const shopLight = material(new MeshStandardMaterial({ map: slats, roughness: 0.9, emissive: 0xffa050, emissiveMap: slats, emissiveIntensity: 0.35 }))
+	const shapes: Shapes = {
+		walls: { geometry: box, material: lit(), shadows: { cast: true, receive: true } },
+		lattice: { geometry: box, material: shopLight },
+		plaster: { geometry: box, material: lit(0.95), shadows: { cast: true, receive: true } },
+		windows: { geometry: box, material: material(new MeshStandardMaterial({ map: slats, roughness: 0.9 })) },
+		roofs: { geometry: geometry(gableGeometry()), material: lit(0.7), shadows: { cast: true } },
+		eaves: { geometry: box, material: lit(0.7) },
+		ridges: { geometry: box, material: lit(0.7) },
+		noren: { geometry: box, material: lit(1) },
+		lanterns: { geometry: geometry(new CylinderGeometry(0.5, 0.5, 1, 10)), material: material(new MeshBasicMaterial()) },
+		stone: { geometry: box, material: lit(1), shadows: { cast: true } },
+		lanternLight: { geometry: box, material: material(new MeshBasicMaterial()) },
+		barrels: { geometry: geometry(new CylinderGeometry(0.45, 0.4, 1, 10)), material: lit(0.9), shadows: { cast: true } },
+		water: { geometry: geometry(new CircleGeometry(1, 28).rotateX(-Math.PI / 2)), material: material(new MeshStandardMaterial({ roughness: 0.15, metalness: 0.4 })) },
+		bridge: { geometry: box, material: lit(0.6), shadows: { cast: true } },
+		rocks: { geometry: geometry(new DodecahedronGeometry(1, 0)), material: lit(1), shadows: { cast: true } },
+		cloth: { geometry: box, material: lit(0.9), shadows: { cast: true } },
+		railings: { geometry: box, material: lit(0.5) },
+		bamboo: { geometry: box, material: lit(0.8), shadows: { cast: true } },
+	}
+	return { shapes, shopLight }
+}
+
+/** Lays out the town from `from` to `to` along `path`, picking with `base`: one block ([blocks](./blocks.mts)). */
+function lay(path: Path, from: number, to: number, base: number, shapes: Shapes): { town: Town; pending: Pending; group: Group } {
+	const cursor: Cursor = { chunk: 0 }
+	const batch = (name: keyof Shapes) => new Batch(shapes[name].geometry, shapes[name].material, cursor, shapes[name].shadows)
 	const town: Town = {
-		walls: new Batch(box, lit(), cursor, { cast: true, receive: true }),
-		lattice: new Batch(box, shopLight, cursor),
-		plaster: new Batch(box, lit(0.95), cursor, { cast: true, receive: true }),
-		windows: new Batch(box, material(new MeshStandardMaterial({ map: slats, roughness: 0.9 })), cursor),
-		roofs: new Batch(geometry(gableGeometry()), lit(0.7), cursor, { cast: true }),
-		eaves: new Batch(box, lit(0.7), cursor),
-		ridges: new Batch(box, lit(0.7), cursor),
-		noren: new Batch(box, lit(1), cursor),
-		lanterns: new Batch(geometry(new CylinderGeometry(0.5, 0.5, 1, 10)), material(new MeshBasicMaterial()), cursor),
-		stone: new Batch(box, lit(1), cursor, { cast: true }),
-		lanternLight: new Batch(box, material(new MeshBasicMaterial()), cursor),
-		barrels: new Batch(geometry(new CylinderGeometry(0.45, 0.4, 1, 10)), lit(0.9), cursor, { cast: true }),
-		water: new Batch(geometry(new CircleGeometry(1, 28).rotateX(-Math.PI / 2)), material(new MeshStandardMaterial({ roughness: 0.15, metalness: 0.4 })), cursor),
-		bridge: new Batch(box, lit(0.6), cursor, { cast: true }),
-		rocks: new Batch(geometry(new DodecahedronGeometry(1, 0)), lit(1), cursor, { cast: true }),
-		cloth: new Batch(box, lit(0.9), cursor, { cast: true }),
-		railings: new Batch(box, lit(0.5), cursor),
-		bamboo: new Batch(box, lit(0.8), cursor, { cast: true }),
+		walls: batch('walls'),
+		lattice: batch('lattice'),
+		plaster: batch('plaster'),
+		windows: batch('windows'),
+		roofs: batch('roofs'),
+		eaves: batch('eaves'),
+		ridges: batch('ridges'),
+		noren: batch('noren'),
+		lanterns: batch('lanterns'),
+		stone: batch('stone'),
+		lanternLight: batch('lanternLight'),
+		barrels: batch('barrels'),
+		water: batch('water'),
+		bridge: batch('bridge'),
+		rocks: batch('rocks'),
+		cloth: batch('cloth'),
+		railings: batch('railings'),
+		bamboo: batch('bamboo'),
 		glows: [],
 	}
-	const pending: Pending = { maples: [], bamboo: [], torii: [] }
-	const clear = clearanceOf(path, from - 50, to + 50)
+	const pending: Pending = { town, maples: [], bamboo: [], torii: [] }
+	// The landmarks look far along the path, into the next round too.
+	const clear = clearanceOf(path, from - 400, to + 400)
 	const taken: Taken = []
 	const plant = (into: Planting[], matrix: Matrix4) => { into.push({ matrix, chunk: cursor.chunk }) }
 
 	// Houses along both sides of every street, each in its own slot of the street, as long as it
-	// stays off the path at the corners.
-	let index = 0
+	// stays off the path at the corners, and inside the block.
+	let index = base
 	for (const side of [-1, 1]) {
 		let distance = from
 		while (distance < to) {
 			const width = 4.5 + scatter(index * 3 + side) * 3
 			index++
 			const middle = distance + width / 2
-			const street = path.at(distance).zone === 'street' && path.at(distance + width).zone === 'street'
+			const street = distance + width <= to && path.at(distance).zone === 'street' && path.at(distance + width).zone === 'street'
 			if (!street || scatter(index + 500) < 0.08) {
 				// A garden, or an alley between houses, with a banner or a cart at the street's edge.
 				if (street) {
@@ -447,13 +489,14 @@ function lay(path: Path, from: number, to: number): { town: Town; pending: Pendi
 		cursor.chunk = chunkOf(garden.start + 4)
 		plant(pending.torii, placed(gate.x, 0, gate.z, gate.heading))
 
-		const skyline = beside(gate, (scatter(which) > 0.5 ? 1 : -1) * 38, 40)
+		const landmark = base + which
+		const skyline = beside(gate, (scatter(landmark) > 0.5 ? 1 : -1) * 38, 40)
 		if (clear(skyline.x, skyline.z, garden.start + 44, 12, 400) && isFree(taken, skyline.x, skyline.z, 6)) {
 			cursor.chunk = landmarkChunks + which * 2
-			pagoda(town, placed(skyline.x, 0, skyline.z, scatter(which + 1) * Math.PI))
+			pagoda(town, placed(skyline.x, 0, skyline.z, scatter(landmark + 1) * Math.PI))
 			taken.push({ x: skyline.x, z: skyline.z, radius: 6 })
 		}
-		const keep = beside(gate, (scatter(which + 2) > 0.5 ? 1 : -1) * 70, 160)
+		const keep = beside(gate, (scatter(landmark + 2) > 0.5 ? 1 : -1) * 70, 160)
 		if (clear(keep.x, keep.z, garden.start + 164, 30, 400) && isFree(taken, keep.x, keep.z, 18)) {
 			cursor.chunk = landmarkChunks + which * 2 + 1
 			castle(town, placed(keep.x, 0, keep.z, gate.heading))
@@ -483,9 +526,10 @@ function lay(path: Path, from: number, to: number): { town: Town; pending: Pendi
 	}
 
 	// Then what grows around them: maples, bamboo, rocks, and stone lanterns along the path, all
-	// clear of the path, the houses and the ponds.
+	// clear of the path, the houses and the ponds, and of the block's ends.
 	for (const garden of gardens) {
-		for (let distance = Math.ceil(garden.start / 3) * 3; distance <= garden.end; distance += 3) {
+		const last = Math.min(garden.end, to - treeReach)
+		for (let distance = Math.ceil(Math.max(garden.start, from + treeReach) / 3) * 3; distance <= last; distance += 3) {
 			const point = path.at(distance)
 			cursor.chunk = chunkOf(distance)
 			const step = Math.round(distance)
@@ -520,16 +564,13 @@ function lay(path: Path, from: number, to: number): { town: Town; pending: Pendi
 	}
 
 	const group = new Group()
-	for (const batch of Object.values(town)) {
-		if (batch instanceof Batch && batch.count > 0) group.add(...batch.build())
+	for (const each of Object.values(town)) {
+		if (each instanceof Batch && each.count > 0) addAll(group, each.build())
 	}
-	return { town, pending, owned, group, shopLight }
+	return { town, pending, group }
 }
 
-export function createCastleTown(scene: Scene, path: Path, from: number, to: number, models: Promise<TownModels>): StageView {
-	// Keep the visual layout bounded for very large quizzes. The path itself continues so the
-	// run rules remain correct; beyond this window the fog and ground provide the backdrop.
-	const visualTo = Math.min(to, 2400)
+export function createCastleTown(scene: Scene, path: Path, models: Promise<TownModels>): StageView {
 	const [first] = daylight
 	const fog = new Fog(first.fog, 30, fogFar)
 	scene.fog = fog
@@ -565,71 +606,68 @@ export function createCastleTown(scene: Scene, path: Path, from: number, to: num
 	const gardenness = (distance: number) => [-4, -2, 0, 2, 4].filter((offset) => path.at(distance + offset).zone === 'garden').length / 5
 	const street = new Color(palette.street)
 	const gardenPath = new Color(palette.gardenPath)
-	scene.add(strip(path, from, visualTo, owned, {
-		half: (distance) => streetHalfWidth + (gardenHalfWidth - streetHalfWidth) * gardenness(distance),
-		colour: (distance) => street.clone().lerp(gardenPath, gardenness(distance)),
-		y: 0.02,
-	}))
-	// The gardens' grass, a wide strip under them that breaks off where the streets begin.
 	const grass = new Color(palette.grass)
-	scene.add(strip(path, from, visualTo, owned, {
-		half: () => 18,
-		colour: () => grass,
-		y: 0.008,
-		runs: (distance) => path.at(distance).zone === 'garden',
-	}))
-
-	const laid = lay(path, from, visualTo)
-	owned.geometries.push(...laid.owned.geometries)
-	owned.materials.push(...laid.owned.materials)
-	owned.textures.push(...laid.owned.textures)
-	scene.add(laid.group)
-
-	// Soft light around every lantern, drawn as one cloud of glowing points.
-	const glowGeometry = new BufferGeometry()
-	glowGeometry.setAttribute('position', new Float32BufferAttribute(laid.town.glows, 3))
+	const { shapes, shopLight } = shapesOf(owned)
+	// Soft light around every lantern, drawn as a cloud of glowing points.
 	const glow = glowTexture()
 	const glowMaterial = new PointsMaterial({ map: glow, size: 2.6, color: 0xffa060, transparent: true, depthWrite: false, blending: AdditiveBlending, sizeAttenuation: true })
-	owned.geometries.push(glowGeometry)
 	owned.materials.push(glowMaterial)
 	owned.textures.push(glow)
-	scene.add(new Points(glowGeometry, glowMaterial))
+
+	// The town, a round of the path at a time ([blocks](./blocks.mts)).
+	const blocks = layBlocks<Pending>(path, (from, to, seed) => {
+		const laid = lay(path, from, to, seed, shapes)
+		laid.group.add(strip(path, from, to, owned, {
+			half: (distance) => streetHalfWidth + (gardenHalfWidth - streetHalfWidth) * gardenness(distance),
+			colour: (distance) => street.clone().lerp(gardenPath, gardenness(distance)),
+			y: 0.02,
+		}))
+		// The gardens' grass, a wide strip under them that breaks off where the streets begin.
+		laid.group.add(strip(path, from, to, owned, {
+			half: () => 18,
+			colour: () => grass,
+			y: 0.008,
+			runs: (distance) => path.at(distance).zone === 'garden',
+		}))
+		const glowGeometry = new BufferGeometry()
+		glowGeometry.setAttribute('position', new Float32BufferAttribute(laid.town.glows, 3))
+		owned.geometries.push(glowGeometry)
+		laid.group.add(new Points(glowGeometry, glowMaterial))
+		return { group: laid.group, pending: laid.pending }
+	})
+	scene.add(blocks.group)
 	// As night falls the lanterns' glow spreads and the shops shine brighter.
 	const lamps = (strength: number) => {
 		glowMaterial.size = 2.6 + strength
-		laid.shopLight.emissiveIntensity = 0.35 + 0.65 * strength
+		shopLight.emissiveIntensity = 0.35 + 0.65 * strength
 	}
 
 	// The models come in later; until then the town stands without its trees. Their geometry and
 	// textures belong to the shared, cached model; only the clones made here are freed with the town.
-	const modelled = new Group()
-	scene.add(modelled)
 	let disposed = false
 	void models.then((loaded) => {
 		if (disposed) return
-		if (loaded.maple !== undefined) {
-			// The maple file holds five trees side by side; each is a variant.
-			const named = /^MapleTree_\d+$/
-			const meshes = loaded.maple.scene.getObjectsByProperty('type', 'Mesh')
-			const trees = [...new Set(meshes.map((mesh) => (named.test(mesh.parent?.name ?? '') ? mesh.parent : mesh)))]
-				.filter((tree): tree is Object3D => tree !== null && named.test(tree.name))
-			const variants = trees.length > 0 ? trees : [loaded.maple.scene]
-			variants.forEach((variant, which) => {
-				const mine = laid.pending.maples.filter((_, index) => index % variants.length === which)
-				modelled.add(...stamp(variant, mine, 7, true, owned))
+		// The maple file holds five trees side by side; each is a variant.
+		const named = /^MapleTree_\d+$/
+		const meshes = loaded.maple?.scene.getObjectsByProperty('type', 'Mesh') ?? []
+		const trees = [...new Set(meshes.map((mesh) => (named.test(mesh.parent?.name ?? '') ? mesh.parent : mesh)))]
+			.filter((tree): tree is Object3D => tree !== null && named.test(tree.name))
+		const maples = loaded.maple === undefined ? [] : trees.length > 0 ? trees : [loaded.maple.scene]
+		// Each part has the size of the shape it replaces, so every copy keeps its place and colour.
+		const parts = ([['GableRoof', 'roofs'], ['PentRoof', 'eaves'], ['Lantern', 'lanterns'], ['Barrel', 'barrels']] as const).flatMap(([name, shape]) => {
+			const geometry = loaded.kit === undefined ? undefined : partOf(loaded.kit.scene, name)
+			if (geometry === undefined) return []
+			owned.geometries.push(geometry)
+			return [{ shape, geometry }]
+		})
+		for (const { group, pending } of blocks.laid) {
+			maples.forEach((variant, which) => {
+				const mine = pending.maples.filter((_, index) => index % maples.length === which)
+				addAll(group, stamp(variant, mine, 7, true, owned))
 			})
-		}
-		if (loaded.bamboo !== undefined) modelled.add(...stamp(loaded.bamboo.scene, laid.pending.bamboo, 7, false, owned))
-		if (loaded.torii !== undefined) modelled.add(...stamp(loaded.torii.scene, laid.pending.torii, 6.2, true, owned))
-		if (loaded.kit !== undefined) {
-			// Each part has the size of the shape it replaces, so every copy keeps its place and colour.
-			const parts = [['GableRoof', laid.town.roofs], ['PentRoof', laid.town.eaves], ['Lantern', laid.town.lanterns], ['Barrel', laid.town.barrels]] as const
-			for (const [name, batch] of parts) {
-				const geometry = partOf(loaded.kit.scene, name)
-				if (geometry === undefined) continue
-				owned.geometries.push(geometry)
-				batch.reshape(geometry)
-			}
+			if (loaded.bamboo !== undefined) addAll(group, stamp(loaded.bamboo.scene, pending.bamboo, 7, false, owned))
+			if (loaded.torii !== undefined) addAll(group, stamp(loaded.torii.scene, pending.torii, 6.2, true, owned))
+			for (const { shape, geometry } of parts) pending.town[shape].reshape(geometry)
 		}
 	}).catch((error: unknown) => {
 		console.warn('[bunbu] the town models could not be read; the town stands without optional foliage', error)
@@ -638,7 +676,8 @@ export function createCastleTown(scene: Scene, path: Path, from: number, to: num
 	return {
 		passTime: passTime({ scene, fog, backdrop, ambient, sun, lamps }, daylight),
 
-		follow(x, z) {
+		follow(x, z, distance) {
+			blocks.follow(distance)
 			ground.position.set(x, 0, z)
 			backdrop.position.set(x, 0, z)
 			sun.position.set(x + sunFrom.x, sunFrom.y, z + sunFrom.z)
@@ -650,7 +689,7 @@ export function createCastleTown(scene: Scene, path: Path, from: number, to: num
 			for (const made of owned.geometries) made.dispose()
 			for (const made of owned.materials) made.dispose()
 			for (const made of owned.textures) made.dispose()
-			for (const child of [...laid.group.children, ...modelled.children]) if (child instanceof InstancedMesh) child.dispose()
+			blocks.dispose()
 			sun.dispose()
 		},
 	}
