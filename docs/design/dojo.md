@@ -34,4 +34,4 @@ The ambush without the risk.
 
 ## Practise mistakes
 
-**Only my mistakes from the last run** on the dojo menu filters Practice to the questions missed in the last run, when that run was on the same quiz and version. A question left unanswered counts as missed, and a question missed in several rounds is practised once. The **Practise mistakes** button on the [results](screens.md#7-finished-results-and-mistakes) and [fallen](screens.md#8-fallen) screens opens the dojo menu with that box ticked (`/dojo/?mistakes`), so Study stays a choice too.
+**Practice mistakes** on the dojo menu is Practice on only the questions missed in the last run, when that run was on the same quiz and version; the card shows only then. A question left unanswered counts as missed, and a question missed in several rounds is practised once. Practice on only the mistakes has a route of its own, `/dojo/practice/mistakes/`: the Practice mistakes card goes there, and the **Practise mistakes** button on the [results](screens.md#7-finished-results-and-mistakes) and [fallen](screens.md#8-fallen) screens opens it straight away.

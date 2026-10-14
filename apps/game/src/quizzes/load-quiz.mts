@@ -28,7 +28,8 @@ const idleTitle = 'Or drop a quiz file here'
 const draggingTitle = 'Drop it to load the quiz'
 
 export type LoadQuizOptions = {
-	readonly read: (file: File, result: ReadQuiz) => void
+	/** Reads the next file only once this settles, so the player is asked about one quiz at a time. */
+	readonly read: (file: File, result: ReadQuiz) => Promise<void>
 }
 
 export const LoadQuiz = component<LoadQuizOptions>({
@@ -41,7 +42,7 @@ export const LoadQuiz = component<LoadQuizOptions>({
 		const readAll = (files: Iterable<File>) => {
 			for (const file of files) {
 				queue = queue.then(async () => {
-					options.read(file, await readQuiz(file).catch(unreadable))
+					await options.read(file, await readQuiz(file).catch(unreadable))
 				})
 			}
 			return queue

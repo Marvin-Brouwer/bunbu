@@ -9,7 +9,7 @@ import { lastRun } from '../../fight/state/lastrun.mts'
 import { settings } from '../../settings/state/settings.mts'
 import { selection } from '../state/selection.mts'
 import { library } from './library.mts'
-import { parseDifficulties, parseHighScores, parseLastRun, parseStageResults, parseLibrary, parseSelection, parseSettings, persistApp } from './persistence.mts'
+import { parseAgreements, parseDifficulties, parseHighScores, parseLastRun, parseStageResults, parseLibrary, parseSelection, parseSettings, persistApp } from './persistence.mts'
 import { readQuizFiles, writeQuizFiles } from './quiz-files.mts'
 import { read, storedVersion, write } from './storage.mts'
 
@@ -114,6 +114,12 @@ describe('parsing what was saved', () => {
 	it('keeps the difficulties that are valid and drops the rest', () => {
 		expect(parseDifficulties({ '["a","1"]': 'shogun', '["b","1"]': 'novice', '["c","1"]': 'toString' })).toEqual({ '["a","1"]': 'shogun' })
 		expect(parseDifficulties('shogun')).toEqual({})
+	})
+
+	it('keeps the terms agreements that are valid and drops the rest', () => {
+		const agreed = { content: 'abc', terms: 'written', termsVersion: 1 }
+		expect(parseAgreements({ '["a","1"]': agreed, '["b","1"]': { ...agreed, terms: 'stolen' }, '["c","1"]': { content: 'abc' } })).toEqual({ '["a","1"]': agreed })
+		expect(parseAgreements('yes')).toEqual({})
 	})
 
 	it('keeps the settings that are valid and drops the rest', () => {

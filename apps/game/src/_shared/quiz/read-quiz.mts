@@ -3,31 +3,47 @@
  * shared `.bunbu` file through `uncompress`. Either way the library keeps it as a `.bunbu` file. Both are untrusted input, so what goes wrong comes
  * back as problems to show the player, not as an error. A file named otherwise isn't read at all; a
  * `.yaml` file without the schema line or a `.bunbu` file without Bunbu's first bytes stops there.
+ * Questions a `.yaml` file repeats are left out before it is packed, and said so.
  */
 
 import {
 	BunbuShareError,
 	BunbuValidationError,
 	compress,
+	duplicateQuestions,
 	fileExtension,
+	questionLines,
 	uncompress,
 	validate,
+	withoutDuplicates,
 	type BunbuData,
+	type DuplicateQuestion,
 	type ValidationIssue,
 } from '@bunbu/data'
 import { Immutable } from '@rooted/store'
 import { fitOf, type Fit } from '../state/ambush-opening.mts'
+import type { TermsKind } from '../state/agreements.mts'
 
 export type ReadQuiz =
 	| {
 		readonly quiz: BunbuData
 		/** The quiz as a `.bunbu` file, which the library keeps and validates again when the app starts. */
 		readonly file: Immutable<Uint8Array>
+		/** The terms to agree to before it joins the library: a `.yaml` quiz is the player's own, a `.bunbu` quiz was shared. */
+		readonly terms: TermsKind
+		/** The questions left out because they repeat an earlier one, by their place in the file read. */
+		readonly duplicates?: readonly RepeatedQuestion[]
 	}
 	| {
 		/** What is wrong with the file, one line each. */
 		readonly problems: readonly string[]
 	}
+
+/** A question left out because it repeats an earlier one, with the lines both start on. */
+export type RepeatedQuestion = DuplicateQuestion & {
+	readonly line?: number
+	readonly ofLine?: number
+}
 
 /** An issue as the player reads it: where in the file, and what is wrong there. */
 export function describeIssue(issue: ValidationIssue): string {
@@ -48,7 +64,7 @@ export async function readQuiz(file: File): Promise<ReadQuiz> {
 	if (name.endsWith(fileExtension)) {
 		try {
 			const bytes = new Uint8Array(await file.arrayBuffer())
-			return { quiz: await uncompress(bytes), file: Immutable.from(bytes) }
+			return { quiz: await uncompress(bytes), file: Immutable.from(bytes), terms: 'shared' }
 		} catch (error) {
 			if (error instanceof BunbuValidationError) return { problems: error.issues.map(describeIssue) }
 			if (error instanceof BunbuShareError) return { problems: [error.message] }
@@ -59,8 +75,13 @@ export async function readQuiz(file: File): Promise<ReadQuiz> {
 	const source = await file.text()
 	const quiz = await validate(source)
 	if (quiz instanceof BunbuValidationError) return { problems: quiz.issues.map(describeIssue) }
+	const kept = withoutDuplicates(quiz)
 	// Kept as a `.bunbu` file: smaller, and the same bytes a share sends on.
-	return { quiz, file: Immutable.from(await compress(quiz)) }
+	const read = { quiz: kept, file: Immutable.from(await compress(kept)), terms: 'written' as const }
+	const duplicates = duplicateQuestions(quiz)
+	if (duplicates.length === 0) return read
+	const lines = questionLines(source)
+	return { ...read, duplicates: duplicates.map((duplicate) => ({ ...duplicate, line: lines[duplicate.question], ofLine: lines[duplicate.of] })) }
 }
 
 /** A question that won't play as written in a fight, by its place in the file (from `0`). */

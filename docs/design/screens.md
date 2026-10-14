@@ -32,8 +32,17 @@ A screen of its own, so the title stays calm:
 
 - A square red **Load quiz** button with an upload icon, with a line on what a quiz file is at its left, to choose a `.yaml` or `.bunbu` file, and under it an area that says a file can be dropped. Dragging a file over the screen makes that area cover the whole screen, so the file can be dropped anywhere; it shrinks back on drop, when the file leaves the window, or on Escape. Touch phones don't drag files, so they only show the button.
 - A quiz file can also come in from outside, once Bunbu is installed: on a computer (Chrome or Edge) a `.bunbu` file opens with Bunbu, and on Android a quiz file can be shared to Bunbu. Either way Bunbu opens on this screen and loads it as if it was chosen with **Load quiz**. iPhones and iPads, Safari and Firefox don't let a web app do either, so there only **Load quiz** works.
-- Why a file didn't load (by line), and which questions of the chosen quiz won't fit in a fight. Only `.yaml`, `.yml` and `.bunbu` files are read: a `.yaml` file must start with the schema line and a `.bunbu` file with Bunbu's own first bytes, or it is not a quiz.
+- Why a file didn't load (by line), which questions a loaded `.yaml` file asked more than once (by line, left out, so the quiz keeps each question once; see [Common fields](data-format.md#common-fields)), and which questions of the chosen quiz won't fit in a fight. Only `.yaml`, `.yml` and `.bunbu` files are read: a `.yaml` file must start with the schema line and a `.bunbu` file with Bunbu's own first bytes, or it is not a quiz.
 - The loaded quizzes as cards, one under the other, with title, `version`, pass mark and best score (`v3 · pass 70% · best 2,480`, or `new`). Tapping one chooses it. Two square red buttons with an icon and a small label sit side by side on each card: **Download** saves its `.bunbu` file, **Remove** asks first, on a scroll with **Remove** and **Cancel**; its high score and stage results stay, so they're back if it's loaded again.
+
+#### Terms
+
+A quiz only joins the list once the player agrees to its terms, on a scroll with **I agree** and **Cancel**; Cancel (or Escape) leaves the quiz out. The terms are Markdown files with a `title` and a `version` in their frontmatter, in `apps/game/src/_shared/terms/`:
+
+- A `.yaml` quiz is one the player made (`written-quiz.md`): it is theirs to make and, when shared, theirs to share; its content was collected through legitimate means; they are responsible for what it says.
+- A `.bunbu` quiz was shared with them (`shared-quiz.md`): they got it through legitimate means; they are responsible for what it says.
+
+What was agreed is kept per quiz `id` + `version`, with the quiz's content and the terms' `version`. Loading the same quiz again asks again only when its content or the terms changed. When Bunbu opens and the terms changed since the player agreed to them, it asks again, once per set of terms, for every quiz agreed to under the old version: **I agree** keeps them, **Remove** takes them off the list, as Remove does.
 
 ### 2 Fight setup
 
@@ -122,8 +131,8 @@ See [dojo.md](dojo.md) for the rules.
 
 - 道場 · **Dojo** · the chosen quiz (`v3 · 40 questions`), which leads to the quizzes to change it.
 - **Study** card, with calligraphy-set art (文武, brush, inkstone).
-- **Practice** card, with the training dummy from D3.
-- **Only my mistakes from the last run (3)**, counting questions, when the last run was on this quiz and version and missed some. A choice tile, not a checkbox: ticked, it gets the red frame and the 選 stamp. `/dojo/?mistakes` opens the menu with it ticked.
+- **Practice all questions** card, with the training dummy from D3.
+- **Practice mistakes** card, with the same dummy, when the last run was on this quiz and version and missed some: `Only the 3 questions you missed in your last run.`, counting questions. It opens practice on `/dojo/practice/mistakes/`.
 - Without a quiz the cards can't be opened, and **Select quiz** leads to the quizzes.
 
 ### D2 Study
