@@ -254,18 +254,18 @@ export function createDojoWorld(viewport: Viewport, tally?: Tally): View {
 	renderer.toneMapping = ACESFilmicToneMapping
 	renderer.toneMappingExposure = 1.05
 
-	// The swing starts when the store counts a miss, and runs on the clock from there.
-	let wrong = tally?.value.wrong ?? 0
+	// The swing starts when the miss screen shows, and runs on the clock from there.
+	let missed = Boolean(tally?.value.missed)
 	let sinceMiss = Number.POSITIVE_INFINITY
 
 	return {
 		scene,
 
 		draw(delta) {
-			const now = tally?.value.wrong ?? 0
-			if (now > wrong) sinceMiss = 0
+			const now = Boolean(tally?.value.missed)
+			if (now && !missed) sinceMiss = 0
 			else sinceMiss += delta
-			wrong = now
+			missed = now
 			// A negative lean tips the top away from the camera: knocked back by the player's cut.
 			dummy.swinging.rotation.x = swingOf(sinceMiss)
 
