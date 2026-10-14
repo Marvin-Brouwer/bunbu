@@ -131,6 +131,7 @@ describe('practice', () => {
 
 		continuePractice(game)
 		expect(game.tally.value.missed).toBeUndefined()
+		tickPractice(game, nextQuestionSeconds)
 		expect(game.ambush.value).toMatchObject({ open: true, at: { question: 1 } })
 	})
 
