@@ -8,13 +8,14 @@ import type { Scene } from 'three'
 import type { GLTF } from 'three/addons/loaders/GLTFLoader.js'
 import { loadModel } from '../../canvas/models.mts'
 import type { Stage } from '../../_shared/state/selection.mts'
-import { createCastleTown } from './castle-town.mts'
-import type { StageView } from './landscape.mts'
+import { createBackdrop, type BackdropRow } from './backdrop.mts'
+import { createCastleTown, townBackdrop } from './castle-town.mts'
+import type { Owned, StageView } from './landscape.mts'
 import { createPath, townRound, type Path } from './path.mts'
-import { bambooRound, createBambooForest } from './bamboo-forest.mts'
-import { castleRound, createEdoCastle } from './edo-castle.mts'
-import { createMountainTemple, mountainRound } from './mountain-temple.mts'
-import { createRiceFields, riceRound } from './rice-fields.mts'
+import { bambooBackdrop, bambooRound, createBambooForest } from './bamboo-forest.mts'
+import { castleBackdrop, castleRound, createEdoCastle } from './edo-castle.mts'
+import { createMountainTemple, mountainBackdrop, mountainRound } from './mountain-temple.mts'
+import { createRiceFields, riceBackdrop, riceRound } from './rice-fields.mts'
 
 export type StageWorld = {
 	readonly path: Path
@@ -35,26 +36,53 @@ function loadSome<Name extends string>(names: Readonly<Record<Name, string>>): P
 }
 
 /**
- * Lays out `stage`'s world in `scene`: a path that goes on for as long as the run does, and the
- * stage's scenery along it, in blocks stitched together ahead of the samurai ([blocks](./blocks.mts)).
+ * Puts `rows` of backdrop behind a stage's own scenery ([backdrop](./backdrop.mts)), laid out
+ * differently every run.
+ */
+function withBackdrop(scene: Scene, { path, view }: StageWorld, rows: readonly BackdropRow[]): StageWorld {
+	const owned: Owned = { geometries: [], materials: [], textures: [] }
+	const backdrop = createBackdrop(path, rows, Math.floor(Math.random() * 2 ** 31), owned)
+	scene.add(backdrop.group)
+	return {
+		path,
+		view: {
+			...view,
+			follow(x, z, distance) {
+				view.follow(x, z, distance)
+				backdrop.follow(distance)
+			},
+			dispose() {
+				view.dispose()
+				backdrop.dispose()
+				for (const made of owned.geometries) made.dispose()
+				for (const made of owned.materials) made.dispose()
+			},
+		},
+	}
+}
+
+/**
+ * Lays out `stage`'s world in `scene`: a path that goes on for as long as the run does, the stage's
+ * scenery along it, in blocks stitched together ahead of the samurai ([blocks](./blocks.mts)), and
+ * the backdrop behind it.
  */
 export function createStageWorld(stage: Stage, scene: Scene): StageWorld {
 	if (stage === 'rice-fields') {
 		const path = createPath(riceRound)
-		return { path, view: createRiceFields(scene, path, loadSome({ maple: 'maple', kit: 'stage-kit' })) }
+		return withBackdrop(scene, { path, view: createRiceFields(scene, path, loadSome({ maple: 'maple', kit: 'stage-kit' })) }, riceBackdrop)
 	}
 	if (stage === 'bamboo-forest') {
 		const path = createPath(bambooRound)
-		return { path, view: createBambooForest(scene, path, loadSome({ kit: 'stage-kit', temple: 'temple-kit' })) }
+		return withBackdrop(scene, { path, view: createBambooForest(scene, path, loadSome({ kit: 'stage-kit', temple: 'temple-kit' })) }, bambooBackdrop)
 	}
 	if (stage === 'mountain-temple') {
 		const path = createPath(mountainRound)
-		return { path, view: createMountainTemple(scene, path, loadSome({ temple: 'temple-kit', kit: 'stage-kit' })) }
+		return withBackdrop(scene, { path, view: createMountainTemple(scene, path, loadSome({ temple: 'temple-kit', kit: 'stage-kit' })) }, mountainBackdrop)
 	}
 	if (stage === 'edo-castle') {
 		const path = createPath(castleRound)
-		return { path, view: createEdoCastle(scene, path, loadSome({ kit: 'stage-kit', temple: 'temple-kit' })) }
+		return withBackdrop(scene, { path, view: createEdoCastle(scene, path, loadSome({ kit: 'stage-kit', temple: 'temple-kit' })) }, castleBackdrop)
 	}
 	const path = createPath(townRound)
-	return { path, view: createCastleTown(scene, path, loadSome({ maple: 'maple', torii: 'torii', bamboo: 'bamboo', kit: 'town-kit' })) }
+	return withBackdrop(scene, { path, view: createCastleTown(scene, path, loadSome({ maple: 'maple', torii: 'torii', bamboo: 'bamboo', kit: 'town-kit' })) }, townBackdrop)
 }

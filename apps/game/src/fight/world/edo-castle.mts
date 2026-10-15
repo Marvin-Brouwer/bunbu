@@ -30,6 +30,7 @@ import type { GLTF } from 'three/addons/loaders/GLTFLoader.js'
 import { layBlocks } from './blocks.mts'
 import { Batch, chunkOf, placed, scatter, type Cursor } from './kit.mts'
 import { addAll, clearanceOf, cutAway, facingPath, fogFar, isFree, passTime, sky, skyRadius, stamp, strip, type Daylight, type Owned, type Planting, type StageView, type Taken } from './landscape.mts'
+import type { BackdropRow } from './backdrop.mts'
 import { beside, type Leg, type Path } from './path.mts'
 
 const palette = {
@@ -37,6 +38,16 @@ const palette = {
 	gravel: 0xb8ad98,
 	water: 0x2d4a5a,
 }
+
+/**
+ * Beyond the walls ([backdrop](./backdrop.mts)): the retainers' houses, white walls under dark
+ * roofs, then pines up to the fog.
+ */
+export const castleBackdrop: readonly BackdropRow[] = [
+	{ shape: 'house', from: 32, to: 50, perTile: 1.4, colours: [[0xeae4d4, 0xddd5c2], [0x2e3036, 0x34404f]] },
+	{ shape: 'pine', from: 40, to: 120, perTile: 4, colours: [[0x3a2e26], [0x2a3e2a, 0x30482e]] },
+	{ shape: 'broadleaf', from: 60, to: 135, perTile: 1, colours: [[0x3a2e26], [0x3e5430, 0x4a5a2e]] },
+]
 
 /** From sunset to a moonlit night. One light per quarter of the stage ({@link passTime}). */
 const daylight: Daylight = [
