@@ -58,10 +58,11 @@ export const Application = component({
 		// Pre-rendering the static pages at build time has a DOM but no WebGL: those pages get the
 		// screens, and the canvas comes alive when the app loads in a browser.
 		if (environment.is('preRenderer')) return
+		// First, so the loading screen goes even when the renderer below can't be made.
+		hideLoading(signal)
 		addFonts()
 		attachViewport(createViewport(canvas, container, signal), signal)
 		startLoop(signal)
-		hideLoading(signal)
 	},
 })
 
