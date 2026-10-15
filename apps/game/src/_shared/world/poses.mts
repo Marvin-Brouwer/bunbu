@@ -284,8 +284,11 @@ export type Finishing = {
  * samurai, hurt, goes down only as the blade lands. Timed from the store's fallen pose, so it plays
  * the same every time and holds at its end.
  */
+/** Seconds into the samurai's fall when the finishing blade lands. */
+export const finishingLands = finishing.run + poseSeconds.strike * 0.6
+
 export function finishingOf(time: number): Finishing {
-	const lands = finishing.run + poseSeconds.strike * 0.6
+	const lands = finishingLands
 	const ninja = time < finishing.run
 		? { pose: 'approach' as const, time, distance: mix(finishing.from, finishing.reach, easeOut(progress(time, finishing.run))) }
 		: { pose: 'strike' as const, time: time - finishing.run, distance: finishing.reach }

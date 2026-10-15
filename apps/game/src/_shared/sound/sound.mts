@@ -4,7 +4,8 @@
  * the ninjas make no voices.
  *
  * They play at the settings' volume, and only once the player has touched the page, as browsers
- * keep a page quiet until then.
+ * keep a page quiet until then: the audio is made and started in the touch itself ({@link unlock}),
+ * and until it runs, sounds are skipped rather than kept to play all at once.
  */
 
 import { settings } from '../../settings/state/settings.mts'
@@ -32,9 +33,13 @@ type Audio = { readonly context: AudioContext; readonly master: GainNode; readon
 
 let made: Audio | undefined
 
-/** The audio, made on first use, at the volume of the settings. */
-function audio(): Audio | undefined {
-	if (typeof AudioContext === 'undefined') return undefined
+/**
+ * Makes the audio and starts it, from a touch, a click or a key: the gestures a browser lets a
+ * page start its sound in. Again on every one, for as long as it doesn't run, as after the phone
+ * was locked.
+ */
+function unlock(): void {
+	if (typeof AudioContext === 'undefined') return
 	if (made === undefined) {
 		const context = new AudioContext()
 		const master = context.createGain()
@@ -45,8 +50,16 @@ function audio(): Audio | undefined {
 		for (let index = 0; index < samples.length; index++) samples[index] = Math.random() * 2 - 1
 		made = { context, master, noise }
 	}
-	// Kept quiet until a touch: try again on every sound, which follows one.
-	if (made.context.state === 'suspended') void made.context.resume()
+	if (made.context.state !== 'running') void made.context.resume()
+}
+
+if (typeof window !== 'undefined') {
+	for (const gesture of ['pointerdown', 'pointerup', 'keydown'] as const) window.addEventListener(gesture, unlock, { capture: true, passive: true })
+}
+
+/** The audio, at the volume of the settings, once it runs. */
+function audio(): Audio | undefined {
+	if (made?.context.state !== 'running') return undefined
 	made.master.gain.value = settings.value.volume
 	return made
 }
@@ -59,6 +72,8 @@ function whoosh(
 	const start = context.currentTime + delay
 	const source = context.createBufferSource()
 	source.buffer = noise
+	// Round again past the end of the second of noise, so a long sound plays its whole envelope.
+	source.loop = true
 	source.playbackRate.value = 0.8 + Math.random() * 0.4
 	const filter = context.createBiquadFilter()
 	filter.type = type

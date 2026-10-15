@@ -9,18 +9,27 @@
  */
 
 import { play } from '../_shared/sound/sound.mts'
+import { finishingLands } from '../_shared/world/poses.mts'
 import type { RunGame } from './state/game.mts'
 import { bladeLandsAfter, clashSeconds } from './world/ninjas.mts'
 import { stepLength } from './world/world.mts'
 
-/** Calls `then` after `seconds`, unless the run has gone by then. */
-function later(seconds: number, signal: AbortSignal, then: () => void): void {
-	const timer = setTimeout(then, seconds * 1000)
-	signal.addEventListener('abort', () => { clearTimeout(timer) }, { once: true })
-}
-
 /** Plays the sounds of `game` until `signal` aborts, usually the run screen's own. */
 export function playRunSounds(game: RunGame, signal: AbortSignal): void {
+	// Sounds still to come, as the blade on its way, timed by the run's own clock: it stands still
+	// while paused and counting down, as the world does, so a sound waits with what it goes with.
+	let pending: { left: number; play: () => void }[] = []
+	let clock = game.run.value.elapsed
+	const later = (seconds: number, then: () => void) => { pending.push({ left: seconds, play: then }) }
+	game.run.on('change', signal, ({ detail }) => {
+		const passed = detail.state.elapsed - clock
+		clock = detail.state.elapsed
+		if (passed <= 0 || pending.length === 0) return
+		const due = pending.filter((sound) => sound.left - passed <= 0)
+		pending = pending.filter((sound) => sound.left - passed > 0).map((sound) => ({ ...sound, left: sound.left - passed }))
+		for (const sound of due) sound.play()
+	})
+
 	// A step each time a foot comes down, softer in the ambush's slow motion.
 	let steps = Math.floor(game.run.value.distance / stepLength)
 	let open = game.ambush.value.open
@@ -47,9 +56,15 @@ export function playRunSounds(game: RunGame, signal: AbortSignal): void {
 		if (next === sequence) return
 		sequence = next
 		if (pose === 'strike' || pose === 'block') play('swing')
-		if (pose === 'hurt' || pose === 'fallen') {
+		if (pose === 'hurt') {
 			const slicer = game.ninjas.value.active.some((ninja) => ninja.slicer === true)
-			later(bladeLandsAfter(slicer), signal, () => { play('hit') })
+			later(bladeLandsAfter(slicer), () => { play('hit') })
+		}
+		// Fallen, a ninja of its own runs in and finishes him off. The run's clock has stopped with
+		// the run, and it can't be paused any more, so this one goes by the wall clock.
+		if (pose === 'fallen') {
+			const timer = setTimeout(() => { play('hit') }, finishingLands * 1000)
+			signal.addEventListener('abort', () => { clearTimeout(timer) }, { once: true })
 		}
 	})
 
@@ -60,7 +75,7 @@ export function playRunSounds(game: RunGame, signal: AbortSignal): void {
 			if (seen.get(ninja.id) === ninja.sequence) continue
 			seen.set(ninja.id, ninja.sequence)
 			if (ninja.pose === 'slain') play('cut')
-			if (ninja.pose === 'blocked') later(clashSeconds, signal, () => { play('clash') })
+			if (ninja.pose === 'blocked') later(clashSeconds, () => { play('clash') })
 			if (ninja.pose === 'strike' && ninja.slicer === undefined) play('swing', 0.6)
 		}
 		for (const id of seen.keys()) if (!detail.state.active.some((ninja) => ninja.id === id)) seen.delete(id)
