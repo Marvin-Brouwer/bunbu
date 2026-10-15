@@ -37,6 +37,8 @@ const pictureOf = (stage: string) => new URL(`../public/stages/${stage}.jpg`, im
 /** The mean difference per colour between two JPEGs of the same size, decoded by the browser. */
 async function difference(page: Page, one: Buffer, other: Buffer): Promise<number> {
 	return page.evaluate(async ([first, second]) => {
+		// In the page, where it runs: a function from outside the callback isn't sent along.
+		// oxlint-disable-next-line unicorn/consistent-function-scoping
 		const pixels = async (data: string) => {
 			const image = new Image()
 			image.src = `data:image/jpeg;base64,${data}`
