@@ -16,6 +16,7 @@ import { attachViewport } from './canvas/stage.mts'
 import { createViewport } from './canvas/viewport.mts'
 import { appRoutes } from './_routes.g.mts'
 import { addFonts } from './_shared/fonts.mts'
+import { hideLoading } from './_shared/loading.mts'
 import { persistApp } from './_shared/storage/persistence.mts'
 import { TermsCheck } from './_shared/terms/terms-check.mts'
 import styles from './application.css'
@@ -60,6 +61,7 @@ export const Application = component({
 		addFonts()
 		attachViewport(createViewport(canvas, container, signal), signal)
 		startLoop(signal)
+		hideLoading(signal)
 	},
 })
 
