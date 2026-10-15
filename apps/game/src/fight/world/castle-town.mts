@@ -40,7 +40,7 @@ import { layBlocks } from './blocks.mts'
 import { Batch, chunkOf, gableGeometry, glowTexture, partOf, placed, scatter, slatsTexture, within, type Cursor } from './kit.mts'
 import { beside, type Path, type PathPoint } from './path.mts'
 import { addAll, clearanceOf, facingPath, fogFar, isFree, passTime, sky, skyRadius, stamp, strip, type Daylight, type Owned, type Planting, type StageView, type Taken } from './landscape.mts'
-import type { BackdropRow } from './backdrop.mts'
+import type { District } from './backdrop.mts'
 import type { CoverSet } from './cover.mts'
 
 export { fogFar, skyRadius, type StageView }
@@ -72,14 +72,49 @@ const palette = {
 }
 
 /**
- * Behind the streets and gardens ([backdrop](./backdrop.mts)): another row of town houses, then
- * lower farmhouses, then woods up to the fog.
+ * The town's four districts ([districts](./districts.mts)), behind and beside its streets and
+ * gardens ([backdrop](./backdrop.mts)): the gate gardens, the shop street, the pond with its red
+ * bridges, and the castle approach.
  */
-export const townBackdrop: readonly BackdropRow[] = [
-	{ shape: 'house', from: 24, to: 36, perTile: 2, colours: [palette.plaster, palette.roofs] },
-	{ shape: 'hut', from: 38, to: 62, perTile: 1.6, colours: [palette.timber, [0x7a6440, 0x6a5a3c]] },
-	{ shape: 'pine', from: 60, to: 135, perTile: 2.4, colours: [[0x4a3a2c], [0x2f4a2e, 0x35502e]] },
-	{ shape: 'broadleaf', from: 55, to: 135, perTile: 1.6, colours: [[0x4a3a2c], [0x4a6634, 0x8e3a24, 0x6a7a34]] },
+export const townDistricts: readonly District[] = [
+	{
+		name: 'Gate gardens',
+		rows: [
+			{ shape: 'torii', across: true, span: gardenHalfWidth * 2 + 0.6, zone: 'garden', from: 0, to: 0, perTile: 0.8, colours: [[0xa8261c], [0xa8261c], [0x2a2a2e, 0x8e2a22]] },
+			{ shape: 'torii', across: true, span: streetHalfWidth * 2 + 0.4, zone: 'street', from: 0, to: 0, perTile: 0.25, colours: [[0xa8261c], [0xa8261c], [0x2a2a2e, 0x8e2a22]] },
+			{ shape: 'lantern', from: gardenHalfWidth + 0.8, to: gardenHalfWidth + 1.4, zone: 'garden', perTile: 0.5, colours: [[0x8d877b, 0x9a958a], [0x8d877b, 0x7a756c]] },
+			{ shape: 'broadleaf', from: 24, to: 70, perTile: 3, colours: [[0x4a3a2c], [0xb8402a, 0xd0602e, 0x9e3a24, 0xc8862e]] },
+			{ shape: 'pine', from: 60, to: 135, perTile: 2, colours: [[0x4a3a2c], [0x2f4a2e, 0x35502e]] },
+		],
+	},
+	{
+		name: 'Shop street',
+		rows: [
+			{ shape: 'house', from: 24, to: 36, perTile: 2, colours: [palette.plaster, palette.roofs] },
+			{ shape: 'hut', from: 38, to: 62, perTile: 1.6, colours: [palette.timber, [0x7a6440, 0x6a5a3c]] },
+			{ shape: 'pine', from: 60, to: 135, perTile: 2.4, colours: [[0x4a3a2c], [0x2f4a2e, 0x35502e]] },
+			{ shape: 'broadleaf', from: 55, to: 135, perTile: 1.6, colours: [[0x4a3a2c], [0x4a6634, 0x8e3a24, 0x6a7a34]] },
+		],
+	},
+	{
+		name: 'Pond and red bridge',
+		rows: [
+			{ shape: 'lantern', from: gardenHalfWidth + 0.8, to: gardenHalfWidth + 1.4, zone: 'garden', perTile: 0.8, colours: [[0x8d877b, 0x9a958a], [0x8d877b, 0x7a756c]] },
+			{ shape: 'bridge', from: 22, to: 40, perTile: 0.9, colours: [[0x2d4a5a], [0xa8261c], [0xa8261c]] },
+			{ shape: 'pond', from: 28, to: 70, perTile: 0.7, colours: [[0x2d4a5a, 0x34566a]] },
+			{ shape: 'broadleaf', from: 24, to: 80, perTile: 2, colours: [[0x4a3a2c], [0x5e8a3a, 0x6f9440, 0x4f7a34]] },
+			{ shape: 'house', from: 55, to: 85, perTile: 0.6, colours: [palette.plaster, palette.roofs] },
+			{ shape: 'pine', from: 70, to: 135, perTile: 1.5, colours: [[0x4a3a2c], [0x2f4a2e, 0x35502e]] },
+		],
+	},
+	{
+		name: 'Castle approach',
+		rows: [
+			{ shape: 'wall', from: 22, to: 30, perTile: 1.6, colours: [[0x8d877b, 0x7a756c], [0xeae4d4, 0xddd5c2], [0x2e3036, 0x34404f]] },
+			{ shape: 'pagoda', from: 45, to: 90, perTile: 0.3, colours: [[0xeae4d4], [0x2e3036, 0x34404f]] },
+			{ shape: 'pine', from: 40, to: 135, perTile: 3, colours: [[0x4a3a2c], [0x2f4a2e, 0x35502e]] },
+		],
+	},
 ]
 
 /** What ninjas hide behind in town, on the street by the shops ([cover](./cover.mts)). */

@@ -63,7 +63,17 @@ In dev builds only, one button under the stages toggles them for the chosen quiz
 
 - 3D samurai, always centred, auto-running toward a torii. No input until an ambush.
 - HUD: **score** with best to beat, **life bar** (full = 100%, empty = the pass mark), and a **pause** button.
-- Progress bar: stage name and the questions done (`Castle town · 7 / 40`). A notch marks each quarter of the stage, and a block marks the boss. Passing a notch moves the stage's time of day on, fading over a few seconds: castle town goes from dusk to night as its shops and lanterns light up.
+- Progress bar: stage name and the questions done (`Castle town · 7 / 40`). A notch marks each quarter of the stage, and a block marks the boss. Passing a notch moves the stage's time of day on, fading over a few seconds: castle town goes from dusk to night as its shops and lanterns light up. Each quarter is also a **district** of its own, with its own backdrop and things by the way, fading into the next over about 90 m around the notch:
+
+  | Stage | Districts |
+  | --- | --- |
+  | Rice fields | village edge, open paddies, irrigation ponds, shrine grove (torii over the path) |
+  | Bamboo forest | deep grove, mossy stones, shrine path (torii and stone lanterns), forest edge |
+  | Mountain temple | foothill pines, rock garden, pagoda terrace, snowy heights |
+  | Castle town | gate gardens (torii, red maples), shop street, pond and red bridge, castle approach (walls and the keep) |
+  | Edo castle | retainers' quarter, castle gardens, pine walk, the keep's approach |
+
+  A district is at least 5 questions long, so a short test has fewer: 10 questions run through the first and the last, 15 through three. The stage's own streets, fields and paths stay the same throughout.
 
 ### 4 Ambush
 

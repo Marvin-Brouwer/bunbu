@@ -30,7 +30,7 @@ import type { GLTF } from 'three/addons/loaders/GLTFLoader.js'
 import { layBlocks } from './blocks.mts'
 import { Batch, chunkOf, placed, scatter, type Cursor } from './kit.mts'
 import { addAll, clearanceOf, cutAway, facingPath, fogFar, isFree, passTime, sky, skyRadius, stamp, strip, type Daylight, type Owned, type Planting, type StageView, type Taken } from './landscape.mts'
-import type { BackdropRow } from './backdrop.mts'
+import type { District } from './backdrop.mts'
 import type { CoverSet } from './cover.mts'
 import { beside, type Leg, type Path } from './path.mts'
 
@@ -39,16 +39,6 @@ const palette = {
 	gravel: 0xb8ad98,
 	water: 0x2d4a5a,
 }
-
-/**
- * Beyond the walls ([backdrop](./backdrop.mts)): the retainers' houses, white walls under dark
- * roofs, then pines up to the fog.
- */
-export const castleBackdrop: readonly BackdropRow[] = [
-	{ shape: 'house', from: 32, to: 50, perTile: 1.4, colours: [[0xeae4d4, 0xddd5c2], [0x2e3036, 0x34404f]] },
-	{ shape: 'pine', from: 40, to: 120, perTile: 4, colours: [[0x3a2e26], [0x2a3e2a, 0x30482e]] },
-	{ shape: 'broadleaf', from: 60, to: 135, perTile: 1, colours: [[0x3a2e26], [0x3e5430, 0x4a5a2e]] },
-]
 
 /** From sunset to a moonlit night. One light per quarter of the stage ({@link passTime}). */
 const daylight: Daylight = [
@@ -115,6 +105,46 @@ export const castleCover: CoverSet = {
 	aside: pathHalfWidth + 1.6,
 	colours: { crates: [0x8a6a46, 0x7a5a3a], barrels: [0x5a4030, 0x6a4a30], rock: [0x8d877b, 0x7a756c] },
 }
+
+/**
+ * The castle's four districts ([districts](./districts.mts)), beyond the walls
+ * ([backdrop](./backdrop.mts)): the retainers' quarter, the castle gardens, the pine walk and the
+ * keep's approach.
+ */
+export const castleDistricts: readonly District[] = [
+	{
+		name: "Retainers' quarter",
+		rows: [
+			{ shape: 'house', from: 32, to: 50, perTile: 1.4, colours: [[0xeae4d4, 0xddd5c2], [0x2e3036, 0x34404f]] },
+			{ shape: 'pine', from: 40, to: 120, perTile: 4, colours: [[0x3a2e26], [0x2a3e2a, 0x30482e]] },
+			{ shape: 'broadleaf', from: 60, to: 135, perTile: 1, colours: [[0x3a2e26], [0x3e5430, 0x4a5a2e]] },
+		],
+	},
+	{
+		name: 'Castle gardens',
+		rows: [
+			{ shape: 'bridge', from: 32, to: 60, perTile: 0.6, colours: [[0x2d4a5a], [0xa8261c], [0xa8261c]] },
+			{ shape: 'pond', from: 34, to: 70, perTile: 0.6, colours: [[0x2d4a5a, 0x34566a]] },
+			{ shape: 'broadleaf', from: 32, to: 90, perTile: 2, colours: [[0x3a2e26], [0xb8402a, 0xd0602e, 0x4a5a2e]] },
+			{ shape: 'pine', from: 60, to: 120, perTile: 2, colours: [[0x3a2e26], [0x2a3e2a, 0x30482e]] },
+		],
+	},
+	{
+		name: 'Pine walk',
+		rows: [
+			{ shape: 'lantern', from: pathHalfWidth + 0.6, to: pathHalfWidth + 0.9, perTile: 0.6, colours: [[0x8d877b, 0x9a958a], [0x8d877b, 0x7a756c]] },
+			{ shape: 'pine', from: 34, to: 120, perTile: 5, colours: [[0x3a2e26], [0x2a3e2a, 0x30482e]] },
+		],
+	},
+	{
+		name: "Keep's approach",
+		rows: [
+			{ shape: 'wall', from: 32, to: 48, perTile: 1.4, colours: [[0x8d877b, 0x7a756c], [0xeae4d4, 0xddd5c2], [0x2e3036, 0x34404f]] },
+			{ shape: 'pagoda', from: 60, to: 130, perTile: 0.2, colours: [[0xeae4d4], [0x2e3036, 0x34404f]] },
+			{ shape: 'pine', from: 48, to: 120, perTile: 2, colours: [[0x3a2e26], [0x2a3e2a, 0x30482e]] },
+		],
+	},
+]
 
 /** Which side the moat is on at `distance`: `1` right, `-1` left, `0` none. Down two straights a round. */
 export function moatSide(distance: number): -1 | 0 | 1 {

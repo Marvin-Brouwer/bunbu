@@ -30,7 +30,7 @@ import type { GLTF } from 'three/addons/loaders/GLTFLoader.js'
 import { layBlocks } from './blocks.mts'
 import { Batch, chunkOf, placed, scatter, type Cursor } from './kit.mts'
 import { addAll, clearanceOf, cutAway, facingPath, fogFar, isFree, passTime, sky, skyRadius, stamp, strip, type Daylight, type Owned, type Planting, type StageView, type Taken } from './landscape.mts'
-import type { BackdropRow } from './backdrop.mts'
+import type { District } from './backdrop.mts'
 import type { CoverSet } from './cover.mts'
 import { beside, type Leg, type Path } from './path.mts'
 
@@ -43,15 +43,6 @@ const palette = {
 	peaks: [0x6e7a86, 0x8a96a4, 0xa8b3c0],
 	snow: 0xf4f6fa,
 }
-
-/**
- * Up and down the mountainside past the rocks ([backdrop](./backdrop.mts)): pines, thinning out
- * into the mist.
- */
-export const mountainBackdrop: readonly BackdropRow[] = [
-	{ shape: 'pine', from: 32, to: 130, perTile: 3, colours: [[0x4a3a2c], [0x2f4a32, 0x355238, 0x3a5a3c]] },
-	{ shape: 'broadleaf', from: 40, to: 110, perTile: 0.8, colours: [[0x4a3a2c], [0x4a6634, 0x8e5a2a]] },
-]
 
 /** From a clear noon to the glow on the snow at sunset. One light per quarter of the stage ({@link passTime}). */
 const daylight: Daylight = [
@@ -111,6 +102,44 @@ export const mountainCover: CoverSet = {
 	aside: pathHalfWidth + 1.5,
 	colours: { rock: [palette.rock, 0x7a776f, 0x96938b], barrels: [0x5a4030] },
 }
+
+/**
+ * The mountain's four districts ([districts](./districts.mts)), up and down the mountainside past
+ * the rocks ([backdrop](./backdrop.mts)): the foothill pines, the rock garden, the pagoda terrace
+ * and the snowy heights.
+ */
+export const mountainDistricts: readonly District[] = [
+	{
+		name: 'Foothill pines',
+		rows: [
+			{ shape: 'pine', from: 32, to: 130, perTile: 3, colours: [[0x4a3a2c], [0x2f4a32, 0x355238, 0x3a5a3c]] },
+			{ shape: 'broadleaf', from: 40, to: 110, perTile: 0.8, colours: [[0x4a3a2c], [0x4a6634, 0x8e5a2a]] },
+		],
+	},
+	{
+		name: 'Rock garden',
+		rows: [
+			{ shape: 'rock', from: 30, to: 80, perTile: 2.5, colours: [[palette.rock, 0x7a776f, 0x96938b]] },
+			{ shape: 'lantern', from: pathHalfWidth + 1, to: pathHalfWidth + 1.6, perTile: 0.5, colours: [[0x8d877b, 0x9a958a], [0x8d877b, 0x7a756c]] },
+			{ shape: 'pine', from: 40, to: 130, perTile: 1.5, colours: [[0x4a3a2c], [0x2f4a32, 0x355238]] },
+		],
+	},
+	{
+		name: 'Pagoda terrace',
+		rows: [
+			{ shape: 'pagoda', from: 45, to: 100, perTile: 0.15, colours: [[0xa8261c, 0x8e2a22], [0x2a2a2e, 0x34404f]] },
+			{ shape: 'broadleaf', from: 32, to: 90, perTile: 1.2, colours: [[0x4a3a2c], [0xb8402a, 0xd0602e]] },
+			{ shape: 'pine', from: 32, to: 130, perTile: 2.5, colours: [[0x4a3a2c], [0x2f4a32, 0x355238]] },
+		],
+	},
+	{
+		name: 'Snowy heights',
+		rows: [
+			{ shape: 'pine', from: 32, to: 130, perTile: 3, colours: [[0x4a3a2c], [0xe8eef4, 0xd4dde6, 0x3a5a3c]] },
+			{ shape: 'rock', from: 30, to: 90, perTile: 1.5, colours: [[palette.snow, 0xd8dee6, palette.rock]] },
+		],
+	},
+]
 
 /** The torii of a tunnel: how far apart, and how tall, so their posts stand just off the steps. */
 const toriiEvery = 2.4

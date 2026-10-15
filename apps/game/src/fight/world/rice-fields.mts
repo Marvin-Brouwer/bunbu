@@ -35,7 +35,7 @@ import type { GLTF } from 'three/addons/loaders/GLTFLoader.js'
 import { layBlocks } from './blocks.mts'
 import { Batch, chunkOf, placed, scatter, type Cursor } from './kit.mts'
 import { addAll, clearanceOf, facingPath, fogFar, isFree, passTime, sky, skyRadius, stamp, strip, type Daylight, type Owned, type Planting, type StageView, type Taken } from './landscape.mts'
-import type { BackdropRow } from './backdrop.mts'
+import type { District } from './backdrop.mts'
 import type { CoverSet } from './cover.mts'
 import { beside, type Leg, type Path } from './path.mts'
 
@@ -47,17 +47,6 @@ const palette = {
 	/** Near mountains to far, bluer and paler with distance. */
 	mountains: [0x5d7a6a, 0x7d93a0, 0x9fb0c0],
 }
-
-/**
- * Past the paddies ([backdrop](./backdrop.mts)): groves and the odd farmstead, then low hills under
- * the mountains.
- */
-export const riceBackdrop: readonly BackdropRow[] = [
-	{ shape: 'broadleaf', from: 34, to: 75, perTile: 3, colours: [[0x5a4630], [0x5e8a3a, 0x6f9440, 0x4f7a34]] },
-	{ shape: 'pine', from: 40, to: 85, perTile: 1.2, colours: [[0x5a4630], [0x3f6a3a, 0x46703c]] },
-	{ shape: 'hut', from: 38, to: 75, perTile: 0.5, colours: [[0x7a5a3c, 0x8a6a46], [0xb09a62, 0xa08a58]] },
-	{ shape: 'hill', from: 75, to: 125, perTile: 0.6, colours: [[0x6f8a4a, 0x7a9254, 0x66804a]] },
-]
 
 /** From late morning to a golden evening. One light per quarter of the stage ({@link passTime}). */
 const daylight: Daylight = [
@@ -113,6 +102,49 @@ export const riceCover: CoverSet = {
 	aside: pathHalfWidth + 1.2,
 	colours: { bales: [0xc9b06a, 0xb89f5c, 0xd4bd78], cart: [0xd8c8a0, 0xa08a64] },
 }
+
+/**
+ * The fields' four districts ([districts](./districts.mts)), past the paddies
+ * ([backdrop](./backdrop.mts)): the village edge, the open paddies, the irrigation ponds and the
+ * shrine grove.
+ */
+export const riceDistricts: readonly District[] = [
+	{
+		name: 'Village edge',
+		rows: [
+			{ shape: 'hut', from: 34, to: 62, perTile: 1.3, colours: [[0x7a5a3c, 0x8a6a46], [0xb09a62, 0xa08a58]] },
+			{ shape: 'broadleaf', from: 34, to: 75, perTile: 2, colours: [[0x5a4630], [0x5e8a3a, 0xb8402a, 0x6f9440]] },
+			{ shape: 'hill', from: 75, to: 125, perTile: 0.6, colours: [[0x6f8a4a, 0x7a9254, 0x66804a]] },
+		],
+	},
+	{
+		name: 'Open paddies',
+		rows: [
+			{ shape: 'broadleaf', from: 34, to: 75, perTile: 3, colours: [[0x5a4630], [0x5e8a3a, 0x6f9440, 0x4f7a34]] },
+			{ shape: 'pine', from: 40, to: 85, perTile: 1.2, colours: [[0x5a4630], [0x3f6a3a, 0x46703c]] },
+			{ shape: 'hut', from: 38, to: 75, perTile: 0.5, colours: [[0x7a5a3c, 0x8a6a46], [0xb09a62, 0xa08a58]] },
+			{ shape: 'hill', from: 75, to: 125, perTile: 0.6, colours: [[0x6f8a4a, 0x7a9254, 0x66804a]] },
+		],
+	},
+	{
+		name: 'Irrigation ponds',
+		rows: [
+			{ shape: 'pond', from: 32, to: 70, perTile: 1, colours: [[0x2d4a5a, 0x34566a]] },
+			{ shape: 'bamboo', from: 40, to: 80, perTile: 2, colours: [[0x7fa046, 0x8aa84e]] },
+			{ shape: 'broadleaf', from: 40, to: 80, perTile: 1, colours: [[0x5a4630], [0x5e8a3a, 0x6f9440]] },
+			{ shape: 'hill', from: 75, to: 125, perTile: 0.6, colours: [[0x6f8a4a, 0x7a9254, 0x66804a]] },
+		],
+	},
+	{
+		name: 'Shrine grove',
+		rows: [
+			{ shape: 'torii', across: true, span: pathHalfWidth * 2 + 0.4, from: 0, to: 0, perTile: 0.4, colours: [[0xa8261c], [0xa8261c], [0x2a2a2e, 0x8e2a22]] },
+			{ shape: 'lantern', from: pathHalfWidth + 0.4, to: pathHalfWidth + 0.7, perTile: 0.4, colours: [[0x8d877b, 0x9a958a], [0x8d877b, 0x7a756c]] },
+			{ shape: 'pine', from: 34, to: 90, perTile: 3, colours: [[0x5a4630], [0x3f6a3a, 0x46703c]] },
+			{ shape: 'hill', from: 75, to: 125, perTile: 0.6, colours: [[0x6f8a4a, 0x7a9254, 0x66804a]] },
+		],
+	},
+]
 
 /** A paddy's size along and across the path, and the dike between paddies. */
 const paddySize = 11
