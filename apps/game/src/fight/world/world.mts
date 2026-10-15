@@ -55,7 +55,7 @@ export function createRunWorld(game: RunGame, viewport: Viewport, roomBelow: () 
 	const samuraiModel = loadModel('samurai')
 	const ninjaModel = loadModel('ninja')
 	// The stage's own world, after the figures, so the figures' models are asked for first.
-	const { path, view: stage } = createStageWorld(selection.value.stage, scene)
+	const { path, view: stage, covers } = createStageWorld(selection.value.stage, scene)
 
 	const parts = createFigureParts()
 	const fighters = new Group()
@@ -180,7 +180,7 @@ export function createRunWorld(game: RunGame, viewport: Viewport, roomBelow: () 
 
 			// The ninjas first: they keep the mark each came from after the ambush's options are gone.
 			// They wind up to charge just before the time runs out.
-			ninjas.draw(game.ninjas.value.active, ambush.options, ambush.kind, view.frame, delta, worldDelta, ambush.open && ambush.seconds > 0 ? ambush.secondsLeft : undefined)
+			ninjas.draw(game.ninjas.value.active, ambush.options, ambush.kind, view.frame, delta, worldDelta, ambush.open && ambush.seconds > 0 ? ambush.secondsLeft : undefined, covers(run.distance))
 
 			// He runs along the path, and turns toward the ninja he strikes, blocks or is hit by, who stands square
 			// to the camera's way ahead.

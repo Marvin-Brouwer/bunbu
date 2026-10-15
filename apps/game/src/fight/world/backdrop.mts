@@ -56,8 +56,8 @@ type Item = {
 	readonly parts: readonly { readonly matrix: Matrix4; readonly colour: number }[]
 }
 
-/** A random number in `[0, 1)` from `seed`, for one tile: the same tile comes out the same in a run. */
-function randomOf(seed: number): () => number {
+/** Random numbers in `[0, 1)` from `seed`, for one tile: the same tile comes out the same in a run. */
+export function randomOf(seed: number): () => number {
 	let state = seed >>> 0
 	return () => {
 		state = (state + 0x6d2b79f5) >>> 0

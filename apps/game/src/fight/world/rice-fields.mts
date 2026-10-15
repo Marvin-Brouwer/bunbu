@@ -36,6 +36,7 @@ import { layBlocks } from './blocks.mts'
 import { Batch, chunkOf, placed, scatter, type Cursor } from './kit.mts'
 import { addAll, clearanceOf, facingPath, fogFar, isFree, passTime, sky, skyRadius, stamp, strip, type Daylight, type Owned, type Planting, type StageView, type Taken } from './landscape.mts'
 import type { BackdropRow } from './backdrop.mts'
+import type { CoverSet } from './cover.mts'
 import { beside, type Leg, type Path } from './path.mts'
 
 const palette = {
@@ -105,6 +106,14 @@ export const riceRound: readonly Leg[] = [
 
 /** Half the width of the dirt path. */
 const pathHalfWidth = 1.5
+
+/** What ninjas hide behind in the fields: stooks of straw and carts on the dikes ([cover](./cover.mts)). */
+export const riceCover: CoverSet = {
+	kinds: ['bales', 'bales', 'cart'],
+	aside: pathHalfWidth + 1.2,
+	colours: { bales: [0xc9b06a, 0xb89f5c, 0xd4bd78], cart: [0xd8c8a0, 0xa08a64] },
+}
+
 /** A paddy's size along and across the path, and the dike between paddies. */
 const paddySize = 11
 const dike = 0.9

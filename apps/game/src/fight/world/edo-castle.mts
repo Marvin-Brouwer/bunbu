@@ -31,6 +31,7 @@ import { layBlocks } from './blocks.mts'
 import { Batch, chunkOf, placed, scatter, type Cursor } from './kit.mts'
 import { addAll, clearanceOf, cutAway, facingPath, fogFar, isFree, passTime, sky, skyRadius, stamp, strip, type Daylight, type Owned, type Planting, type StageView, type Taken } from './landscape.mts'
 import type { BackdropRow } from './backdrop.mts'
+import type { CoverSet } from './cover.mts'
 import { beside, type Leg, type Path } from './path.mts'
 
 const palette = {
@@ -107,6 +108,13 @@ const wallFront = 1.6
 const wallEvery = 5.8
 /** How far into a round the gatehouse stands. */
 const gateAt = 6
+
+/** What ninjas hide behind in the castle grounds: supplies by the way, and boulders ([cover](./cover.mts)). */
+export const castleCover: CoverSet = {
+	kinds: ['crates', 'barrels', 'rock'],
+	aside: pathHalfWidth + 1.6,
+	colours: { crates: [0x8a6a46, 0x7a5a3a], barrels: [0x5a4030, 0x6a4a30], rock: [0x8d877b, 0x7a756c] },
+}
 
 /** Which side the moat is on at `distance`: `1` right, `-1` left, `0` none. Down two straights a round. */
 export function moatSide(distance: number): -1 | 0 | 1 {

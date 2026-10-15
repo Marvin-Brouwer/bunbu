@@ -3,7 +3,10 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { clashSeconds, fleeSideOf, motionOf } from './ninjas.mts'
+import { coverSpotsAt } from './cover.mts'
+import { clashSeconds, coverOf, fleeSideOf, motionOf } from './ninjas.mts'
+import { createPath, townRound } from './path.mts'
+import { spotOf } from './placement.mts'
 
 describe('a ninja in the outcome', () => {
 	it('lunges in at once to land its hit', () => {
@@ -60,5 +63,28 @@ describe('a fleeing ninja', () => {
 	it('picks a side by its id when it stands in the middle', () => {
 		expect(fleeSideOf(0, 2)).toBe(1)
 		expect(fleeSideOf(0.1, 3)).toBe(-1)
+	})
+})
+
+describe('a ninja coming in', () => {
+	const path = createPath(townRound)
+	// Half way down the first street, facing -z: right is +x, ahead is -z.
+	const frame = { ...path.at(30), heading: 0 }
+	const covers = coverSpotsAt(path, 30, 3.3)
+
+	it('runs out from behind the cover on its side, the nearest', () => {
+		expect(coverOf(spotOf('left', 0, 0), 1, frame, covers)).toMatchObject({ x: expect.closeTo(-3.3) as number, z: expect.closeTo(frame.z - 9) as number })
+		expect(coverOf(spotOf('up-right', 1, 0), 1, frame, covers)?.x).toBeCloseTo(3.3)
+	})
+
+	it('picks a side by its id when it comes from straight ahead', () => {
+		expect(coverOf(spotOf('up', 0, 0), 0, frame, covers)?.x).toBeCloseTo(3.3)
+		expect(coverOf(spotOf('up', 0, 0), 1, frame, covers)?.x).toBeCloseTo(-3.3)
+	})
+
+	it('has no cover when it creeps up from behind, or when there is none', () => {
+		expect(coverOf(spotOf('down', 0, 0), 0, frame, covers)).toBeUndefined()
+		expect(coverOf(spotOf('down-left', 0, 0), 0, frame, covers)).toBeUndefined()
+		expect(coverOf(spotOf('left', 0, 0), 0, frame, [])).toBeUndefined()
 	})
 })

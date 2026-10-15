@@ -16,6 +16,7 @@ import { marks } from '../../_shared/state/ambush.mts'
 import { chargeOrder, type Ninja, type NinjaPose } from '../state/ninjas.mts'
 import type { Body } from '../../_shared/world/character.mts'
 import type { ViewFrame } from './camera.mts'
+import type { CoverSpot } from './cover.mts'
 import type { ClashSpot, SlainSpot } from './effects.mts'
 import { beside } from './path.mts'
 import { lungeOf, spotOf } from './placement.mts'
@@ -88,6 +89,8 @@ type Shown = {
 	targetApproach: number
 	/** `0` while entering from farther along the path, `1` once at the normal starting spot. */
 	entrance: number
+	/** The cover it runs out from behind, in the world, if there is one on its side ahead. */
+	cover: CoverSpot | undefined
 	/** Seconds since the store last changed this ninja's pose. */
 	time: number
 	/** Where the samurai was when this ninja was beaten, so it stays on that spot as he runs on. */
@@ -126,6 +129,11 @@ const markById = (id: number): Mark => marks[(id * 2) % marks.length] ?? 'up'
 export function fleeSideOf(x: number, id: number): 1 | -1 {
 	if (Math.abs(x) > 0.3) return x > 0 ? 1 : -1
 	return id % 2 === 0 ? 1 : -1
+}
+
+/** `amount` of the way out from behind `cover` to `to`, in the world. */
+function outOf(cover: CoverSpot, to: { x: number; z: number }, amount: number): { x: number; z: number } {
+	return { x: cover.x + (to.x - cover.x) * amount, z: cover.z + (to.z - cover.z) * amount }
 }
 
 /** The angle from `from` to `to`, the short way round. */
@@ -190,9 +198,10 @@ export type NinjasView = {
 	/**
 	 * Makes the figures match `active`. `delta` is real time, `worldDelta` slowed down, `frame`
 	 * where the samurai is and the way ahead, and the seconds until the time runs out (`undefined`
-	 * without a time limit).
+	 * without a time limit). A ninja that comes in runs out from behind one of `covers`, the
+	 * ambush's ([cover](./cover.mts)).
 	 */
-	draw: (active: readonly Ninja[], options: readonly AmbushOption[], kind: AmbushKind, frame: ViewFrame, delta: number, worldDelta: number, secondsLeft: number | undefined) => void
+	draw: (active: readonly Ninja[], options: readonly AmbushOption[], kind: AmbushKind, frame: ViewFrame, delta: number, worldDelta: number, secondsLeft: number | undefined, covers?: readonly CoverSpot[]) => void
 	/** Swaps every figure's body for one made by `make`, for when the real model has loaded. */
 	remake: (make: () => Body) => void
 	/** The mark the ninja with `id` was last drawn at, for the samurai to turn toward. */
@@ -202,6 +211,30 @@ export type NinjasView = {
 	/** Where blades met on a block, and how long ago, for the white flash. */
 	clashes: () => ClashSpot[]
 	dispose: () => void
+}
+
+/**
+ * The cover a ninja starting at `start` (round the samurai at `frame`, the way ahead along `-z`)
+ * runs out from behind: of the `covers` on its side ahead of him, the one nearest its start. One
+ * that comes from behind the camera, or straight ahead, has none, or picks a side by its `id`.
+ */
+export function coverOf(start: { x: number; z: number }, id: number, frame: ViewFrame, covers: readonly CoverSpot[]): CoverSpot | undefined {
+	if (start.z >= 0) return undefined
+	const side = fleeSideOf(start.x, id)
+	const sin = Math.sin(frame.heading)
+	const cos = Math.cos(frame.heading)
+	let best: { cover: CoverSpot; away: number } | undefined
+	for (const cover of covers) {
+		const dx = cover.x - frame.x
+		const dz = cover.z - frame.z
+		// The cover round the samurai: how far to his right, and how far ahead ({@link beside} undone).
+		const right = dx * cos - dz * sin
+		const ahead = -dx * sin - dz * cos
+		if (Math.sign(right) !== side || ahead <= 0) continue
+		const away = Math.hypot(right - start.x, ahead + start.z)
+		if (best === undefined || away < best.away) best = { cover, away }
+	}
+	return best?.cover
 }
 
 /** `parent` is in world space, and `make` makes a ninja's body. */
@@ -218,22 +251,24 @@ export function createNinjasView(parent: Group, make: () => Body): NinjasView {
 	}
 
 	return {
-		draw(active, options, kind, frame, delta, worldDelta, secondsLeft) {
+		draw(active, options, kind, frame, delta, worldDelta, secondsLeft, covers = []) {
 			cycle += worldDelta * creepCycle
 			const charging = chargeOrder(active).map((ninja) => ninja.id)
 
 			for (const ninja of active) {
 				let entry = shown.get(ninja.id)
 				if (entry === undefined) {
+					const mark = markOf(ninja, options, kind) ?? (kind === 'yes-no' ? yesNoSpotOf(ninja.id) : markById(ninja.id))
 					entry = {
 						body: maker(),
 						pose: ninja.pose,
-						mark: kind === 'yes-no' ? yesNoSpotOf(ninja.id) : markById(ninja.id),
+						mark,
 						sequence: ninja.sequence,
 						time: 0,
 						approach: ninja.approach,
 						targetApproach: ninja.approach,
 						entrance: 0,
+						cover: coverOf(spotOf(mark, ninja.wave, 0), ninja.id, frame, covers),
 						beatenAt: undefined,
 						clash: { x: 0, z: 0 },
 					}
@@ -268,8 +303,9 @@ export function createNinjasView(parent: Group, make: () => Body): NinjasView {
 				if (!beaten.has(ninja.pose) && motion.pose !== 'fleeing') entry.beatenAt = undefined
 				else entry.beatenAt ??= frame
 				const spot = spotOf(entry.mark, ninja.wave, motion.approach)
-				// Enter from farther out the same way. It can disappear behind a tree or house and then
-				// run out into view, instead of appearing at the ambush's first visible position.
+				// Enter from farther out the same way, or from behind its cover. From farther out it can
+				// disappear behind a tree or house and then run out into view, instead of appearing at
+				// the ambush's first visible position.
 				const far = spotOf(entry.mark, ninja.wave, 0)
 				const length = Math.hypot(far.x, far.z)
 				const entrance = length > 0
@@ -282,7 +318,7 @@ export function createNinjasView(parent: Group, make: () => Body): NinjasView {
 				// Around the samurai where he is, or where he was when this ninja was beaten: it stays on
 				// that spot as he runs on.
 				const samurai = entry.beatenAt ?? frame
-				const at = beside(samurai, visible.x, -visible.z)
+				const at = entry.cover === undefined || entry.entrance >= 1 ? beside(samurai, visible.x, -visible.z) : outOf(entry.cover, beside(samurai, spot.x, -spot.z), entry.entrance)
 				const { root } = entry.body
 				root.position.set(at.x, motion.hop, at.z)
 				// Facing the samurai: a figure faces -z when not turned.

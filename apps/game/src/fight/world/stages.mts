@@ -8,19 +8,26 @@ import type { Scene } from 'three'
 import type { GLTF } from 'three/addons/loaders/GLTFLoader.js'
 import { loadModel } from '../../canvas/models.mts'
 import type { Stage } from '../../_shared/state/selection.mts'
+import { metresPerAmbush } from '../flows/run.mts'
 import { createBackdrop, type BackdropRow } from './backdrop.mts'
-import { createCastleTown, townBackdrop } from './castle-town.mts'
+import { coverSpotsAt, createCover, type CoverSet, type CoverSpot } from './cover.mts'
+import { createCastleTown, townBackdrop, townCover } from './castle-town.mts'
 import type { Owned, StageView } from './landscape.mts'
 import { createPath, townRound, type Path } from './path.mts'
-import { bambooBackdrop, bambooRound, createBambooForest } from './bamboo-forest.mts'
-import { castleBackdrop, castleRound, createEdoCastle } from './edo-castle.mts'
-import { createMountainTemple, mountainBackdrop, mountainRound } from './mountain-temple.mts'
-import { createRiceFields, riceBackdrop, riceRound } from './rice-fields.mts'
+import { bambooBackdrop, bambooCover, bambooRound, createBambooForest } from './bamboo-forest.mts'
+import { castleBackdrop, castleCover, castleRound, createEdoCastle } from './edo-castle.mts'
+import { createMountainTemple, mountainBackdrop, mountainCover, mountainRound } from './mountain-temple.mts'
+import { createRiceFields, riceBackdrop, riceCover, riceRound } from './rice-fields.mts'
 
 export type StageWorld = {
 	readonly path: Path
 	readonly view: StageView
+	/** Where the covers of the ambush nearest `distance` stand, for its ninjas to run out from behind. */
+	readonly covers: (distance: number) => readonly CoverSpot[]
 }
+
+/** A stage's own world, before the backdrop and the covers are put round it. */
+type OwnWorld = Pick<StageWorld, 'path' | 'view'>
 
 /** The models `names`, each one there only if it loaded: a stage stands without the ones that fail. */
 function loadSome<Name extends string>(names: Readonly<Record<Name, string>>): Promise<Partial<Record<Name, GLTF>>> {
@@ -35,14 +42,18 @@ function loadSome<Name extends string>(names: Readonly<Record<Name, string>>): P
 	})
 }
 
+/** A seed for what is laid out at random, new every run. */
+const newSeed = () => Math.floor(Math.random() * 2 ** 31)
+
 /**
- * Puts `rows` of backdrop behind a stage's own scenery ([backdrop](./backdrop.mts)), laid out
- * differently every run.
+ * Puts `rows` of backdrop behind a stage's own scenery ([backdrop](./backdrop.mts)) and `cover` by
+ * its path for the ninjas to hide behind ([cover](./cover.mts)), laid out differently every run.
  */
-function withBackdrop(scene: Scene, { path, view }: StageWorld, rows: readonly BackdropRow[]): StageWorld {
+function around(scene: Scene, { path, view }: OwnWorld, rows: readonly BackdropRow[], cover: CoverSet): StageWorld {
 	const owned: Owned = { geometries: [], materials: [], textures: [] }
-	const backdrop = createBackdrop(path, rows, Math.floor(Math.random() * 2 ** 31), owned)
-	scene.add(backdrop.group)
+	const backdrop = createBackdrop(path, rows, newSeed(), owned)
+	const covers = createCover(path, cover, metresPerAmbush, newSeed(), owned)
+	scene.add(backdrop.group, covers.group)
 	return {
 		path,
 		view: {
@@ -50,39 +61,42 @@ function withBackdrop(scene: Scene, { path, view }: StageWorld, rows: readonly B
 			follow(x, z, distance) {
 				view.follow(x, z, distance)
 				backdrop.follow(distance)
+				covers.follow(distance)
 			},
 			dispose() {
 				view.dispose()
 				backdrop.dispose()
+				covers.dispose()
 				for (const made of owned.geometries) made.dispose()
 				for (const made of owned.materials) made.dispose()
 			},
 		},
+		covers: (distance) => coverSpotsAt(path, Math.max(1, Math.round(distance / metresPerAmbush)) * metresPerAmbush, cover.aside),
 	}
 }
 
 /**
  * Lays out `stage`'s world in `scene`: a path that goes on for as long as the run does, the stage's
  * scenery along it, in blocks stitched together ahead of the samurai ([blocks](./blocks.mts)), and
- * the backdrop behind it.
+ * the backdrop behind it and the covers beside it.
  */
 export function createStageWorld(stage: Stage, scene: Scene): StageWorld {
 	if (stage === 'rice-fields') {
 		const path = createPath(riceRound)
-		return withBackdrop(scene, { path, view: createRiceFields(scene, path, loadSome({ maple: 'maple', kit: 'stage-kit' })) }, riceBackdrop)
+		return around(scene, { path, view: createRiceFields(scene, path, loadSome({ maple: 'maple', kit: 'stage-kit' })) }, riceBackdrop, riceCover)
 	}
 	if (stage === 'bamboo-forest') {
 		const path = createPath(bambooRound)
-		return withBackdrop(scene, { path, view: createBambooForest(scene, path, loadSome({ kit: 'stage-kit', temple: 'temple-kit' })) }, bambooBackdrop)
+		return around(scene, { path, view: createBambooForest(scene, path, loadSome({ kit: 'stage-kit', temple: 'temple-kit' })) }, bambooBackdrop, bambooCover)
 	}
 	if (stage === 'mountain-temple') {
 		const path = createPath(mountainRound)
-		return withBackdrop(scene, { path, view: createMountainTemple(scene, path, loadSome({ temple: 'temple-kit', kit: 'stage-kit' })) }, mountainBackdrop)
+		return around(scene, { path, view: createMountainTemple(scene, path, loadSome({ temple: 'temple-kit', kit: 'stage-kit' })) }, mountainBackdrop, mountainCover)
 	}
 	if (stage === 'edo-castle') {
 		const path = createPath(castleRound)
-		return withBackdrop(scene, { path, view: createEdoCastle(scene, path, loadSome({ kit: 'stage-kit', temple: 'temple-kit' })) }, castleBackdrop)
+		return around(scene, { path, view: createEdoCastle(scene, path, loadSome({ kit: 'stage-kit', temple: 'temple-kit' })) }, castleBackdrop, castleCover)
 	}
 	const path = createPath(townRound)
-	return withBackdrop(scene, { path, view: createCastleTown(scene, path, loadSome({ maple: 'maple', torii: 'torii', bamboo: 'bamboo', kit: 'town-kit' })) }, townBackdrop)
+	return around(scene, { path, view: createCastleTown(scene, path, loadSome({ maple: 'maple', torii: 'torii', bamboo: 'bamboo', kit: 'town-kit' })) }, townBackdrop, townCover)
 }
