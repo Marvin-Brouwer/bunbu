@@ -1,8 +1,12 @@
 /**
  * 2 · Stage: the five stages, one to choose ([2 Fight setup](../../../../../docs/design/screens.md#2-fight-setup)),
- * each with how far the player got on it with the chosen quiz. A stage that is still locked on the
- * chosen quiz ([stages](../../../../../docs/design/gameplay.md#stages)) has a lock over its number and
- * says which stage unlocks it. The stages without a world yet are shown but can't be chosen.
+ * as a carousel of cards with a picture of each stage, and how far the player got on it with the
+ * chosen quiz. A stage that is still locked on the chosen quiz
+ * ([stages](../../../../../docs/design/gameplay.md#stages)) has a lock over its number and its
+ * picture in ink-wash grey, and says which stage unlocks it. The stages without a world yet are
+ * shown but can't be chosen.
+ *
+ * The pictures are in `public/stages/`, taken by `scripts/stage-pictures.mts`.
  */
 
 import { component } from '@rooted/components'
@@ -37,6 +41,17 @@ export function keepChosenUnlocked(): void {
 	if (!unlocked(selection.value.stage)) selection.value.chooseStage(stages.findLast(unlocked) ?? stages[0])
 }
 
+/** Scrolls the card of `input` to the middle of the carousel, its neighbours peeking in either side. */
+function centre(input: Element, behavior: ScrollBehavior = 'smooth'): void {
+	input.closest('label')?.scrollIntoView({ behavior, block: 'nearest', inline: 'center' })
+}
+
+/** The chosen card of `carousel` in the middle, at once: as it was left. */
+function showChosen(carousel: HTMLElement): void {
+	const chosen = carousel.querySelector('input:checked')
+	if (chosen !== null) requestAnimationFrame(() => { centre(chosen, 'instant') })
+}
+
 export const StagePicker = component({
 	name: 'stage-picker',
 	styles,
@@ -62,10 +77,18 @@ export const StagePicker = component({
 								checked: selection.value.stage === stage,
 								disabled: locked || !builtStages.has(stage),
 								on: {
-									change() {
+									change(event) {
 										selection.value.chooseStage(stage)
+										centre(event.currentTarget)
 									},
 								},
+							}),
+							element('img', {
+								classes: styles.stagePicture,
+								src: `${import.meta.env.BASE_URL}stages/${stage}.jpg`,
+								alt: '',
+								loading: 'lazy',
+								decoding: 'async',
 							}),
 							create(ChoiceStamp),
 							element('span', {
@@ -115,12 +138,12 @@ export const StagePicker = component({
 				}),
 			})
 		)
-		show()
+		showChosen(show())
 
 		// Unlocking or locking from the dev tools changes the stages while they show.
 		stageResults.on('change', signal, () => {
 			keepChosenUnlocked()
-			show()
+			showChosen(show())
 		})
 	},
 })
