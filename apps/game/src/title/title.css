@@ -32,6 +32,8 @@
 	font-size: 3.4rem;
 	font-weight: 700;
 	line-height: 1;
+	/* Side by side, also on the narrowest phone. */
+	white-space: nowrap;
 }
 
 .words {
@@ -75,6 +77,34 @@
 .chosen {
 	display: grid;
 	gap: 0.75rem;
+}
+
+/*
+ * A short screen: a smaller name and a tighter menu, so the gap between them keeps room for the
+ * samurai (src/title/framing.mts).
+ */
+@media (max-height: 700px) {
+	.title {
+		padding-block: max(0.75rem, env(safe-area-inset-top)) max(0.75rem, env(safe-area-inset-bottom));
+	}
+
+	.name {
+		gap: 0.7rem;
+		padding: 0.5rem 0.9rem;
+	}
+
+	.kanji {
+		font-size: 2.4rem;
+	}
+
+	.bunbu {
+		font-size: 1.5rem;
+	}
+
+	.menu,
+	.chosen {
+		gap: 0.5rem;
+	}
 }
 
 /* Panels: the name and the chosen quiz. They only tell, so they have no frame. */

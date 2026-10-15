@@ -10,7 +10,8 @@
     "build:dev": "vite build --mode development -- --no-mangle --no-pwa",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "e2e": "playwright test"
   },
   "dependencies": {
     "@bunbu/data": "workspace:*",

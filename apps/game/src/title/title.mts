@@ -6,6 +6,7 @@
  */
 
 import { component, environment } from '@rooted/components'
+import { resizeObserver } from '@rooted/observers'
 import { href, Link } from '@rooted/router'
 import { CreditsRoute, HowToPlayRoute } from '../about/_routes.mts'
 import { DojoRoute } from '../dojo/_routes.mts'
@@ -18,6 +19,7 @@ import { library } from '../_shared/storage/library.mts'
 import { show } from '../canvas/stage.mts'
 import { ChosenQuizCard } from './chosen-quiz-card.mts'
 import { UpdateNotice } from './update-notice.mts'
+import type { Gap } from './framing.mts'
 import { createTitleWorld } from './world.mts'
 import styles from './title.css'
 
@@ -40,67 +42,69 @@ export const Title = component({
 			)
 		}
 
-		append(
+		const name = element('h1', {
+			classes: [
+				styles.panel,
+				styles.name,
+			],
+			children: [
+				element('span', {
+					classes: styles.kanji,
+					lang: 'ja',
+					textContent: '文武',
+				}),
+				element('span', {
+					classes: styles.words,
+					children: [
+						element('span', {
+							classes: styles.bunbu,
+							textContent: 'Bunbu',
+						}),
+						element('span', {
+							classes: styles.scholar,
+							textContent: 'SHOGUN SCHOLAR',
+						}),
+					],
+				}),
+			],
+		})
+		const menu = element('nav', {
+			classes: styles.menu,
+			children: [
+				create(UpdateNotice),
+				chosen,
+				element('div', {
+					classes: styles.row,
+					children: [
+						create(MenuButton, {
+							label: 'Dojo',
+							href: href.for(DojoRoute),
+						}),
+						create(MenuButton, {
+							label: 'How to play',
+							href: href.for(HowToPlayRoute),
+						}),
+						create(MenuButton, {
+							label: 'Settings',
+							href: href.for(SettingsRoute),
+						}),
+					],
+				}),
+				element('div', {
+					classes: styles.pages,
+					children: create(Link, {
+						href: href.for(CreditsRoute),
+						children: 'About the Bunbu app',
+					}),
+				}),
+			],
+		})
+		const title = append(
 			element('section', {
 				classes: styles.title,
 				children: [
-					element('h1', {
-						classes: [
-							styles.panel,
-							styles.name,
-						],
-						children: [
-							element('span', {
-								classes: styles.kanji,
-								lang: 'ja',
-								textContent: '文武',
-							}),
-							element('span', {
-								classes: styles.words,
-								children: [
-									element('span', {
-										classes: styles.bunbu,
-										textContent: 'Bunbu',
-									}),
-									element('span', {
-										classes: styles.scholar,
-										textContent: 'SHOGUN SCHOLAR',
-									}),
-								],
-							}),
-						],
-					}),
-					element('nav', {
-						classes: styles.menu,
-						children: [
-							create(UpdateNotice),
-							chosen,
-							element('div', {
-								classes: styles.row,
-								children: [
-									create(MenuButton, {
-										label: 'Dojo',
-										href: href.for(DojoRoute),
-									}),
-									create(MenuButton, {
-										label: 'How to play',
-										href: href.for(HowToPlayRoute),
-									}),
-									create(MenuButton, {
-										label: 'Settings',
-										href: href.for(SettingsRoute),
-									}),
-								],
-							}),
-							element('div', {
-								classes: styles.pages,
-								children: create(Link, {
-									href: href.for(CreditsRoute),
-									children: 'About the Bunbu app',
-								}),
-							}),
-						],
-					}),
+					name,
+					menu,
 				],
 			})
 		)
@@ -108,7 +112,31 @@ export const Title = component({
 		showChosen()
 		selection.on('change', signal, showChosen)
 		library.on('change', signal, showChosen)
-		show(createTitleWorld, signal)
+
+		// The gap the name and the menu leave for the samurai, which the world frames him in. Also
+		// on the screen as `--gap-top` and `--gap-height`, so tests can see it.
+		let gap: Gap = { top: 0, height: window.innerHeight }
+		let pending = 0
+		const measure = () => {
+			const top = name.getBoundingClientRect().bottom
+			const bottom = Math.min(menu.getBoundingClientRect().top, window.innerHeight)
+			gap = { top, height: Math.max(0, bottom - top) }
+			title.style.setProperty('--gap-top', `${gap.top}px`)
+			title.style.setProperty('--gap-height', `${gap.height}px`)
+		}
+		resizeObserver({
+			targets: [title, name, menu],
+			signal,
+			on: {
+				// On the next frame, not in the observer's callback, as the run does.
+				resize() {
+					cancelAnimationFrame(pending)
+					pending = requestAnimationFrame(measure)
+				},
+			},
+		})
+		signal.addEventListener('abort', () => { cancelAnimationFrame(pending) }, { once: true })
+		show((viewport) => createTitleWorld(viewport, () => gap), signal)
 	},
 })
 
