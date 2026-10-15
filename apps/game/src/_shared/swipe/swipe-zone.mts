@@ -20,6 +20,7 @@
 
 import { component } from '@rooted/components'
 import { buzz, buzzes } from '../haptics.mts'
+import { play } from '../sound/sound.mts'
 import { ambushConfig } from '../state/ambush-time.mts'
 import { timeUp, type Ambush, type AmbushState, type Mark } from '../state/ambush.mts'
 import { AnswerSheet } from './answer-sheet.mts'
@@ -151,6 +152,7 @@ export const SwipeZone = component<SwipeZoneOptions>({
 			if (mark === undefined || !current.open || timeUp(current) || isPicked(current, mark)) return
 			current.pick(mark)
 			buzz(buzzes.pick)
+			play('paper')
 			const next = ambush.value
 			if (strikesAtOnce(next.kind) || (strikesWhenAnswered(next) && answered(next))) strike()
 		}
