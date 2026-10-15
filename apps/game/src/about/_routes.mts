@@ -1,11 +1,19 @@
 import { route } from '@rooted/router/routes'
 
-/** How to play, from the title: the rules in a page, written in Markdown and rendered at build time. */
+/**
+ * How to play, from the title: a run on video (`scripts/how-to-play-video.mts`), then the rules in
+ * a page, written in Markdown and rendered at build time.
+ */
 export const HowToPlayRoute = route`/how-to-play/`({
 	async resolve({ create }) {
 		const [{ Page }, source] = await Promise.all([import('./page.mts'), import('./how-to-play.md')])
 		return create(Page, {
 			source,
+			video: {
+				src: 'guide/how-to-play.webm',
+				poster: 'guide/how-to-play.jpg',
+				caption: 'A run on a sample quiz, with every kind of question.',
+			},
 		})
 	},
 	seo: { title: 'How to play' },
