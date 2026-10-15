@@ -3,10 +3,11 @@
  * dirt path along the dikes between flooded paddies, young rice in rows, farmhouses under thick
  * thatch with red maples beside them, scarecrows in the fields, and mountains all round.
  *
- * Laid out once, when the run starts, in stretches of path that are each their own
- * `InstancedMesh`, like castle town. The farmhouses and scarecrows are from our stage kit
- * (`assets/blender/stage_kit.py`) and the maples are Quaternius's; the fields stand without them
- * until they are in.
+ * Laid out when the run starts as a few blocks of a round of the path each, stitched together
+ * ahead of the samurai for as long as the run goes ([blocks](./blocks.mts)), in stretches of path
+ * that are each their own `InstancedMesh`, like castle town. The farmhouses and scarecrows are
+ * from our stage kit (`assets/blender/stage_kit.py`) and the maples are Quaternius's; the fields
+ * stand without them until they are in.
  */
 
 import {
@@ -23,7 +24,6 @@ import {
 	Fog,
 	Group,
 	HemisphereLight,
-	InstancedMesh,
 	Mesh,
 	MeshStandardMaterial,
 	RepeatWrapping,
@@ -32,8 +32,9 @@ import {
 	type Scene,
 } from 'three'
 import type { GLTF } from 'three/addons/loaders/GLTFLoader.js'
+import { layBlocks } from './blocks.mts'
 import { Batch, chunkOf, placed, scatter, type Cursor } from './kit.mts'
-import { clearanceOf, facingPath, fogFar, isFree, passTime, sky, skyRadius, stamp, strip, type Daylight, type Owned, type Planting, type StageView, type Taken } from './landscape.mts'
+import { addAll, clearanceOf, facingPath, fogFar, isFree, passTime, sky, skyRadius, stamp, strip, type Daylight, type Owned, type Planting, type StageView, type Taken } from './landscape.mts'
 import { beside, type Leg, type Path } from './path.mts'
 
 const palette = {
@@ -160,8 +161,17 @@ function heightOf(model: Object3D): number {
 	return bounds.max.y - bounds.min.y
 }
 
-export function createRiceFields(scene: Scene, path: Path, from: number, to: number, models: Promise<RiceModels>): StageView {
-	const visualTo = Math.min(to, 2400)
+/** What a rice-field block places once the models are in. */
+type RicePending = {
+	readonly farmhouses: Planting[]
+	readonly maples: Planting[]
+	readonly scarecrows: Planting[]
+}
+
+/** Metres a farmhouse, its maples and their leaves reach along the path either side of where it stands. */
+const farmReach = 14
+
+export function createRiceFields(scene: Scene, path: Path, models: Promise<RiceModels>): StageView {
 	const [first] = daylight
 	const fog = new Fog(first.fog, 40, fogFar)
 	scene.fog = fog
@@ -190,9 +200,6 @@ export function createRiceFields(scene: Scene, path: Path, from: number, to: num
 	ground.receiveShadow = true
 	scene.add(ground)
 
-	const dirt = new Color(palette.path)
-	scene.add(strip(path, from, visualTo, owned, { half: () => pathHalfWidth, colour: () => dirt, y: 0.04 }))
-
 	// Mountains all round, far off: they go where the samurai goes, so they never come nearer.
 	const mountains = new Group()
 	const peak = new ConeGeometry(1, 1, 6).translate(0, 0.5, 0)
@@ -213,29 +220,7 @@ export function createRiceFields(scene: Scene, path: Path, from: number, to: num
 	}
 	scene.add(mountains)
 
-	// The fields: farmhouses first, on dry plots well off the path, then paddies wherever is left.
-	const cursor: Cursor = { chunk: 0 }
-	const clear = clearanceOf(path, from, visualTo)
-	const taken: Taken = []
-	const farmhouses: Planting[] = []
-	const maples: Planting[] = []
-	const scarecrows: Planting[] = []
-	for (let distance = Math.max(from, 20), index = 0; distance < visualTo; distance += 95 + scatter(index * 7) * 40, index++) {
-		const point = path.at(distance)
-		const side = scatter(index + 3) > 0.5 ? 1 : -1
-		const out = 24 + scatter(index + 5) * 10
-		const at = beside(point, side * out)
-		if (!clear(at.x, at.z, distance, 14)) continue
-		const chunk = chunkOf(distance)
-		farmhouses.push({ matrix: placed(at.x, 0, at.z, facingPath(point, side) + (scatter(index + 9) - 0.5) * 0.4), chunk })
-		taken.push({ x: at.x, z: at.z, radius: 11 })
-		for (const [aside, ahead] of [[6, 7], [-7, 5]] as const) {
-			const tree = beside(point, side * (out + aside * 0.6), ahead)
-			maples.push({ matrix: placed(tree.x, 0, tree.z, scatter(index + aside) * 6.28, 0.8 + scatter(index + ahead) * 0.3), chunk })
-			taken.push({ x: tree.x, z: tree.z, radius: 4 })
-		}
-	}
-
+	const dirt = new Color(palette.path)
 	const box = new BoxGeometry(1, 1, 1)
 	const tuft = tuftGeometry()
 	const texture = paddyTexture()
@@ -244,52 +229,79 @@ export function createRiceFields(scene: Scene, path: Path, from: number, to: num
 	const waterMaterial = new MeshStandardMaterial({ color: palette.water, map: texture, roughness: 0.2, metalness: 0.15 })
 	const riceMaterial = new MeshStandardMaterial({ color: palette.rice, roughness: 0.9, side: DoubleSide, flatShading: true })
 	owned.materials.push(waterMaterial, riceMaterial)
-	const paddies = new Batch(box, waterMaterial, cursor, { receive: true })
-	const rice = new Batch(tuft, riceMaterial, cursor)
 
-	for (let distance = from; distance < visualTo; distance += paddySize) {
-		const point = path.at(distance + paddySize / 2)
-		cursor.chunk = chunkOf(distance)
-		for (const side of [-1, 1]) {
-			for (let row = 0; row < 3; row++) {
-				const out = pathHalfWidth + dike + paddySize / 2 + row * paddySize
-				const at = beside(point, side * out)
-				// Off the path even round a curve, and clear of the farmhouses and their trees.
-				if (!clear(at.x, at.z, distance, paddySize * 0.5 + pathHalfWidth, 30)) continue
-				if (!isFree(taken, at.x, at.z, paddySize * 0.5)) continue
-				const turn = point.heading
-				paddies.add(placed(at.x, 0, at.z, turn, paddySize - dike, 0.05, paddySize - dike))
-				// Rice standing up out of the paddies nearest the path; farther off the texture is enough.
-				if (row === 0) {
-					for (let across = -4; across <= 4; across++) {
-						for (let along = -4; along <= 4; along++) {
-							const spot = beside({ x: at.x, z: at.z, heading: turn }, across * 1.1, along * 1.1)
-							const seed = distance * 13 + across * 7 + along * 3 + side
-							rice.add(placed(spot.x, 0.02, spot.z, scatter(seed) * 6.28, 0.8 + scatter(seed + 1) * 0.5))
+	// The fields, a round of the path at a time ([blocks](./blocks.mts)).
+	const blocks = layBlocks<RicePending>(path, (from, to, base) => {
+		const group = new Group()
+		group.add(strip(path, from, to, owned, { half: () => pathHalfWidth, colour: () => dirt, y: 0.04 }))
+
+		// Farmhouses first, on dry plots well off the path, then paddies wherever is left.
+		const cursor: Cursor = { chunk: 0 }
+		const clear = clearanceOf(path, from - 60, to + 60)
+		const taken: Taken = []
+		const pending: RicePending = { farmhouses: [], maples: [], scarecrows: [] }
+		for (let distance = from + 20, index = base; distance + farmReach <= to; distance += 95 + scatter(index * 7) * 40, index++) {
+			const point = path.at(distance)
+			const side = scatter(index + 3) > 0.5 ? 1 : -1
+			const out = 24 + scatter(index + 5) * 10
+			const at = beside(point, side * out)
+			if (!clear(at.x, at.z, distance, 14)) continue
+			const chunk = chunkOf(distance)
+			pending.farmhouses.push({ matrix: placed(at.x, 0, at.z, facingPath(point, side) + (scatter(index + 9) - 0.5) * 0.4), chunk })
+			taken.push({ x: at.x, z: at.z, radius: 11 })
+			for (const [aside, ahead] of [[6, 7], [-7, 5]] as const) {
+				const tree = beside(point, side * (out + aside * 0.6), ahead)
+				pending.maples.push({ matrix: placed(tree.x, 0, tree.z, scatter(index + aside) * 6.28, 0.8 + scatter(index + ahead) * 0.3), chunk })
+				taken.push({ x: tree.x, z: tree.z, radius: 4 })
+			}
+		}
+
+		const paddies = new Batch(box, waterMaterial, cursor, { receive: true })
+		const rice = new Batch(tuft, riceMaterial, cursor)
+		// Whole paddies only, so they end where the block does.
+		for (let distance = from; distance + paddySize <= to; distance += paddySize) {
+			const point = path.at(distance + paddySize / 2)
+			cursor.chunk = chunkOf(distance)
+			for (const side of [-1, 1]) {
+				for (let row = 0; row < 3; row++) {
+					const out = pathHalfWidth + dike + paddySize / 2 + row * paddySize
+					const at = beside(point, side * out)
+					// Off the path even round a curve, and clear of the farmhouses and their trees.
+					if (!clear(at.x, at.z, distance, paddySize * 0.5 + pathHalfWidth, 30)) continue
+					if (!isFree(taken, at.x, at.z, paddySize * 0.5)) continue
+					const turn = point.heading
+					paddies.add(placed(at.x, 0, at.z, turn, paddySize - dike, 0.05, paddySize - dike))
+					// Rice standing up out of the paddies nearest the path; farther off the texture is enough.
+					if (row === 0) {
+						for (let across = -4; across <= 4; across++) {
+							for (let along = -4; along <= 4; along++) {
+								const spot = beside({ x: at.x, z: at.z, heading: turn }, across * 1.1, along * 1.1)
+								const seed = distance * 13 + across * 7 + along * 3 + side
+								rice.add(placed(spot.x, 0.02, spot.z, scatter(seed) * 6.28, 0.8 + scatter(seed + 1) * 0.5))
+							}
 						}
 					}
-				}
-				if (row === 1 && scatter(distance + side * 5) > 0.82) {
-					scarecrows.push({ matrix: placed(at.x, 0, at.z, facingPath(point, side) + (scatter(distance) - 0.5)), chunk: cursor.chunk })
+					if (row === 1 && scatter(distance + side * 5) > 0.82) {
+						pending.scarecrows.push({ matrix: placed(at.x, 0, at.z, facingPath(point, side) + (scatter(distance) - 0.5)), chunk: cursor.chunk })
+					}
 				}
 			}
 		}
-	}
+		addAll(group, [...paddies.build(), ...rice.build()])
+		return { group, pending }
+	})
+	scene.add(blocks.group)
 
-	const laid = new Group()
-	laid.add(...paddies.build(), ...rice.build())
-	scene.add(laid)
-
-	const modelled = new Group()
-	scene.add(modelled)
 	let disposed = false
 	void models.then((loaded) => {
 		if (disposed) return
-		if (loaded.maple !== undefined) modelled.add(...stamp(loaded.maple.scene, maples, 7, true, owned))
 		const farmhouse = loaded.kit?.scene.getObjectByName('Farmhouse')
-		if (farmhouse !== undefined) modelled.add(...stamp(farmhouse, farmhouses, heightOf(farmhouse), true, owned))
 		const scarecrow = loaded.kit?.scene.getObjectByName('Scarecrow')
-		if (scarecrow !== undefined) modelled.add(...stamp(scarecrow, scarecrows, heightOf(scarecrow), true, owned))
+		for (const { group, pending } of blocks.laid) {
+			if (loaded.maple !== undefined) addAll(group, stamp(loaded.maple.scene, pending.maples, 7, true, owned))
+			if (farmhouse !== undefined) addAll(group, stamp(farmhouse, pending.farmhouses, heightOf(farmhouse), true, owned))
+			if (scarecrow !== undefined) addAll(group, stamp(scarecrow, pending.scarecrows, heightOf(scarecrow), true, owned))
+		}
 	}).catch((error: unknown) => {
 		console.warn('[bunbu] the rice fields\' models could not be read; the fields stand without them', error)
 	})
@@ -297,7 +309,8 @@ export function createRiceFields(scene: Scene, path: Path, from: number, to: num
 	return {
 		passTime: passTime({ scene, fog, backdrop, ambient, sun }, daylight),
 
-		follow(x, z) {
+		follow(x, z, distance) {
+			blocks.follow(distance)
 			ground.position.set(x, 0, z)
 			backdrop.position.set(x, 0, z)
 			mountains.position.set(x, 0, z)
@@ -310,7 +323,7 @@ export function createRiceFields(scene: Scene, path: Path, from: number, to: num
 			for (const made of owned.geometries) made.dispose()
 			for (const made of owned.materials) made.dispose()
 			for (const made of owned.textures) made.dispose()
-			for (const child of [...laid.children, ...modelled.children]) if (child instanceof InstancedMesh) child.dispose()
+			blocks.dispose()
 			sun.dispose()
 		},
 	}

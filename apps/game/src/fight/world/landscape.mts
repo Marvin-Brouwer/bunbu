@@ -35,8 +35,11 @@ export const skyRadius = 190
 
 /** What a stage's world does every frame, and how it goes. */
 export type StageView = {
-	/** Keeps what follows the samurai around him: the ground under him, the light that casts shadows. */
-	follow: (x: number, z: number) => void
+	/**
+	 * Keeps what follows the samurai around him, at `x, z` and `distance` metres along the path: the
+	 * ground under him, the light that casts shadows, the blocks of scenery round him.
+	 */
+	follow: (x: number, z: number, distance: number) => void
 	/** Once the camera has moved this frame, with the samurai at `x, z`: for what depends on the view. */
 	frame?: (camera: Camera, x: number, z: number) => void
 	/** Moves the light on toward the time of day after `marksPassed` quarter marks ({@link Daylight}). */
@@ -174,7 +177,11 @@ export function strip(path: Path, from: number, to: number, owned: Owned, { half
 	const positions: number[] = []
 	const colours: number[] = []
 	let previous: readonly [number, number, number, number] | undefined
-	for (let distance = from; distance <= to; distance += 1) {
+	// A metre at a time, and right up to `to`, so a strip meets the next one laid from there.
+	const distances: number[] = []
+	for (let distance = from; distance < to; distance += 1) distances.push(distance)
+	distances.push(to)
+	for (const distance of distances) {
 		if (!runs(distance)) {
 			previous = undefined
 			continue
@@ -230,6 +237,11 @@ export const isFree = (taken: Taken, x: number, z: number, radius: number) =>
 
 /** The rotation about `y` that turns a thing's front (`+z`) toward the path from `side`. */
 export const facingPath = (point: PathPoint, side: number) => Math.atan2(-side * Math.cos(point.heading), side * Math.sin(point.heading))
+
+/** Adds `objects` to `parent`; none is fine too, where a block happens to place none of a kind. */
+export function addAll(parent: Object3D, objects: readonly Object3D[]): void {
+	if (objects.length > 0) parent.add(...objects)
+}
 
 /** A model placed once it is in, and the stretch of path it belongs to. */
 export type Planting = { readonly matrix: Matrix4; readonly chunk: number }

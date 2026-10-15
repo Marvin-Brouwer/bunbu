@@ -34,24 +34,27 @@ function loadSome<Name extends string>(names: Readonly<Record<Name, string>>): P
 	})
 }
 
-/** Lays out `stage`'s world in `scene` for a run `length` metres long, from 60 metres behind the start. */
-export function createStageWorld(stage: Stage, scene: Scene, length: number): StageWorld {
+/**
+ * Lays out `stage`'s world in `scene`: a path that goes on for as long as the run does, and the
+ * stage's scenery along it, in blocks stitched together ahead of the samurai ([blocks](./blocks.mts)).
+ */
+export function createStageWorld(stage: Stage, scene: Scene): StageWorld {
 	if (stage === 'rice-fields') {
-		const path = createPath(length, riceRound)
-		return { path, view: createRiceFields(scene, path, -60, length, loadSome({ maple: 'maple', kit: 'stage-kit' })) }
+		const path = createPath(riceRound)
+		return { path, view: createRiceFields(scene, path, loadSome({ maple: 'maple', kit: 'stage-kit' })) }
 	}
 	if (stage === 'bamboo-forest') {
-		const path = createPath(length, bambooRound)
-		return { path, view: createBambooForest(scene, path, -60, length, loadSome({ kit: 'stage-kit', temple: 'temple-kit' })) }
+		const path = createPath(bambooRound)
+		return { path, view: createBambooForest(scene, path, loadSome({ kit: 'stage-kit', temple: 'temple-kit' })) }
 	}
 	if (stage === 'mountain-temple') {
-		const path = createPath(length, mountainRound)
-		return { path, view: createMountainTemple(scene, path, -60, length, loadSome({ temple: 'temple-kit', kit: 'stage-kit' })) }
+		const path = createPath(mountainRound)
+		return { path, view: createMountainTemple(scene, path, loadSome({ temple: 'temple-kit', kit: 'stage-kit' })) }
 	}
 	if (stage === 'edo-castle') {
-		const path = createPath(length, castleRound)
-		return { path, view: createEdoCastle(scene, path, -60, length, loadSome({ kit: 'stage-kit', temple: 'temple-kit' })) }
+		const path = createPath(castleRound)
+		return { path, view: createEdoCastle(scene, path, loadSome({ kit: 'stage-kit', temple: 'temple-kit' })) }
 	}
-	const path = createPath(length, townRound)
-	return { path, view: createCastleTown(scene, path, -60, length, loadSome({ maple: 'maple', torii: 'torii', bamboo: 'bamboo', kit: 'town-kit' })) }
+	const path = createPath(townRound)
+	return { path, view: createCastleTown(scene, path, loadSome({ maple: 'maple', torii: 'torii', bamboo: 'bamboo', kit: 'town-kit' })) }
 }

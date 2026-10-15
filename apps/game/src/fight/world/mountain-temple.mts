@@ -3,9 +3,10 @@
  * afternoon high up: stone steps climbing between black pines and rocks, long tunnels of red torii
  * the path runs through, the temple hall and its pagoda on the slopes, and snow on the peaks all round.
  *
- * Laid out once, when the run starts, in stretches of path that are each their own `InstancedMesh`.
- * The torii, hall, pagoda and lanterns are from the temple kit, the pines from our stage kit; the
- * slopes stand without them until they are in.
+ * Laid out when the run starts as a few blocks of a round of the path each, stitched together
+ * ahead of the samurai for as long as the run goes ([blocks](./blocks.mts)), in stretches of path
+ * that are each their own `InstancedMesh`. The torii, hall, pagoda and lanterns are from the
+ * temple kit, the pines from our stage kit; the slopes stand without them until they are in.
  */
 
 import {
@@ -18,7 +19,6 @@ import {
 	Fog,
 	Group,
 	HemisphereLight,
-	InstancedMesh,
 	Mesh,
 	MeshStandardMaterial,
 	Vector3,
@@ -27,8 +27,9 @@ import {
 	type Scene,
 } from 'three'
 import type { GLTF } from 'three/addons/loaders/GLTFLoader.js'
+import { layBlocks } from './blocks.mts'
 import { Batch, chunkOf, placed, scatter, type Cursor } from './kit.mts'
-import { clearanceOf, cutAway, facingPath, fogFar, isFree, passTime, sky, skyRadius, stamp, strip, type Daylight, type Owned, type Planting, type StageView, type Taken } from './landscape.mts'
+import { addAll, clearanceOf, cutAway, facingPath, fogFar, isFree, passTime, sky, skyRadius, stamp, strip, type Daylight, type Owned, type Planting, type StageView, type Taken } from './landscape.mts'
 import { beside, type Leg, type Path } from './path.mts'
 
 const palette = {
@@ -116,8 +117,19 @@ function heightOf(model: Object3D): number {
 	return bounds.max.y - bounds.min.y
 }
 
-export function createMountainTemple(scene: Scene, path: Path, from: number, to: number, models: Promise<MountainModels>): StageView {
-	const visualTo = Math.min(to, 2400)
+/** What a mountain-temple block places once the models are in. */
+type MountainPending = {
+	readonly torii: Planting[]
+	readonly lanterns: Planting[]
+	readonly halls: Planting[]
+	readonly pagodas: Planting[]
+	readonly pines: Planting[]
+}
+
+/** Metres a pine, or the biggest rock, reaches along the path from where it stands. */
+const slopeReach = 2.5
+
+export function createMountainTemple(scene: Scene, path: Path, models: Promise<MountainModels>): StageView {
 	const [first] = daylight
 	const fog = new Fog(first.fog, 30, fogFar)
 	scene.fog = fog
@@ -145,11 +157,6 @@ export function createMountainTemple(scene: Scene, path: Path, from: number, to:
 	const ground = new Mesh(groundGeometry, groundMaterial)
 	ground.receiveShadow = true
 	scene.add(ground)
-
-	// Stone steps: the path in bands of stone, each edge darker, a step a metre.
-	const step = new Color(palette.step)
-	const edge = new Color(palette.stepEdge)
-	scene.add(strip(path, from, visualTo, owned, { half: () => pathHalfWidth, colour: (distance) => (Math.floor(distance) % 2 === 0 ? step : edge), y: 0.04 }))
 
 	// Snowy peaks all round, far off: they go where the samurai goes, so they never come nearer.
 	const peaks = new Group()
@@ -181,99 +188,106 @@ export function createMountainTemple(scene: Scene, path: Path, from: number, to:
 	const cut = { value: 0 }
 	const samurai = new Vector3()
 
-	const cursor: Cursor = { chunk: 0 }
-	const clear = clearanceOf(path, from, visualTo)
-	const taken: Taken = []
-
-	// The torii tunnels, square across the steps, and a pair of lanterns where each one begins.
-	const torii: Planting[] = []
-	const lanterns: Planting[] = []
-	let wasTunnel = false
-	for (let distance = from; distance < visualTo; distance += toriiEvery) {
-		const tunnel = inTunnel(distance)
-		const point = path.at(distance)
-		if (tunnel) torii.push({ matrix: placed(point.x, 0, point.z, point.heading), chunk: chunkOf(distance) })
-		if (tunnel && !wasTunnel) {
-			for (const side of [-1, 1]) {
-				const at = beside(point, side * (pathHalfWidth + 1.4), 2)
-				lanterns.push({ matrix: placed(at.x, 0, at.z, facingPath(point, side)), chunk: chunkOf(distance) })
-			}
-		}
-		wasTunnel = tunnel
-	}
-
-	// The temple on the slopes: a hall and its pagoda, once a round, set back from the path.
-	const halls: Planting[] = []
-	const pagodas: Planting[] = []
-	for (let distance = Math.max(from, 0) + 90, index = 0; distance < visualTo; distance += roundLength, index++) {
-		const point = path.at(distance)
-		const side = index % 2 === 0 ? 1 : -1
-		const hall = beside(point, side * 42)
-		if (clear(hall.x, hall.z, distance, 26, 60)) {
-			halls.push({ matrix: placed(hall.x, 0, hall.z, facingPath(point, side)), chunk: chunkOf(distance) })
-			taken.push({ x: hall.x, z: hall.z, radius: 20 })
-		}
-		const pagoda = beside(point, side * 38, 34)
-		if (clear(pagoda.x, pagoda.z, distance + 34, 14, 60) && isFree(taken, pagoda.x, pagoda.z, 7)) {
-			pagodas.push({ matrix: placed(pagoda.x, 0, pagoda.z, facingPath(point, side)), chunk: chunkOf(distance) })
-			taken.push({ x: pagoda.x, z: pagoda.z, radius: 8 })
-		}
-	}
-
-	// Pines and rocks on the slopes either side, thinner inside the tunnels, where the torii crowd in.
-	const pines: Planting[] = []
+	// Stone steps: the path in bands of stone, each edge darker, a step a metre.
+	const step = new Color(palette.step)
+	const edge = new Color(palette.stepEdge)
 	const rockGeometry = new DodecahedronGeometry(1, 0)
 	const rockMaterial = new MeshStandardMaterial({ color: 0xffffff, roughness: 1, flatShading: true })
 	owned.geometries.push(rockGeometry)
 	owned.materials.push(rockMaterial)
-	const rocks = new Batch(rockGeometry, rockMaterial, cursor, { cast: true, receive: true })
-	const rockShade = new Color()
-	for (let distance = from, index = 0; distance < visualTo; distance += 5, index++) {
-		const point = path.at(distance)
-		cursor.chunk = chunkOf(distance)
-		for (const side of [-1, 1]) {
-			for (let row = 0; row < 4; row++) {
-				const seed = index * 23 + row * 7 + side
-				if (scatter(seed) < (inTunnel(distance) ? 0.7 : 0.35)) continue
-				const out = 4.5 + row * 6 + scatter(seed + 1) * 4
-				const at = beside(point, side * out, (scatter(seed + 2) - 0.5) * 4)
-				if (!clear(at.x, at.z, distance, 3.6, 24) || !isFree(taken, at.x, at.z, 2)) continue
-				if (scatter(seed + 3) > 0.3) {
-					pines.push({ matrix: placed(at.x, 0, at.z, scatter(seed + 4) * 6.28, 0.7 + scatter(seed + 5) * 0.5), chunk: cursor.chunk })
-					taken.push({ x: at.x, z: at.z, radius: 1.8 })
-				} else {
-					const size = 0.5 + scatter(seed + 6) * 1.4
-					rockShade.setHex(palette.rock).multiplyScalar(0.8 + scatter(seed + 7) * 0.35)
-					rocks.add(placed(at.x, size * 0.35, at.z, scatter(seed + 8) * 6.28, size * 1.3, size * 0.8, size), rockShade.clone())
+
+	// The slopes, a round of the path at a time ([blocks](./blocks.mts)).
+	const blocks = layBlocks<MountainPending>(path, (from, to, base) => {
+		const group = new Group()
+		group.add(strip(path, from, to, owned, { half: () => pathHalfWidth, colour: (distance) => (Math.floor(distance) % 2 === 0 ? step : edge), y: 0.04 }))
+
+		const cursor: Cursor = { chunk: 0 }
+		const clear = clearanceOf(path, from - 60, to + 60)
+		const taken: Taken = []
+		const pending: MountainPending = { torii: [], lanterns: [], halls: [], pagodas: [], pines: [] }
+
+		// The torii tunnels, square across the steps, and a pair of lanterns where each one begins.
+		let wasTunnel = false
+		for (let distance = from; distance < to; distance += toriiEvery) {
+			const tunnel = inTunnel(distance)
+			const point = path.at(distance)
+			if (tunnel) pending.torii.push({ matrix: placed(point.x, 0, point.z, point.heading), chunk: chunkOf(distance) })
+			if (tunnel && !wasTunnel) {
+				for (const side of [-1, 1]) {
+					const at = beside(point, side * (pathHalfWidth + 1.4), 2)
+					pending.lanterns.push({ matrix: placed(at.x, 0, at.z, facingPath(point, side)), chunk: chunkOf(distance) })
+				}
+			}
+			wasTunnel = tunnel
+		}
+
+		// The temple on the slopes: a hall and its pagoda, set back from the path, on either side.
+		const templeAt = from + 90
+		const temple = path.at(templeAt)
+		const templeSide = scatter(base) > 0.5 ? 1 : -1
+		const hall = beside(temple, templeSide * 42)
+		if (clear(hall.x, hall.z, templeAt, 26, 60)) {
+			pending.halls.push({ matrix: placed(hall.x, 0, hall.z, facingPath(temple, templeSide)), chunk: chunkOf(templeAt) })
+			taken.push({ x: hall.x, z: hall.z, radius: 20 })
+		}
+		const pagoda = beside(temple, templeSide * 38, 34)
+		if (clear(pagoda.x, pagoda.z, templeAt + 34, 14, 60) && isFree(taken, pagoda.x, pagoda.z, 7)) {
+			pending.pagodas.push({ matrix: placed(pagoda.x, 0, pagoda.z, facingPath(temple, templeSide)), chunk: chunkOf(templeAt) })
+			taken.push({ x: pagoda.x, z: pagoda.z, radius: 8 })
+		}
+
+		// Pines and rocks on the slopes either side, thinner inside the tunnels, where the torii crowd in.
+		const rocks = new Batch(rockGeometry, rockMaterial, cursor, { cast: true, receive: true })
+		const rockShade = new Color()
+		for (let distance = from, index = base; distance < to; distance += 5, index++) {
+			const point = path.at(distance)
+			cursor.chunk = chunkOf(distance)
+			for (const side of [-1, 1]) {
+				for (let row = 0; row < 4; row++) {
+					const seed = index * 23 + row * 7 + side
+					if (scatter(seed) < (inTunnel(distance) ? 0.7 : 0.35)) continue
+					const out = 4.5 + row * 6 + scatter(seed + 1) * 4
+					const ahead = (scatter(seed + 2) - 0.5) * 4
+					// Within the block, with room for a pine or the biggest rock.
+					if (distance + ahead - slopeReach < from || distance + ahead + slopeReach > to) continue
+					const at = beside(point, side * out, ahead)
+					if (!clear(at.x, at.z, distance, 3.6, 24) || !isFree(taken, at.x, at.z, 2)) continue
+					if (scatter(seed + 3) > 0.3) {
+						pending.pines.push({ matrix: placed(at.x, 0, at.z, scatter(seed + 4) * 6.28, 0.7 + scatter(seed + 5) * 0.5), chunk: cursor.chunk })
+						taken.push({ x: at.x, z: at.z, radius: 1.8 })
+					} else {
+						const size = 0.5 + scatter(seed + 6) * 1.4
+						rockShade.setHex(palette.rock).multiplyScalar(0.8 + scatter(seed + 7) * 0.35)
+						rocks.add(placed(at.x, size * 0.35, at.z, scatter(seed + 8) * 6.28, size * 1.3, size * 0.8, size), rockShade.clone())
+					}
 				}
 			}
 		}
-	}
+		addAll(group, rocks.build())
+		return { group, pending }
+	})
+	scene.add(blocks.group)
 
-	const laid = new Group()
-	laid.add(...rocks.build())
-	scene.add(laid)
-
-	const modelled = new Group()
-	scene.add(modelled)
 	let disposed = false
 	void models.then((loaded) => {
 		if (disposed) return
 		const temple = loaded.temple?.scene
 		const gate = temple?.getObjectByName('Torii')
-		if (gate !== undefined) {
-			const gates = stamp(gate, torii, toriiHeight, true, owned)
-			for (const mesh of gates) cutAway(mesh.material as Material, cut)
-			modelled.add(...gates)
-		}
 		const lantern = temple?.getObjectByName('StoneLantern')
-		if (lantern !== undefined) modelled.add(...stamp(lantern, lanterns, heightOf(lantern), true, owned))
 		const hall = temple?.getObjectByName('Hall')
-		if (hall !== undefined) modelled.add(...stamp(hall, halls, heightOf(hall), false, owned))
 		const pagoda = temple?.getObjectByName('Pagoda')
-		if (pagoda !== undefined) modelled.add(...stamp(pagoda, pagodas, heightOf(pagoda), false, owned))
 		const pine = loaded.kit?.scene.getObjectByName('Pine')
-		if (pine !== undefined) modelled.add(...stamp(pine, pines, heightOf(pine), true, owned))
+		for (const { group, pending } of blocks.laid) {
+			if (gate !== undefined) {
+				const gates = stamp(gate, pending.torii, toriiHeight, true, owned)
+				for (const mesh of gates) cutAway(mesh.material as Material, cut)
+				addAll(group, gates)
+			}
+			if (lantern !== undefined) addAll(group, stamp(lantern, pending.lanterns, heightOf(lantern), true, owned))
+			if (hall !== undefined) addAll(group, stamp(hall, pending.halls, heightOf(hall), false, owned))
+			if (pagoda !== undefined) addAll(group, stamp(pagoda, pending.pagodas, heightOf(pagoda), false, owned))
+			if (pine !== undefined) addAll(group, stamp(pine, pending.pines, heightOf(pine), true, owned))
+		}
 	}).catch((error: unknown) => {
 		console.warn('[bunbu] the mountain temple\'s models could not be read; the slopes stand without them', error)
 	})
@@ -286,7 +300,8 @@ export function createMountainTemple(scene: Scene, path: Path, from: number, to:
 			cut.value = Math.max(0, -samurai.set(x, 1, z).applyMatrix4(camera.matrixWorldInverse).z - 2.5)
 		},
 
-		follow(x, z) {
+		follow(x, z, distance) {
+			blocks.follow(distance)
 			ground.position.set(x, 0, z)
 			backdrop.position.set(x, 0, z)
 			peaks.position.set(x, 0, z)
@@ -299,7 +314,7 @@ export function createMountainTemple(scene: Scene, path: Path, from: number, to:
 			for (const made of owned.geometries) made.dispose()
 			for (const made of owned.materials) made.dispose()
 			for (const made of owned.textures) made.dispose()
-			for (const child of [...laid.children, ...modelled.children]) if (child instanceof InstancedMesh) child.dispose()
+			blocks.dispose()
 			sun.dispose()
 		},
 	}

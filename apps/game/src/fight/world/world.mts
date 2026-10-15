@@ -36,9 +36,6 @@ const settle = 4
 /** How far to move toward a target this frame, for `rate` per second, the same at any frame rate. */
 const damp = (delta: number, rate = settle) => 1 - Math.exp(-rate * delta)
 
-/** Metres of town past the end of the stage, so the run never runs off the edge. */
-const beyond = 150
-
 /** The short way round from `from` to `to`, in radians. */
 const shortWay = (from: number, to: number) => Math.atan2(Math.sin(to - from), Math.cos(to - from))
 
@@ -54,12 +51,11 @@ export function createRunWorld(game: RunGame, viewport: Viewport, roomBelow: () 
 	const scene = new Scene()
 	const overlay = new Scene()
 
-	const length = Math.max(game.run.value.stageLength, 300) + beyond
 	// The figures first, which the run waits on to look right; the town's trees after them.
 	const samuraiModel = loadModel('samurai')
 	const ninjaModel = loadModel('ninja')
 	// The stage's own world, after the figures, so the figures' models are asked for first.
-	const { path, view: stage } = createStageWorld(selection.value.stage, scene, length)
+	const { path, view: stage } = createStageWorld(selection.value.stage, scene)
 
 	const parts = createFigureParts()
 	const fighters = new Group()
@@ -152,7 +148,7 @@ export function createRunWorld(game: RunGame, viewport: Viewport, roomBelow: () 
 			const worldDelta = delta * run.worldScale
 
 			const here = path.at(run.distance)
-			stage.follow(here.x, here.z)
+			stage.follow(here.x, here.z, run.distance)
 			stage.passTime(marksPassed(run), delta)
 
 			if (shogun.sequence === seen) {
