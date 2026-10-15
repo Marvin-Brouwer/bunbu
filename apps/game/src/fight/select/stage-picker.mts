@@ -6,7 +6,7 @@
  * picture in ink-wash grey, and says which stage unlocks it. The stages without a world yet are
  * shown but can't be chosen.
  *
- * The pictures are in `public/stages/`, taken by `scripts/stage-pictures.mts`.
+ * The pictures are in `public/stages/`, taken, and checked in CI, by `e2e/stage-pictures.spec.mts`.
  */
 
 import { component } from '@rooted/components'

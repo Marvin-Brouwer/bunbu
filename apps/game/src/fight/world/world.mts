@@ -60,7 +60,7 @@ export function createRunWorld(game: RunGame, viewport: Viewport, roomBelow: () 
 	const parts = createFigureParts()
 	const fighters = new Group()
 	scene.add(fighters)
-	// Dev only: `?scenery` leaves the figures out, for the stage pictures (scripts/stage-pictures.mts).
+	// Dev only: `?scenery` leaves the figures out, for the stage pictures (e2e/stage-pictures.spec.mts).
 	fighters.visible = !(import.meta.env.DEV && new URLSearchParams(location.search).has('scenery'))
 	let samurai: Body = placeholderBody(parts, { body: 0x7a2a22, skin: 0xe2c4a0, band: 0x1f1c18, blade: 0xdfe3ea })
 	fighters.add(samurai.root)
