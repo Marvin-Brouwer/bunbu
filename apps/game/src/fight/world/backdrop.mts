@@ -70,9 +70,14 @@ export type District = {
 
 /** Metres of path per tile: what is laid out at once as the samurai comes up to it. */
 export const tileLength = 15
-/** How far behind the samurai the backdrop goes on, and how far ahead: up to the fog. */
-const behind = 60
-const ahead = 170
+/**
+ * How far along the path behind the samurai the backdrop is laid out, and how far ahead. Not up to
+ * the fog along the path but round every bend: on every stage's path, no stretch farther along than
+ * this comes within the fog's reach plus the farthest row of him, so nothing is laid out or taken
+ * away where it could be seen (`backdrop.test.mts`). The mountain temple's bends need the most.
+ */
+export const backdropReach = { behind: 460, ahead: 460 }
+const { behind, ahead } = backdropReach
 
 /** How many parts each shape has, each a mesh of its own colour: a body and a roof, a trunk and a crown. */
 export const partsOf: Readonly<Record<BackdropShape, number>> = {
@@ -81,7 +86,7 @@ export const partsOf: Readonly<Record<BackdropShape, number>> = {
 }
 
 /** One thing in the backdrop: where it stands, and how each of its parts is placed and coloured. */
-type Item = {
+export type Item = {
 	readonly shape: BackdropShape
 	readonly parts: readonly { readonly matrix: Matrix4; readonly colour: number }[]
 }
@@ -205,13 +210,22 @@ function geometriesOf(): Record<BackdropShape, BufferGeometry[]> {
 	}
 }
 
-/** Whether `x, z` is at least `clear` metres from the path within `reach` metres of `near` along it. */
-function clearOfPath(path: Path, x: number, z: number, near: number, reach: number, clear: number): boolean {
-	for (let distance = near - reach; distance <= near + reach; distance += 2) {
-		const point = path.at(distance)
-		if (Math.hypot(point.x - x, point.z - z) < clear) return false
-	}
-	return true
+/** Metres between the points of the path a tile checks its things against. */
+const sampleStep = 2
+
+/**
+ * The path round tile `tile`, a point every {@link sampleStep} metres, as far either way as a bend
+ * can bring it back within the reach of the backdrop ({@link backdropReach}).
+ */
+function pathAround(path: Path, tile: number): { x: number; z: number }[] {
+	const points: { x: number; z: number }[] = []
+	for (let distance = tile * tileLength - behind; distance <= (tile + 1) * tileLength + ahead; distance += sampleStep) points.push(path.at(distance))
+	return points
+}
+
+/** Whether `x, z` is at least `clear` metres from every point of `points`. */
+function clearOfPath(points: readonly { x: number; z: number }[], x: number, z: number, clear: number): boolean {
+	return points.every((point) => Math.hypot(point.x - x, point.z - z) >= clear)
 }
 
 /**
@@ -219,8 +233,9 @@ function clearOfPath(path: Path, x: number, z: number, near: number, reach: numb
  * path all round. Where two districts meet, the rows of both, the one thinning out as the other
  * comes in.
  */
-function layTile(path: Path, districts: readonly District[], seed: number, tile: number, stageLength: number): Item[] {
+export function layTile(path: Path, districts: readonly District[], seed: number, tile: number, stageLength: number): Item[] {
 	const random = randomOf(seed ^ Math.imul(tile, 0x9e3779b1))
+	const around = pathAround(path, tile)
 	const { from, to, mix } = districtAt((tile + 0.5) * tileLength, stageLength)
 	const weighted = from === to
 		? [{ rows: districts[from]?.rows ?? [], share: 1 }]
@@ -244,7 +259,7 @@ function layTile(path: Path, districts: readonly District[], seed: number, tile:
 						const out = row.from + random() * (row.to - row.from)
 						const at = beside(point, side * out)
 						// Never nearer the path than the row starts, also where the path bends back toward it.
-						if (!clearOfPath(path, at.x, at.z, distance, out + 20, row.from - 1)) continue
+						if (!clearOfPath(around, at.x, at.z, row.from - 1)) continue
 						// A wall runs along the way; the rest stand at any angle.
 						where = placed(at.x, 0, at.z, row.shape === 'wall' ? point.heading + Math.PI / 2 : turn)
 					}
