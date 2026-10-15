@@ -29,6 +29,7 @@
     "three": "^0.186.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.0",
     "@rooted-adapters/github-pages": "1.0.0-alpha.31",
     "@rooted/application": "1.0.0-alpha.45",
     "@types/three": "^0.186.0",
