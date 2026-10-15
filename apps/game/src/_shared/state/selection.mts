@@ -26,16 +26,24 @@ export type SelectionState = {
 	/** The quiz to play, or `undefined` until one is chosen or loaded. */
 	readonly quiz: BunbuData | undefined
 	readonly stage: Stage
+	/**
+	 * Endless instead of the stage: every stage in turn, for as long as the samurai stands
+	 * ([endless](../../../../../docs/design/gameplay.md#endless)).
+	 */
+	readonly endless: boolean
 }
 
 // The first stage is the only one open on a new quiz ([stages](../../../../../docs/design/gameplay.md#stages)).
-const initial: SelectionState = { quiz: undefined, stage: 'rice-fields' }
+const initial: SelectionState = { quiz: undefined, stage: 'rice-fields', endless: false }
 
 export type SelectionActions = {
 	chooseQuiz: (quiz: BunbuData) => void
 	/** Unchooses the quiz when it is this one, as when it is removed from the library. */
 	forgetQuiz: (id: string, version: string) => void
+	/** Chooses `stage`, and so not endless. */
 	chooseStage: (stage: Stage) => void
+	/** Chooses endless; the stage is kept for when a stage is chosen again. */
+	chooseEndless: () => void
 	reset: () => void
 }
 
@@ -56,7 +64,11 @@ export const selection: Store<SelectionState & SelectionActions> = createStore<S
 	},
 
 	chooseStage: (stage) => {
-		selection.update(() => ({ stage }))
+		selection.update(() => ({ stage, endless: false }))
+	},
+
+	chooseEndless: () => {
+		selection.update(() => ({ endless: true }))
 	},
 
 	reset: () => {

@@ -51,7 +51,7 @@ What was agreed is kept per quiz `id` + `version`, with the quiz's content and t
 "Choose your path". The quiz is chosen on Quizzes (1b); the stage and the difficulty only matter to a fight, so they are chosen here:
 
 1. **Quiz:** the chosen quiz (`v3 · pass 70% · 40 of 260 per run` when it sets `questionsPerTest`), and which of its questions won't fit in a fight.
-2. **Stage:** Rice fields, Bamboo forest, Mountain temple, Castle town, Edo castle. Each shows the best distance with the chosen quiz and whether it was cleared (`Best 860 m`, `Best 1,440 m · cleared`), or nothing before its first run. A stage is as long as the test, so this is per quiz. A stage that is still locked ([stages](gameplay.md#stages)) can't be chosen: a lock covers its number and it says `Clear Rice fields to unlock`. When the chosen stage is locked for the chosen quiz, the furthest open one is chosen instead.
+2. **Stage:** Rice fields, Bamboo forest, Mountain temple, Castle town, Edo castle. Each shows the best distance with the chosen quiz and whether it was cleared (`Best 860 m`, `Best 1,440 m · cleared`), or nothing before its first run. A stage is as long as the test, so this is per quiz. After the stages, **∞ · Endless** ([endless](gameplay.md#endless)), with its best score (`Best 1,200`); locked, it says `Clear every stage on Shogun to unlock`. A stage that is still locked ([stages](gameplay.md#stages)) can't be chosen: a lock covers its number and it says `Clear Rice fields to unlock`. When the chosen stage is locked for the chosen quiz, the furthest open one is chosen instead.
 
 A difficulty slider from **Apprentice** to **Shogun** over four stops (Apprentice, Samurai, Daimyo, Shogun), the inner two marked (sets `timeScale`, see [time limit](gameplay.md#time-limit)). Under it, the stop, and the time it gives when the quiz sets `timePerQuestion`: `Daimyo: 2m 24s per question`. The difficulty is chosen here only, never in the settings, and kept per quiz (`id` + `version`): each test has its own, Samurai until another is chosen. Then **Start run**.
 
@@ -63,7 +63,7 @@ In dev builds only, one button under the stages toggles them for the chosen quiz
 
 - 3D samurai, always centred, auto-running toward a torii. No input until an ambush.
 - HUD: **score** with best to beat, **life bar** (full = 100%, empty = the pass mark), and a **pause** button.
-- Progress bar: stage name and the questions done (`Castle town · 7 / 40`). A notch marks each quarter of the stage, and a block marks the boss. Passing a notch moves the stage's time of day on, fading over a few seconds: castle town goes from dusk to night as its shops and lanterns light up.
+- Progress bar: stage name and the questions done (`Castle town · 7 / 40`). In endless the bar is the stage that is on, and the count has no end: `Endless · Castle town · 47`. A notch marks each quarter of the stage, and a block marks the boss. Passing a notch moves the stage's time of day on, fading over a few seconds: castle town goes from dusk to night as its shops and lanterns light up.
 
 ### 4 Ambush
 

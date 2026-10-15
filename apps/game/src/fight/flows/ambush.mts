@@ -18,13 +18,19 @@ import { attackSpawnsOf, outcomeOrder } from '../state/ninjas.mts'
 import { runConfig } from '../state/run.mts'
 import { moveSeconds, type Move } from '../state/shogun.mts'
 import { pointsIn } from '../state/score.mts'
-import { recordRun, runIsOver, scoreAnswer } from './run.mts'
+import { asksIn, stageOfQuestion, stageQuestions } from './endless.mts'
+import { isEndless, recordRun, runIsOver, scoreAnswer } from './run.mts'
 
 /** What one miss costs the life bar, for the quiz that is loaded. */
 export function missShare(game: RunGame): number {
-	const { quiz, refs } = snapshot<QuizState & QuizActions>(game.quiz)
+	const { quiz, refs, answered } = snapshot<QuizState & QuizActions>(game.quiz)
 	if (quiz === undefined) return 1
-	return shareOfOnePoint(pointsIn(quiz, refs), quiz.passingScore)
+	if (!isEndless(game)) return shareOfOnePoint(pointsIn(quiz, refs), quiz.passingScore)
+	// In endless, of the stage that is on: each is a test of its own.
+	const questions = stageQuestions(quiz)
+	const stage = stageOfQuestion(Math.max(0, asksIn(refs.slice(0, answered)) - 1), questions)
+	const inStage = refs.filter((_, index) => stageOfQuestion(asksIn(refs.slice(0, index + 1)) - 1, questions) === stage)
+	return shareOfOnePoint(pointsIn(quiz, inStage), quiz.passingScore)
 }
 
 /**

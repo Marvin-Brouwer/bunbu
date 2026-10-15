@@ -13,6 +13,7 @@ import { runConfig } from '../state/run.mts'
 import { stageResults } from '../state/stage-results.mts'
 import { nextScrollSeconds } from '../../_shared/state/ambush.mts'
 import { commitAmbush, outcomeDelaySeconds } from './ambush.mts'
+import { questionsAnswered } from '../../_shared/state/quiz.mts'
 import { ambushAt, endRun, metresPerAmbush, startRun, testOf, tickRun } from './run.mts'
 
 let game: RunGame
@@ -533,4 +534,66 @@ describe('frames', () => {
 it('puts the ambush on the leg of the path it belongs to', () => {
 	expect(ambushAt(0)).toBe(metresPerAmbush)
 	expect(ambushAt(2)).toBe(3 * metresPerAmbush)
+})
+
+describe('endless', () => {
+	beforeEach(() => {
+		selection.value.chooseEndless()
+		startRun(game, fixtureQuiz)
+	})
+
+	it('goes on past every question, round again', () => {
+		play([true, true, true, true, true, true, true, true, true])
+		expect(game.run.value.phase).not.toBe('finished')
+		expect(questionsAnswered(game.quiz.value)).toBe(9)
+		expect(game.score.value.points).toBe(900)
+	})
+
+	it('fills the life bar again when a stage is done: each stage is a test of its own', () => {
+		play([false, true, true])
+		expect(game.life.value.value).toBeLessThan(1)
+		play([true])
+		expect(game.life.value.value).toBe(1)
+		play([false, true, true, true])
+		expect(game.run.value.phase).not.toBe('fallen')
+	})
+
+	it('ends only with a fall, which sets its own high score and no stage result', () => {
+		play([true, false, false])
+		expect(game.run.value.phase).toBe('fallen')
+		expect(highScores.value.of('fixture', '1', true)).toMatchObject({ points: 100, correct: 1, answered: 3 })
+		expect(highScores.value.of('fixture', '1')).toBeUndefined()
+		expect(stageResults.value.of('fixture', '1', 'rice-fields')).toBeUndefined()
+	})
+
+	it('starts with the best of endless to beat', () => {
+		highScores.value.submit('fixture', '1', { points: 300, seconds: 1, correct: 3, answered: 4, difficulty: 'samurai' }, true)
+		startRun(game, fixtureQuiz)
+		expect(game.score.value.best).toMatchObject({ points: 300 })
+	})
+})
+
+describe('unlocking endless', () => {
+	const clearAll = (difficulty: 'samurai' | 'shogun') => {
+		for (const stage of stages) {
+			selection.value.chooseStage(stage)
+			startRun(game, fixtureQuiz, undefined, difficulty)
+			play([true, true, true, true])
+		}
+	}
+
+	it('opens once every stage has been cleared on Shogun', () => {
+		clearAll('samurai')
+		expect(stageResults.value.endlessUnlocked('fixture', '1')).toBe(false)
+		clearAll('shogun')
+		expect(stageResults.value.endlessUnlocked('fixture', '1')).toBe(true)
+	})
+
+	it('keeps a clear on Shogun when a better run on an easier difficulty comes after', () => {
+		startRun(game, fixtureQuiz, undefined, 'shogun')
+		play([true, true, true, false])
+		startRun(game, fixtureQuiz, undefined, 'samurai')
+		play([true, true, true, true])
+		expect(stageResults.value.of('fixture', '1', 'rice-fields')).toMatchObject({ cleared: true, shogun: true })
+	})
 })

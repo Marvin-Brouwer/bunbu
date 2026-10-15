@@ -88,6 +88,7 @@ const stageResult = type({
 	'+': 'delete',
 	distance: 'number >= 0',
 	cleared: 'boolean',
+	'shogun?': 'boolean',
 })
 
 /** The stage results that are valid, by quiz and stage. */
@@ -122,6 +123,7 @@ const savedSelection = type({
 	'+': 'delete',
 	'quiz?': { '+': 'delete', id: 'string', version: 'string' },
 	stage: type.enumerated(...stages),
+	'endless?': 'boolean',
 })
 
 export type SavedSelection = {
@@ -129,13 +131,15 @@ export type SavedSelection = {
 	readonly quiz: { readonly id: string, readonly version: string } | undefined
 	/** The stage, when it can still be chosen. */
 	readonly stage: Stage | undefined
+	/** Whether endless was chosen; whether it is open on the quiz is checked on the fight setup. */
+	readonly endless: boolean
 }
 
 /** The chosen quiz and stage. A stage that isn't built (any more) is dropped. */
 export function parseSelection(data: unknown): SavedSelection {
 	const saved = savedSelection(data)
-	if (!passed(saved)) return { quiz: undefined, stage: undefined }
-	return { quiz: saved.quiz, stage: builtStages.has(saved.stage) ? saved.stage : undefined }
+	if (!passed(saved)) return { quiz: undefined, stage: undefined, endless: false }
+	return { quiz: saved.quiz, stage: builtStages.has(saved.stage) ? saved.stage : undefined, endless: saved.endless === true }
 }
 
 /** Chooses the saved quiz again when it is in the library, unless another was chosen meanwhile. */
@@ -179,6 +183,7 @@ export function persistApp(signal: AbortSignal): Promise<void> {
 	if (saved !== undefined) lastRun.value.restore(saved)
 	const chosen = parseSelection(read('selection'))
 	if (chosen.stage !== undefined) selection.value.chooseStage(chosen.stage)
+	if (chosen.endless) selection.value.chooseEndless()
 
 	save(settings, 'settings', signal, ({ haptics, volume, speechRate, voices }) => ({ haptics, volume, speechRate, voices }))
 	save(quizDifficulties, 'difficulties', signal, (state) => state.chosen)
@@ -186,7 +191,7 @@ export function persistApp(signal: AbortSignal): Promise<void> {
 	save(highScores, 'high-scores', signal, ({ scores }) => scores)
 	save(stageResults, 'stage-results', signal, ({ results }) => results)
 	save(lastRun, 'last-run', signal, ({ quiz, misses }) => ({ quiz, misses }))
-	save(selection, 'selection', signal, ({ quiz, stage }) => ({ quiz: quiz && { id: quiz.id, version: quiz.version }, stage }))
+	save(selection, 'selection', signal, ({ quiz, stage, endless }) => ({ quiz: quiz && { id: quiz.id, version: quiz.version }, stage, endless }))
 	library.on('change', signal, ({ detail }) => {
 		void writeQuizFiles(detail.state.entries.map(({ file }) => file.value))
 	})

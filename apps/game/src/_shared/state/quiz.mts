@@ -48,6 +48,11 @@ export type QuizActions = {
 	 * `random`, the solutions and match rows of each question are asked in random order too.
 	 */
 	load: (data: BunbuData, order?: readonly number[], random?: Random) => void
+	/**
+	 * Asks the questions of `order` after the ones already in, for endless: the quiz goes round
+	 * again. `random` shuffles their solutions and rows, as in `load`.
+	 */
+	extend: (order: readonly number[], random?: Random) => void
 	/** The ambush that is up next, or `undefined` when the quiz is done. */
 	current: () => QuestionRef | undefined
 	/** The question a ref points at. */
@@ -87,12 +92,11 @@ export function refsOf(quiz: BunbuData, order: readonly number[], random?: Rando
 
 /**
  * How many questions are done: every ambush of them answered. A question halfway through its
- * rounds isn't done yet.
+ * rounds isn't done yet. In endless a question is asked again once all have been, and counts again.
  */
 export function questionsAnswered({ refs, answered }: Pick<QuizState, 'refs' | 'answered'>): number {
-	const touched = new Set(refs.slice(0, answered).map((ref) => ref.question))
-	const going = refs[answered]?.question
-	return going !== undefined && touched.has(going) ? touched.size - 1 : touched.size
+	// A question is done at its last round: the ambush after it asks another one, or none.
+	return refs.slice(0, answered).filter((ref, index) => refs[index + 1]?.question !== ref.question).length
 }
 
 /** A loaded quiz, ready to be asked in `order`. */
@@ -146,6 +150,15 @@ export function createQuiz(initial: QuizState = noQuiz): Quiz {
 
 		load(data, order, random) {
 			store.update(() => loaded(data, order, random))
+		},
+
+		extend(order, random) {
+			const { quiz, order: asked, refs } = state()
+			if (quiz === undefined) {
+				refuse('quiz.extend', 'no quiz is loaded')
+				return
+			}
+			store.update(() => ({ order: [...asked, ...order], refs: [...refs, ...refsOf(quiz, order, random)] }))
 		},
 
 		current() {

@@ -6,7 +6,8 @@
  * quiz it was run on.
  *
  * Clearing a stage, passing a test on it, unlocks the next one
- * ([stages](../../../../../docs/design/gameplay.md#stages)).
+ * ([stages](../../../../../docs/design/gameplay.md#stages)). Clearing every stage on Shogun
+ * unlocks endless ([endless](../../../../../docs/design/gameplay.md#endless)).
  */
 
 import { createStore, type Store } from '@rooted/store'
@@ -17,6 +18,8 @@ export type StageResult = {
 	readonly distance: number
 	/** Whether a run on it ever finished, rather than fell. */
 	readonly cleared: boolean
+	/** Whether a run on it ever finished on Shogun, the hardest difficulty. */
+	readonly shogun?: boolean
 }
 
 export type StageResultsState = {
@@ -29,7 +32,9 @@ export type StageResultsActions = {
 	of: (id: string, version: string, stage: Stage) => StageResult | undefined
 	/** Whether the stage can be played on this quiz: the first always, the others once the one before is cleared. */
 	unlocked: (id: string, version: string, stage: Stage) => boolean
-	/** Keeps `result` when it is better than the one kept. */
+	/** Whether endless can be played on this quiz: once every stage has been cleared on Shogun. */
+	endlessUnlocked: (id: string, version: string) => boolean
+	/** Keeps `result` when it is better than the one kept, and a clear on Shogun either way. */
 	submit: (id: string, version: string, stage: Stage, result: StageResult) => void
 	/** Drops every result of a quiz, which locks its stages again. */
 	forget: (id: string, version: string) => void
@@ -79,10 +84,17 @@ export function createStageResults(initial: StageResultsState = noStageResults):
 			return before === undefined || store.value.of(id, version, before)?.cleared === true
 		},
 
+		endlessUnlocked(id, version) {
+			return stages.every((stage) => store.value.of(id, version, stage)?.shogun === true)
+		},
+
 		submit(id, version, stage, result) {
 			const key = stageResultKey(id, version, stage)
-			if (!betterResult(result, store.value.results[key])) return
-			store.update((state) => ({ results: { ...state.results, [key]: result } }))
+			const kept = store.value.results[key]
+			const shogun = result.shogun === true || kept?.shogun === true
+			const best = betterResult(result, kept) ? result : kept ?? result
+			if (best === kept && shogun === (kept.shogun === true)) return
+			store.update((state) => ({ results: { ...state.results, [key]: shogun ? { ...best, shogun } : best } }))
 		},
 
 		forget(id, version) {

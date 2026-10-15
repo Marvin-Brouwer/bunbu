@@ -162,10 +162,10 @@ describe('parsing what was saved', () => {
 	})
 
 	it('keeps the chosen quiz and a stage that can still be chosen', () => {
-		expect(parseSelection({ quiz: { id: 'a', version: '1' }, stage: 'castle-town' })).toEqual({ quiz: { id: 'a', version: '1' }, stage: 'castle-town' })
-		expect(parseSelection({ stage: 'rice-fields' })).toEqual({ quiz: undefined, stage: 'rice-fields' })
-		expect(parseSelection({ stage: 'edo-castle' })).toEqual({ quiz: undefined, stage: 'edo-castle' })
-		expect(parseSelection({ stage: 'moon' })).toEqual({ quiz: undefined, stage: undefined })
+		expect(parseSelection({ quiz: { id: 'a', version: '1' }, stage: 'castle-town' })).toEqual({ quiz: { id: 'a', version: '1' }, stage: 'castle-town', endless: false })
+		expect(parseSelection({ stage: 'rice-fields' })).toEqual({ quiz: undefined, stage: 'rice-fields', endless: false })
+		expect(parseSelection({ stage: 'edo-castle', endless: true })).toEqual({ quiz: undefined, stage: 'edo-castle', endless: true })
+		expect(parseSelection({ stage: 'moon' })).toEqual({ quiz: undefined, stage: undefined, endless: false })
 	})
 
 	it('validates the saved quiz files again', async () => {
@@ -291,7 +291,7 @@ describe('persistApp', () => {
 	it('saves the chosen quiz by id and version', async () => {
 		await persistApp(stop.signal)
 		selection.value.chooseQuiz(savedQuiz)
-		expect(read('selection')).toEqual({ quiz: { id: 'saved', version: '1' }, stage: 'rice-fields' })
+		expect(read('selection')).toEqual({ quiz: { id: 'saved', version: '1' }, stage: 'rice-fields', endless: false })
 	})
 
 	it('forgets the chosen quiz when it is removed, and leaves another chosen one be', async () => {
@@ -303,7 +303,7 @@ describe('persistApp', () => {
 		selection.value.forgetQuiz('saved', '1')
 
 		expect(kept).toMatchObject({ id: 'saved' })
-		expect(read('selection')).toEqual({ stage: 'rice-fields' })
+		expect(read('selection')).toEqual({ stage: 'rice-fields', endless: false })
 	})
 
 	it('keeps a quiz chosen while the saved ones are still being validated', async () => {

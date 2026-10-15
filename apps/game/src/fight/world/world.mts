@@ -18,7 +18,9 @@ import { marksPassed } from '../state/run.mts'
 import { framedIn, runFraming, viewOnPath } from './camera.mts'
 import { skyRadius } from './landscape.mts'
 import { createStageWorld } from './stages.mts'
-import { selection } from '../../_shared/state/selection.mts'
+import { selection, type Stage } from '../../_shared/state/selection.mts'
+import { endlessStage, stageAt, stageQuestions, stageStart } from '../flows/endless.mts'
+import { metresPerAmbush } from '../flows/run.mts'
 import { createEffects } from './effects.mts'
 import { createPetals } from '../../_shared/world/petals.mts'
 import { createCharacter, ninjaLook, placeholderBody, samuraiLook, type Body } from '../../_shared/world/character.mts'
@@ -54,8 +56,18 @@ export function createRunWorld(game: RunGame, viewport: Viewport, roomBelow: () 
 	// The figures first, which the run waits on to look right; the town's trees after them.
 	const samuraiModel = loadModel('samurai')
 	const ninjaModel = loadModel('ninja')
-	// The stage's own world, after the figures, so the figures' models are asked for first.
-	const { path, view: stage } = createStageWorld(selection.value.stage, scene)
+	// The stage's own world, after the figures, so the figures' models are asked for first. In
+	// endless the next stage takes its place as the samurai comes to it, its path starting there.
+	const { endless } = selection.value
+	const layStage = (which: Stage) => {
+		const before = new Set(scene.children)
+		const world = createStageWorld(which, scene)
+		return { ...world, added: scene.children.filter((child) => !before.has(child)) }
+	}
+	let laid = layStage(endless ? endlessStage(0) : selection.value.stage)
+	let stageIndex = 0
+	/** Where the stage on show starts along the run, in metres: its path's `0`. */
+	let offset = 0
 
 	const parts = createFigureParts()
 	const fighters = new Group()
@@ -147,9 +159,27 @@ export function createRunWorld(game: RunGame, viewport: Viewport, roomBelow: () 
 			const delta = still ? 0 : realDelta
 			const worldDelta = delta * run.worldScale
 
-			const here = path.at(run.distance)
-			stage.follow(here.x, here.z, run.distance)
-			stage.passTime(marksPassed(run), delta)
+			const quiz = game.quiz.value.quiz
+			if (endless && quiz !== undefined) {
+				const questions = stageQuestions(quiz)
+				const index = stageAt(run.distance, questions)
+				if (index !== stageIndex) {
+					laid.view.dispose()
+					scene.remove(...laid.added)
+					laid = layStage(endlessStage(index))
+					stageIndex = index
+					offset = stageStart(index, questions)
+					// A new place: the camera is there at once rather than swinging over from the last.
+					first = true
+				}
+			}
+			const { path, view: stage } = laid
+			// How far along the stage on show he is: the whole run, but in endless.
+			const distance = run.distance - offset
+			const here = path.at(distance)
+			stage.follow(here.x, here.z, distance)
+			const lengthHere = endless && quiz !== undefined ? stageQuestions(quiz) * metresPerAmbush : run.stageLength
+			stage.passTime(marksPassed({ distance, stageLength: lengthHere }), delta)
 
 			if (shogun.sequence === seen) {
 				since += delta
@@ -158,7 +188,7 @@ export function createRunWorld(game: RunGame, viewport: Viewport, roomBelow: () 
 				since = 0
 				previous = shown
 			}
-			const cycle = (run.distance / stepLength) * Math.PI
+			const cycle = (distance / stepLength) * Math.PI
 			const fallen = shogun.pose === 'fallen'
 			// Falling, the samurai is finished off first and goes down as the blade lands.
 			const finish = fallen ? finishingOf(since) : undefined
@@ -176,7 +206,7 @@ export function createRunWorld(game: RunGame, viewport: Viewport, roomBelow: () 
 			const below = roomBelow()
 			framed = below > 0 ? framed + ((ambush.open ? 1 : 0) - framed) * damp(delta, reframe) : 0
 			const frame = framedIn(width, height, height - (height - below) * framed, runFraming.fov)
-			const view = viewOnPath(path, run.distance, frame.aspect, fallen)
+			const view = viewOnPath(path, distance, frame.aspect, fallen)
 
 			// The ninjas first: they keep the mark each came from after the ambush's options are gone.
 			// They wind up to charge just before the time runs out.
@@ -253,7 +283,7 @@ export function createRunWorld(game: RunGame, viewport: Viewport, roomBelow: () 
 			dropFinisher()
 			samurai.dispose()
 			parts.dispose()
-			stage.dispose()
+			laid.view.dispose()
 			scene.clear()
 			overlay.clear()
 			camera.fov = before.fov

@@ -28,6 +28,16 @@ A run is a **test**: the quiz's questions in a random order, a different one eve
 
 The five stages are played in order: Rice fields, Bamboo forest, Mountain temple, Castle town, Edo castle. Only the first is open at the start. **Passing a test on a stage unlocks the next one**, per quiz (`id` + `version`, like the high score). Unlocking is no secret: a locked stage says which one to clear first.
 
+### Endless
+
+Once every stage, Rice fields through Edo castle, has been passed on **Shogun** with a quiz, that quiz opens **endless**: one run through every stage in turn, for as long as the samurai stands.
+
+- Every question of the quiz is asked once, in a random order. Then they are shuffled and asked again, and so on, never the same question twice in a row. The count of questions goes on with no end.
+- A stage of endless asks a test's worth of questions (`questionsPerTest`, or all of them), then the run goes on into the next stage, halfway between two ambushes: Rice fields, Bamboo forest, Mountain temple, Castle town, Edo castle, and Rice fields again.
+- Each stage is a test of its own: a miss takes its share of that stage's points off the life bar, and the bar is full again when the next stage begins. The run ends only when it empties.
+- Endless keeps a high score of its own per quiz. A run of endless always ends in a fall, so its score counts all the same. It sets no stage results.
+- The difficulty is chosen as for a stage, on the fight setup.
+
 ## Ambush
 
 One screen, no Submit button: **the swipe is the answer**.

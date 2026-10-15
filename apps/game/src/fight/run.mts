@@ -37,7 +37,7 @@ export const RunScreen = component<RunScreenOptions>({
 		const { game } = options
 
 		play({
-			update: (worldDelta, realDelta) => { tickRun(game, worldDelta, realDelta) },
+			update: (worldDelta, realDelta) => { tickRun(game, worldDelta, realDelta, Math.random) },
 			paused: () => game.run.value.phase === 'paused',
 			worldScale: () => game.run.value.worldScale,
 			pause: () => { game.run.value.pause() },
