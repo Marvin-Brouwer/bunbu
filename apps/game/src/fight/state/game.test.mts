@@ -7,7 +7,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createLife, shareOfOnePoint, type Life } from './life.mts'
 import { createRunGame } from './game.mts'
-import { createRun, marksPassed, runConfig, slowMotionOf, stageDistanceOf, type Run } from './run.mts'
+import { createRun, marksPassed, runConfig, runInLeft, slowMotionOf, stageDistanceOf, type Run } from './run.mts'
 import { beats, createScore, pointsPerCorrect, type HighScore, type Score } from './score.mts'
 
 // Every test gets its own stores: a game mode creates them per run, so tests do the same.
@@ -26,6 +26,24 @@ describe('run', () => {
 		run.value.start(600)
 		run.value.tick(runConfig.introSeconds, runConfig.introSeconds)
 		expect(run.value.phase).toBe('running')
+	})
+
+	it('waits for the start behind the camera, then runs in to the start in the intro', () => {
+		run.value.tick(5, 5)
+		expect(run.value.elapsed).toBe(0)
+		const runIn = runInLeft(run.value)
+		expect(runIn).toBeCloseTo(runConfig.pace * runConfig.introSeconds)
+
+		run.value.start(600)
+		run.value.tick(runConfig.introSeconds / 2, runConfig.introSeconds / 2)
+		expect(runInLeft(run.value)).toBeCloseTo(runIn / 2)
+		run.value.pause()
+		expect(runInLeft(run.value)).toBeCloseTo(runIn / 2)
+		run.value.resume()
+		run.value.tick(runConfig.countdownSeconds, runConfig.countdownSeconds)
+		run.value.tick(runConfig.introSeconds / 2, runConfig.introSeconds / 2)
+		expect(run.value.phase).toBe('running')
+		expect(runInLeft(run.value)).toBe(0)
 	})
 
 	it('covers ground at a constant pace while running', () => {
