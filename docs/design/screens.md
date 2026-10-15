@@ -62,6 +62,7 @@ In dev builds only, one button under the stages toggles them for the chosen quiz
 <img src="screens/3-running.png" alt="Running HUD" width="195">
 
 - 3D samurai, always centred, auto-running toward a torii. No input until an ambush.
+- The run starts once the stage has loaded. Until then the samurai waits out of view, behind the camera; then he runs in to his place and the stage starts.
 - HUD: **score** with best to beat, **life bar** (full = 100%, empty = the pass mark), and a **pause** button.
 - Progress bar: stage name and the questions done (`Castle town · 7 / 40`). A notch marks each quarter of the stage, and a block marks the boss. Passing a notch moves the stage's time of day on, fading over a few seconds: castle town goes from dusk to night as its shops and lanterns light up.
 
