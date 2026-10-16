@@ -21,7 +21,7 @@ Wireframe source: the project's design canvas (`design/wireframes/*.dc.html` and
 
 <img src="screens/1-title.png" alt="Title screen" width="195">
 
-- 3D samurai idling under a torii, falling petals. He stands in the gap between the name and the menu, a little below its middle, on any phone: on a short screen the camera steps back until he fits, and the name and the menu close up. Wide screens put him left of the menu. `pnpm e2e` checks this on a set of phones, a tablet and a laptop.
+- 3D samurai idling under a torii, falling petals. He stands in the gap between the name and the menu, a little below its middle, on any phone and on a laptop: on a short screen the camera steps back until he fits, and the name and the menu close up. The gap is at least 8rem: a long quiz title makes the screen scroll rather than squeeze him out. `pnpm e2e` checks this on a set of phones, a tablet and a laptop.
 - 文武 · **Bunbu** · Shogun Scholar.
 - The quiz card. While the saved quizzes come back it says **Loading…**; without a quiz it has one red **Select quiz**, which leads to Quizzes. With one: its title, and its high score in two small lines, `high score · 2,480 · shogun` (the difficulty it was set at) and `correct · 17 / 20` (or "No high score yet"), and **Share**, which sends the quiz on as a `.bunbu` file ([sharing](data-format.md#sharing)): the share sheet where the browser says it takes the file (`navigator.canShare`). Otherwise a scroll explains how to share by hand, without saying why: a friend needs the quiz and Bunbu, so **Download the quiz**, **Share Bunbu** (a link to the game; copied where there is no share sheet), and they load the file under Quizzes. **Close** leaves it. Under that, on the card: **Fight**, and **Change quiz** under it.
 - **Dojo**, **How to play** and **Settings** in a row, and the credits as a link, "About the Bunbu app".
@@ -62,6 +62,7 @@ In dev builds only, one button under the stages toggles them for the chosen quiz
 <img src="screens/3-running.png" alt="Running HUD" width="195">
 
 - 3D samurai, always centred, auto-running toward a torii. No input until an ambush.
+- The run starts once the stage has loaded. Until then the samurai waits out of view, behind the camera; then he runs in to his place and the stage starts.
 - HUD: **score** with best to beat, **life bar** (full = 100%, empty = the pass mark), and a **pause** button.
 - Progress bar: stage name and the questions done (`Castle town · 7 / 40`). A notch marks each quarter of the stage, and a block marks the boss. Passing a notch moves the stage's time of day on, fading over a few seconds: castle town goes from dusk to night as its shops and lanterns light up.
 

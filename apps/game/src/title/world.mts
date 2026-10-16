@@ -175,8 +175,9 @@ export function createTitleWorld(viewport: Viewport, gap: () => Gap): View {
 	owned.geometries.push(mossGeometry)
 	owned.materials.push(mossMaterial)
 	const moss = new Mesh(mossGeometry, mossMaterial)
-	moss.position.set(0, 0.01, -38)
-	moss.scale.set(30, 1, 46)
+	// Up to under the camera, however far back it stands for a short screen, so no bare earth shows at the foot.
+	moss.position.set(0, 0.01, -30)
+	moss.scale.set(42, 1, 74)
 	moss.receiveShadow = true
 	scene.add(moss)
 

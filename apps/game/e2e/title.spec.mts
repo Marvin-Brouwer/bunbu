@@ -64,19 +64,50 @@ for (const quiz of ['without a quiz', 'with a quiz chosen'] as const) {
 				}
 				await expect(page.getByRole('link', { name: quiz === 'with a quiz chosen' ? 'Fight' : 'Select quiz' })).toBeVisible()
 
-				const gap = await gapOf(page)
-				const wide = width / height > 1.1
-				if (!wide) expect(gap.height).toBeGreaterThanOrEqual(leastRoom)
-				const room = wide ? { top: 0, height } : gap
-				// The camera sways from side to side; he stays in frame all the way.
-				for (const sway of [-0.035, 0, 0.035]) {
-					const box = samuraiOnScreen(width, height, gap, sway)
-					expect(box.left).toBeGreaterThanOrEqual(0)
-					expect(box.right).toBeLessThanOrEqual(width)
-					expect(box.top).toBeGreaterThanOrEqual(room.top)
-					expect(box.bottom).toBeLessThanOrEqual(room.top + room.height)
-				}
+				await expectInFrame(page, width, height)
 			})
 		}
 	})
+}
+
+test('keeps the samurai in frame with a long quiz title on the smallest phone', async ({ page }) => {
+	const { width, height } = screens[0]
+	await page.setViewportSize({ width, height })
+	await page.goto('quizzes/')
+	await page.locator('input[type="file"]').setInputFiles({
+		name: 'long.yaml',
+		mimeType: 'application/yaml',
+		buffer: Buffer.from([
+			'# yaml-language-server: $schema=https://marvin-brouwer.github.io/bunbu/schema/v1.json',
+			'id: long-title',
+			'title: A quiz with a title so long that it wraps over three or four lines on the smallest phone there is',
+			"version: '1'",
+			'language: en',
+			'passingScore: 70',
+			'questions:',
+			'  - type: yes-no',
+			'    query: Is this long?',
+			"    answer: 'yes'",
+		].join('\n')),
+	})
+	// A quiz written by hand asks for the terms first.
+	const agree = page.getByRole('button', { name: 'I agree' })
+	await agree.click({ timeout: 5000 }).catch(() => undefined)
+	await page.getByText('A quiz with a title so long').first().click()
+	await page.getByRole('link', { name: 'Back' }).click()
+	await expect(page.getByRole('link', { name: 'Fight' })).toBeAttached()
+	await expectInFrame(page, width, height)
+})
+
+/** All of the samurai inside the gap and across the screen, at both ends of the camera's sway. */
+async function expectInFrame(page: Page, width: number, height: number): Promise<void> {
+	const gap = await gapOf(page)
+	expect(gap.height).toBeGreaterThanOrEqual(leastRoom)
+	for (const sway of [-0.035, 0, 0.035]) {
+		const box = samuraiOnScreen(width, height, gap, sway)
+		expect(box.left).toBeGreaterThanOrEqual(0)
+		expect(box.right).toBeLessThanOrEqual(width)
+		expect(box.top).toBeGreaterThanOrEqual(gap.top)
+		expect(box.bottom).toBeLessThanOrEqual(gap.top + gap.height)
+	}
 }
