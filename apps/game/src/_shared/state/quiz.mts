@@ -48,6 +48,11 @@ export type QuizActions = {
 	 * `random`, the solutions and match rows of each question are asked in random order too.
 	 */
 	load: (data: BunbuData, order?: readonly number[], random?: Random) => void
+	/**
+	 * Asks the questions of `order` after the ones already in, for endless: the quiz goes round
+	 * again. `random` shuffles their solutions and rows, as in `load`.
+	 */
+	extend: (order: readonly number[], random?: Random) => void
 	/** The ambush that is up next, or `undefined` when the quiz is done. */
 	current: () => QuestionRef | undefined
 	/** The question a ref points at. */
@@ -66,9 +71,12 @@ export type Quiz = Store<QuizState & QuizActions>
 export const noQuiz: QuizState = { quiz: undefined, order: [], refs: [], answered: 0, records: [] }
 
 /** How many ambushes a question takes: one per solution, one per row, otherwise one. */
-export function partsOf(question: Question): number {
-	if (question.type === 'solutions') return question.options.length
-	if (question.type === 'match') return question.rows.length
+/** What {@link partsOf} reads of a question: its type, and how many solutions or rows it has. */
+export type Rounded = { readonly type: string; readonly options?: { readonly length: number }; readonly rows?: { readonly length: number } }
+
+export function partsOf(question: Rounded): number {
+	if (question.type === 'solutions') return question.options?.length ?? 1
+	if (question.type === 'match') return question.rows?.length ?? 1
 	return 1
 }
 
@@ -85,14 +93,63 @@ export function refsOf(quiz: BunbuData, order: readonly number[], random?: Rando
 	})
 }
 
+/** What the counting of questions asked reads of a quiz: the questions, in the order they are asked. */
+export type Asked = { readonly quiz: { readonly questions: readonly Rounded[] } | undefined; readonly order: readonly number[] }
+
+/**
+ * Where each question of `order` starts in the refs: one entry per time a question is asked, its
+ * rounds after it, and the end of the refs last. In endless a question is asked again once all have
+ * been, so it is where a question is in `order`, not its number, that tells one asking from another.
+ */
+export function askStarts({ quiz, order }: Asked): readonly number[] {
+	// Worked out once per `order`: it is never changed, only replaced, and the world and the HUD ask
+	// every frame, while endless keeps making it longer.
+	const known = startsKnown.get(order)
+	if (known !== undefined && known.quiz === quiz) return known.starts
+	const starts = [0]
+	for (const question of order) {
+		const asked = quiz?.questions[question]
+		starts.push((starts.at(-1) ?? 0) + (asked === undefined ? 1 : partsOf(asked)))
+	}
+	startsKnown.set(order, { quiz, starts })
+	return starts
+}
+
+const startsKnown = new WeakMap<readonly number[], { readonly quiz: Asked['quiz']; readonly starts: readonly number[] }>()
+
+/** How many of `sorted`, from `from` on, are under `limit` (or at it, `orAt`): by halving, they are in order. */
+function countBelow(sorted: readonly number[], from: number, limit: number, orAt: boolean): number {
+	let low = from
+	let high = sorted.length
+	while (low < high) {
+		const middle = (low + high) >> 1
+		const value = sorted[middle] ?? Infinity
+		if (value < limit || (orAt && value === limit)) low = middle + 1
+		else high = middle
+	}
+	return low - from
+}
+
+/** How many questions have been asked, the one going on included: as many as start before `answered`. */
+export function questionsStarted(state: Asked & { readonly answered: number }): number {
+	const starts = askStarts(state)
+	return Math.min(starts.length - 1, countBelow(starts, 0, state.answered, false))
+}
+
 /**
  * How many questions are done: every ambush of them answered. A question halfway through its
- * rounds isn't done yet.
+ * rounds isn't done yet. In endless a question is asked again once all have been, and counts again.
  */
-export function questionsAnswered({ refs, answered }: Pick<QuizState, 'refs' | 'answered'>): number {
-	const touched = new Set(refs.slice(0, answered).map((ref) => ref.question))
-	const going = refs[answered]?.question
-	return going !== undefined && touched.has(going) ? touched.size - 1 : touched.size
+export function questionsAnswered(state: Asked & { readonly answered: number }): number {
+	// A question is done once the refs up to its end have been answered.
+	return countBelow(askStarts(state), 1, state.answered, true)
+}
+
+/** The refs of the time the question at ref `index` is asked: its rounds, and no other time it is asked. */
+export function refsOfAsk(state: Asked & { readonly refs: readonly QuestionRef[] }, index: number): readonly QuestionRef[] {
+	const starts = askStarts(state)
+	const ask = starts.findIndex((start, at) => index >= start && index < (starts[at + 1] ?? Infinity))
+	return state.refs.slice(starts[ask] ?? 0, starts[ask + 1] ?? state.refs.length)
 }
 
 /** A loaded quiz, ready to be asked in `order`. */
@@ -146,6 +203,15 @@ export function createQuiz(initial: QuizState = noQuiz): Quiz {
 
 		load(data, order, random) {
 			store.update(() => loaded(data, order, random))
+		},
+
+		extend(order, random) {
+			const { quiz, order: asked, refs } = state()
+			if (quiz === undefined) {
+				refuse('quiz.extend', 'no quiz is loaded')
+				return
+			}
+			store.update(() => ({ order: [...asked, ...order], refs: [...refs, ...refsOf(quiz, order, random)] }))
 		},
 
 		current() {

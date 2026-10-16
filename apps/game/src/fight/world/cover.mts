@@ -103,11 +103,20 @@ export const coverReach = 1.5
 export const coverHeight = 2.25
 
 /**
- * Whether `distance` along the path is within `margin` metres of where an ambush's covers stand,
- * with an ambush every `every` metres: a stage's own things by the way keep clear of them there.
+ * Where along a path the ambush nearest `distance` springs, with one every `every` metres from
+ * `phase` on: `0` on a stage of its own, the stage's start between two ambushes in endless.
  */
-export function nearAmbushCover(distance: number, every: number, margin = 2.5): boolean {
-	const ambush = Math.round(distance / every) * every
+export function ambushNear(distance: number, every: number, phase = 0): number {
+	return Math.round((distance - phase) / every) * every + phase
+}
+
+/**
+ * Whether `distance` along the path is within `margin` metres of where an ambush's covers stand,
+ * with an ambush every `every` metres from `phase` on: a stage's own things by the way keep clear
+ * of them there.
+ */
+export function nearAmbushCover(distance: number, every: number, margin = 2.5, phase = 0): boolean {
+	const ambush = ambushNear(distance, every, phase)
 	return [ambush - every, ambush].some((at) => at > 0 && coverAhead.some((ahead) => Math.abs(distance - (at + ahead)) < margin))
 }
 
@@ -130,7 +139,7 @@ const ahead = 140
  * well away from where an ambush springs, and never on an ambush's own covers, which can stand
  * past that: two covers never stand in each other. With the heading they stand along.
  */
-export function decoysOf(path: Path, set: CoverSet, tile: number, every: number, seed: number): (CoverSpot & { heading: number; distance: number })[] {
+export function decoysOf(path: Path, set: CoverSet, tile: number, every: number, seed: number, phase = 0): (CoverSpot & { heading: number; distance: number })[] {
 	const random = randomOf(seed ^ Math.imul(tile, 0x9e3779b1) ^ 0x5bd1e995)
 	const from = tile * tileLength
 	const count = Math.floor(random() * 2.2)
@@ -139,7 +148,7 @@ export function decoysOf(path: Path, set: CoverSet, tile: number, every: number,
 	const apart = 2 * coverReach + 0.5
 	const kept: { distance: number; side: number }[] = []
 	for (const decoy of Array.from({ length: count }, () => ({ distance: from + random() * tileLength, side: random() > 0.5 ? 1 : -1 }))) {
-		if (Math.abs(decoy.distance - Math.round(decoy.distance / every) * every) < 22 || nearAmbushCover(decoy.distance, every, apart)) continue
+		if (Math.abs(decoy.distance - ambushNear(decoy.distance, every, phase)) < 22 || nearAmbushCover(decoy.distance, every, apart, phase)) continue
 		if (decoy.distance - from < apart / 2 || from + tileLength - decoy.distance < apart / 2) continue
 		if (kept.some((other) => other.side === decoy.side && Math.abs(other.distance - decoy.distance) < apart)) continue
 		kept.push(decoy)
@@ -389,10 +398,6 @@ export type Cover = {
 	dispose: () => void
 }
 
-/**
- * The covers of `set` along `path`: at every `every` metres, where an ambush springs, and at
- * random in between from `seed`, a new one every run.
- */
 /** One villager, standing at `x`: robe, face, straw hat. */
 function personAt(x: number, robe: number, hat = 0xc9a75e): Part[] {
 	return [
@@ -461,7 +466,12 @@ export function coverKindAt(set: CoverSet, districts: readonly District[], dista
 	return choices.at(-1)?.kind ?? 'crates'
 }
 
-export function createCover(path: Path, set: CoverSet, every: number, seed: number, owned: Owned, districts: readonly District[] = [], stageLength: () => number = () => 0): Cover {
+/**
+ * The covers of `set` along `path`: at every `every` metres from `phase` on, where an ambush
+ * springs, and at random in between from `seed`, a new one every run, each of the kind its district
+ * has there (`districts`, along a stage of `stageLength()` metres).
+ */
+export function createCover(path: Path, set: CoverSet, every: number, seed: number, owned: Owned, districts: readonly District[] = [], stageLength: () => number = () => 0, phase = 0): Cover {
 	const shapes = shapesOf()
 	owned.geometries.push(...Object.values(shapes))
 	const material = new MeshStandardMaterial({ roughness: 0.95, flatShading: true })
@@ -479,11 +489,11 @@ export function createCover(path: Path, set: CoverSet, every: number, seed: numb
 		const random = randomOf(seed ^ Math.imul(tile, 0x9e3779b1))
 		const from = tile * tileLength
 		const parts: Part[] = []
-		for (let ambush = Math.ceil(from / every) * every; ambush < from + tileLength; ambush += every) {
+		for (let ambush = Math.ceil((from - phase) / every) * every + phase; ambush < from + tileLength; ambush += every) {
 			if (ambush <= 0) continue
 			parts.push(...coversAt(coverSpotsAt(path, ambush, set.aside), ambush, 'ambush', path.at(ambush).heading, random))
 		}
-		for (const decoy of decoysOf(path, set, tile, every, seed)) parts.push(...coversAt([decoy], decoy.distance, 'decoy', decoy.heading, random))
+		for (const decoy of decoysOf(path, set, tile, every, seed, phase)) parts.push(...coversAt([decoy], decoy.distance, 'decoy', decoy.heading, random))
 		return parts
 	}
 

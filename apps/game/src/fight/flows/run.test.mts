@@ -10,9 +10,12 @@ import { highScores } from '../state/highscores.mts'
 import { lastRun } from '../state/lastrun.mts'
 import { shareOfOnePoint } from '../state/life.mts'
 import { runConfig } from '../state/run.mts'
-import { stageResults } from '../state/stage-results.mts'
+import { opensNextStage, samuraiOpensWith, stageResults } from '../state/stage-results.mts'
 import { nextScrollSeconds } from '../../_shared/state/ambush.mts'
 import { commitAmbush, outcomeDelaySeconds } from './ambush.mts'
+import { loaded, questionsAnswered } from '../../_shared/state/quiz.mts'
+import { notRunning } from '../state/run.mts'
+import { missShare } from './ambush.mts'
 import { ambushAt, endRun, metresPerAmbush, startRun, testOf, tickRun } from './run.mts'
 
 let game: RunGame
@@ -232,13 +235,13 @@ describe('stage results', () => {
 	it('marks the stage cleared by a finished run, at its full length', () => {
 		play([true, true, true, true])
 
-		expect(stageResults.value.of('fixture', '1', 'rice-fields')).toEqual({ distance: 4 * metresPerAmbush, cleared: true })
+		expect(stageResults.value.of('fixture', '1', 'rice-fields')).toEqual({ distance: 4 * metresPerAmbush, cleared: true, opens: true })
 	})
 
 	it('keeps how far a fallen run got', () => {
 		play([false, false])
 
-		expect(stageResults.value.of('fixture', '1', 'rice-fields')).toEqual({ distance: ambushAt(1), cleared: false })
+		expect(stageResults.value.of('fixture', '1', 'rice-fields')).toEqual({ distance: ambushAt(1), cleared: false, opens: false })
 	})
 
 	it('keeps the best of the runs on a stage', () => {
@@ -278,6 +281,63 @@ describe('unlocking stages', () => {
 
 		expect(stageResults.value.unlocked('fixture', '1', 'bamboo-forest')).toBe(false)
 		expect(game.score.value.unlocked).toBeUndefined()
+	})
+
+	it('unlocks nothing as Apprentice, though the stage is cleared', () => {
+		quizDifficulties.value.choose('fixture', '1', 'apprentice')
+		startRun(game, fixtureQuiz)
+
+		play([true, true, true, true])
+
+		expect(stageResults.value.of('fixture', '1', 'rice-fields')).toMatchObject({ cleared: true, opens: false })
+		expect(stageResults.value.unlocked('fixture', '1', 'bamboo-forest')).toBe(false)
+		expect(game.score.value.unlocked).toBeUndefined()
+	})
+
+	it('unlocks as Samurai only with half the life bar left or more', () => {
+		play([true, true, true, false])
+
+		expect(game.life.value.value).toBeLessThan(samuraiOpensWith)
+		expect(stageResults.value.of('fixture', '1', 'rice-fields')).toMatchObject({ cleared: true, opens: false })
+		expect(stageResults.value.unlocked('fixture', '1', 'bamboo-forest')).toBe(false)
+	})
+
+	it('unlocks as Samurai with the life bar at half, a rounding error under it included', () => {
+		expect(opensNextStage('samurai', 0.49999999999999983)).toBe(true)
+		expect(opensNextStage('samurai', 0.49)).toBe(false)
+	})
+
+	it('unlocks on the harder difficulties with any life left', () => {
+		quizDifficulties.value.choose('fixture', '1', 'daimyo')
+		startRun(game, fixtureQuiz)
+
+		play([true, true, true, false])
+
+		expect(stageResults.value.unlocked('fixture', '1', 'bamboo-forest')).toBe(true)
+	})
+
+	it('keeps a stage unlocked by an earlier run, whatever the next run does', () => {
+		play([true, true, true, true])
+		quizDifficulties.value.choose('fixture', '1', 'apprentice')
+		startRun(game, fixtureQuiz)
+
+		play([true, true, true, true])
+
+		expect(stageResults.value.unlocked('fixture', '1', 'bamboo-forest')).toBe(true)
+	})
+
+	it('tells the run that clears the last stage still to clear on Shogun that it unlocked endless', () => {
+		for (const stage of stages.slice(0, -1)) stageResults.value.submit('fixture', '1', stage, { distance: 1, cleared: true, shogun: true })
+		selection.value.chooseStage('edo-castle')
+		quizDifficulties.value.choose('fixture', '1', 'shogun')
+		startRun(game, fixtureQuiz)
+
+		play([true, true, true, true])
+
+		expect(game.score.value.unlockedEndless).toBe(true)
+		startRun(game, fixtureQuiz)
+		play([true, true, true, true])
+		expect(game.score.value.unlockedEndless).toBe(false)
 	})
 
 	it('tells only the run that unlocked it', () => {
@@ -533,4 +593,100 @@ describe('frames', () => {
 it('puts the ambush on the leg of the path it belongs to', () => {
 	expect(ambushAt(0)).toBe(metresPerAmbush)
 	expect(ambushAt(2)).toBe(3 * metresPerAmbush)
+})
+
+describe('endless', () => {
+	beforeEach(() => {
+		selection.value.chooseEndless()
+		startRun(game, fixtureQuiz)
+	})
+
+	it('goes on past every question, round again', () => {
+		play([true, true, true, true, true, true, true, true, true])
+		expect(game.run.value.phase).not.toBe('finished')
+		expect(questionsAnswered(game.quiz.value)).toBe(9)
+		expect(game.score.value.points).toBe(900)
+	})
+
+	it('fills the life bar again when a stage is done: each stage is a test of its own', () => {
+		play([false, true, true])
+		expect(game.life.value.value).toBeLessThan(1)
+		play([true])
+		expect(game.life.value.value).toBe(1)
+		play([false, true, true, true])
+		expect(game.run.value.phase).not.toBe('fallen')
+	})
+
+	it('ends only with a fall, which sets its own high score and no stage result', () => {
+		play([true, false, false])
+		expect(game.run.value.phase).toBe('fallen')
+		expect(highScores.value.of('fixture', '1', true)).toMatchObject({ points: 100, correct: 1, answered: 3 })
+		expect(highScores.value.of('fixture', '1')).toBeUndefined()
+		expect(stageResults.value.of('fixture', '1', 'rice-fields')).toBeUndefined()
+	})
+
+	it('starts with the best of endless to beat', () => {
+		highScores.value.submit('fixture', '1', { points: 300, seconds: 1, correct: 3, answered: 4, difficulty: 'samurai' }, true)
+		startRun(game, fixtureQuiz)
+		expect(game.score.value.best).toMatchObject({ points: 300 })
+	})
+})
+
+describe('unlocking endless', () => {
+	const clearAll = (difficulty: 'samurai' | 'shogun') => {
+		for (const stage of stages) {
+			selection.value.chooseStage(stage)
+			startRun(game, fixtureQuiz, undefined, difficulty)
+			play([true, true, true, true])
+		}
+	}
+
+	it('opens once every stage has been cleared on Shogun', () => {
+		clearAll('samurai')
+		expect(stageResults.value.endlessUnlocked('fixture', '1')).toBe(false)
+		clearAll('shogun')
+		expect(stageResults.value.endlessUnlocked('fixture', '1')).toBe(true)
+	})
+
+	it('keeps a clear on Shogun when a better run on an easier difficulty comes after', () => {
+		startRun(game, fixtureQuiz, undefined, 'shogun')
+		play([true, true, true, false])
+		startRun(game, fixtureQuiz, undefined, 'samurai')
+		play([true, true, true, true])
+		expect(stageResults.value.of('fixture', '1', 'rice-fields')).toMatchObject({ cleared: true, shogun: true })
+	})
+})
+
+describe('endless, asking the same question again', () => {
+	const yesNo = (query: string) => ({ type: 'yes-no' as const, query: query as Markdown, answer: 'yes' as const })
+
+	it('goes on with a quiz of one question, each time an ambush of its own farther along', () => {
+		selection.value.chooseEndless()
+		startRun(game, { ...fixtureQuiz, questions: [yesNo('Only?')] })
+		play([true, true, true])
+		expect(questionsAnswered(game.quiz.value)).toBe(3)
+		runToAmbush()
+		expect(game.run.value.distance).toBeCloseTo(ambushAt(3))
+	})
+
+	it('counts a question in a stage twice as two points, so one miss is not the end', () => {
+		const five = { ...fixtureQuiz, questionsPerTest: 4, questions: [0, 1, 2, 3, 4].map((each) => yesNo(`${each}?`)) }
+		// A stage across a new round of the quiz: question 4 at its end, then again at the start.
+		game = createRunGame({ quiz: loaded(five, [4, 0, 4, 1]), run: { ...notRunning, phase: 'running', stageLength: Infinity } })
+		expect(missShare(game)).toBeCloseTo(shareOfOnePoint(4, 70))
+	})
+
+	it('asks the rounds of a question once each time, not every time it was ever asked', () => {
+		const solutions = {
+			type: 'solutions' as const,
+			query: 'Which?' as Markdown,
+			scenario: 'A goal.' as Markdown,
+			options: [0, 1, 2].map((each) => ({ answer: `${each}` as Markdown, correct: each === 0 })),
+		}
+		selection.value.chooseEndless()
+		startRun(game, { ...fixtureQuiz, questions: [solutions, yesNo('And?')] })
+		play([true, true, true, true])
+		runToAmbush()
+		expect(game.ambush.value.rounds).toBe(3)
+	})
 })

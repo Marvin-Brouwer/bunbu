@@ -2,7 +2,7 @@
  * The high score of every quiz the player has passed, kept per quiz `id` + `version`
  * ([score](../../../../../docs/design/gameplay.md#score)). App-wide, since the menu and the quiz
  * cards show it outside a run. Only a passed run sets one, and with equal points the shorter
- * run time wins.
+ * run time wins. Endless keeps one of its own per quiz ([endless](../../../../../docs/design/gameplay.md#endless)).
  */
 
 import { createStore, type Store } from '@rooted/store'
@@ -14,10 +14,10 @@ export type HighScoresState = {
 }
 
 export type HighScoresActions = {
-	/** The high score of a quiz, or `undefined` while it has not been passed. */
-	of: (id: string, version: string) => HighScore | undefined
+	/** The high score of a quiz, or `undefined` while it has not been passed; of its endless with `endless`. */
+	of: (id: string, version: string, endless?: boolean) => HighScore | undefined
 	/** Keeps `score` when it beats the high score. Returns whether it did, for "new high score". */
-	submit: (id: string, version: string, score: HighScore) => boolean
+	submit: (id: string, version: string, score: HighScore, endless?: boolean) => boolean
 	/** Puts back what was saved. Anything already recorded this session is kept when it is better. */
 	restore: (saved: Readonly<Record<string, HighScore>>) => void
 	reset: () => void
@@ -29,8 +29,8 @@ export type HighScores = Store<HighScoresState & HighScoresActions>
 export const noHighScores: HighScoresState = { scores: {} }
 
 /** A new version of a quiz starts with a clean slate: its questions may have changed. */
-export function highScoreKey(id: string, version: string): string {
-	return JSON.stringify([id, version])
+export function highScoreKey(id: string, version: string, endless = false): string {
+	return JSON.stringify(endless ? [id, version, 'endless'] : [id, version])
 }
 
 export function createHighScores(initial: HighScoresState = noHighScores): HighScores {
@@ -38,12 +38,12 @@ export function createHighScores(initial: HighScoresState = noHighScores): HighS
 	const store: HighScores = createStore<HighScoresState & HighScoresActions>({
 		...initial,
 
-		of(id, version) {
-			return store.value.scores[highScoreKey(id, version)]
+		of(id, version, endless) {
+			return store.value.scores[highScoreKey(id, version, endless)]
 		},
 
-		submit(id, version, score) {
-			const key = highScoreKey(id, version)
+		submit(id, version, score, endless) {
+			const key = highScoreKey(id, version, endless)
 			if (!beats(score, store.value.scores[key])) return false
 			store.update((state) => ({ scores: { ...state.scores, [key]: score } }))
 			return true

@@ -11,20 +11,30 @@ import { approachOf } from '../../_shared/state/ambush-time.mts'
 import type { Random } from '../../_shared/state/random.mts'
 import { refuse, snapshot } from '../../_shared/state/store.mts'
 import type { AmbushOption, Verdict } from '../../_shared/state/ambush.mts'
-import type { QuestionRef, QuizActions, QuizState } from '../../_shared/state/quiz.mts'
+import { askStarts, questionsStarted, refsOfAsk, type QuestionRef, type QuizActions, type QuizState } from '../../_shared/state/quiz.mts'
 import type { RunGame } from '../state/game.mts'
 import { shareOfOnePoint } from '../state/life.mts'
 import { attackSpawnsOf, outcomeOrder } from '../state/ninjas.mts'
 import { runConfig } from '../state/run.mts'
 import { moveSeconds, type Move } from '../state/shogun.mts'
 import { pointsIn } from '../state/score.mts'
-import { recordRun, runIsOver, scoreAnswer } from './run.mts'
+import { stageOfQuestion, stageQuestions } from './endless.mts'
+import { isEndless, recordRun, runIsOver, scoreAnswer } from './run.mts'
 
 /** What one miss costs the life bar, for the quiz that is loaded. */
 export function missShare(game: RunGame): number {
-	const { quiz, refs } = snapshot<QuizState & QuizActions>(game.quiz)
+	const state = snapshot<QuizState & QuizActions>(game.quiz)
+	const { quiz, refs } = state
 	if (quiz === undefined) return 1
-	return shareOfOnePoint(pointsIn(quiz, refs), quiz.passingScore)
+	if (!isEndless(game)) return shareOfOnePoint(pointsIn(quiz, refs), quiz.passingScore)
+	// In endless, of the stage that is on: each is a test of its own. A question can be in a stage
+	// twice, across a new round of the quiz, so every ambush counts its own point.
+	const questions = stageQuestions(quiz)
+	const stage = stageOfQuestion(Math.max(0, questionsStarted(state) - 1), questions)
+	const starts = askStarts(state)
+	const from = starts[stage * questions] ?? 0
+	const to = starts[(stage + 1) * questions] ?? refs.length
+	return shareOfOnePoint(Math.max(1, to - from), quiz.passingScore)
 }
 
 /**
@@ -40,9 +50,10 @@ export function openAmbush(game: RunGame, timeScale: number | undefined, random:
 	game.run.value.beginAmbush()
 	if (game.run.value.phase !== 'ambush') return
 
-	const { quiz, refs } = snapshot<QuizState & QuizActions>(game.quiz)
-	if (quiz === undefined) return
-	const opening = openingOf(quiz, refs, at, { timeScale, random })
+	const state = snapshot<QuizState & QuizActions>(game.quiz)
+	if (state.quiz === undefined) return
+	// Only this time the question is asked: in endless it comes round again.
+	const opening = openingOf(state.quiz, refsOfAsk(state, state.answered), at, { timeScale, random })
 	game.ninjas.value.clear()
 	game.ninjas.value.spawn(attackSpawnsOf(opening, random))
 	game.ambush.value.start(opening)
@@ -129,10 +140,10 @@ export const outcomeDelaySeconds = 0.4
  * after the last round.
  */
 function openNextRound(game: RunGame, at: QuestionRef, time: { seconds: number; secondsLeft: number }, before: readonly AmbushOption[], random: Random): void {
-	const { quiz, refs } = snapshot<QuizState & QuizActions>(game.quiz)
-	if (quiz === undefined) return
+	const state = snapshot<QuizState & QuizActions>(game.quiz)
+	if (state.quiz === undefined) return
 	// The time limit is the question's, so it is the same for every round.
-	const opening = { ...inPlacesOf(openingOf(quiz, refs, at, { timeScale: undefined, random }), before), seconds: time.seconds }
+	const opening = { ...inPlacesOf(openingOf(state.quiz, refsOfAsk(state, state.answered), at, { timeScale: undefined, random }), before), seconds: time.seconds }
 	game.ninjas.value.regroup(attackSpawnsOf(opening, random))
 	game.ambush.value.nextRound(opening, time.secondsLeft)
 }

@@ -5,19 +5,46 @@
  * scores. The length of a stage depends on the quiz, so a result only means something for the
  * quiz it was run on.
  *
- * Clearing a stage, passing a test on it, unlocks the next one
- * ([stages](../../../../../docs/design/gameplay.md#stages)).
+ * Clearing a stage, passing a test on it, unlocks the next one, but not as Apprentice, and as
+ * Samurai only with half the life bar left or more
+ * ([stages](../../../../../docs/design/gameplay.md#stages)). Clearing every stage on Shogun
+ * unlocks endless ([endless](../../../../../docs/design/gameplay.md#endless)).
  */
 
 import { createStore, type Store } from '@rooted/store'
 import { stages, type Stage } from '../../_shared/state/selection.mts'
+import type { Difficulty } from './difficulty.mts'
 
 export type StageResult = {
 	/** The furthest the samurai got, in metres. */
 	readonly distance: number
 	/** Whether a run on it ever finished, rather than fell. */
 	readonly cleared: boolean
+	/** Whether a run on it ever finished on Shogun, the hardest difficulty. */
+	readonly shogun?: boolean
+	/**
+	 * Whether a run on it ever finished in a way that unlocks the next stage ({@link opensNextStage}).
+	 * Left out by results kept before that rule, which unlocked it by finishing.
+	 */
+	readonly opens?: boolean
 }
+
+/** How much of the life bar a Samurai run must finish with to unlock the next stage. */
+export const samuraiOpensWith = 0.5
+
+/**
+ * Whether finishing a stage on `difficulty`, with `life` of the life bar left (`0` to `1`), unlocks
+ * the next one: never as Apprentice, as Samurai with at least {@link samuraiOpensWith} of it left,
+ * and always on the harder ones.
+ */
+export function opensNextStage(difficulty: Difficulty, life: number): boolean {
+	if (difficulty === 'apprentice') return false
+	// The life bar's shares are fractions such as 1/6, so a bar at exactly half lands a rounding error either side.
+	return difficulty !== 'samurai' || life >= samuraiOpensWith - 1e-9
+}
+
+/** Whether `result` unlocks the next stage. */
+const opens = (result: StageResult | undefined): boolean => result?.opens ?? result?.cleared === true
 
 export type StageResultsState = {
 	/** By {@link stageResultKey}. */
@@ -27,9 +54,11 @@ export type StageResultsState = {
 export type StageResultsActions = {
 	/** The best result on a stage, or `undefined` while it hasn't been run on this quiz. */
 	of: (id: string, version: string, stage: Stage) => StageResult | undefined
-	/** Whether the stage can be played on this quiz: the first always, the others once the one before is cleared. */
+	/** Whether the stage can be played on this quiz: the first always, the others once the one before {@link opensNextStage opened it}. */
 	unlocked: (id: string, version: string, stage: Stage) => boolean
-	/** Keeps `result` when it is better than the one kept. */
+	/** Whether endless can be played on this quiz: once every stage has been cleared on Shogun. */
+	endlessUnlocked: (id: string, version: string) => boolean
+	/** Keeps `result` when it is better than the one kept, and a clear on Shogun or one that unlocks the next stage either way. */
 	submit: (id: string, version: string, stage: Stage, result: StageResult) => void
 	/** Drops every result of a quiz, which locks its stages again. */
 	forget: (id: string, version: string) => void
@@ -76,13 +105,22 @@ export function createStageResults(initial: StageResultsState = noStageResults):
 
 		unlocked(id, version, stage) {
 			const before = stageBefore(stage)
-			return before === undefined || store.value.of(id, version, before)?.cleared === true
+			return before === undefined || opens(store.value.of(id, version, before))
+		},
+
+		endlessUnlocked(id, version) {
+			return stages.every((stage) => store.value.of(id, version, stage)?.shogun === true)
 		},
 
 		submit(id, version, stage, result) {
 			const key = stageResultKey(id, version, stage)
-			if (!betterResult(result, store.value.results[key])) return
-			store.update((state) => ({ results: { ...state.results, [key]: result } }))
+			const kept = store.value.results[key]
+			const shogun = result.shogun === true || kept?.shogun === true
+			const opened = opens(result) || opens(kept)
+			const best = betterResult(result, kept) ? result : kept ?? result
+			const merged: StageResult = { ...best, opens: opened, ...(shogun ? { shogun } : {}) }
+			if (kept !== undefined && merged.distance === kept.distance && merged.cleared === kept.cleared && merged.shogun === kept.shogun && merged.opens === kept.opens) return
+			store.update((state) => ({ results: { ...state.results, [key]: merged } }))
 		},
 
 		forget(id, version) {

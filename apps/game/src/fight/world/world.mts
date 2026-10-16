@@ -19,6 +19,8 @@ import { framedIn, runFraming, viewOnPath } from './camera.mts'
 import { skyRadius } from './landscape.mts'
 import { createStageWorld, stageModels } from './stages.mts'
 import { selection, type Stage } from '../../_shared/state/selection.mts'
+import { answersOn, endlessStage, stageAt, stageQuestions, stageStart } from '../flows/endless.mts'
+import { metresPerAmbush } from '../flows/run.mts'
 import { createEffects } from './effects.mts'
 import { createPetals } from '../../_shared/world/petals.mts'
 import { createCharacter, ninjaLook, placeholderBody, samuraiLook, type Body } from '../../_shared/world/character.mts'
@@ -62,8 +64,26 @@ export function createRunWorld(game: RunGame, viewport: Viewport, roomBelow: () 
 	// The figures first, which the run waits on to look right; the town's trees after them.
 	const samuraiModel = loadModel('samurai')
 	const ninjaModel = loadModel('ninja')
-	// The stage's own world, after the figures, so the figures' models are asked for first.
-	const { path, view: stage, covers } = createStageWorld(selection.value.stage, scene, () => game.run.value.stageLength)
+	// The stage's own world, after the figures, so the figures' models are asked for first. In
+	// endless the next stage takes its place as the samurai comes to it, its path starting there.
+	const { endless } = selection.value
+	let stageIndex = 0
+	/** Where the stage on show starts along the run, in metres: its path's `0`. */
+	let offset = 0
+	/** How long the stage on show is, for its districts: in endless, from where it starts to where the next does. */
+	const lengthOfStage = () => {
+		const quiz = game.quiz.value.quiz
+		if (!endless) return game.run.value.stageLength
+		return quiz === undefined ? 0 : stageStart(stageIndex + 1, stageQuestions(quiz)) - stageStart(stageIndex, stageQuestions(quiz))
+	}
+	// `start` is where the stage starts along the run: in endless halfway between two ambushes, so
+	// its covers stand that far along its own path.
+	const layStage = (which: Stage, start = 0) => {
+		const before = new Set(scene.children)
+		const world = createStageWorld(which, scene, lengthOfStage, (((-start) % metresPerAmbush) + metresPerAmbush) % metresPerAmbush)
+		return { ...world, added: scene.children.filter((child) => !before.has(child)) }
+	}
+	let laid = layStage(endless ? endlessStage(0) : selection.value.stage)
 
 	const parts = createFigureParts()
 	const fighters = new Group()
@@ -157,9 +177,30 @@ export function createRunWorld(game: RunGame, viewport: Viewport, roomBelow: () 
 			const delta = still ? 0 : realDelta
 			const worldDelta = delta * run.worldScale
 
-			const here = path.at(run.distance)
-			stage.follow(here.x, here.z, run.distance)
-			stage.passTime(marksPassed(run), delta)
+			const quiz = game.quiz.value.quiz
+			if (endless && quiz !== undefined) {
+				const questions = stageQuestions(quiz)
+				const index = stageAt(run.distance, questions, answersOn(game.quiz.value, game.life.value.empty()))
+				if (index !== stageIndex) {
+					laid.view.dispose()
+					scene.remove(...laid.added)
+					stageIndex = index
+					offset = stageStart(index, questions)
+					laid = layStage(endlessStage(index), offset)
+					// A new place: the camera is there at once rather than swinging over from the last.
+					first = true
+				}
+			}
+			const { path, view: stage } = laid
+			// How far along the stage on show he is: the whole run, but in endless.
+			const distance = run.distance - offset
+			const here = path.at(distance)
+			stage.follow(here.x, here.z, distance)
+			// In endless the stage on show, from where it starts to where the next does, as the HUD's notches go.
+			const lengthHere = endless && quiz !== undefined
+				? stageStart(stageIndex + 1, stageQuestions(quiz)) - stageStart(stageIndex, stageQuestions(quiz))
+				: run.stageLength
+			stage.passTime(marksPassed({ distance, stageLength: lengthHere }), delta)
 
 			if (shogun.sequence === seen) {
 				since += delta
@@ -169,7 +210,7 @@ export function createRunWorld(game: RunGame, viewport: Viewport, roomBelow: () 
 				previous = shown
 			}
 			// Before the run he waits behind the camera, and in the intro he runs in to where the stage starts.
-			const ran = run.distance - runInLeft(run)
+			const ran = distance - runInLeft(run)
 			// His steps go by the metres his legs have run: in an ambush's slow motion he keeps running,
 			// slower and slower, though he hardly gets anywhere any more. His footsteps are heard by the same.
 			const cycle = (run.stepped / stepLength) * Math.PI
@@ -190,11 +231,11 @@ export function createRunWorld(game: RunGame, viewport: Viewport, roomBelow: () 
 			const below = roomBelow()
 			framed = below > 0 ? framed + ((ambush.open ? 1 : 0) - framed) * damp(delta, reframe) : 0
 			const frame = framedIn(width, height, height - (height - below) * framed, runFraming.fov)
-			const view = viewOnPath(path, run.distance, frame.aspect, fallen)
+			const view = viewOnPath(path, distance, frame.aspect, fallen)
 
 			// The ninjas first: they keep the mark each came from after the ambush's options are gone.
 			// They wind up to charge just before the time runs out.
-			ninjas.draw(game.ninjas.value.active, ambush.options, ambush.kind, view.frame, delta, worldDelta, ambush.open && ambush.seconds > 0 ? ambush.secondsLeft : undefined, covers(run.distance))
+			ninjas.draw(game.ninjas.value.active, ambush.options, ambush.kind, view.frame, delta, worldDelta, ambush.open && ambush.seconds > 0 ? ambush.secondsLeft : undefined, laid.covers(run.distance - offset))
 
 			// He runs along the path, and turns toward the ninja he strikes, blocks or is hit by, who stands square
 			// to the camera's way ahead.
@@ -203,7 +244,7 @@ export function createRunWorld(game: RunGame, viewport: Viewport, roomBelow: () 
 				? shortWay(here.heading, view.frame.heading + headingOf(aimed))
 				: 0
 			turnedTo += shortWay(turnedTo, turnTo) * damp(delta, 14)
-			const at = ran === run.distance ? here : path.at(ran)
+			const at = ran === distance ? here : path.at(ran)
 			samurai.root.position.set(at.x, 0, at.z)
 			samurai.root.rotation.y = at.heading + turnedTo
 
@@ -268,7 +309,7 @@ export function createRunWorld(game: RunGame, viewport: Viewport, roomBelow: () 
 			dropFinisher()
 			samurai.dispose()
 			parts.dispose()
-			stage.dispose()
+			laid.view.dispose()
 			scene.clear()
 			overlay.clear()
 			camera.fov = before.fov

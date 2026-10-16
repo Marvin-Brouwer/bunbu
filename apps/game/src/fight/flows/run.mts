@@ -10,15 +10,16 @@ import type { BunbuData } from '@bunbu/data'
 import { shuffle, type Random } from '../../_shared/state/random.mts'
 import { selection } from '../../_shared/state/selection.mts'
 import { snapshot } from '../../_shared/state/store.mts'
-import type { Outcome, QuestionRef, QuizActions, QuizState } from '../../_shared/state/quiz.mts'
+import { askStarts, questionsAnswered, questionsStarted, refsOfAsk, type Outcome, type QuestionRef, type QuizActions, type QuizState } from '../../_shared/state/quiz.mts'
 import { quizDifficulties, timeScales, type Difficulty } from '../state/difficulty.mts'
 import type { RunGame } from '../state/game.mts'
 import { highScores } from '../state/highscores.mts'
 import { lastRun } from '../state/lastrun.mts'
 import { runConfig, stageDistanceOf } from '../state/run.mts'
 import { pointOf, type HighScore } from '../state/score.mts'
-import { stageAfter, stageResults } from '../state/stage-results.mts'
+import { opensNextStage, stageAfter, stageResults } from '../state/stage-results.mts'
 import { missShare, openAmbush, tickAmbush, tickOutcome } from './ambush.mts'
+import { stageQuestions } from './endless.mts'
 
 /** Metres of path per ambush, until stage length and question count are decided (docs/plan.md). */
 export const metresPerAmbush = 120
@@ -33,9 +34,40 @@ export function ambushAt(asked: number): number {
 
 /** How many questions have been asked to the end. */
 function questionsAsked(game: RunGame): number {
-	const { refs, answered } = game.quiz.value
-	return new Set(refs.slice(0, answered).map((ref) => ref.question)).size
+	return questionsStarted(snapshot<QuizState & QuizActions>(game.quiz))
 }
+
+/** Whether `game` is a run of endless ([endless](../../../../../docs/design/gameplay.md#endless)). */
+export const isEndless = (game: RunGame): boolean => game.run.value.stageLength === Infinity
+
+/**
+ * Every question once more, in a new order, for endless: never the one just asked first, so a
+ * question never comes twice in a row.
+ */
+function nextRound(data: BunbuData, last: number | undefined, random?: Random): number[] {
+	const indices = data.questions.map((_, index) => index)
+	const order = random === undefined ? indices : shuffle(indices, random)
+	if (order.length > 1 && order[0] === last) [order[0], order[1]] = [order[1] ?? 0, order[0] ?? 0]
+	return order
+}
+
+/**
+ * Keeps endless going, once an ambush has played out: once fewer questions are left than a stage
+ * asks, the quiz goes round again, so the stage that is on always has all of its questions. And
+ * when that ambush was the last of a stage, the life bar is full again for the next: each stage is
+ * a test of its own.
+ */
+function keepGoing(game: RunGame, random?: Random): void {
+	const state = snapshot<QuizState & QuizActions>(game.quiz)
+	const { quiz, answered, order } = state
+	if (quiz === undefined) return
+	const questions = stageQuestions(quiz)
+	if (order.length - questionsStarted(state) < questions) game.quiz.value.extend(nextRound(quiz, order.at(-1), random), random)
+	// The ambush just played out was the last round of a question, and that question ended a stage.
+	const done = questionsAnswered(state)
+	const finished = askStarts(state).includes(answered)
+	if (answered > 0 && finished && done % questions === 0) game.life.value.reset()
+	}
 
 /**
  * The questions one run asks, as indices into the quiz, in the order they are asked: a test
@@ -50,24 +82,26 @@ export function testOf(data: BunbuData, random?: Random): number[] {
 }
 
 /**
- * Starts a run on a new test of `data`. The game passes `Math.random` for `random`; tests and
- * leave it out to ask the questions in file order. `difficulty` defaults to the one chosen
- * for the quiz, `best` to its high score, which the HUD shows as the one to beat.
+ * Starts a run on a new test of `data`, or on endless when that is chosen: every question, and
+ * a path with no end. The game passes `Math.random` for `random`; tests and leave it out to ask
+ * the questions in file order. `difficulty` defaults to the one chosen for the quiz, `best` to its
+ * high score (of its endless, for endless), which the HUD shows as the one to beat.
  */
 export function startRun(
 	game: RunGame,
 	data: BunbuData,
 	random?: Random,
 	difficulty: Difficulty = quizDifficulties.value.of(data.id, data.version),
-	best: HighScore | undefined = highScores.value.of(data.id, data.version),
+	best: HighScore | undefined = highScores.value.of(data.id, data.version, selection.value.endless),
 ): void {
-	game.quiz.value.load(data, testOf(data, random), random)
+	const { endless } = selection.value
+	game.quiz.value.load(data, endless ? nextRound(data, undefined, random) : testOf(data, random), random)
 	game.score.value.reset(best)
 	game.life.value.reset()
 	game.ambush.value.close()
 	game.ninjas.value.clear()
 	game.shogun.value.run()
-	game.run.value.start(game.quiz.value.order.length * metresPerAmbush, difficulty)
+	game.run.value.start(endless ? Infinity : game.quiz.value.order.length * metresPerAmbush, difficulty)
 }
 
 /**
@@ -77,11 +111,16 @@ export function startRun(
  * and its first miss takes its whole share of the life bar, the misses after that nothing.
  */
 export function scoreAnswer(game: RunGame, at: QuestionRef, outcome: Outcome): void {
-	const { quiz, refs, records } = snapshot<QuizState & QuizActions>(game.quiz)
+	const state = snapshot<QuizState & QuizActions>(game.quiz)
+	const { quiz, records } = state
 	if (quiz === undefined) return
 
+	// This time the question is asked: in endless it comes round again, and counts again.
+	const last = records.length - 1
+	const own = refsOfAsk(state, last)
+	const start = askStarts(state).findLast((each) => each <= last) ?? 0
 	const point = pointOf(quiz, at)
-	const answered = records.filter((record) => pointOf(quiz, record.at) === point)
+	const answered = records.slice(start).filter((record) => pointOf(quiz, record.at) === point)
 	const missedBefore = answered.slice(0, -1).some((record) => record.outcome !== 'correct')
 	if (missedBefore) return
 
@@ -90,14 +129,14 @@ export function scoreAnswer(game: RunGame, at: QuestionRef, outcome: Outcome): v
 		game.life.value.hit(missShare(game))
 		return
 	}
-	const parts = refs.filter((ref) => pointOf(quiz, ref) === point).length
+	const parts = own.filter((ref) => pointOf(quiz, ref) === point).length
 	if (answered.length === parts) game.score.value.addCorrect()
 }
 
-/** Whether the run is over: the bar is empty, or every question has been answered. */
+/** Whether the run is over: the bar is empty, or every question has been answered. Endless only ends with a fall. */
 export function runIsOver(game: RunGame): boolean {
 	const { answered, refs } = game.quiz.value
-	return game.life.value.empty() || answered >= refs.length
+	return game.life.value.empty() || (!isEndless(game) && answered >= refs.length)
 }
 
 /**
@@ -114,16 +153,24 @@ export function recordRun(game: RunGame): void {
 	if (quiz === undefined) return
 	const fallen = game.life.value.empty()
 	lastRun.value.save(quiz.id, quiz.version, game.quiz.value.misses())
-	// The stage can't change during a run: the fight setup is the only place it is chosen.
-	const { stage } = selection.value
-	const next = stageAfter(stage)
-	const unlocks = !fallen && next !== undefined && !stageResults.value.unlocked(quiz.id, quiz.version, next)
-	stageResults.value.submit(quiz.id, quiz.version, stage, { distance: stageDistanceOf(game.run.value), cleared: !fallen })
 	const { points, correct, answered } = game.score.value
 	const seconds = game.run.value.elapsed + game.run.value.recovery
 	const { difficulty } = game.run.value
+	if (isEndless(game)) {
+		// Endless ends with a fall, so it counts all the same: how far it went is the score.
+		const newBest = highScores.value.submit(quiz.id, quiz.version, { points, seconds, correct, answered, difficulty }, true)
+		game.score.value.settle(newBest, undefined)
+		return
+	}
+	// The stage can't change during a run: the fight setup is the only place it is chosen.
+	const { stage } = selection.value
+	const next = stageAfter(stage)
+	const opens = !fallen && opensNextStage(difficulty, game.life.value.value)
+	const unlocks = opens && next !== undefined && !stageResults.value.unlocked(quiz.id, quiz.version, next)
+	const endlessBefore = stageResults.value.endlessUnlocked(quiz.id, quiz.version)
+	stageResults.value.submit(quiz.id, quiz.version, stage, { distance: stageDistanceOf(game.run.value), cleared: !fallen, opens, ...(!fallen && difficulty === 'shogun' ? { shogun: true } : {}) })
 	const newBest = !fallen && highScores.value.submit(quiz.id, quiz.version, { points, seconds, correct, answered, difficulty })
-	game.score.value.settle(newBest, unlocks ? next : undefined)
+	game.score.value.settle(newBest, unlocks ? next : undefined, !endlessBefore && stageResults.value.endlessUnlocked(quiz.id, quiz.version))
 }
 
 /**
@@ -144,9 +191,10 @@ export function endRun(game: RunGame): void {
 
 /**
  * Ticks the stores that go by time, once per frame while the run is not paused. `worldDelta` is
- * world time, slowed down during an ambush; `realDelta` is the player's time.
+ * world time, slowed down during an ambush; `realDelta` is the player's time. `random` shuffles
+ * the questions when endless goes round again; tests leave it out.
  */
-export function tickRun(game: RunGame, worldDelta: number, realDelta: number): void {
+export function tickRun(game: RunGame, worldDelta: number, realDelta: number, random?: Random): void {
 	// A frame that ends the resume countdown is still part of the pause, for the ambush too.
 	const counting = game.run.value.countdown > 0
 
@@ -167,6 +215,7 @@ export function tickRun(game: RunGame, worldDelta: number, realDelta: number): v
 			return
 		}
 		game.shogun.value.run()
+		if (isEndless(game)) keepGoing(game, random)
 	}
 	if (game.quiz.value.current() !== undefined && distance >= ambushAt(questionsAsked(game)) - reached) {
 		openAmbush(game, timeScales[game.run.value.difficulty])

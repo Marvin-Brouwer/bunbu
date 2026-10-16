@@ -4,7 +4,7 @@ import { randomOf } from './backdrop.mts'
 import { townCover, townDistricts } from './castle-town.mts'
 import { mountainCover, mountainDistricts } from './mountain-temple.mts'
 import { riceCover, riceDistricts } from './rice-fields.mts'
-import { coverKindAt, coverReach, coverSpotsAt, decoysOf } from './cover.mts'
+import { ambushNear, coverKindAt, coverReach, coverSpotsAt, decoysOf } from './cover.mts'
 import { createPath, townRound } from './path.mts'
 
 describe('the decoys', () => {
@@ -29,6 +29,24 @@ describe('the decoys', () => {
 	it('keep apart the two Copilot found 2 cm apart (seed 3137, tile 2)', () => {
 		const [one, other] = decoysOf(path, townCover, 2, metresPerAmbush, 3137)
 		expect(other === undefined || Math.hypot(one!.x - other.x, one!.z - other.z) > 2 * coverReach).toBe(true)
+	})
+})
+
+describe('the covers of an endless stage', () => {
+	const path = createPath(townRound)
+	// In endless a stage starts halfway between two ambushes: they spring 60 m on along its own path.
+	const phase = metresPerAmbush / 2
+
+	it('stand at its ambushes, not where they would on a stage of its own', () => {
+		expect(ambushNear(70, metresPerAmbush, phase)).toBe(60)
+		expect(ambushNear(170, metresPerAmbush, phase)).toBe(180)
+	})
+
+	it('have their decoys keep clear of those ambushes\' covers', () => {
+		const ambushCovers = Array.from({ length: 12 }, (_, at) => coverSpotsAt(path, phase + at * metresPerAmbush, townCover.aside)).flat()
+		const decoys = Array.from({ length: 20 }, (_, seed) => Array.from({ length: 80 }, (__, tile) => decoysOf(path, townCover, tile, metresPerAmbush, seed * 7919, phase)).flat()).flat()
+
+		expect(Math.min(...decoys.flatMap((decoy) => ambushCovers.map((cover) => Math.hypot(decoy.x - cover.x, decoy.z - cover.z))))).toBeGreaterThan(2 * coverReach)
 	})
 })
 

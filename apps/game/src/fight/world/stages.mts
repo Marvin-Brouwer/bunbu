@@ -10,7 +10,7 @@ import { loadModel } from '../../canvas/models.mts'
 import type { Stage } from '../../_shared/state/selection.mts'
 import { metresPerAmbush } from '../flows/run.mts'
 import { createBackdrop, type District } from './backdrop.mts'
-import { coverSpotsAt, createCover, type CoverSet, type CoverSpot } from './cover.mts'
+import { ambushNear, coverSpotsAt, createCover, type CoverSet, type CoverSpot } from './cover.mts'
 import { createCastleTown, townDistricts, townCover } from './castle-town.mts'
 import type { Owned, StageView } from './landscape.mts'
 import { createPath, townRound, type Path } from './path.mts'
@@ -67,10 +67,10 @@ function newSeed(use: number): number {
  * and `cover` by its path for the ninjas to hide behind ([cover](./cover.mts)), laid out
  * differently every run.
  */
-function around(scene: Scene, { path, view }: OwnWorld, districts: readonly District[], cover: CoverSet, stageLength: () => number): StageWorld {
+function around(scene: Scene, { path, view }: OwnWorld, districts: readonly District[], cover: CoverSet, stageLength: () => number, phase: number): StageWorld {
 	const owned: Owned = { geometries: [], materials: [], textures: [] }
 	const backdrop = createBackdrop(path, districts, newSeed(0), owned, stageLength)
-	const covers = createCover(path, cover, metresPerAmbush, newSeed(1), owned, districts, stageLength)
+	const covers = createCover(path, cover, metresPerAmbush, newSeed(1), owned, districts, stageLength, phase)
 	scene.add(backdrop.group, covers.group)
 	return {
 		path,
@@ -89,7 +89,10 @@ function around(scene: Scene, { path, view }: OwnWorld, districts: readonly Dist
 				for (const made of owned.materials) made.dispose()
 			},
 		},
-		covers: (distance) => coverSpotsAt(path, Math.max(1, Math.round(distance / metresPerAmbush)) * metresPerAmbush, cover.aside),
+		covers: (distance) => {
+			const ambush = ambushNear(distance, metresPerAmbush, phase)
+			return coverSpotsAt(path, ambush > 0 ? ambush : ambush + metresPerAmbush, cover.aside)
+		},
 	}
 }
 
@@ -98,23 +101,23 @@ function around(scene: Scene, { path, view }: OwnWorld, districts: readonly Dist
  * scenery along it, in blocks stitched together ahead of the samurai ([blocks](./blocks.mts)), and
  * the backdrop behind it, district by district along `stageLength()` metres, and the covers beside it.
  */
-export function createStageWorld(stage: Stage, scene: Scene, stageLength: () => number = () => 0): StageWorld {
+export function createStageWorld(stage: Stage, scene: Scene, stageLength: () => number = () => 0, phase = 0): StageWorld {
 	if (stage === 'rice-fields') {
 		const path = createPath(riceRound)
-		return around(scene, { path, view: createRiceFields(scene, path, stageModels(stage)) }, riceDistricts, riceCover, stageLength)
+		return around(scene, { path, view: createRiceFields(scene, path, stageModels(stage)) }, riceDistricts, riceCover, stageLength, phase)
 	}
 	if (stage === 'bamboo-forest') {
 		const path = createPath(bambooRound)
-		return around(scene, { path, view: createBambooForest(scene, path, stageModels(stage)) }, bambooDistricts, bambooCover, stageLength)
+		return around(scene, { path, view: createBambooForest(scene, path, stageModels(stage)) }, bambooDistricts, bambooCover, stageLength, phase)
 	}
 	if (stage === 'mountain-temple') {
 		const path = createPath(mountainRound)
-		return around(scene, { path, view: createMountainTemple(scene, path, stageModels(stage)) }, mountainDistricts, mountainCover, stageLength)
+		return around(scene, { path, view: createMountainTemple(scene, path, stageModels(stage)) }, mountainDistricts, mountainCover, stageLength, phase)
 	}
 	if (stage === 'edo-castle') {
 		const path = createPath(castleRound)
-		return around(scene, { path, view: createEdoCastle(scene, path, stageModels(stage)) }, castleDistricts, castleCover, stageLength)
+		return around(scene, { path, view: createEdoCastle(scene, path, stageModels(stage)) }, castleDistricts, castleCover, stageLength, phase)
 	}
 	const path = createPath(townRound)
-	return around(scene, { path, view: createCastleTown(scene, path, stageModels(stage)) }, townDistricts, townCover, stageLength)
+	return around(scene, { path, view: createCastleTown(scene, path, stageModels(stage)) }, townDistricts, townCover, stageLength, phase)
 }

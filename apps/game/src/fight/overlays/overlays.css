@@ -309,3 +309,11 @@
 	background: currentcolor;
 	mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 15V3M7 8l5-5 5 5M5 12v9h14v-9'/%3E%3C/svg%3E") center / contain no-repeat;
 }
+
+/* Above the buttons after a run: why it is Retry. */
+.actionsHint {
+	margin: 0;
+	color: var(--ink-soft);
+	font-size: 0.85rem;
+	text-align: center;
+}

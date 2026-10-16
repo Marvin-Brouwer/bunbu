@@ -62,7 +62,7 @@ What was agreed is kept per quiz `id` + `version`, with the quiz's content and t
 "Choose your path". The quiz is chosen on Quizzes (1b); the stage and the difficulty only matter to a fight, so they are chosen here:
 
 1. **Quiz:** the chosen quiz (`v3 · pass 70% · 40 of 260 per run` when it sets `questionsPerTest`), and which of its questions won't fit in a fight.
-2. **Stage:** Rice fields, Bamboo forest, Mountain temple, Castle town, Edo castle, as a carousel of cards that scrolls sideways, swiped with a finger or dragged with a mouse, the chosen one in the middle with its neighbours peeking in. Each card has a picture of the stage as the run sees it, without the samurai or the ninjas (`public/stages/`, taken with `pnpm --filter @bunbu/game stage-pictures`; CI fails when they are out of date), then its number and name. Each shows the best distance with the chosen quiz and whether it was cleared (`Best 860 m`, `Best 1,440 m · cleared`), or `Not run yet` before its first run. A stage is as long as the test, so this is per quiz. A stage that is still locked ([stages](gameplay.md#stages)) can't be chosen: its picture is in ink-wash grey, a lock covers its number and it says `Clear Rice fields to unlock`. When the chosen stage is locked for the chosen quiz, the furthest open one is chosen instead.
+2. **Stage:** Rice fields, Bamboo forest, Mountain temple, Castle town, Edo castle, as a carousel of cards that scrolls sideways, swiped with a finger or dragged with a mouse, the chosen one in the middle with its neighbours peeking in. Each card has a picture of the stage as the run sees it, without the samurai or the ninjas (`public/stages/`, taken with `pnpm --filter @bunbu/game stage-pictures`; CI fails when they are out of date), then its number and name. Each shows the best distance with the chosen quiz and whether it was cleared (`Best 860 m`, `Best 1,440 m · cleared`), or `Not run yet` before its first run. A stage is as long as the test, so this is per quiz. After the stages, a last card, **∞ · Endless** ([endless](gameplay.md#endless)), with every stage's picture in turn in slanted slices, thin lines of paper between them, and its best score (`Best 1,200`); locked, it says `Clear every stage as Shogun to unlock`. A stage cleared as Shogun has a round vermilion seal (将) on its picture. A stage that is still locked ([stages](gameplay.md#stages)) can't be chosen: its picture is in ink-wash grey, a lock covers its number and it says `Clear Rice fields as Samurai to unlock`. When the chosen stage is locked for the chosen quiz, the furthest open one is chosen instead.
 
 A difficulty slider from **Apprentice** to **Shogun** over four stops (Apprentice, Samurai, Daimyo, Shogun), the inner two marked (sets `timeScale`, see [time limit](gameplay.md#time-limit)). Under it, the stop, and the time it gives when the quiz sets `timePerQuestion`: `Daimyo: 2m 24s per question`. The difficulty is chosen here only, never in the settings, and kept per quiz (`id` + `version`): each test has its own, Samurai until another is chosen. Then **Start run**.
 
@@ -75,7 +75,7 @@ In dev builds only, one button under the stages toggles them for the chosen quiz
 - 3D samurai, always centred, auto-running toward a torii. No input until an ambush.
 - The run starts once the stage has loaded. Until then the samurai waits out of view, behind the camera; then he runs in to his place and the stage starts.
 - HUD: **score** with best to beat, **life bar** (full = 100%, empty = the pass mark), and a **pause** button.
-- Progress bar: stage name and the questions done (`Castle town · 7 / 40`). A notch marks each quarter of the stage, and a block marks the boss. Passing a notch moves the stage's time of day on, fading over a few seconds: castle town goes from dusk to night as its shops and lanterns light up. Each quarter is also a **district** of its own, with its own backdrop and things by the way, fading into the next over about 90 m around the notch:
+- Progress bar: stage name and the questions done (`Castle town · 7 / 40`). In endless the bar is the stage that is on, and the count has no end: `Endless · Castle town · 47`. A notch marks each quarter of the stage, and a block marks the boss. Passing a notch moves the stage's time of day on, fading over a few seconds: castle town goes from dusk to night as its shops and lanterns light up. Each quarter is also a **district** of its own, with its own backdrop and things by the way, fading into the next over about 90 m around the notch:
 
   | Stage | Districts |
   | --- | --- |
@@ -151,11 +151,13 @@ All on a scroll over the dimmed world, like an ambush:
 
 One scroll over the world holds all of it; the buttons stay at its foot while the rest scrolls.
 
+The run that unlocks endless ([endless](gameplay.md#endless)) shows a scroll of its own first: 極 · `Endless unlocked`, a line that every stage was cleared as Shogun and what endless is, then **Start endless run now** and **See the results**, which unrolls these results.
+
 - 勝 · `QUIZ PASSED · NEW HIGH SCORE` · score, with the high score it beat (`was 2,210`).
 - Under it, as on the title's quiz card: `high score · 2,480 · shogun` and `correct · 17 / 20`.
 - Breakdown: **Correct** (`17 × 100`), **Time** (tiebreak for the high score), **Distance** (stage cleared).
 - **Mistakes**: each miss with ✗ your pick, ✓ the right answer, the explanation and references.
-- **Next stage** (with `Bamboo forest · unlocked` when this run unlocked it; **Run again** after the last stage) with **Practise mistakes** beside it, then **Menu** with a square **Share** beside it. Share dares a friend to beat the score with a picture of the quiz's title, the header and the three tiles, with Bunbu's name and link. It opens the phone's share sheet with the picture; where that can't take a picture, the picture downloads.
+- **Next stage** (with `Bamboo forest · unlocked` when this run unlocked it; **Run again** after the last stage; **Retry as Samurai**, or **Retry**, when the next stage is still locked, with a line above the buttons on why: `Apprentice unlocks no stages.` or `Finish with half the life bar or more to unlock Bamboo forest.`) with **Practise mistakes** beside it, then **Menu** with a square **Share** beside it. Share dares a friend to beat the score with a picture of the quiz's title, the header and the three tiles, with Bunbu's name and link. It opens the phone's share sheet with the picture; where that can't take a picture, the picture downloads.
 
 ### 8 Fallen
 

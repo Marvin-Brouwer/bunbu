@@ -6,13 +6,21 @@
  * picture in ink-wash grey, and says which stage unlocks it. The stages without a world yet are
  * shown but can't be chosen.
  *
- * The pictures are in `public/stages/`, taken, and checked in CI, by `e2e/stage-pictures.spec.mts`.
+ * The pictures are in `public/stages/`, taken, and checked in CI, by `e2e/stage-pictures.spec.mts`;
+ * endless shows every stage's picture in slanted slices.
+ *
+ * A stage cleared as Shogun on the chosen quiz has a Shogun seal on its picture, so the player sees
+ * which are still to clear for endless.
+ *
+ * After the stages, endless ([endless](../../../../../docs/design/gameplay.md#endless)): locked
+ * until every stage has been cleared on Shogun with the chosen quiz.
  */
 
 import { component } from '@rooted/components'
 import { ChoiceStamp } from '../../_shared/menu/choice-stamp.mts'
 import { formatWhole } from '../../_shared/numbers.mts'
 import { builtStages, selection, stageNames, stages, type Stage } from '../../_shared/state/selection.mts'
+import { highScores } from '../state/highscores.mts'
 import { stageBefore, stageResults } from '../state/stage-results.mts'
 import styles from './select.css'
 
@@ -24,11 +32,11 @@ function unlocked(stage: Stage): boolean {
 
 /**
  * `Best 860 m`, or `Best 1,440 m · cleared`; `Not run yet` before the stage was run on this quiz.
- * `Clear Rice fields to unlock` while it is locked.
+ * `Clear Rice fields as Samurai to unlock` while it is locked: Apprentice unlocks no stages.
  */
 function resultOf(stage: Stage): string | undefined {
 	const before = stageBefore(stage)
-	if (!unlocked(stage) && before !== undefined) return `Clear ${stageNames[before]} to unlock`
+	if (!unlocked(stage) && before !== undefined) return `Clear ${stageNames[before]} as Samurai to unlock`
 	const { quiz } = selection.value
 	const result = quiz === undefined ? undefined : stageResults.value.of(quiz.id, quiz.version, stage)
 	if (result === undefined) return quiz === undefined ? undefined : 'Not run yet'
@@ -36,8 +44,32 @@ function resultOf(stage: Stage): string | undefined {
 	return result.cleared ? `${best} · cleared` : best
 }
 
-/** A stage chosen on another quiz may still be locked on this one: the furthest open one instead. */
+/** Whether the stage has been cleared as Shogun on the chosen quiz. */
+function clearedAsShogun(stage: Stage): boolean {
+	const { quiz } = selection.value
+	return quiz !== undefined && stageResults.value.of(quiz.id, quiz.version, stage)?.shogun === true
+}
+
+/** Whether endless is open on the chosen quiz. */
+function endlessUnlocked(): boolean {
+	const { quiz } = selection.value
+	return quiz !== undefined && stageResults.value.endlessUnlocked(quiz.id, quiz.version)
+}
+
+/** `Best 1,200`: endless's high score on the chosen quiz, or how to open it while it is locked. */
+function endlessResultOf(): string | undefined {
+	if (!endlessUnlocked()) return 'Clear every stage as Shogun to unlock'
+	const { quiz } = selection.value
+	const best = quiz === undefined ? undefined : highScores.value.of(quiz.id, quiz.version, true)
+	return best === undefined ? undefined : `Best ${formatWhole(best.points)}`
+}
+
+/**
+ * A stage chosen on another quiz may still be locked on this one: the furthest open one instead.
+ * Endless too: then the stage that was chosen before it, or the furthest open one.
+ */
 export function keepChosenUnlocked(): void {
+	if (selection.value.endless && !endlessUnlocked()) selection.value.chooseStage(selection.value.stage)
 	if (!unlocked(selection.value.stage)) selection.value.chooseStage(stages.findLast(unlocked) ?? stages[0])
 }
 
@@ -96,16 +128,116 @@ function draggable(carousel: HTMLElement): void {
 	}, { capture: true })
 }
 
-/** The chosen card of `carousel` in the middle, at once: as it was left. */
-function showChosen(carousel: HTMLElement): void {
-	const chosen = carousel.querySelector('input:checked')
-	if (chosen !== null) requestAnimationFrame(() => { centre(chosen, 'instant') })
+/** Scrolls `carousel` so the middle of `card` is in its middle, at once. */
+function centreAt(carousel: HTMLElement, card: Element): void {
+	const row = carousel.getBoundingClientRect()
+	const box = card.getBoundingClientRect()
+	carousel.scrollLeft += box.left + box.width / 2 - (row.left + carousel.clientWidth / 2)
+}
+
+/**
+ * The chosen card of `carousel` in the middle, at once: as it was left (#137). Set by its scroll
+ * position rather than `scrollIntoView`, which Safari doesn't do reliably in a snapping row, and
+ * again whenever the row is laid out anew, as when the screen comes in or the pictures load, until
+ * the player scrolls it.
+ */
+function showChosen(carousel: HTMLElement, signal: AbortSignal): void {
+	const place = () => {
+		const chosen = carousel.querySelector('input:checked')?.closest('label')
+		if (chosen != null && carousel.clientWidth > 0) centreAt(carousel, chosen)
+	}
+	place()
+	requestAnimationFrame(place)
+	const laidOut = new ResizeObserver(place)
+	laidOut.observe(carousel)
+	for (const card of carousel.querySelectorAll('label')) laidOut.observe(card)
+	const stop = () => { laidOut.disconnect() }
+	for (const touch of ['pointerdown', 'wheel', 'keydown'] as const) carousel.addEventListener(touch, stop, { once: true, passive: true })
+	signal.addEventListener('abort', stop, { once: true })
 }
 
 export const StagePicker = component({
 	name: 'stage-picker',
 	styles,
 	onMount({ create, element, replace, signal }) {
+		const endlessChoice = () => {
+			const locked = !endlessUnlocked()
+			const result = endlessResultOf()
+			return element('label', {
+				classes: styles.stage,
+				'data-locked': String(locked),
+				children: [
+					element('input', {
+						type: 'radio',
+						name: 'stage',
+						value: 'endless',
+						checked: selection.value.endless,
+						disabled: locked,
+						on: {
+							change(event) {
+								selection.value.chooseEndless()
+								centre(event.currentTarget)
+							},
+						},
+					}),
+					// Every stage in turn: a slanted slice of each one's picture.
+					element('span', {
+						classes: [
+							styles.stagePicture,
+							styles.endlessPicture,
+						],
+						aria: {
+							hidden: 'true',
+						},
+						children: stages.map((stage) => element('img', {
+							src: `${import.meta.env.BASE_URL}stages/${stage}.jpg`,
+							alt: '',
+							loading: 'lazy',
+							decoding: 'async',
+							draggable: false,
+						})),
+					}),
+					create(ChoiceStamp),
+					element('span', {
+						classes: styles.stageText,
+						children: [
+							element('span', {
+								children: [
+									element('span', {
+										classes: styles.stageNumber,
+										children: [
+											element('span', {
+												classes: styles.stageDigit,
+												children: [
+													'∞',
+													locked
+														? element('span', {
+															classes: styles.stageLock,
+															aria: {
+																hidden: 'true',
+															},
+														})
+														: undefined,
+												],
+											}),
+											' · ',
+										],
+									}),
+									'Endless',
+								],
+							}),
+							result === undefined
+								? undefined
+								: element('span', {
+									classes: styles.stageResult,
+									textContent: result,
+								}),
+						],
+					}),
+				],
+			})
+		}
+
 		const show = () => replace(
 			element('div', {
 				classes: styles.stages,
@@ -113,7 +245,7 @@ export const StagePicker = component({
 				aria: {
 					label: 'Stage',
 				},
-				children: stages.map((stage, index) => {
+				children: [...stages.map((stage, index) => {
 					const result = resultOf(stage)
 					const locked = !unlocked(stage)
 					return element('label', {
@@ -124,7 +256,7 @@ export const StagePicker = component({
 								type: 'radio',
 								name: 'stage',
 								value: stage,
-								checked: selection.value.stage === stage,
+								checked: !selection.value.endless && selection.value.stage === stage,
 								disabled: locked || !builtStages.has(stage),
 								on: {
 									change(event) {
@@ -143,6 +275,18 @@ export const StagePicker = component({
 								draggable: false,
 							}),
 							create(ChoiceStamp),
+							clearedAsShogun(stage)
+								? element('span', {
+									classes: styles.stageMedal,
+									lang: 'ja',
+									textContent: '将',
+									role: 'img',
+									title: 'Cleared as Shogun',
+									aria: {
+										label: 'Cleared as Shogun',
+									},
+								})
+								: undefined,
 							element('span', {
 								classes: styles.stageText,
 								children: [
@@ -187,13 +331,18 @@ export const StagePicker = component({
 								}),
 						],
 					})
-				}),
+				}), endlessChoice()],
 			})
 		)
+		let shownFor: AbortController | undefined
 		const showAll = () => {
 			const carousel = show()
 			draggable(carousel)
-			showChosen(carousel)
+			// The last row's watch ends with it.
+			shownFor?.abort()
+			shownFor = new AbortController()
+			signal.addEventListener('abort', () => { shownFor?.abort() }, { once: true })
+			showChosen(carousel, shownFor.signal)
 		}
 		showAll()
 
