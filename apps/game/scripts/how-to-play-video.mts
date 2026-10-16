@@ -19,7 +19,8 @@ import { spawn } from 'node:child_process'
 import { readdirSync } from 'node:fs'
 import { mkdir } from 'node:fs/promises'
 import { homedir, platform } from 'node:os'
-import { join } from 'node:path'
+import { createRequire } from 'node:module'
+import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const base = process.env.BUNBU_URL ?? 'http://localhost:5173/bunbu/'
@@ -129,10 +130,22 @@ async function camera(page: Page) {
 	}
 }
 
+/** Where Playwright keeps its browsers: `0` is its own package's folder, for a hermetic install. */
+function browsersFolder(): string {
+	const set = process.env.PLAYWRIGHT_BROWSERS_PATH
+	if (set === '0') {
+		// playwright-core comes in through @playwright/test and playwright, so it is found through them.
+		const core = ['@playwright/test', 'playwright', 'playwright-core']
+			.reduce((from, name) => createRequire(from).resolve(`${name}/package.json`), fileURLToPath(import.meta.url))
+		return join(dirname(core), '.local-browsers')
+	}
+	return set
+		?? (platform() === 'darwin' ? join(homedir(), 'Library/Caches/ms-playwright') : platform() === 'win32' ? join(homedir(), 'AppData/Local/ms-playwright') : join(homedir(), '.cache/ms-playwright'))
+}
+
 /** Playwright's own ffmpeg, which it installs with its browsers. */
 function ffmpeg(): string {
-	const browsers = process.env.PLAYWRIGHT_BROWSERS_PATH
-		?? (platform() === 'darwin' ? join(homedir(), 'Library/Caches/ms-playwright') : platform() === 'win32' ? join(homedir(), 'AppData/Local/ms-playwright') : join(homedir(), '.cache/ms-playwright'))
+	const browsers = browsersFolder()
 	const folder = readdirSync(browsers).filter((name) => name.startsWith('ffmpeg-')).toSorted().at(-1)
 	if (folder === undefined) throw new Error(`no ffmpeg in ${browsers}: run \`playwright install chromium\``)
 	const binary = platform() === 'darwin' ? 'ffmpeg-mac' : platform() === 'win32' ? 'ffmpeg-win64.exe' : 'ffmpeg-linux'
