@@ -3,9 +3,17 @@
  */
 
 import { describe, expect, it } from 'vitest'
+import { marks, openingSeconds } from '../../_shared/state/ambush.mts'
+import { metresPerAmbush } from '../flows/run.mts'
+import { runConfig } from '../state/run.mts'
+import { bambooCover, bambooRound } from './bamboo-forest.mts'
+import { townCover } from './castle-town.mts'
 import { coverAhead, coverHeight, coverReach, coverSpotsAt } from './cover.mts'
-import { clashSeconds, coverOf, fleeSideOf, leapConfig, motionOf, outOf, strikeDelaySeconds } from './ninjas.mts'
-import { createPath, townRound } from './path.mts'
+import { castleCover, castleRound } from './edo-castle.mts'
+import { mountainCover, mountainRound } from './mountain-temple.mts'
+import { clashSeconds, coverOf, entranceSeconds, fleeSideOf, leapConfig, motionOf, outOf, shareConfig, strikeDelaySeconds } from './ninjas.mts'
+import { beside, createPath, townRound } from './path.mts'
+import { riceCover, riceRound } from './rice-fields.mts'
 import { spotOf } from './placement.mts'
 
 describe('a ninja in the outcome', () => {
@@ -120,5 +128,70 @@ describe('a ninja leaping out from behind its cover', () => {
 			expect(z).toBeGreaterThanOrEqual(last - 1e-9)
 			last = z
 		}
+	})
+})
+
+describe('ninjas coming out from behind the covers of every stage', () => {
+	const stagesWithCovers = [
+		{ round: riceRound, cover: riceCover },
+		{ round: bambooRound, cover: bambooCover },
+		{ round: mountainRound, cover: mountainCover },
+		{ round: townRound, cover: townCover },
+		{ round: castleRound, cover: castleCover },
+	]
+	// Every ambush of a long run, round its bends, for every mark in both rows, with ids of either parity.
+	const entrances = stagesWithCovers.flatMap(({ round, cover }) => {
+		const path = createPath(round)
+		return Array.from({ length: 12 }, (_, at) => (at + 1) * metresPerAmbush).flatMap((distance) => {
+			const from = path.at(distance)
+			// Where the samurai is once he has run on as far as an ambush lets him.
+			const ranOn = path.at(distance + runConfig.ambushRunOn)
+			const covers = coverSpotsAt(path, distance, cover.aside)
+			return marks.flatMap((mark) => [0, 1].flatMap((wave) => [0, 1].flatMap((id) => {
+				const start = spotOf(mark, wave, 0)
+				const chosen = coverOf(start, id, from, covers)
+				return chosen === undefined ? [] : [{ from, ranOn, covers, chosen, to: beside(ranOn, start.x, -start.z) }]
+			})))
+		})
+	})
+	const runningIn = (entrance: (typeof entrances)[number]) => Array.from({ length: 41 }, (_, step) =>
+		outOf(entrance.chosen, entrance.from, entrance.to, leapConfig.lands + (1 - leapConfig.lands) * step / 40))
+
+	it('come out from behind a cover in most ambushes', () => {
+		expect(entrances.length).toBeGreaterThan(500)
+	})
+
+	it('land beyond where they stand, and only come on toward the samurai from there', () => {
+		const backward = entrances.filter((entrance) => {
+			const away = runningIn(entrance).map((at) => Math.hypot(at.x - entrance.ranOn.x, at.z - entrance.ranOn.z))
+			return away.some((distance, step) => step > 0 && distance > away[step - 1]! + 1e-6)
+		})
+		expect(backward).toHaveLength(0)
+	})
+
+	it('run in clear of the other covers', () => {
+		const through = entrances.filter((entrance) => runningIn(entrance).some((at) => entrance.covers.some((cover) =>
+			cover !== entrance.chosen && Math.hypot(at.x - cover.x, at.z - cover.z) < coverReach)))
+		expect(through).toHaveLength(0)
+	})
+})
+
+describe('ninjas sharing a cover', () => {
+	const from = { x: 0, z: 0 }
+	const cover = { x: 3.3, z: -18 }
+	const to = { x: 3.2, z: -9.5 }
+
+	it('keep apart all the way out, the later ones waiting their turn', () => {
+		const lanes = [0, 1, -1]
+		for (let step = 0; step <= 100; step++) {
+			const amount = step / 100
+			const at = lanes.map((lane, turn) => outOf(cover, from, to, amount - turn * shareConfig.stagger, lane))
+			const closest = Math.min(...at.flatMap((one, index) => at.slice(index + 1).map((other) => Math.hypot(one.x - other.x, one.z - other.z, one.hop - other.hop))))
+			expect(closest).toBeGreaterThan(0.5)
+		}
+	})
+
+	it('are all in before the scroll opens', () => {
+		expect((1 + (shareConfig.most - 1) * shareConfig.stagger) * entranceSeconds).toBeLessThanOrEqual(openingSeconds)
 	})
 })

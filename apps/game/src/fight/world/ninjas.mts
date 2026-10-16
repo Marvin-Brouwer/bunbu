@@ -14,9 +14,10 @@ import type { Group } from 'three'
 import type { AmbushKind, AmbushOption, Mark } from '../../_shared/state/ambush.mts'
 import { marks } from '../../_shared/state/ambush.mts'
 import { chargeOrder, type Ninja, type NinjaPose } from '../state/ninjas.mts'
+import { runConfig } from '../state/run.mts'
 import type { Body } from '../../_shared/world/character.mts'
 import type { ViewFrame } from './camera.mts'
-import type { CoverSpot } from './cover.mts'
+import { coverReach, type CoverSpot } from './cover.mts'
 import type { ClashSpot, SlainSpot } from './effects.mts'
 import { beside } from './path.mts'
 import { lungeOf, spotOf } from './placement.mts'
@@ -27,9 +28,15 @@ const backRowOpacity = 0.5
 
 /**
  * Real seconds a ninja takes to come into view when an ambush springs: steady, while the world
- * keeps slowing down, and within the ambush's opening, so they are all in before the scroll opens.
+ * keeps slowing down, and within the ambush's opening, so they are all in before the scroll opens,
+ * the ones that wait their turn behind a shared cover too.
  */
-const entranceSeconds = 1.8
+export const entranceSeconds = 1.35
+/**
+ * Ninjas that share a cover come out from behind it one after another, this much of the entrance
+ * apart and a little to the side of each other, and at most this many behind one.
+ */
+export const shareConfig = { stagger: 0.2, lane: 0.7, most: 3 }
 /** Extra metres beyond the normal starting spot, so the entrance can be seen along the path. */
 const entranceDistance = 8
 /**
@@ -96,8 +103,9 @@ type Shown = {
 	targetApproach: number
 	/** `0` while entering from farther along the path, `1` once at the normal starting spot. */
 	entrance: number
-	/** The cover it leaps out from behind, in the world, if there is one on its side ahead. */
+	/** The cover it leaps out from behind, in the world, if there is one on its side ahead, and its place among the ninjas behind it. */
 	cover: CoverSpot | undefined
+	lane: number
 	/** Where the samurai was when it came. */
 	came: { x: number; z: number }
 	/** How far through its running cycle it is, where it was last drawn, and how fast it went, smoothed. */
@@ -167,13 +175,14 @@ export type OutOf = { x: number; z: number; hop: number; doing: 'hiding' | 'leap
  * The leap goes up nearly straight, over the top of the cover, and down nearly straight in front of
  * it, so it clears the whole cover ({@link coverReach} round its middle, {@link coverHeight} high).
  */
-export function outOf(cover: CoverSpot, from: { x: number; z: number }, to: { x: number; z: number }, amount: number): OutOf {
+export function outOf(cover: CoverSpot, from: { x: number; z: number }, to: { x: number; z: number }, amount: number, lane = 0): OutOf {
 	const { behind, ahead, height, waits, lands } = leapConfig
-	// The way from the samurai to the cover, flat.
+	// The way from the samurai to the cover, flat, and across it for the `lane` of one that shares it.
 	const away = Math.hypot(cover.x - from.x, cover.z - from.z) || 1
 	const out = { x: (cover.x - from.x) / away, z: (cover.z - from.z) / away }
-	const hidden = { x: cover.x + out.x * behind, z: cover.z + out.z * behind }
-	const landed = { x: cover.x - out.x * ahead, z: cover.z - out.z * ahead }
+	const aside = { x: -out.z * lane * shareConfig.lane, z: out.x * lane * shareConfig.lane }
+	const hidden = { x: cover.x + out.x * behind + aside.x, z: cover.z + out.z * behind + aside.z }
+	const landed = { x: cover.x - out.x * ahead + aside.x, z: cover.z - out.z * ahead + aside.z }
 	if (amount <= waits) return { ...hidden, hop: 0, doing: 'hiding' }
 	if (amount < lands) {
 		const leap = (amount - waits) / (lands - waits)
@@ -262,29 +271,48 @@ export type NinjasView = {
 	dispose: () => void
 }
 
+/** How far `point` is from the line from `from` to `to`, flat. */
+function offLine(point: { x: number; z: number }, from: { x: number; z: number }, to: { x: number; z: number }): number {
+	const dx = to.x - from.x
+	const dz = to.z - from.z
+	const length = dx * dx + dz * dz
+	const along = length === 0 ? 0 : Math.min(1, Math.max(0, ((point.x - from.x) * dx + (point.z - from.z) * dz) / length))
+	return Math.hypot(point.x - (from.x + dx * along), point.z - (from.z + dz * along))
+}
+
+/** Whether two cover spots are the same one: the spots are worked out afresh every frame. */
+const sameCover = (one: CoverSpot, other: CoverSpot) => Math.hypot(one.x - other.x, one.z - other.z) < 0.01
+
 /**
  * The cover a ninja starting at `start` (round the samurai at `frame`, the way ahead along `-z`)
- * runs out from behind: of the `covers` on its side ahead of him, the one nearest its start. One
- * that comes from behind the camera, or straight ahead, has none, or picks a side by its `id`.
+ * runs out from behind: of the `covers` on its side ahead of him, the nearest one it can come out
+ * from toward him all the way. It lands beyond where it will stand
+ * for the fight, once the samurai has run on, and runs in from there clear of the other covers.
+ * One that comes from behind the camera, or for which no cover will do, has none and runs in from
+ * farther along the path; one from straight ahead picks a side by its `id`.
  */
 export function coverOf(start: { x: number; z: number }, id: number, frame: ViewFrame, covers: readonly CoverSpot[]): CoverSpot | undefined {
 	if (start.z >= 0) return undefined
 	const side = fleeSideOf(start.x, id)
 	const sin = Math.sin(frame.heading)
 	const cos = Math.cos(frame.heading)
-	// Of the covers on its side, the nearest one at least as far ahead as where it starts, so it
-	// comes toward the samurai all the way; else the farthest.
-	const startAhead = -start.z
-	const onSide = covers.flatMap((cover) => {
+	// Round the samurai: how far to his right, and how far ahead ({@link beside} undone).
+	const around = covers.map((cover) => {
 		const dx = cover.x - frame.x
 		const dz = cover.z - frame.z
-		// The cover round the samurai: how far to his right, and how far ahead ({@link beside} undone).
-		const right = dx * cos - dz * sin
-		const ahead = -dx * sin - dz * cos
-		return Math.sign(right) === side && ahead > 0 ? [{ cover, ahead }] : []
+		return { cover, right: dx * cos - dz * sin, ahead: -dx * sin - dz * cos }
 	})
-	const beyond = onSide.filter(({ ahead }) => ahead >= startAhead).toSorted((one, other) => one.ahead - other.ahead)
-	return (beyond[0] ?? onSide.toSorted((one, other) => other.ahead - one.ahead)[0])?.cover
+	// Where it will stand, once the samurai has run on as far as an ambush lets him.
+	const stands = { right: start.x, ahead: -start.z + runConfig.ambushRunOn }
+	const fits = around.filter(({ cover, right, ahead }) => {
+		if (Math.sign(right) !== side || ahead <= 0) return false
+		const away = Math.hypot(right, ahead)
+		const landed = { x: right * (1 - leapConfig.ahead / away), z: ahead * (1 - leapConfig.ahead / away) }
+		if (landed.z < stands.ahead) return false
+		const to = { x: stands.right, z: stands.ahead }
+		return around.every((other) => other.cover === cover || offLine({ x: other.right, z: other.ahead }, landed, to) > coverReach + 0.3)
+	})
+	return fits.toSorted((one, other) => one.ahead - other.ahead)[0]?.cover
 }
 
 /** `parent` is in world space, and `make` makes a ninja's body. */
@@ -313,6 +341,10 @@ export function createNinjasView(parent: Group, make: () => Body): NinjasView {
 				}
 				if (entry === undefined) {
 					const mark = markOf(ninja, options, kind) ?? (kind === 'yes-no' ? yesNoSpotOf(ninja.id) : markById(ninja.id))
+					// Ninjas behind one cover take turns: each one waits for the ones before it to leap.
+					const behind = coverOf(spotOf(mark, ninja.wave, 0), ninja.id, frame, covers)
+					const sharing = behind === undefined ? 0 : [...shown.values()].filter((other) => other.entrance < 1 && other.cover !== undefined && sameCover(other.cover, behind)).length
+					const cover = sharing < shareConfig.most ? behind : undefined
 					entry = {
 						body: maker(),
 						pose: ninja.pose,
@@ -321,8 +353,10 @@ export function createNinjasView(parent: Group, make: () => Body): NinjasView {
 						time: 0,
 						approach: ninja.approach,
 						targetApproach: ninja.approach,
-						entrance: 0,
-						cover: coverOf(spotOf(mark, ninja.wave, 0), ninja.id, frame, covers),
+						entrance: cover === undefined ? 0 : -sharing * shareConfig.stagger,
+						cover,
+						// The first one behind its middle, the others either side.
+						lane: [0, 1, -1][sharing] ?? 0,
 						came: { x: frame.x, z: frame.z },
 						cycle: ninja.id * 1.7,
 						last: undefined,
@@ -377,7 +411,7 @@ export function createNinjasView(parent: Group, make: () => Body): NinjasView {
 				const samurai = entry.beatenAt ?? frame
 				const at: OutOf = entry.cover === undefined || entry.entrance >= 1
 					? { ...beside(samurai, visible.x, -visible.z), hop: 0, doing: 'running' }
-					: outOf(entry.cover, entry.came, beside(samurai, spot.x, -spot.z), entry.entrance)
+					: outOf(entry.cover, entry.came, beside(samurai, spot.x, -spot.z), entry.entrance, entry.lane)
 				const { root } = entry.body
 				root.position.set(at.x, motion.hop + at.hop, at.z)
 				// Its legs go by the ground it covers, so it never slides, and it stands still when it
