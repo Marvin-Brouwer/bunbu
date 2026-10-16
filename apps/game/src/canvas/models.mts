@@ -26,3 +26,8 @@ export function loadModel(name: string): Promise<GLTF> {
 	}
 	return model
 }
+
+/** Resolves once every model asked for so far has loaded or failed. */
+export function modelsSettled(): Promise<void> {
+	return Promise.allSettled(loaded.values()).then(() => undefined)
+}
