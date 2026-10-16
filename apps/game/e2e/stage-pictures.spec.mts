@@ -91,6 +91,9 @@ for (const [stage, name] of Object.entries(stages)) {
 		await page.clock.pauseAt(1_000_000)
 		await page.getByRole('button', { name: 'Start run' }).click()
 		await page.waitForLoadState('networkidle')
+		// Real time, the clock still held, for the models to be read and put in their place: a slow
+		// machine takes a while over the stage kit, and the picture is of the stage as it is then.
+		await page.waitForTimeout(5000)
 		// A frame a tenth of a second, the longest the game loop takes in one (`canvas/loop.mts`):
 		// seventy frames rather than four hundred, which software rendering would take minutes over.
 		for (let frame = 0; frame < into * 10; frame++) await page.clock.fastForward(100)

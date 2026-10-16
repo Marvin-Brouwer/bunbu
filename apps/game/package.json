@@ -12,7 +12,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "e2e": "playwright test",
-    "stage-pictures": "UPDATE_STAGE_PICTURES=1 playwright test stage-pictures"
+    "stage-pictures": "UPDATE_STAGE_PICTURES=1 playwright test --project \"stage pictures\" --no-deps"
   },
   "dependencies": {
     "@bunbu/data": "workspace:*",
