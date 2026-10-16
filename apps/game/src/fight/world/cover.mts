@@ -36,8 +36,10 @@ export type CoverKind =
 	| 'crates' | 'barrels' | 'cart' | 'bales' | 'rock'
 	/** A big woven basket heaped with rice, and a smaller one. */
 	| 'rice-basket'
-	/** A scarecrow in a straw coat and hat, with straw bales at its foot. */
+	/** A scarecrow in a straw coat and hat, with a wheelbarrow in front of it. */
 	| 'scarecrow'
+	/** A scarecrow on its own: too thin to hide behind, so never one a ninja comes from. */
+	| 'lone-scarecrow'
 	/** Cut bamboo bound in upright bundles. */
 	| 'bamboo-bundle'
 	/** A panda sitting and eating a stalk of bamboo. */
@@ -211,16 +213,26 @@ function partsOf(kind: CoverKind, colours: readonly number[], random: () => numb
 			{ shape: 'cone', matrix: placed(1.05, 0.7, 0.35, 0, 0.85, 0.4, 0.85), colour: 0xf2ede0 },
 		]
 	}
-	if (kind === 'scarecrow') {
+	if (kind === 'scarecrow' || kind === 'lone-scarecrow') {
 		const straw = pick()
-		return [
+		const scarecrow: Part[] = [
 			{ shape: 'box', matrix: placed(0, 0, 0, 0, 0.14, 2.3, 0.14), colour: 0x5c3d24 },
 			{ shape: 'box', matrix: placed(0, 1.65, 0, 0, 1.8, 0.1, 0.1), colour: 0x5c3d24 },
 			{ shape: 'cone', matrix: placed(0, 0.75, 0, 0, 1.1, 1.1, 1.1), colour: straw },
 			{ shape: 'rock', matrix: placed(0, 1.75, 0, 0, 0.5), colour: 0xe4d8bd },
 			{ shape: 'cone', matrix: placed(0, 2.05, 0, 0, 1, 0.35, 1), colour: straw },
-			{ shape: 'barrel', matrix: placed(-0.55, 0, 0.3, 0, 0.9, 1.2, 0.9), colour: straw },
-			{ shape: 'barrel', matrix: placed(0.6, 0, 0.35, 0, 0.85, 1.1, 0.85), colour: straw },
+		]
+		if (kind === 'lone-scarecrow') return scarecrow
+		// A wheelbarrow of straw in front of it, its wheel toward the path.
+		return [
+			...scarecrow,
+			{ shape: 'box', matrix: within(placed(0, 0.42, 0.85), new Matrix4().makeRotationX(0.12).multiply(placed(0, 0, 0, 0, 1.1, 0.5, 1.4))), colour: 0x8a6240 },
+			{ shape: 'cone', matrix: placed(0, 0.9, 0.85, 0, 1, 0.45, 1.3), colour: straw },
+			{ shape: 'wheel', matrix: placed(0, 0.32, 1.7, 0, 0.12, 0.64, 0.64), colour: 0x3e2c20 },
+			...[-0.4, 0.4].flatMap((x) => [
+				{ shape: 'box' as const, matrix: placed(x, 0.55, 0.05, 0, 0.08, 0.08, 0.9), colour: 0x5c3d24 },
+				{ shape: 'box' as const, matrix: placed(x, 0, 0.3, 0, 0.08, 0.45, 0.08), colour: 0x5c3d24 },
+			]),
 		]
 	}
 	if (kind === 'bamboo-bundle') {

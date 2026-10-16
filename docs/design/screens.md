@@ -89,8 +89,8 @@ In dev builds only, one button under the stages toggles them for the chosen quiz
 
   | District | Covers |
   | --- | --- |
-  | Rice fields, village edge | a basket heaped with rice, a scarecrow in a straw coat, straw bales |
-  | Rice fields, open paddies | straw bales, a scarecrow |
+  | Rice fields, village edge | a basket heaped with rice, a scarecrow in a straw coat with a wheelbarrow of straw in front, straw bales; a scarecrow on its own, which a ninja never comes from |
+  | Rice fields, open paddies | straw bales, a scarecrow with a wheelbarrow; a scarecrow on its own, never a ninja's |
   | Rice fields, irrigation ponds | a water wheel by its channel, straw bales |
   | Rice fields, shrine grove | a tall stone lantern, boulders |
   | Bamboo forest, deep grove | bundles of cut bamboo, boulders, now and then a panda eating bamboo (a ninja comes from behind one even more rarely) |

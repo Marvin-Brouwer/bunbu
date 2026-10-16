@@ -3,6 +3,7 @@ import { metresPerAmbush } from '../flows/run.mts'
 import { randomOf } from './backdrop.mts'
 import { townCover, townDistricts } from './castle-town.mts'
 import { mountainCover, mountainDistricts } from './mountain-temple.mts'
+import { riceCover, riceDistricts } from './rice-fields.mts'
 import { coverKindAt, coverReach, coverSpotsAt, decoysOf } from './cover.mts'
 import { createPath, townRound } from './path.mts'
 
@@ -49,5 +50,15 @@ describe('the covers of a district', () => {
 	it('have a villager mostly just there, rarely one a ninja comes from', () => {
 		expect(share(kindsIn(100, 'decoy'), 'villager')).toBeGreaterThan(0.35)
 		expect(share(kindsIn(100, 'ambush'), 'villager')).toBeLessThan(0.15)
+	})
+})
+
+describe('a scarecrow on its own', () => {
+	const random = randomOf(5)
+
+	it('is never one a ninja comes from, only one along the way', () => {
+		const kinds = (role: 'ambush' | 'decoy') => Array.from({ length: 3000 }, () => coverKindAt(riceCover, riceDistricts, 100, 40 * metresPerAmbush, role, random))
+		expect(kinds('ambush')).not.toContain('lone-scarecrow')
+		expect(kinds('decoy')).toContain('lone-scarecrow')
 	})
 })
