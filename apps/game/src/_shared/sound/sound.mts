@@ -29,7 +29,13 @@ export type Sound =
 	| 'paper'
 
 /** What every sound plays through: the audio context, its loudness, and noise to filter. */
-type Audio = { readonly context: AudioContext; readonly master: GainNode; readonly noise: AudioBuffer }
+type Audio = {
+	readonly context: AudioContext
+	readonly master: GainNode
+	readonly noise: AudioBuffer
+	/** Paper's crackle: sparse ticks of every loudness, the way a sheet crinkles and tears, rather than a hiss. */
+	readonly crackle: AudioBuffer
+}
 
 let made: Audio | undefined
 
@@ -48,7 +54,16 @@ function unlock(): void {
 		const noise = context.createBuffer(1, context.sampleRate, context.sampleRate)
 		const samples = noise.getChannelData(0)
 		for (let index = 0; index < samples.length; index++) samples[index] = Math.random() * 2 - 1
-		made = { context, master, noise }
+		// The crackle: mostly quiet, with a tick now and then that dies away over a few samples.
+		const crackle = context.createBuffer(1, context.sampleRate, context.sampleRate)
+		const ticks = crackle.getChannelData(0)
+		let tick = 0
+		for (let index = 0; index < ticks.length; index++) {
+			if (Math.random() < 0.012) tick = (Math.random() * 2 - 1) * (0.3 + Math.random() * 0.7)
+			tick *= 0.72
+			ticks[index] = tick + (Math.random() * 2 - 1) * 0.04
+		}
+		made = { context, master, noise, crackle }
 	}
 	if (made.context.state !== 'running') void made.context.resume()
 }
@@ -70,12 +85,12 @@ function audio(): Audio | undefined {
 
 /** A burst of noise through a filter whose frequency sweeps `from` to `to`, rising and falling over `seconds`. */
 function whoosh(
-	{ context, master, noise }: Audio,
-	{ from, to, seconds, loudness, type = 'bandpass', q = 1.2, delay = 0 }: { from: number; to: number; seconds: number; loudness: number; type?: BiquadFilterType; q?: number; delay?: number },
+	{ context, master, noise, crackle }: Audio,
+	{ from, to, seconds, loudness, type = 'bandpass', q = 1.2, delay = 0, paper = false }: { from: number; to: number; seconds: number; loudness: number; type?: BiquadFilterType; q?: number; delay?: number; paper?: boolean },
 ): void {
 	const start = context.currentTime + delay
 	const source = context.createBufferSource()
-	source.buffer = noise
+	source.buffer = paper ? crackle : noise
 	// Round again past the end of the second of noise, so a long sound plays its whole envelope.
 	source.loop = true
 	source.playbackRate.value = 0.8 + Math.random() * 0.4
@@ -149,11 +164,15 @@ export function play(sound: Sound, loudness = 1): void {
 			break
 		}
 		case 'unroll': {
-			whoosh(sounding, { from: 1800, to: 700, seconds: 0.45, loudness: loud(0.18), q: 0.5 })
+			// The sheet crackling as it rolls out, over the soft rush of it moving.
+			whoosh(sounding, { from: 2400, to: 3600, seconds: 0.5, loudness: loud(0.5), q: 0.6, paper: true })
+			whoosh(sounding, { from: 900, to: 500, seconds: 0.4, loudness: loud(0.08), q: 0.5 })
 			break
 		}
 		case 'paper': {
-			whoosh(sounding, { from: 5200, to: 2600, seconds: 0.08, loudness: loud(0.28), type: 'highpass', q: 0.8 })
+			// A tear: a dry crackle that runs up the sheet, and the snap where it parts.
+			whoosh(sounding, { from: 2800, to: 5500, seconds: 0.16, loudness: loud(0.7), q: 0.7, paper: true })
+			whoosh(sounding, { from: 6000, to: 3500, seconds: 0.05, loudness: loud(0.25), type: 'highpass', q: 0.7, delay: 0.1 })
 			break
 		}
 	}
