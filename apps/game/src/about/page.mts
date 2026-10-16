@@ -15,22 +15,49 @@ export type PageOptions = {
 		readonly frontmatter: Readonly<Record<string, unknown>>
 		readonly html: string
 	}
+	/** A video above the text, in `public/`: its file, a still to show until it plays, and what it shows. */
+	readonly video?: {
+		readonly src: string
+		readonly poster: string
+		readonly caption: string
+	}
 }
 
 export const Page = component<PageOptions>({
 	name: 'page',
 	styles,
-	onMount({ append, create, options }) {
+	onMount({ append, create, element, options }) {
 		const { title } = options.source.frontmatter as { title: string }
+		const { video } = options
 
 		append(
 			create(MenuScreen, {
 				title,
-				children: create(Markdown, {
-					source: options.source,
-					tag: 'article',
-					classes: styles.prose,
-				}),
+				children: [
+					video === undefined
+						? undefined
+						: element('figure', {
+							classes: styles.video,
+							children: [
+								element('video', {
+									src: `${import.meta.env.BASE_URL}${video.src}`,
+									poster: `${import.meta.env.BASE_URL}${video.poster}`,
+									controls: true,
+									muted: true,
+									playsInline: true,
+									preload: 'none',
+								}),
+								element('figcaption', {
+									textContent: video.caption,
+								}),
+							],
+						}),
+					create(Markdown, {
+						source: options.source,
+						tag: 'article',
+						classes: styles.prose,
+					}),
+				],
 			})
 		)
 	},
