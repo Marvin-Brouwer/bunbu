@@ -47,6 +47,8 @@ export const Application = component({
 					canvas,
 					element('div', {
 						classes: styles.screen,
+						// Where the routed screen goes, for the loading screen to see it come up.
+						'data-screen': '',
 						children: create(Router),
 					}),
 					// When terms changed since the player agreed to them, they are asked again on opening.

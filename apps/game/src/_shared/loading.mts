@@ -16,8 +16,12 @@ const longestSeconds = 6
 
 const nextFrame = () => new Promise<void>((resolve) => { requestAnimationFrame(() => { resolve() }) })
 
-/** Whether the router has put the first screen up: a lazily loaded route comes in a moment later. */
-const routed = () => document.querySelector('[r-component="@rooted/router"] > *') !== null
+/**
+ * Whether the router has put the first screen up: a lazily loaded route comes in a moment later.
+ * The screen's place is marked by the `Application` (`data-screen`), the router in it, and the
+ * route's screen in that; Rooted's own component names are there in development only.
+ */
+const routed = () => document.querySelector('[data-screen] > * > *') !== null
 
 function firstScreen(signal: AbortSignal): Promise<void> {
 	return new Promise((resolve) => {
