@@ -35,6 +35,7 @@ import { layBlocks } from './blocks.mts'
 import { Batch, chunkOf, placed, scatter, type Cursor } from './kit.mts'
 import { addAll, clearanceOf, facingPath, isFree, passTime, sky, skyRadius, stamp, strip, type Daylight, type Owned, type Planting, type StageView, type Taken } from './landscape.mts'
 import type { BackdropRow } from './backdrop.mts'
+import type { CoverSet } from './cover.mts'
 import { beside, type Leg, type Path } from './path.mts'
 
 const palette = {
@@ -101,6 +102,14 @@ export const bambooRound: readonly Leg[] = [
 
 /** Half the width of the gravel path. */
 const pathHalfWidth = 1.6
+
+/** What ninjas hide behind in the forest: mossy boulders and bundles of cut bamboo ([cover](./cover.mts)). */
+export const bambooCover: CoverSet = {
+	kinds: ['rock', 'bales'],
+	aside: pathHalfWidth + 1.3,
+	colours: { rock: [palette.stone, 0x7f8a6a], bales: [palette.stalk, 0x9ab05a] },
+}
+
 /** Bamboo stands from just off the path to this far out. */
 const forestDepth = 24
 

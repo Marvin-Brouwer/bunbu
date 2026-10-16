@@ -6,7 +6,8 @@
  *
  * A picture is a stage seven seconds into a run, without the samurai, the ninjas or the HUD
  * (`?scenery`, dev only). Time and chance are fixed, so a run looks the same every time:
- * Playwright's clock moves the frames on and `Math.random` is seeded. What still differs between
+ * Playwright's clock moves the frames on, `Math.random` is seeded, and the stage is laid out from a
+ * seed of its own (`?seed`, dev only), whatever else drew on `Math.random` first. What still differs between
  * machines, as the GPU's own rounding, is under {@link tolerance}.
  */
 
@@ -81,7 +82,7 @@ for (const [stage, name] of Object.entries(stages)) {
 		await page.goto('./')
 		await page.getByRole('link', { name: 'Select quiz' }).click()
 		await page.getByText('Fixture quiz').click()
-		await page.goto('fight/?scenery')
+		await page.goto('fight/?scenery&seed=7')
 		await page.getByRole('button', { name: 'Start run' }).waitFor()
 		const unlock = page.getByRole('button', { name: /Unlock all stages/ })
 		if (await unlock.isVisible()) await unlock.click()

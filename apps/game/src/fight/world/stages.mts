@@ -8,19 +8,26 @@ import type { Scene } from 'three'
 import type { GLTF } from 'three/addons/loaders/GLTFLoader.js'
 import { loadModel } from '../../canvas/models.mts'
 import type { Stage } from '../../_shared/state/selection.mts'
+import { metresPerAmbush } from '../flows/run.mts'
 import { createBackdrop, type BackdropRow } from './backdrop.mts'
-import { createCastleTown, townBackdrop } from './castle-town.mts'
+import { ambushNear, coverSpotsAt, createCover, type CoverSet, type CoverSpot } from './cover.mts'
+import { createCastleTown, townBackdrop, townCover } from './castle-town.mts'
 import type { Owned, StageView } from './landscape.mts'
 import { createPath, townRound, type Path } from './path.mts'
-import { bambooBackdrop, bambooRound, createBambooForest } from './bamboo-forest.mts'
-import { castleBackdrop, castleRound, createEdoCastle } from './edo-castle.mts'
-import { createMountainTemple, mountainBackdrop, mountainRound } from './mountain-temple.mts'
-import { createRiceFields, riceBackdrop, riceRound } from './rice-fields.mts'
+import { bambooBackdrop, bambooCover, bambooRound, createBambooForest } from './bamboo-forest.mts'
+import { castleBackdrop, castleCover, castleRound, createEdoCastle } from './edo-castle.mts'
+import { createMountainTemple, mountainBackdrop, mountainCover, mountainRound } from './mountain-temple.mts'
+import { createRiceFields, riceBackdrop, riceCover, riceRound } from './rice-fields.mts'
 
 export type StageWorld = {
 	readonly path: Path
 	readonly view: StageView
+	/** Where the covers of the ambush nearest `distance` stand, for its ninjas to run out from behind. */
+	readonly covers: (distance: number) => readonly CoverSpot[]
 }
+
+/** A stage's own world, before the backdrop and the covers are put round it. */
+type OwnWorld = Pick<StageWorld, 'path' | 'view'>
 
 /** The models `names`, each one there only if it loaded: a stage stands without the ones that fail. */
 function loadSome<Name extends string>(names: Readonly<Record<Name, string>>): Promise<Partial<Record<Name, GLTF>>> {
@@ -44,13 +51,25 @@ export function stageModels(stage: Stage) {
 }
 
 /**
- * Puts `rows` of backdrop behind a stage's own scenery ([backdrop](./backdrop.mts)), laid out
- * differently every run.
+ * A seed for what is laid out at random, new every run, one for each of the things laid out (`use`).
+ * Dev only: `?seed=7` lays every run out the same, whatever else drew on `Math.random` before (the
+ * sound's noise draws as many as its sample rate, which differs between machines), for the stage
+ * pictures (`e2e/stage-pictures.spec.mts`).
  */
-function withBackdrop(scene: Scene, { path, view }: StageWorld, rows: readonly BackdropRow[]): StageWorld {
+function newSeed(use: number): number {
+	const fixed = import.meta.env.DEV ? Number(new URLSearchParams(location.search).get('seed') ?? Number.NaN) : Number.NaN
+	return Number.isInteger(fixed) ? fixed + use * 7919 : Math.floor(Math.random() * 2 ** 31)
+}
+
+/**
+ * Puts `rows` of backdrop behind a stage's own scenery ([backdrop](./backdrop.mts)) and `cover` by
+ * its path for the ninjas to hide behind ([cover](./cover.mts)), laid out differently every run.
+ */
+function around(scene: Scene, { path, view }: OwnWorld, rows: readonly BackdropRow[], cover: CoverSet, phase: number): StageWorld {
 	const owned: Owned = { geometries: [], materials: [], textures: [] }
-	const backdrop = createBackdrop(path, rows, Math.floor(Math.random() * 2 ** 31), owned)
-	scene.add(backdrop.group)
+	const backdrop = createBackdrop(path, rows, newSeed(0), owned)
+	const covers = createCover(path, cover, metresPerAmbush, newSeed(1), owned, phase)
+	scene.add(backdrop.group, covers.group)
 	return {
 		path,
 		view: {
@@ -58,13 +77,19 @@ function withBackdrop(scene: Scene, { path, view }: StageWorld, rows: readonly B
 			follow(x, z, distance) {
 				view.follow(x, z, distance)
 				backdrop.follow(distance)
+				covers.follow(distance)
 			},
 			dispose() {
 				view.dispose()
 				backdrop.dispose()
+				covers.dispose()
 				for (const made of owned.geometries) made.dispose()
 				for (const made of owned.materials) made.dispose()
 			},
+		},
+		covers: (distance) => {
+			const ambush = ambushNear(distance, metresPerAmbush, phase)
+			return coverSpotsAt(path, ambush > 0 ? ambush : ambush + metresPerAmbush, cover.aside)
 		},
 	}
 }
@@ -72,25 +97,25 @@ function withBackdrop(scene: Scene, { path, view }: StageWorld, rows: readonly B
 /**
  * Lays out `stage`'s world in `scene`: a path that goes on for as long as the run does, the stage's
  * scenery along it, in blocks stitched together ahead of the samurai ([blocks](./blocks.mts)), and
- * the backdrop behind it.
+ * the backdrop behind it and the covers beside it.
  */
-export function createStageWorld(stage: Stage, scene: Scene): StageWorld {
+export function createStageWorld(stage: Stage, scene: Scene, phase = 0): StageWorld {
 	if (stage === 'rice-fields') {
 		const path = createPath(riceRound)
-		return withBackdrop(scene, { path, view: createRiceFields(scene, path, stageModels(stage)) }, riceBackdrop)
+		return around(scene, { path, view: createRiceFields(scene, path, stageModels(stage)) }, riceBackdrop, riceCover, phase)
 	}
 	if (stage === 'bamboo-forest') {
 		const path = createPath(bambooRound)
-		return withBackdrop(scene, { path, view: createBambooForest(scene, path, stageModels(stage)) }, bambooBackdrop)
+		return around(scene, { path, view: createBambooForest(scene, path, stageModels(stage)) }, bambooBackdrop, bambooCover, phase)
 	}
 	if (stage === 'mountain-temple') {
 		const path = createPath(mountainRound)
-		return withBackdrop(scene, { path, view: createMountainTemple(scene, path, stageModels(stage)) }, mountainBackdrop)
+		return around(scene, { path, view: createMountainTemple(scene, path, stageModels(stage)) }, mountainBackdrop, mountainCover, phase)
 	}
 	if (stage === 'edo-castle') {
 		const path = createPath(castleRound)
-		return withBackdrop(scene, { path, view: createEdoCastle(scene, path, stageModels(stage)) }, castleBackdrop)
+		return around(scene, { path, view: createEdoCastle(scene, path, stageModels(stage)) }, castleBackdrop, castleCover, phase)
 	}
 	const path = createPath(townRound)
-	return withBackdrop(scene, { path, view: createCastleTown(scene, path, stageModels(stage)) }, townBackdrop)
+	return around(scene, { path, view: createCastleTown(scene, path, stageModels(stage)) }, townBackdrop, townCover, phase)
 }

@@ -31,6 +31,8 @@ import { layBlocks } from './blocks.mts'
 import { Batch, chunkOf, placed, scatter, type Cursor } from './kit.mts'
 import { addAll, clearanceOf, cutAway, facingPath, fogFar, isFree, passTime, sky, skyRadius, stamp, strip, type Daylight, type Owned, type Planting, type StageView, type Taken } from './landscape.mts'
 import type { BackdropRow } from './backdrop.mts'
+import { nearAmbushCover, type CoverSet } from './cover.mts'
+import { metresPerAmbush } from '../flows/run.mts'
 import { beside, type Leg, type Path } from './path.mts'
 
 const palette = {
@@ -109,6 +111,13 @@ const wallFront = 1.6
 const wallEvery = 5.8
 /** How far into a round the gatehouse stands. */
 const gateAt = 6
+
+/** What ninjas hide behind in the castle grounds: supplies by the way, and boulders ([cover](./cover.mts)). */
+export const castleCover: CoverSet = {
+	kinds: ['crates', 'barrels', 'rock'],
+	aside: pathHalfWidth + 1.6,
+	colours: { crates: [0x8a6a46, 0x7a5a3a], barrels: [0x5a4030, 0x6a4a30], rock: [0x8d877b, 0x7a756c] },
+}
 
 /** Which side the moat is on at `distance`: `1` right, `-1` left, `0` none. Down two straights a round. */
 export function moatSide(distance: number): -1 | 0 | 1 {
@@ -240,9 +249,9 @@ export function createEdoCastle(scene: Scene, path: Path, models: Promise<Castle
 			}
 		}
 
-		// Stone lanterns in pairs along the way, now and then.
+		// Stone lanterns in pairs along the way, now and then, but not where an ambush's covers stand.
 		for (let distance = from + 30; distance + 1.2 <= to; distance += 45) {
-			if (nearGate(distance)) continue
+			if (nearGate(distance) || nearAmbushCover(distance, metresPerAmbush)) continue
 			const point = path.at(distance)
 			for (const side of [-1, 1]) {
 				const at = beside(point, side * (pathHalfWidth + 1.2))
