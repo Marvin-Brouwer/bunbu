@@ -45,7 +45,10 @@ describe('the backdrop', () => {
 							const point = path.at(distance)
 							nearest = Math.min(nearest, Math.hypot(point.x - x, point.z - z))
 						}
-						expect(nearest, `${name}, seed ${seed}, tile ${tile}`).toBeGreaterThan(Math.min(...rows.map((row) => row.from)) - 1.5)
+						// Each test row has a shape of its own, so the shape says which row it came from.
+						const row = rows.find((each) => each.shape === item.shape)
+						expect(row).toBeDefined()
+						expect(nearest, `${name}, seed ${seed}, tile ${tile}, ${item.shape}`).toBeGreaterThan((row?.from ?? 0) - 1.5)
 					}
 				}
 			}
