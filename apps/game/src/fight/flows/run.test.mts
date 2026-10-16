@@ -623,6 +623,7 @@ describe('endless, asking the same question again', () => {
 		const solutions = {
 			type: 'solutions' as const,
 			query: 'Which?' as Markdown,
+			scenario: 'A goal.' as Markdown,
 			options: [0, 1, 2].map((each) => ({ answer: `${each}` as Markdown, correct: each === 0 })),
 		}
 		selection.value.chooseEndless()
