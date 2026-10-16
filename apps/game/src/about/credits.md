@@ -8,6 +8,10 @@ Bunbu: Shogun Scholar is open source under the MIT license, made by Marvin Brouw
 
 - [Kaushan Script](https://fonts.google.com/specimen/Kaushan+Script) by Pablo Impallari and Igino Marini, under the SIL Open Font License 1.1.
 
+## Sound
+
+Every sound is made by the game itself, in code, as it plays: there are no recordings.
+
 ## 3D models
 
 The 3D models are listed here as they join the game. Every one of them is free under an open license; see the [asset rules](https://github.com/Marvin-Brouwer/bunbu/blob/main/docs/design/assets.md).
