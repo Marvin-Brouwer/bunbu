@@ -12,7 +12,7 @@ import { formatWhole } from '../../_shared/numbers.mts'
 import { ScrollSheet } from '../../_shared/scroll/scroll-sheet.mts'
 import { questionsAnswered } from '../../_shared/state/quiz.mts'
 import { selection, stageNames } from '../../_shared/state/selection.mts'
-import { endlessStage, stageAt, stageQuestions } from '../flows/endless.mts'
+import { answersOn, endlessStage, stageAt, stageQuestions } from '../flows/endless.mts'
 import { difficultyNames } from '../state/difficulty.mts'
 import type { RunGame } from '../state/game.mts'
 import { stageDistanceOf } from '../state/run.mts'
@@ -34,7 +34,7 @@ export const Pause = component<PauseOptions>({
 		// In endless, the stage that is on and the questions answered so far, with no end, as the HUD has them.
 		const { endless } = selection.value
 		const stage = endless && quiz !== undefined
-			? endlessStage(stageAt(game.run.value.distance, stageQuestions(quiz), questionsAnswered(game.quiz.value)))
+			? endlessStage(stageAt(game.run.value.distance, stageQuestions(quiz), answersOn(game.quiz.value, game.life.value.empty())))
 			: selection.value.stage
 
 		const fact = (term: string, value: string) => element('div', {

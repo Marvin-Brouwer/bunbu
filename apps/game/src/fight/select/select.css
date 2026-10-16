@@ -87,6 +87,49 @@
 	background: var(--paper-shade);
 }
 
+/*
+ * Endless: every stage's picture in turn, in slanted slices from the top left to the bottom right,
+ * as the stages run into each other. `--slice` is the stage's place, 0 to 4.
+ */
+.endlessPicture {
+	position: relative;
+	overflow: hidden;
+	background: var(--paper-light);
+}
+
+.endlessPicture img {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	--slice: 0;
+	/* A band a fifth of the way across, slanted by `--lean`; the first and last run on to the edges. */
+	--lean: 18%;
+	--from: calc(var(--slice) * 20% - var(--lean) / 2);
+	--to: calc((var(--slice) + 1) * 20% - var(--lean) / 2);
+	/* Each band a little narrower, so a thin line of paper shows between them. */
+	clip-path: polygon(
+		calc(var(--from) + var(--lean) + 1.5px) 0,
+		calc(var(--to) + var(--lean) - 1.5px) 0,
+		calc(var(--to) - 1.5px) 100%,
+		calc(var(--from) + 1.5px) 100%
+	);
+}
+
+.endlessPicture img:nth-child(2) { --slice: 1; }
+.endlessPicture img:nth-child(3) { --slice: 2; }
+.endlessPicture img:nth-child(4) { --slice: 3; }
+.endlessPicture img:nth-child(5) { --slice: 4; }
+
+.endlessPicture img:first-child {
+	--from: -50%;
+}
+
+.endlessPicture img:last-child {
+	--to: 150%;
+}
+
 /* Locked, or not built yet: in ink-wash grey. */
 .stage:has(input:disabled) .stagePicture {
 	filter: grayscale(1) contrast(0.8);

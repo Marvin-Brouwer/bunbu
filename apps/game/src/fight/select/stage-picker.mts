@@ -7,7 +7,7 @@
  * shown but can't be chosen.
  *
  * The pictures are in `public/stages/`, taken, and checked in CI, by `e2e/stage-pictures.spec.mts`;
- * endless has an illustration there of its own, `endless.svg`.
+ * endless shows every stage's picture in slanted slices.
  *
  * A stage cleared as Shogun on the chosen quiz has a Shogun seal on its picture, so the player sees
  * which are still to clear for endless.
@@ -180,14 +180,22 @@ export const StagePicker = component({
 							},
 						},
 					}),
-					// Every stage in turn: an illustration of the path in a loop through all of them.
-					element('img', {
-						classes: styles.stagePicture,
-						src: `${import.meta.env.BASE_URL}stages/endless.svg`,
-						alt: '',
-						loading: 'lazy',
-						decoding: 'async',
-						draggable: false,
+					// Every stage in turn: a slanted slice of each one's picture.
+					element('span', {
+						classes: [
+							styles.stagePicture,
+							styles.endlessPicture,
+						],
+						aria: {
+							hidden: 'true',
+						},
+						children: stages.map((stage) => element('img', {
+							src: `${import.meta.env.BASE_URL}stages/${stage}.jpg`,
+							alt: '',
+							loading: 'lazy',
+							decoding: 'async',
+							draggable: false,
+						})),
 					}),
 					create(ChoiceStamp),
 					element('span', {
