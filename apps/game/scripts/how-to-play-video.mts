@@ -139,8 +139,11 @@ function browsersFolder(): string {
 			.reduce((from, name) => createRequire(from).resolve(`${name}/package.json`), fileURLToPath(import.meta.url))
 		return join(dirname(core), '.local-browsers')
 	}
-	return set
-		?? (platform() === 'darwin' ? join(homedir(), 'Library/Caches/ms-playwright') : platform() === 'win32' ? join(homedir(), 'AppData/Local/ms-playwright') : join(homedir(), '.cache/ms-playwright'))
+	if (set !== undefined) return set
+	// Playwright's own cache, under the folders the system says caches go in.
+	if (platform() === 'darwin') return join(homedir(), 'Library/Caches/ms-playwright')
+	if (platform() === 'win32') return join(process.env.LOCALAPPDATA ?? join(homedir(), 'AppData/Local'), 'ms-playwright')
+	return join(process.env.XDG_CACHE_HOME ?? join(homedir(), '.cache'), 'ms-playwright')
 }
 
 /** Playwright's own ffmpeg, which it installs with its browsers. */
