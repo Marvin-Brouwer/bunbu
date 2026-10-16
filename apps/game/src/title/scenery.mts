@@ -169,10 +169,11 @@ export function createScenery(owned: Owned): Scenery {
 		add(hip, lit(sceneryPalette.roof, 0.7), x, y + 0.15, z, width, height, depth)
 	}
 
-	// The stone path from the samurai to the temple's steps.
-	add(cube, lit(sceneryPalette.path, 1), 0, 0.03, -36, 2.6, 0.06, 74, false, true)
-	for (let index = 0; index < 34; index++) {
-		add(cube, lit(sceneryPalette.stoneDark, 1), 0, 0.065, 0.5 - index * 2.1, 2.7, 0.02, 0.08, false)
+	// The stone path up to the temple's steps, from past the foot of the screen however far back the
+	// camera stands (title/framing.mts, at most 40 m), through the torii and past the samurai.
+	add(cube, lit(sceneryPalette.path, 1), 0, 0.03, -14, 2.6, 0.06, 118, false, true)
+	for (let index = 0; index < 55; index++) {
+		add(cube, lit(sceneryPalette.stoneDark, 1), 0, 0.065, 44.6 - index * 2.1, 2.7, 0.02, 0.08, false)
 	}
 
 	into = placeholders
