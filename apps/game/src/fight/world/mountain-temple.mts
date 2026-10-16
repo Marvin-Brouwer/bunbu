@@ -49,8 +49,12 @@ const palette = {
  * into the mist.
  */
 export const mountainBackdrop: readonly BackdropRow[] = [
-	{ shape: 'pine', from: 32, to: 130, perTile: 3, colours: [[0x4a3a2c], [0x2f4a32, 0x355238, 0x3a5a3c]] },
-	{ shape: 'broadleaf', from: 40, to: 110, perTile: 0.8, colours: [[0x4a3a2c], [0x4a6634, 0x8e5a2a]] },
+	// Close behind the rocks, so the slope is wooded right up to the steps' own pines.
+	{ shape: 'pine', from: 24, to: 45, perTile: 4.5, colours: [[0x4a3a2c], [0x2f4a32, 0x355238, 0x3a5a3c]] },
+	{ shape: 'pine', from: 45, to: 130, perTile: 3.5, colours: [[0x4a3a2c], [0x2f4a32, 0x355238, 0x3a5a3c]] },
+	{ shape: 'broadleaf', from: 28, to: 110, perTile: 1.6, colours: [[0x4a3a2c], [0x4a6634, 0x8e5a2a, 0xb8402a]] },
+	// The mountainside rising behind them.
+	{ shape: 'hill', from: 70, to: 130, perTile: 0.5, colours: [[0x6a6f4c, 0x5e6446, 0x76795a]] },
 ]
 
 /** From a clear noon to the glow on the snow at sunset. One light per quarter of the stage ({@link passTime}). */

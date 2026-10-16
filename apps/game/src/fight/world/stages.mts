@@ -42,6 +42,14 @@ function loadSome<Name extends string>(names: Readonly<Record<Name, string>>): P
 	})
 }
 
+/** The models `stage`'s scenery is built from, each one there only if it loaded. */
+export function stageModels(stage: Stage) {
+	if (stage === 'rice-fields') return loadSome({ maple: 'maple', kit: 'stage-kit' })
+	if (stage === 'bamboo-forest' || stage === 'edo-castle') return loadSome({ kit: 'stage-kit', temple: 'temple-kit' })
+	if (stage === 'mountain-temple') return loadSome({ temple: 'temple-kit', kit: 'stage-kit' })
+	return loadSome({ maple: 'maple', torii: 'torii', bamboo: 'bamboo', kit: 'town-kit' })
+}
+
 /** A seed for what is laid out at random, new every run. */
 const newSeed = () => Math.floor(Math.random() * 2 ** 31)
 
@@ -83,20 +91,20 @@ function around(scene: Scene, { path, view }: OwnWorld, rows: readonly BackdropR
 export function createStageWorld(stage: Stage, scene: Scene): StageWorld {
 	if (stage === 'rice-fields') {
 		const path = createPath(riceRound)
-		return around(scene, { path, view: createRiceFields(scene, path, loadSome({ maple: 'maple', kit: 'stage-kit' })) }, riceBackdrop, riceCover)
+		return around(scene, { path, view: createRiceFields(scene, path, stageModels(stage)) }, riceBackdrop, riceCover)
 	}
 	if (stage === 'bamboo-forest') {
 		const path = createPath(bambooRound)
-		return around(scene, { path, view: createBambooForest(scene, path, loadSome({ kit: 'stage-kit', temple: 'temple-kit' })) }, bambooBackdrop, bambooCover)
+		return around(scene, { path, view: createBambooForest(scene, path, stageModels(stage)) }, bambooBackdrop, bambooCover)
 	}
 	if (stage === 'mountain-temple') {
 		const path = createPath(mountainRound)
-		return around(scene, { path, view: createMountainTemple(scene, path, loadSome({ temple: 'temple-kit', kit: 'stage-kit' })) }, mountainBackdrop, mountainCover)
+		return around(scene, { path, view: createMountainTemple(scene, path, stageModels(stage)) }, mountainBackdrop, mountainCover)
 	}
 	if (stage === 'edo-castle') {
 		const path = createPath(castleRound)
-		return around(scene, { path, view: createEdoCastle(scene, path, loadSome({ kit: 'stage-kit', temple: 'temple-kit' })) }, castleBackdrop, castleCover)
+		return around(scene, { path, view: createEdoCastle(scene, path, stageModels(stage)) }, castleBackdrop, castleCover)
 	}
 	const path = createPath(townRound)
-	return around(scene, { path, view: createCastleTown(scene, path, loadSome({ maple: 'maple', torii: 'torii', bamboo: 'bamboo', kit: 'town-kit' })) }, townBackdrop, townCover)
+	return around(scene, { path, view: createCastleTown(scene, path, stageModels(stage)) }, townBackdrop, townCover)
 }
