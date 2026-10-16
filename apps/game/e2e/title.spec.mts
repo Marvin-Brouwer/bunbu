@@ -106,16 +106,13 @@ test('keeps the samurai in frame with a long quiz title on the smallest phone', 
 /** All of the samurai inside the gap and across the screen, at both ends of the camera's sway. */
 async function expectInFrame(page: Page, width: number, height: number, scrolled = false): Promise<void> {
 	const gap = await gapOf(page)
-	// Scrolled, the gap may run off the top of the screen; what is left of it holds him.
-	if (!scrolled) expect(gap.height).toBeGreaterThanOrEqual(leastRoom)
-	// What shows of the gap, which scrolled can run off the top of the screen.
-	const top = Math.max(0, gap.top)
-	const bottom = Math.min(height, gap.top + gap.height)
+	expect(gap.height).toBeGreaterThanOrEqual(leastRoom)
+	// Scrolled, the gap moves up and can run off the top of the screen; he stays inside it.
 	for (const sway of [-0.035, 0, 0.035]) {
 		const box = samuraiOnScreen(width, height, gap, sway)
 		expect(box.left).toBeGreaterThanOrEqual(0)
 		expect(box.right).toBeLessThanOrEqual(width)
-		expect(box.top).toBeGreaterThanOrEqual(top)
-		expect(box.bottom).toBeLessThanOrEqual(bottom)
+		expect(box.top).toBeGreaterThanOrEqual(scrolled ? gap.top : Math.max(0, gap.top))
+		expect(box.bottom).toBeLessThanOrEqual(gap.top + gap.height)
 	}
 }
