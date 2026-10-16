@@ -10,7 +10,7 @@ import { highScores } from '../state/highscores.mts'
 import { lastRun } from '../state/lastrun.mts'
 import { shareOfOnePoint } from '../state/life.mts'
 import { runConfig } from '../state/run.mts'
-import { samuraiOpensWith, stageResults } from '../state/stage-results.mts'
+import { opensNextStage, samuraiOpensWith, stageResults } from '../state/stage-results.mts'
 import { nextScrollSeconds } from '../../_shared/state/ambush.mts'
 import { commitAmbush, outcomeDelaySeconds } from './ambush.mts'
 import { loaded, questionsAnswered } from '../../_shared/state/quiz.mts'
@@ -300,6 +300,11 @@ describe('unlocking stages', () => {
 		expect(game.life.value.value).toBeLessThan(samuraiOpensWith)
 		expect(stageResults.value.of('fixture', '1', 'rice-fields')).toMatchObject({ cleared: true, opens: false })
 		expect(stageResults.value.unlocked('fixture', '1', 'bamboo-forest')).toBe(false)
+	})
+
+	it('unlocks as Samurai with the life bar at half, a rounding error under it included', () => {
+		expect(opensNextStage('samurai', 0.49999999999999983)).toBe(true)
+		expect(opensNextStage('samurai', 0.49)).toBe(false)
 	})
 
 	it('unlocks on the harder difficulties with any life left', () => {

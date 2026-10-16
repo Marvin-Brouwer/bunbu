@@ -39,7 +39,8 @@ export const samuraiOpensWith = 0.5
  */
 export function opensNextStage(difficulty: Difficulty, life: number): boolean {
 	if (difficulty === 'apprentice') return false
-	return difficulty !== 'samurai' || life >= samuraiOpensWith
+	// The life bar's shares are fractions such as 1/6, so a bar at exactly half lands a rounding error either side.
+	return difficulty !== 'samurai' || life >= samuraiOpensWith - 1e-9
 }
 
 /** Whether `result` unlocks the next stage. */

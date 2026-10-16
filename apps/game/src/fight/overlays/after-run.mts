@@ -18,6 +18,8 @@ export type AfterRunOptions = {
 	readonly leave: (to: Path) => void
 	/** The score to share, on a passed quiz. */
 	readonly share?: ShareScoreButtonOptions
+	/** A line above the buttons on why the next thing to do is what it is, as why it is Retry. */
+	readonly hint?: string
 }
 
 export const AfterRun = component<AfterRunOptions>({
@@ -33,6 +35,12 @@ export const AfterRun = component<AfterRunOptions>({
 			element('nav', {
 				classes: styles.actions,
 				children: [
+					options.hint === undefined
+						? undefined
+						: element('p', {
+							classes: styles.actionsHint,
+							textContent: options.hint,
+						}),
 					options.misses === 0
 						? next
 						: element('div', {

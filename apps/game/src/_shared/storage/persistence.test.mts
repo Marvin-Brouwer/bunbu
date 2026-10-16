@@ -152,6 +152,12 @@ describe('parsing what was saved', () => {
 		expect(parsed).toEqual({ a: good })
 	})
 
+	it('keeps whether a stage result unlocks the next stage, and on Shogun', () => {
+		const kept = { distance: 480, cleared: true, opens: false, shogun: true }
+
+		expect(parseStageResults({ a: kept })).toEqual({ a: kept })
+	})
+
 	it('keeps the misses that are valid', () => {
 		const miss = { at: { question: 1, part: 0 }, outcome: 'wrong', picked: [2, 0] }
 		expect(parseLastRun({ quiz: { id: 'a', version: '1' }, misses: [miss, { ...miss, outcome: 'maybe' }, null] }))
@@ -217,7 +223,7 @@ describe('persistApp', () => {
 		expect(quizDifficulties.value.of('a', '1')).toBe('apprentice')
 		expect(highScores.value.of('a', '1')).toMatchObject({ points: 100, seconds: 9 })
 		expect(lastRun.value.missesOf('a', '1')).toEqual([{ at: { question: 2, part: 0 }, outcome: 'wrong', picked: [1] }])
-		expect(stageResults.value.of('a', '1', 'castle-town')).toEqual({ distance: 240, cleared: false })
+		expect(stageResults.value.of('a', '1', 'castle-town')).toEqual({ distance: 240, cleared: false, opens: false })
 	})
 
 	it('keeps the best of what was saved and what was earned meanwhile', async () => {

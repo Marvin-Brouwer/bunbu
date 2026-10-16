@@ -10,7 +10,9 @@ import { MenuButton } from '../../_shared/menu/menu-button.mts'
 import { SettingsForm } from '../../_shared/menu/settings-form.mts'
 import { formatWhole } from '../../_shared/numbers.mts'
 import { ScrollSheet } from '../../_shared/scroll/scroll-sheet.mts'
+import { questionsAnswered } from '../../_shared/state/quiz.mts'
 import { selection, stageNames } from '../../_shared/state/selection.mts'
+import { endlessStage, stageAt, stageQuestions } from '../flows/endless.mts'
 import { difficultyNames } from '../state/difficulty.mts'
 import type { RunGame } from '../state/game.mts'
 import { stageDistanceOf } from '../state/run.mts'
@@ -29,6 +31,11 @@ export const Pause = component<PauseOptions>({
 	onMount({ append, create, element, options }) {
 		const { game } = options
 		const { quiz, answered, refs } = game.quiz.value
+		// In endless, the stage that is on and the questions answered so far, with no end, as the HUD has them.
+		const { endless } = selection.value
+		const stage = endless && quiz !== undefined
+			? endlessStage(stageAt(game.run.value.distance, stageQuestions(quiz), questionsAnswered(game.quiz.value)))
+			: selection.value.stage
 
 		const fact = (term: string, value: string) => element('div', {
 			classes: styles.fact,
@@ -53,10 +60,10 @@ export const Pause = component<PauseOptions>({
 					classes: styles.facts,
 					children: [
 						fact('Quiz', quiz?.title ?? ''),
-						fact('Stage', stageNames[selection.value.stage]),
+						fact('Stage', endless ? `Endless · ${stageNames[stage]}` : stageNames[stage]),
 						fact('Difficulty', difficultyNames[game.run.value.difficulty]),
-						fact('Answered', `${answered} / ${refs.length}`),
-						fact('Distance', `${formatWhole(Math.floor(stageDistanceOf(game.run.value)))} m`),
+						fact('Answered', endless ? formatWhole(questionsAnswered(game.quiz.value)) : `${answered} / ${refs.length}`),
+						fact('Distance', `${formatWhole(Math.floor(endless ? game.run.value.distance : stageDistanceOf(game.run.value)))} m`),
 					],
 				}),
 			],

@@ -49,7 +49,7 @@ export const Finished = component<FinishedOptions>({
 		// The same quiz on the next stage that has a world (docs/plan.md#open-questions), or this one
 		// again after the last. Passing has unlocked it, now or before.
 		const next = stages.slice(stages.indexOf(selection.value.stage) + 1).find((stage) => builtStages.has(stage))
-		const nextAction = ((): MenuButtonOptions => {
+		const nextAction = ((): MenuButtonOptions & { hint?: string } => {
 			if (next === undefined) return { label: 'Run again', action: options.restart }
 			if (stageResults.value.unlocked(quiz.id, quiz.version, next)) {
 				return {
@@ -65,14 +65,14 @@ export const Finished = component<FinishedOptions>({
 			if (difficulty === 'apprentice') {
 				return {
 					label: `Retry as ${difficultyNames.samurai}`,
-					note: `${difficultyNames.apprentice} unlocks no stages`,
+					hint: `${difficultyNames.apprentice} unlocks no stages.`,
 					action: () => {
 						quizDifficulties.value.choose(quiz.id, quiz.version, 'samurai')
 						options.restart()
 					},
 				}
 			}
-			return { label: 'Retry', note: 'Half the life bar to unlock', action: options.restart }
+			return { label: 'Retry', hint: `Finish with half the life bar or more to unlock ${stageNames[next]}.`, action: options.restart }
 		})()
 		// The top of the results, which Share sends as a picture too.
 		const picture: ScorePicture = {
@@ -176,6 +176,7 @@ export const Finished = component<FinishedOptions>({
 						},
 						leave: options.leave,
 						next: nextAction,
+						hint: nextAction.hint,
 					}),
 				}),
 			})

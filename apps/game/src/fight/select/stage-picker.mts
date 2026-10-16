@@ -6,7 +6,8 @@
  * picture in ink-wash grey, and says which stage unlocks it. The stages without a world yet are
  * shown but can't be chosen.
  *
- * The pictures are in `public/stages/`, taken, and checked in CI, by `e2e/stage-pictures.spec.mts`.
+ * The pictures are in `public/stages/`, taken, and checked in CI, by `e2e/stage-pictures.spec.mts`;
+ * endless has an illustration there of its own, `endless.svg`.
  *
  * A stage cleared as Shogun on the chosen quiz has a Shogun seal on its picture, so the player sees
  * which are still to clear for endless.
@@ -127,10 +128,32 @@ function draggable(carousel: HTMLElement): void {
 	}, { capture: true })
 }
 
-/** The chosen card of `carousel` in the middle, at once: as it was left. */
-function showChosen(carousel: HTMLElement): void {
-	const chosen = carousel.querySelector('input:checked')
-	if (chosen !== null) requestAnimationFrame(() => { centre(chosen, 'instant') })
+/** Scrolls `carousel` so the middle of `card` is in its middle, at once. */
+function centreAt(carousel: HTMLElement, card: Element): void {
+	const row = carousel.getBoundingClientRect()
+	const box = card.getBoundingClientRect()
+	carousel.scrollLeft += box.left + box.width / 2 - (row.left + carousel.clientWidth / 2)
+}
+
+/**
+ * The chosen card of `carousel` in the middle, at once: as it was left (#137). Set by its scroll
+ * position rather than `scrollIntoView`, which Safari doesn't do reliably in a snapping row, and
+ * again whenever the row is laid out anew, as when the screen comes in or the pictures load, until
+ * the player scrolls it.
+ */
+function showChosen(carousel: HTMLElement, signal: AbortSignal): void {
+	const place = () => {
+		const chosen = carousel.querySelector('input:checked')?.closest('label')
+		if (chosen != null && carousel.clientWidth > 0) centreAt(carousel, chosen)
+	}
+	place()
+	requestAnimationFrame(place)
+	const laidOut = new ResizeObserver(place)
+	laidOut.observe(carousel)
+	for (const card of carousel.querySelectorAll('label')) laidOut.observe(card)
+	const stop = () => { laidOut.disconnect() }
+	for (const touch of ['pointerdown', 'wheel', 'keydown'] as const) carousel.addEventListener(touch, stop, { once: true, passive: true })
+	signal.addEventListener('abort', stop, { once: true })
 }
 
 export const StagePicker = component({
@@ -157,22 +180,14 @@ export const StagePicker = component({
 							},
 						},
 					}),
-					// Every stage in turn: a slanted slice of each one's picture.
-					element('span', {
-						classes: [
-							styles.stagePicture,
-							styles.endlessPicture,
-						],
-						aria: {
-							hidden: 'true',
-						},
-						children: stages.map((stage) => element('img', {
-							src: `${import.meta.env.BASE_URL}stages/${stage}.jpg`,
-							alt: '',
-							loading: 'lazy',
-							decoding: 'async',
-							draggable: false,
-						})),
+					// Every stage in turn: an illustration of the path in a loop through all of them.
+					element('img', {
+						classes: styles.stagePicture,
+						src: `${import.meta.env.BASE_URL}stages/endless.svg`,
+						alt: '',
+						loading: 'lazy',
+						decoding: 'async',
+						draggable: false,
 					}),
 					create(ChoiceStamp),
 					element('span', {
@@ -311,10 +326,15 @@ export const StagePicker = component({
 				}), endlessChoice()],
 			})
 		)
+		let shownFor: AbortController | undefined
 		const showAll = () => {
 			const carousel = show()
 			draggable(carousel)
-			showChosen(carousel)
+			// The last row's watch ends with it.
+			shownFor?.abort()
+			shownFor = new AbortController()
+			signal.addEventListener('abort', () => { shownFor?.abort() }, { once: true })
+			showChosen(carousel, shownFor.signal)
 		}
 		showAll()
 

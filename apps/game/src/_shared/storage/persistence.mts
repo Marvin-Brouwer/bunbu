@@ -89,6 +89,7 @@ const stageResult = type({
 	distance: 'number >= 0',
 	cleared: 'boolean',
 	'shogun?': 'boolean',
+	'opens?': 'boolean',
 })
 
 /** The stage results that are valid, by quiz and stage. */
