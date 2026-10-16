@@ -87,6 +87,7 @@ pnpm lint
 pnpm typecheck
 pnpm test
 pnpm build
+pnpm e2e         # Playwright, in a real browser; first `pnpm --filter @bunbu/game exec playwright install chromium`
 ```
 
 `pnpm lint` and `pnpm test` are the two that catch most of it, and CI runs all five on every pull
