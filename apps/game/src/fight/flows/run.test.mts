@@ -13,7 +13,9 @@ import { runConfig } from '../state/run.mts'
 import { stageResults } from '../state/stage-results.mts'
 import { nextScrollSeconds } from '../../_shared/state/ambush.mts'
 import { commitAmbush, outcomeDelaySeconds } from './ambush.mts'
-import { questionsAnswered } from '../../_shared/state/quiz.mts'
+import { loaded, questionsAnswered } from '../../_shared/state/quiz.mts'
+import { notRunning } from '../state/run.mts'
+import { missShare } from './ambush.mts'
 import { ambushAt, endRun, metresPerAmbush, startRun, testOf, tickRun } from './run.mts'
 
 let game: RunGame
@@ -595,5 +597,38 @@ describe('unlocking endless', () => {
 		startRun(game, fixtureQuiz, undefined, 'samurai')
 		play([true, true, true, true])
 		expect(stageResults.value.of('fixture', '1', 'rice-fields')).toMatchObject({ cleared: true, shogun: true })
+	})
+})
+
+describe('endless, asking the same question again', () => {
+	const yesNo = (query: string) => ({ type: 'yes-no' as const, query: query as Markdown, answer: 'yes' as const })
+
+	it('goes on with a quiz of one question, each time an ambush of its own farther along', () => {
+		selection.value.chooseEndless()
+		startRun(game, { ...fixtureQuiz, questions: [yesNo('Only?')] })
+		play([true, true, true])
+		expect(questionsAnswered(game.quiz.value)).toBe(3)
+		runToAmbush()
+		expect(game.run.value.distance).toBeCloseTo(ambushAt(3))
+	})
+
+	it('counts a question in a stage twice as two points, so one miss is not the end', () => {
+		const five = { ...fixtureQuiz, questionsPerTest: 4, questions: [0, 1, 2, 3, 4].map((each) => yesNo(`${each}?`)) }
+		// A stage across a new round of the quiz: question 4 at its end, then again at the start.
+		game = createRunGame({ quiz: loaded(five, [4, 0, 4, 1]), run: { ...notRunning, phase: 'running', stageLength: Infinity } })
+		expect(missShare(game)).toBeCloseTo(shareOfOnePoint(4, 70))
+	})
+
+	it('asks the rounds of a question once each time, not every time it was ever asked', () => {
+		const solutions = {
+			type: 'solutions' as const,
+			query: 'Which?' as Markdown,
+			options: [0, 1, 2].map((each) => ({ answer: `${each}` as Markdown, correct: each === 0 })),
+		}
+		selection.value.chooseEndless()
+		startRun(game, { ...fixtureQuiz, questions: [solutions, yesNo('And?')] })
+		play([true, true, true, true])
+		runToAmbush()
+		expect(game.ambush.value.rounds).toBe(3)
 	})
 })

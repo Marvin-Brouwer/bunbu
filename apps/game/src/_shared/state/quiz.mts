@@ -71,9 +71,12 @@ export type Quiz = Store<QuizState & QuizActions>
 export const noQuiz: QuizState = { quiz: undefined, order: [], refs: [], answered: 0, records: [] }
 
 /** How many ambushes a question takes: one per solution, one per row, otherwise one. */
-export function partsOf(question: Question): number {
-	if (question.type === 'solutions') return question.options.length
-	if (question.type === 'match') return question.rows.length
+/** What {@link partsOf} reads of a question: its type, and how many solutions or rows it has. */
+export type Rounded = { readonly type: string; readonly options?: { readonly length: number }; readonly rows?: { readonly length: number } }
+
+export function partsOf(question: Rounded): number {
+	if (question.type === 'solutions') return question.options?.length ?? 1
+	if (question.type === 'match') return question.rows?.length ?? 1
 	return 1
 }
 
@@ -90,13 +93,42 @@ export function refsOf(quiz: BunbuData, order: readonly number[], random?: Rando
 	})
 }
 
+/** What the counting of questions asked reads of a quiz: the questions, in the order they are asked. */
+export type Asked = { readonly quiz: { readonly questions: readonly Rounded[] } | undefined; readonly order: readonly number[] }
+
+/**
+ * Where each question of `order` starts in the refs: one entry per time a question is asked, its
+ * rounds after it, and the end of the refs last. In endless a question is asked again once all have
+ * been, so it is where a question is in `order`, not its number, that tells one asking from another.
+ */
+export function askStarts({ quiz, order }: Asked): number[] {
+	const starts = [0]
+	for (const question of order) {
+		const asked = quiz?.questions[question]
+		starts.push((starts.at(-1) ?? 0) + (asked === undefined ? 1 : partsOf(asked)))
+	}
+	return starts
+}
+
+/** How many questions have been asked, the one going on included: as many as start before `answered`. */
+export function questionsStarted(state: Asked & { readonly answered: number }): number {
+	return askStarts(state).slice(0, -1).filter((start) => start < state.answered).length
+}
+
 /**
  * How many questions are done: every ambush of them answered. A question halfway through its
  * rounds isn't done yet. In endless a question is asked again once all have been, and counts again.
  */
-export function questionsAnswered({ refs, answered }: Pick<QuizState, 'refs' | 'answered'>): number {
-	// A question is done at its last round: the ambush after it asks another one, or none.
-	return refs.slice(0, answered).filter((ref, index) => refs[index + 1]?.question !== ref.question).length
+export function questionsAnswered(state: Asked & { readonly answered: number }): number {
+	// A question is done once the refs up to its end have been answered.
+	return askStarts(state).slice(1).filter((end) => end <= state.answered).length
+}
+
+/** The refs of the time the question at ref `index` is asked: its rounds, and no other time it is asked. */
+export function refsOfAsk(state: Asked & { readonly refs: readonly QuestionRef[] }, index: number): readonly QuestionRef[] {
+	const starts = askStarts(state)
+	const ask = starts.findIndex((start, at) => index >= start && index < (starts[at + 1] ?? Infinity))
+	return state.refs.slice(starts[ask] ?? 0, starts[ask + 1] ?? state.refs.length)
 }
 
 /** A loaded quiz, ready to be asked in `order`. */

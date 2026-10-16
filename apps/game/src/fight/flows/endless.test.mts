@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { asksIn, endlessStage, stageAt, stageQuestions, stageStart } from './endless.mts'
+import { endlessStage, stageAt, stageQuestions, stageStart } from './endless.mts'
 import { ambushAt } from './run.mts'
 
 describe('the stages of endless', () => {
@@ -24,8 +24,4 @@ describe('the stages of endless', () => {
 		expect(stageStart(0, questions)).toBe(0)
 	})
 
-	it('count a question each time it is asked, its rounds together', () => {
-		expect(asksIn([{ question: 0, part: 0 }, { question: 1, part: 0 }, { question: 1, part: 1 }, { question: 0, part: 0 }])).toBe(3)
-		expect(asksIn([])).toBe(0)
-	})
 })

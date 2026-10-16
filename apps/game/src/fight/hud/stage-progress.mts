@@ -8,7 +8,7 @@
  */
 
 import { component } from '@rooted/components'
-import { questionsAnswered, type Quiz, type QuizState } from '../../_shared/state/quiz.mts'
+import { questionsAnswered, type Asked, type Quiz, type QuizState } from '../../_shared/state/quiz.mts'
 import { selection, stageNames } from '../../_shared/state/selection.mts'
 import { marksPassed, quarterMarks, stageDistanceOf, type Run, type RunState } from '../state/run.mts'
 import { formatWhole } from '../../_shared/numbers.mts'
@@ -86,7 +86,7 @@ export const StageProgress = component<StageProgressOptions>({
 			})
 		}
 
-		function showQuiz(state: Pick<QuizState, 'order' | 'refs' | 'answered'>) {
+		function showQuiz(state: Asked & Pick<QuizState, 'answered'>) {
 			caption.textContent = endless
 				? `Endless · ${stage} · ${formatWhole(questionsAnswered(state))}`
 				: `${stage} · ${formatWhole(questionsAnswered(state))} / ${formatWhole(state.order.length)}`

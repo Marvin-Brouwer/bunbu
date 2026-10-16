@@ -10,7 +10,6 @@
 
 import type { BunbuData } from '@bunbu/data'
 import { stages, type Stage } from '../../_shared/state/selection.mts'
-import type { QuestionRef } from '../../_shared/state/quiz.mts'
 import { metresPerAmbush } from './run.mts'
 
 /** How many questions a stage of endless asks: a test's worth. */
@@ -34,10 +33,3 @@ export function stageAt(distance: number, questions: number): number {
 	return Math.max(0, Math.floor((distance - metresPerAmbush / 2) / (questions * metresPerAmbush)))
 }
 
-/**
- * How many questions `refs` asks, and so how many ambushes it springs: each question once per time
- * it is asked, its rounds together. In endless a question comes round again once all have been asked.
- */
-export function asksIn(refs: readonly QuestionRef[]): number {
-	return refs.filter((ref, index) => index === 0 || refs[index - 1]?.question !== ref.question).length
-}

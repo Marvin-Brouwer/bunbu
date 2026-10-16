@@ -10,7 +10,7 @@ import type { BunbuData } from '@bunbu/data'
 import { shuffle, type Random } from '../../_shared/state/random.mts'
 import { selection } from '../../_shared/state/selection.mts'
 import { snapshot } from '../../_shared/state/store.mts'
-import { questionsAnswered, type Outcome, type QuestionRef, type QuizActions, type QuizState } from '../../_shared/state/quiz.mts'
+import { askStarts, questionsAnswered, questionsStarted, refsOfAsk, type Outcome, type QuestionRef, type QuizActions, type QuizState } from '../../_shared/state/quiz.mts'
 import { quizDifficulties, timeScales, type Difficulty } from '../state/difficulty.mts'
 import type { RunGame } from '../state/game.mts'
 import { highScores } from '../state/highscores.mts'
@@ -19,7 +19,7 @@ import { runConfig, stageDistanceOf } from '../state/run.mts'
 import { pointOf, type HighScore } from '../state/score.mts'
 import { stageAfter, stageResults } from '../state/stage-results.mts'
 import { missShare, openAmbush, tickAmbush, tickOutcome } from './ambush.mts'
-import { asksIn, stageQuestions } from './endless.mts'
+import { stageQuestions } from './endless.mts'
 
 /** Metres of path per ambush, until stage length and question count are decided (docs/plan.md). */
 export const metresPerAmbush = 120
@@ -34,8 +34,7 @@ export function ambushAt(asked: number): number {
 
 /** How many questions have been asked to the end. */
 function questionsAsked(game: RunGame): number {
-	const { refs, answered } = game.quiz.value
-	return asksIn(refs.slice(0, answered))
+	return questionsStarted(snapshot<QuizState & QuizActions>(game.quiz))
 }
 
 /** Whether `game` is a run of endless ([endless](../../../../../docs/design/gameplay.md#endless)). */
@@ -59,15 +58,16 @@ function nextRound(data: BunbuData, last: number | undefined, random?: Random): 
  * a test of its own.
  */
 function keepGoing(game: RunGame, random?: Random): void {
-	const { quiz, refs, answered, order } = snapshot<QuizState & QuizActions>(game.quiz)
+	const state = snapshot<QuizState & QuizActions>(game.quiz)
+	const { quiz, answered, order } = state
 	if (quiz === undefined) return
 	const questions = stageQuestions(quiz)
-	if (asksIn(refs) - asksIn(refs.slice(0, answered)) < questions) game.quiz.value.extend(nextRound(quiz, order.at(-1), random), random)
-	const last = refs[answered - 1]
-	const finished = last !== undefined && refs[answered]?.question !== last.question
-	const done = questionsAnswered({ refs, answered })
-	if (finished && done % questions === 0) game.life.value.reset()
-}
+	if (order.length - questionsStarted(state) < questions) game.quiz.value.extend(nextRound(quiz, order.at(-1), random), random)
+	// The ambush just played out was the last round of a question, and that question ended a stage.
+	const done = questionsAnswered(state)
+	const finished = askStarts(state).includes(answered)
+	if (answered > 0 && finished && done % questions === 0) game.life.value.reset()
+	}
 
 /**
  * The questions one run asks, as indices into the quiz, in the order they are asked: a test
@@ -104,13 +104,6 @@ export function startRun(
 	game.run.value.start(endless ? Infinity : game.quiz.value.order.length * metresPerAmbush, difficulty)
 }
 
-/** Where the ambush that `index` (of `refs`) belongs to begins: its first round. */
-function askStart(refs: readonly QuestionRef[], index: number): number {
-	let start = index
-	while (start > 0 && refs[start - 1]?.question === refs[index]?.question) start--
-	return start
-}
-
 /**
  * Scores an ambush that has just been recorded, by the point it counts toward
  * ([life bar](../../../../../docs/design/gameplay.md#life-bar)). A question that takes several
@@ -118,11 +111,14 @@ function askStart(refs: readonly QuestionRef[], index: number): number {
  * and its first miss takes its whole share of the life bar, the misses after that nothing.
  */
 export function scoreAnswer(game: RunGame, at: QuestionRef, outcome: Outcome): void {
-	const { quiz, refs, records } = snapshot<QuizState & QuizActions>(game.quiz)
+	const state = snapshot<QuizState & QuizActions>(game.quiz)
+	const { quiz, records } = state
 	if (quiz === undefined) return
 
 	// This time the question is asked: in endless it comes round again, and counts again.
-	const start = askStart(refs, records.length - 1)
+	const last = records.length - 1
+	const own = refsOfAsk(state, last)
+	const start = askStarts(state).findLast((each) => each <= last) ?? 0
 	const point = pointOf(quiz, at)
 	const answered = records.slice(start).filter((record) => pointOf(quiz, record.at) === point)
 	const missedBefore = answered.slice(0, -1).some((record) => record.outcome !== 'correct')
@@ -133,7 +129,7 @@ export function scoreAnswer(game: RunGame, at: QuestionRef, outcome: Outcome): v
 		game.life.value.hit(missShare(game))
 		return
 	}
-	const parts = refs.slice(start).filter((ref, index) => askStart(refs, start + index) === start && pointOf(quiz, ref) === point).length
+	const parts = own.filter((ref) => pointOf(quiz, ref) === point).length
 	if (answered.length === parts) game.score.value.addCorrect()
 }
 
