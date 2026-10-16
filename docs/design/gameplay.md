@@ -32,7 +32,7 @@ The five stages are played in order: Rice fields, Bamboo forest, Mountain temple
 
 One screen, no Submit button: **the swipe is the answer**.
 
-1. The world goes into slow motion, slowing down hard at first and then ever more, but never to a stop: the samurai, the ninjas and everything around them run on slower and slower. The samurai runs on a few steps at most (2.5 m), so the level all but stops round him and the ninjas close in on him; his legs keep running, in slow motion. The scroll unrolls at once, as the view moves. The ninjas run into view: the ones ahead wait behind what stands by the way where the ambush springs (crates, barrels, a cart, straw, a boulder, as fits the stage), leap over it toward him and run in; the ones from below creep up from behind the camera. The same things stand along the way where no ambush is, so they give nothing away. The swipes and the time start once the ninjas are in.
+1. The world goes into slow motion, slowing down hard at first and then ever more, but never to a stop: the samurai, the ninjas and everything around them run on slower and slower. The samurai runs on a few steps at most (2.5 m), so the level all but stops round him and the ninjas close in on him; his legs keep running, in slow motion, and his footsteps with them. First the ninjas come into view: the ones ahead wait behind what stands by the way well past where they will stand (crates, barrels, a cart, straw, a boulder, as fits the stage), leap high over it toward him and run in to their places; the ones from below creep up from behind the camera. The same things stand along the way where no ambush is, so they give nothing away. Once the ninjas are in, the scroll unrolls, and the swipes and the time start. A ninja runs only while it moves: behind its cover, and waiting its turn once the scroll is answered, it stands.
 2. The scroll opens down to the bottom of the screen with the query and any code; the question has the whole scroll and scrolls when it is long.
 3. The answers are in the **answer drawer** at the foot of the scroll. Closed, only its edge shows, with a red seal (a hanko stamped 答, "answer") and "Tap or swipe up to answer" above it. Tapping the seal or swiping it up draws the answers up over the whole scroll, the same swipe area for every question; swiping it down puts them away to read the question again.
 4. Every option is tagged with a **mark**: the swipe direction (← ↑ → …) of the ninja carrying it. The drawn answers are the **swipe zone**: swiping toward a mark picks that option. Only swipes on the answers count, so the question can be scrolled freely.
@@ -137,6 +137,10 @@ There is no per-question speed bonus: with hundreds of questions it would reward
 ## Review
 
 A wrong answer is never explained during the run. Every miss is reviewed at the end, finished or fallen, on a scroll with a scrollbar: the question, your pick, the right answer, the option and question `explanation`, and `references`.
+
+## Sound
+
+Swords and steps, made by the game as they play (Web Audio: filtered noise and short tones, no sound files): the samurai's steps as he runs, softer in slow motion; the ninjas rushing in and the scroll unrolling as an ambush springs; a pencil scratching over the paper as long as a swipe is drawn, louder the faster it goes, and the paper of an answer cut by it, in the run and in practice; a blade slicing through the scroll when the time runs out; his sword cutting the air, a ninja cut down, blades ringing on a block, and a dull thud when he is hit. The ninjas make no voices. The volume is in the settings; at 0 the game is silent.
 
 ## Reading aloud
 

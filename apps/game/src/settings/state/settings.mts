@@ -13,7 +13,7 @@ import { createStore, type Store } from '@rooted/store'
 export type SettingsState = {
 	/** The haptic buzz on a hit, which can be turned off. */
 	readonly haptics: boolean
-	/** `0` to `1`. Nothing plays sound yet. */
+	/** `0` to `1`, the loudness of the game's sounds ([sound](../../_shared/sound/sound.mts)); `0` is silent. */
 	readonly volume: number
 	/** How fast the dojo reads aloud, one of {@link speechRates}. */
 	readonly speechRate: number
