@@ -85,7 +85,7 @@ export const SettingsForm = component<SettingsFormOptions>({
 					}),
 					element('p', {
 						classes: styles.hint,
-						textContent: 'The game has no sound yet.',
+						textContent: 'Swords, steps and paper. At 0% the game is silent.',
 					}),
 				],
 			}),
