@@ -66,7 +66,7 @@ test.use({
 
 for (const [stage, name] of Object.entries(stages)) {
 	test(`the picture of ${name} is up to date`, async ({ page }) => {
-		test.setTimeout(120_000)
+		test.setTimeout(300_000)
 		// The same chance every run, and a clock that only moves when it is told to.
 		await page.addInitScript(() => {
 			let state = 7

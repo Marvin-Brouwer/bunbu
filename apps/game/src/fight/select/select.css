@@ -43,6 +43,17 @@
 	scrollbar-width: none;
 }
 
+/* Dragged by a mouse: it follows the pointer, and snaps again once let go. */
+.stages[data-dragging] {
+	scroll-snap-type: none;
+	cursor: grabbing;
+	user-select: none;
+}
+
+.stages[data-dragging] .stage {
+	cursor: grabbing;
+}
+
 .stages::-webkit-scrollbar {
 	display: none;
 }
@@ -62,6 +73,8 @@
 	cursor: pointer;
 	box-shadow: var(--tile);
 	scroll-snap-align: center;
+	/* One card a swipe, however hard: no flinging past the one wanted. */
+	scroll-snap-stop: always;
 }
 
 /* The stage as the run sees it, without the samurai. */
