@@ -41,6 +41,7 @@ import { Batch, chunkOf, gableGeometry, glowTexture, partOf, placed, scatter, sl
 import { beside, type Path, type PathPoint } from './path.mts'
 import { addAll, clearanceOf, facingPath, fogFar, isFree, passTime, sky, skyRadius, stamp, strip, type Daylight, type Owned, type Planting, type StageView, type Taken } from './landscape.mts'
 import type { BackdropRow } from './backdrop.mts'
+import type { CoverSet } from './cover.mts'
 
 export { fogFar, skyRadius, type StageView }
 
@@ -80,6 +81,13 @@ export const townBackdrop: readonly BackdropRow[] = [
 	{ shape: 'pine', from: 60, to: 135, perTile: 2.4, colours: [[0x4a3a2c], [0x2f4a2e, 0x35502e]] },
 	{ shape: 'broadleaf', from: 55, to: 135, perTile: 1.6, colours: [[0x4a3a2c], [0x4a6634, 0x8e3a24, 0x6a7a34]] },
 ]
+
+/** What ninjas hide behind in town, on the street by the shops ([cover](./cover.mts)). */
+export const townCover: CoverSet = {
+	kinds: ['crates', 'barrels', 'cart'],
+	aside: streetHalfWidth - 1.3,
+	colours: { crates: [0xb89a6a, 0x8a6a46, 0x7a5a3a], barrels: [0x6a4a30, 0x5a4030, 0x7a5236], cart: [0xd8c8a0, 0xc2ad84] },
+}
 
 /** From dusk to night: the sun goes down and the shops and lanterns light up. One light per quarter of the stage ({@link passTime}). */
 const daylight: Daylight = [

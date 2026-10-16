@@ -31,6 +31,7 @@ import { layBlocks } from './blocks.mts'
 import { Batch, chunkOf, placed, scatter, type Cursor } from './kit.mts'
 import { addAll, clearanceOf, cutAway, facingPath, fogFar, isFree, passTime, sky, skyRadius, stamp, strip, type Daylight, type Owned, type Planting, type StageView, type Taken } from './landscape.mts'
 import type { BackdropRow } from './backdrop.mts'
+import type { CoverSet } from './cover.mts'
 import { beside, type Leg, type Path } from './path.mts'
 
 const palette = {
@@ -107,6 +108,14 @@ const roundLength = mountainRound.reduce((sum, leg) => sum + leg.length, 0)
 
 /** Half the width of the stone steps. */
 const pathHalfWidth = 1.6
+
+/** What ninjas hide behind on the mountain: boulders by the steps ([cover](./cover.mts)). */
+export const mountainCover: CoverSet = {
+	kinds: ['rock', 'rock', 'barrels'],
+	aside: pathHalfWidth + 1.5,
+	colours: { rock: [palette.rock, 0x7a776f, 0x96938b], barrels: [0x5a4030] },
+}
+
 /** The torii of a tunnel: how far apart, and how tall, so their posts stand just off the steps. */
 const toriiEvery = 2.4
 const toriiHeight = 3.9
