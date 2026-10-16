@@ -16,6 +16,7 @@ import { attachViewport } from './canvas/stage.mts'
 import { createViewport } from './canvas/viewport.mts'
 import { appRoutes } from './_routes.g.mts'
 import { addFonts } from './_shared/fonts.mts'
+import { hideLoading } from './_shared/loading.mts'
 import { persistApp } from './_shared/storage/persistence.mts'
 import { TermsCheck } from './_shared/terms/terms-check.mts'
 import styles from './application.css'
@@ -46,6 +47,8 @@ export const Application = component({
 					canvas,
 					element('div', {
 						classes: styles.screen,
+						// Where the routed screen goes, for the loading screen to see it come up.
+						'data-screen': '',
 						children: create(Router),
 					}),
 					// When terms changed since the player agreed to them, they are asked again on opening.
@@ -57,6 +60,8 @@ export const Application = component({
 		// Pre-rendering the static pages at build time has a DOM but no WebGL: those pages get the
 		// screens, and the canvas comes alive when the app loads in a browser.
 		if (environment.is('preRenderer')) return
+		// First, so the loading screen goes even when the renderer below can't be made.
+		hideLoading(signal)
 		addFonts()
 		attachViewport(createViewport(canvas, container, signal), signal)
 		startLoop(signal)

@@ -10,6 +10,7 @@ import { library, type LibraryEntry, type LibraryState } from '../_shared/storag
 import { selection, type SelectionState } from '../_shared/state/selection.mts'
 import { snapshot } from '../_shared/state/store.mts'
 import { agreements } from '../_shared/state/agreements.mts'
+import { loaded } from '../_shared/loading.mts'
 import { TermsScroll } from '../_shared/terms/terms-scroll.mts'
 import { agreementFor } from '../_shared/terms/terms.mts'
 import { sampleQuizzes } from '../_temp/sample-quizzes.mts'
@@ -62,6 +63,9 @@ export const QuizShelf = component({
 		const agreesTo = async (file: File, { quiz, file: packed, terms }: Extract<ReadQuiz, { quiz: unknown }>) => {
 			const agreement = await agreementFor(packed.value, terms)
 			if (agreements.value.holds(quiz.id, quiz.version, agreement)) return true
+			// A quiz opened with Bunbu, or shared to it, comes in as it starts: its scroll waits for the
+			// loading screen to go, as it would open over it.
+			await loaded()
 			const agreed = await new Promise<boolean>((resolve) => {
 				const scroll: Element = create(TermsScroll, {
 					terms,
