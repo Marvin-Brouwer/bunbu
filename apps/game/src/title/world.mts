@@ -1,7 +1,7 @@
 /**
  * The title screen's world ([1 Title](../../../../docs/design/screens.md#1-title--menu)): the
- * samurai idling under a torii at dusk, with petals falling. It sits between the name at the top
- * and the menu at the bottom.
+ * samurai idling under a torii at dusk, with petals falling. He stands in the gap between the name
+ * at the top and the menu at the bottom ([framing](./framing.mts)).
  *
  * Like the run, it shows placeholders until the models have loaded, each on its own.
  */
@@ -28,13 +28,13 @@ import {
 	type Object3D,
 	type Texture,
 } from 'three'
-import { distanceFor, type Framing } from '../canvas/framing.mts'
 import { loadModel } from '../canvas/models.mts'
 import type { View } from '../canvas/stage.mts'
 import type { Viewport } from '../canvas/viewport.mts'
 import { createCharacter, placeholderBody, samuraiLook, type Body } from '../_shared/world/character.mts'
 import { createFigureParts } from '../_shared/world/figure.mts'
 import { createPetals } from '../_shared/world/petals.mts'
+import { titleFraming, titleShot, type Gap } from './framing.mts'
 import { createScenery, type Owned } from './scenery.mts'
 
 const palette = {
@@ -55,22 +55,9 @@ const cherries: readonly (readonly [x: number, z: number, turn: number, size: nu
 	[8, -46, 0.9, 7.5],
 ]
 
-/** The samurai and the torii must fit side to side, on a narrow phone too. */
-export const titleFraming: Framing = { fov: 40, halfWidth: 3.4, closest: 9 }
-
 /** Metres the torii stands behind the samurai, and how tall it is. */
 const toriiBehind = 2.6
 const toriiHeight = 5.2
-
-/**
- * Where the camera looks, as a height on the samurai. Below him, so he stands in the upper middle of
- * the screen, in the gap between the name and the menu.
- */
-const lookHeight = -0.6
-
-/** On a wide screen, where across the screen the samurai stands: `-1` the left edge, `0` the middle. */
-const wideAt = -0.55
-const sideways = -wideAt
 
 function skyDome(): Mesh {
 	const geometry = new SphereGeometry(420, 32, 16)
@@ -156,7 +143,8 @@ function standing(model: Object3D, height: number): Group {
 	return holder
 }
 
-export function createTitleWorld(viewport: Viewport): View {
+/** `gap` is where the name and the menu leave the screen free for the samurai. */
+export function createTitleWorld(viewport: Viewport, gap: () => Gap): View {
 	const { renderer, camera } = viewport
 	const scene = new Scene()
 	scene.fog = new Fog(palette.fog, 40, 380)
@@ -187,8 +175,9 @@ export function createTitleWorld(viewport: Viewport): View {
 	owned.geometries.push(mossGeometry)
 	owned.materials.push(mossMaterial)
 	const moss = new Mesh(mossGeometry, mossMaterial)
-	moss.position.set(0, 0.01, -38)
-	moss.scale.set(30, 1, 46)
+	// Up to under the camera, however far back it stands for a short screen, so no bare earth shows at the foot.
+	moss.position.set(0, 0.01, -30)
+	moss.scale.set(42, 1, 74)
 	moss.receiveShadow = true
 	scene.add(moss)
 
@@ -303,13 +292,14 @@ export function createTitleWorld(viewport: Viewport): View {
 			samurai.root.rotation.y = facing
 
 			// A slow breath of the camera from side to side, so the still scene is alive.
-			const distance = distanceFor(camera.aspect, titleFraming)
-			const sway = Math.sin(time * 0.15) * 0.035 * distance
-			// On a wide screen the menu stands in the middle, so the samurai stands to its left: the
-			// camera moves over sideways, keeping the view straight down the path.
-			const aside = camera.aspect > 1.1 ? sideways * distance * Math.tan((titleFraming.fov * Math.PI) / 360) * camera.aspect : 0
-			camera.position.set(aside + sway, 1.9, distance)
-			camera.lookAt(aside + sway, lookHeight + 1.6, 0)
+			const { clientWidth: width, clientHeight: height } = renderer.domElement
+			if (width === 0 || height === 0) return
+			const shot = titleShot(width, height, gap(), Math.sin(time * 0.15) * 0.035)
+			camera.position.set(...shot.position)
+			camera.lookAt(...shot.look)
+			if (shot.shift === 0) camera.clearViewOffset()
+			else camera.setViewOffset(width, height, 0, shot.shift, width, height)
+			camera.updateProjectionMatrix()
 
 			petals.draw(delta, { x: 0, z: 0 })
 			scenery.draw(time)
@@ -332,6 +322,7 @@ export function createTitleWorld(viewport: Viewport): View {
 			scene.clear()
 			camera.fov = before.fov
 			camera.far = before.far
+			camera.clearViewOffset()
 			camera.position.copy(before.position)
 			camera.quaternion.copy(before.quaternion)
 			camera.updateProjectionMatrix()

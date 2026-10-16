@@ -10,7 +10,9 @@
     "build:dev": "vite build --mode development -- --no-mangle --no-pwa",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "e2e": "playwright test",
+    "stage-pictures": "UPDATE_STAGE_PICTURES=1 playwright test --project \"stage pictures\" --no-deps"
   },
   "dependencies": {
     "@bunbu/data": "workspace:*",
@@ -29,6 +31,7 @@
     "three": "^0.186.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.0",
     "@rooted-adapters/github-pages": "1.0.0-alpha.31",
     "@rooted/application": "1.0.0-alpha.45",
     "@types/three": "^0.186.0",
