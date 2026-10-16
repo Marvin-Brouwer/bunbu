@@ -44,9 +44,11 @@ const palette = {
  * roofs, then pines up to the fog.
  */
 export const castleBackdrop: readonly BackdropRow[] = [
-	{ shape: 'house', from: 32, to: 50, perTile: 1.4, colours: [[0xeae4d4, 0xddd5c2], [0x2e3036, 0x34404f]] },
+	// Right behind the walls and the moat, pines and the first roofs, so no lawn lies bare.
+	{ shape: 'pine', from: 22, to: 40, perTile: 4, colours: [[0x3a2e26], [0x2a3e2a, 0x30482e]] },
+	{ shape: 'house', from: 26, to: 50, perTile: 2, colours: [[0xeae4d4, 0xddd5c2], [0x2e3036, 0x34404f]] },
 	{ shape: 'pine', from: 40, to: 120, perTile: 4, colours: [[0x3a2e26], [0x2a3e2a, 0x30482e]] },
-	{ shape: 'broadleaf', from: 60, to: 135, perTile: 1, colours: [[0x3a2e26], [0x3e5430, 0x4a5a2e]] },
+	{ shape: 'broadleaf', from: 45, to: 135, perTile: 1.6, colours: [[0x3a2e26], [0x3e5430, 0x4a5a2e, 0x8e3a24]] },
 ]
 
 /** From sunset to a moonlit night. One light per quarter of the stage ({@link passTime}). */
