@@ -104,7 +104,7 @@ const gateAt = 6
 export const castleCover: CoverSet = {
 	kinds: ['crates', 'barrels', 'rock'],
 	aside: pathHalfWidth + 1.6,
-	colours: { crates: [0x8a6a46, 0x7a5a3a], barrels: [0x5a4030, 0x6a4a30], rock: [0x8d877b, 0x7a756c], palanquin: [0x2a1e1a, 0x6e1f0f], guard: [0x2f3a44, 0x6e1f0f] },
+	colours: { crates: [0x8a6a46, 0x7a5a3a], barrels: [0x5a4030, 0x6a4a30], rock: [0x8d877b, 0x7a756c], palanquin: [0x2a1e1a, 0x6e1f0f], guard: [0x2f3a44, 0x6e1f0f], 'weapon-rack': [0x6e1f0f, 0x2f4a7a, 0x2a1e1a] },
 }
 
 /**

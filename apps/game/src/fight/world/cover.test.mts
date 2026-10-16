@@ -17,6 +17,18 @@ describe('the decoys', () => {
 		expect(decoys.length).toBeGreaterThan(1000)
 		expect(closest).toBeGreaterThan(2 * coverReach)
 	})
+
+	it('never stand in each other, whatever the run\'s seed', () => {
+		const runs = Array.from({ length: 40 }, (_, seed) => Array.from({ length: 80 }, (__, tile) => decoysOf(path, townCover, tile, metresPerAmbush, seed * 7919)).flat())
+		const closest = Math.min(...runs.flatMap((decoys) => decoys.flatMap((one, index) => decoys.slice(index + 1).map((other) => Math.hypot(one.x - other.x, one.z - other.z)))))
+
+		expect(closest).toBeGreaterThan(2 * coverReach)
+	})
+
+	it('keep apart the two Copilot found 2 cm apart (seed 3137, tile 2)', () => {
+		const [one, other] = decoysOf(path, townCover, 2, metresPerAmbush, 3137)
+		expect(other === undefined || Math.hypot(one!.x - other.x, one!.z - other.z) > 2 * coverReach).toBe(true)
+	})
 })
 
 describe('the covers of a district', () => {

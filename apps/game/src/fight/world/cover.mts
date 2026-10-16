@@ -132,8 +132,17 @@ export function decoysOf(path: Path, set: CoverSet, tile: number, every: number,
 	const random = randomOf(seed ^ Math.imul(tile, 0x9e3779b1) ^ 0x5bd1e995)
 	const from = tile * tileLength
 	const count = Math.floor(random() * 2.2)
-	return Array.from({ length: count }, () => ({ distance: from + random() * tileLength, side: random() > 0.5 ? 1 : -1 }))
-		.filter(({ distance }) => Math.abs(distance - Math.round(distance / every) * every) >= 22 && !nearAmbushCover(distance, every, 2 * coverReach + 0.5))
+	// Apart from each other too: never two on one side closer than two covers' reach, and clear of
+	// the tile's ends, so the next tile's can't stand in them either.
+	const apart = 2 * coverReach + 0.5
+	const kept: { distance: number; side: number }[] = []
+	for (const decoy of Array.from({ length: count }, () => ({ distance: from + random() * tileLength, side: random() > 0.5 ? 1 : -1 }))) {
+		if (Math.abs(decoy.distance - Math.round(decoy.distance / every) * every) < 22 || nearAmbushCover(decoy.distance, every, apart)) continue
+		if (decoy.distance - from < apart / 2 || from + tileLength - decoy.distance < apart / 2) continue
+		if (kept.some((other) => other.side === decoy.side && Math.abs(other.distance - decoy.distance) < apart)) continue
+		kept.push(decoy)
+	}
+	return kept
 		.map(({ distance, side }) => {
 			const point = path.at(distance)
 			return { ...beside(point, side * set.aside), heading: point.heading, distance }
@@ -322,7 +331,11 @@ function partsOf(kind: CoverKind, colours: readonly number[], random: () => numb
 		]
 	}
 	if (kind === 'weapon-rack') {
+		// A cloth hung behind the spears, a clan's crest on it, so the rack is a wall to hide behind.
+		const cloth = pick()
 		return [
+			{ shape: 'box', matrix: placed(0, 0.02, -0.24, 0, 2.05, 2.25, 0.05), colour: cloth },
+			{ shape: 'wheel', matrix: within(placed(0, 1.35, -0.21), new Matrix4().makeRotationY(Math.PI / 2).multiply(placed(0, 0, 0, 0, 0.02, 0.7, 0.7))), colour: 0xf2ead8 },
 			...[-0.95, 0.95].map((x) => ({ shape: 'box' as const, matrix: placed(x, 0, 0, 0, 0.14, 1.6, 0.4), colour: 0x5c3d24 })),
 			...[0.3, 1.3].map((y) => ({ shape: 'box' as const, matrix: placed(0, y, 0, 0, 2, 0.1, 0.3), colour: 0x8a6240 })),
 			...[-0.65, -0.32, 0, 0.32, 0.65].flatMap((x) => [
