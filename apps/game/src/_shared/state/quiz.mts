@@ -101,18 +101,39 @@ export type Asked = { readonly quiz: { readonly questions: readonly Rounded[] } 
  * rounds after it, and the end of the refs last. In endless a question is asked again once all have
  * been, so it is where a question is in `order`, not its number, that tells one asking from another.
  */
-export function askStarts({ quiz, order }: Asked): number[] {
+export function askStarts({ quiz, order }: Asked): readonly number[] {
+	// Worked out once per `order`: it is never changed, only replaced, and the world and the HUD ask
+	// every frame, while endless keeps making it longer.
+	const known = startsKnown.get(order)
+	if (known !== undefined && known.quiz === quiz) return known.starts
 	const starts = [0]
 	for (const question of order) {
 		const asked = quiz?.questions[question]
 		starts.push((starts.at(-1) ?? 0) + (asked === undefined ? 1 : partsOf(asked)))
 	}
+	startsKnown.set(order, { quiz, starts })
 	return starts
+}
+
+const startsKnown = new WeakMap<readonly number[], { readonly quiz: Asked['quiz']; readonly starts: readonly number[] }>()
+
+/** How many of `sorted`, from `from` on, are under `limit` (or at it, `orAt`): by halving, they are in order. */
+function countBelow(sorted: readonly number[], from: number, limit: number, orAt: boolean): number {
+	let low = from
+	let high = sorted.length
+	while (low < high) {
+		const middle = (low + high) >> 1
+		const value = sorted[middle] ?? Infinity
+		if (value < limit || (orAt && value === limit)) low = middle + 1
+		else high = middle
+	}
+	return low - from
 }
 
 /** How many questions have been asked, the one going on included: as many as start before `answered`. */
 export function questionsStarted(state: Asked & { readonly answered: number }): number {
-	return askStarts(state).slice(0, -1).filter((start) => start < state.answered).length
+	const starts = askStarts(state)
+	return Math.min(starts.length - 1, countBelow(starts, 0, state.answered, false))
 }
 
 /**
@@ -121,7 +142,7 @@ export function questionsStarted(state: Asked & { readonly answered: number }): 
  */
 export function questionsAnswered(state: Asked & { readonly answered: number }): number {
 	// A question is done once the refs up to its end have been answered.
-	return askStarts(state).slice(1).filter((end) => end <= state.answered).length
+	return countBelow(askStarts(state), 1, state.answered, true)
 }
 
 /** The refs of the time the question at ref `index` is asked: its rounds, and no other time it is asked. */
