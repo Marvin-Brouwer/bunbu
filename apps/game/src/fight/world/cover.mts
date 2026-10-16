@@ -84,8 +84,17 @@ export function decoysOf(path: Path, set: CoverSet, tile: number, every: number,
 	const random = randomOf(seed ^ Math.imul(tile, 0x9e3779b1) ^ 0x5bd1e995)
 	const from = tile * tileLength
 	const count = Math.floor(random() * 2.2)
-	return Array.from({ length: count }, () => ({ distance: from + random() * tileLength, side: random() > 0.5 ? 1 : -1 }))
-		.filter(({ distance }) => Math.abs(distance - Math.round(distance / every) * every) >= 22 && !nearAmbushCover(distance, every, 2 * coverReach + 0.5))
+	// Apart from each other too: never two on one side closer than two covers' reach, and clear of
+	// the tile's ends, so the next tile's can't stand in them either.
+	const apart = 2 * coverReach + 0.5
+	const kept: { distance: number; side: number }[] = []
+	for (const decoy of Array.from({ length: count }, () => ({ distance: from + random() * tileLength, side: random() > 0.5 ? 1 : -1 }))) {
+		if (Math.abs(decoy.distance - Math.round(decoy.distance / every) * every) < 22 || nearAmbushCover(decoy.distance, every, apart)) continue
+		if (decoy.distance - from < apart / 2 || from + tileLength - decoy.distance < apart / 2) continue
+		if (kept.some((other) => other.side === decoy.side && Math.abs(other.distance - decoy.distance) < apart)) continue
+		kept.push(decoy)
+	}
+	return kept
 		.map(({ distance, side }) => {
 			const point = path.at(distance)
 			return { ...beside(point, side * set.aside), heading: point.heading }

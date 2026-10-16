@@ -50,8 +50,16 @@ export function stageModels(stage: Stage) {
 	return loadSome({ maple: 'maple', torii: 'torii', bamboo: 'bamboo', kit: 'town-kit' })
 }
 
-/** A seed for what is laid out at random, new every run. */
-const newSeed = () => Math.floor(Math.random() * 2 ** 31)
+/**
+ * A seed for what is laid out at random, new every run, one for each of the things laid out (`use`).
+ * Dev only: `?seed=7` lays every run out the same, whatever else drew on `Math.random` before (the
+ * sound's noise draws as many as its sample rate, which differs between machines), for the stage
+ * pictures (`e2e/stage-pictures.spec.mts`).
+ */
+function newSeed(use: number): number {
+	const fixed = import.meta.env.DEV ? Number(new URLSearchParams(location.search).get('seed') ?? Number.NaN) : Number.NaN
+	return Number.isInteger(fixed) ? fixed + use * 7919 : Math.floor(Math.random() * 2 ** 31)
+}
 
 /**
  * Puts `rows` of backdrop behind a stage's own scenery ([backdrop](./backdrop.mts)) and `cover` by
@@ -59,8 +67,8 @@ const newSeed = () => Math.floor(Math.random() * 2 ** 31)
  */
 function around(scene: Scene, { path, view }: OwnWorld, rows: readonly BackdropRow[], cover: CoverSet): StageWorld {
 	const owned: Owned = { geometries: [], materials: [], textures: [] }
-	const backdrop = createBackdrop(path, rows, newSeed(), owned)
-	const covers = createCover(path, cover, metresPerAmbush, newSeed(), owned)
+	const backdrop = createBackdrop(path, rows, newSeed(0), owned)
+	const covers = createCover(path, cover, metresPerAmbush, newSeed(1), owned)
 	scene.add(backdrop.group, covers.group)
 	return {
 		path,
