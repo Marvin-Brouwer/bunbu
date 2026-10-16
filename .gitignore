@@ -12,3 +12,5 @@ __pycache__/
 apps/game/public/pwa-*.png
 apps/game/public/maskable-icon-*.png
 apps/game/public/apple-touch-icon-*.png
+test-results/
+playwright-report/
