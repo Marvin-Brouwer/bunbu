@@ -14,7 +14,7 @@ import { loadModel } from '../../canvas/models.mts'
 import type { View } from '../../canvas/stage.mts'
 import type { Viewport } from '../../canvas/viewport.mts'
 import type { RunGame } from '../state/game.mts'
-import { marksPassed, runInLeft } from '../state/run.mts'
+import { marksPassed, runConfig, runInLeft } from '../state/run.mts'
 import { framedIn, runFraming, viewOnPath } from './camera.mts'
 import { skyRadius } from './landscape.mts'
 import { createStageWorld, stageModels } from './stages.mts'
@@ -128,6 +128,8 @@ export function createRunWorld(game: RunGame, viewport: Viewport, roomBelow: () 
 
 	let seen = -1
 	let since = 0
+	/** How far through his running cycle the samurai is, in radians. */
+	let strides = 0
 	// What he shows, and what he showed when the store last changed his pose: hurt, he keeps showing
 	// that while the blade is still on its way.
 	let shown: { pose: FigurePose; time: number } = { pose: 'idle', time: 0 }
@@ -168,7 +170,10 @@ export function createRunWorld(game: RunGame, viewport: Viewport, roomBelow: () 
 			}
 			// Before the run he waits behind the camera, and in the intro he runs in to where the stage starts.
 			const ran = run.distance - runInLeft(run)
-			const cycle = (ran / stepLength) * Math.PI
+			// His steps go by the world's time, at the run's pace: in an ambush's slow motion he keeps
+			// running, slower and slower, though he hardly gets anywhere any more.
+			strides += (worldDelta * runConfig.pace / stepLength) * Math.PI
+			const cycle = strides
 			const fallen = shogun.pose === 'fallen'
 			// Falling, the samurai is finished off first and goes down as the blade lands.
 			const finish = fallen ? finishingOf(since) : undefined

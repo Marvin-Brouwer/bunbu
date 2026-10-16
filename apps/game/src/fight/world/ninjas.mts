@@ -89,8 +89,10 @@ type Shown = {
 	targetApproach: number
 	/** `0` while entering from farther along the path, `1` once at the normal starting spot. */
 	entrance: number
-	/** The cover it runs out from behind, in the world, if there is one on its side ahead. */
+	/** The cover it leaps out from behind, in the world, if there is one on its side ahead. */
 	cover: CoverSpot | undefined
+	/** Where the samurai was when it came. */
+	came: { x: number; z: number }
 	/** Seconds since the store last changed this ninja's pose. */
 	time: number
 	/** Where the samurai was when this ninja was beaten, so it stays on that spot as he runs on. */
@@ -131,9 +133,37 @@ export function fleeSideOf(x: number, id: number): 1 | -1 {
 	return id % 2 === 0 ? 1 : -1
 }
 
-/** `amount` of the way out from behind `cover` to `to`, in the world. */
-function outOf(cover: CoverSpot, to: { x: number; z: number }, amount: number): { x: number; z: number } {
-	return { x: cover.x + (to.x - cover.x) * amount, z: cover.z + (to.z - cover.z) * amount }
+/** How a ninja comes out from behind its cover: where it waits, how high it leaps, where it lands. */
+export const leapConfig = {
+	/** Metres behind the cover it waits, and in front of it it lands. */
+	behind: 1.1,
+	ahead: 1.3,
+	/** Metres off the ground at the top of its leap: over the cover, which stands a little over 2 m. */
+	height: 2.8,
+	/** How far into its entrance it waits, and where it lands, of the whole entrance. */
+	waits: 0.15,
+	lands: 0.55,
+}
+
+/**
+ * Where a ninja coming out from behind `cover` is, `amount` (`0` to `1`) into its entrance, with
+ * the samurai at `from` when it came: crouched behind the cover, then leaping over it toward him,
+ * then running on to `to`, where it stands for the fight. In the world, and how high off the ground.
+ */
+export function outOf(cover: CoverSpot, from: { x: number; z: number }, to: { x: number; z: number }, amount: number): { x: number; z: number; hop: number } {
+	const { behind, ahead, height, waits, lands } = leapConfig
+	// The way from the samurai to the cover, flat.
+	const away = Math.hypot(cover.x - from.x, cover.z - from.z) || 1
+	const out = { x: (cover.x - from.x) / away, z: (cover.z - from.z) / away }
+	const hidden = { x: cover.x + out.x * behind, z: cover.z + out.z * behind }
+	const landed = { x: cover.x - out.x * ahead, z: cover.z - out.z * ahead }
+	if (amount <= waits) return { ...hidden, hop: 0 }
+	if (amount < lands) {
+		const leap = (amount - waits) / (lands - waits)
+		return { x: hidden.x + (landed.x - hidden.x) * leap, z: hidden.z + (landed.z - hidden.z) * leap, hop: Math.sin(Math.PI * leap) * height }
+	}
+	const run = (amount - lands) / (1 - lands)
+	return { x: landed.x + (to.x - landed.x) * run, z: landed.z + (to.z - landed.z) * run, hop: 0 }
 }
 
 /** The angle from `from` to `to`, the short way round. */
@@ -269,6 +299,7 @@ export function createNinjasView(parent: Group, make: () => Body): NinjasView {
 						targetApproach: ninja.approach,
 						entrance: 0,
 						cover: coverOf(spotOf(mark, ninja.wave, 0), ninja.id, frame, covers),
+						came: { x: frame.x, z: frame.z },
 						beatenAt: undefined,
 						clash: { x: 0, z: 0 },
 					}
@@ -318,9 +349,11 @@ export function createNinjasView(parent: Group, make: () => Body): NinjasView {
 				// Around the samurai where he is, or where he was when this ninja was beaten: it stays on
 				// that spot as he runs on.
 				const samurai = entry.beatenAt ?? frame
-				const at = entry.cover === undefined || entry.entrance >= 1 ? beside(samurai, visible.x, -visible.z) : outOf(entry.cover, beside(samurai, spot.x, -spot.z), entry.entrance)
+				const at = entry.cover === undefined || entry.entrance >= 1
+					? { ...beside(samurai, visible.x, -visible.z), hop: 0 }
+					: outOf(entry.cover, entry.came, beside(samurai, spot.x, -spot.z), entry.entrance)
 				const { root } = entry.body
-				root.position.set(at.x, motion.hop, at.z)
+				root.position.set(at.x, motion.hop + at.hop, at.z)
 				// Facing the samurai: a figure faces -z when not turned.
 				const toX = samurai.x - at.x
 				const toZ = samurai.z - at.z

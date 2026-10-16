@@ -7,7 +7,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createLife, shareOfOnePoint, type Life } from './life.mts'
 import { createRunGame } from './game.mts'
-import { createRun, marksPassed, runConfig, runInLeft, slowMotionOf, stageDistanceOf, type Run } from './run.mts'
+import { createRun, marksPassed, runConfig, runInLeft, runOnOf, slowMotionOf, stageDistanceOf, type Run } from './run.mts'
 import { beats, createScore, pointsPerCorrect, type HighScore, type Score } from './score.mts'
 
 // Every test gets its own stores: a game mode creates them per run, so tests do the same.
@@ -60,9 +60,22 @@ describe('run', () => {
 		const { distance } = run.value
 		run.value.tick(0.1, 1)
 		expect(run.value.worldScale).toBeCloseTo(slowMotionOf(1))
-		expect(run.value.distance).toBeCloseTo(distance + runConfig.pace * 0.1)
+		expect(run.value.distance).toBeCloseTo(distance + runOnOf(runConfig.pace * 0.1))
 		run.value.tick(0.01, 1)
 		expect(run.value.worldScale).toBeLessThan(slowMotionOf(1))
+	})
+
+	it('runs on only a few steps in an ambush, so the ninjas close in on him', () => {
+		run.value.start(600)
+		run.value.tick(runConfig.introSeconds, runConfig.introSeconds)
+		run.value.beginAmbush()
+		const { distance } = run.value
+		for (let second = 0; second < 120; second++) run.value.tick(run.value.worldScale, 1)
+		expect(run.value.distance - distance).toBeGreaterThan(runConfig.ambushRunOn * 0.9)
+		expect(run.value.distance - distance).toBeLessThanOrEqual(runConfig.ambushRunOn)
+		run.value.endAmbush()
+		run.value.tick(1, 1)
+		expect(run.value.distance).toBeCloseTo(distance + runOnOf(run.value.ranOn) + runConfig.pace)
 	})
 
 	it('slows down hard at first, then ever less, never to a stop', () => {
