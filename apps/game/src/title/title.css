@@ -7,7 +7,8 @@
 	position: absolute;
 	inset: 0;
 	display: grid;
-	grid-template-rows: auto 1fr auto;
+	/* At least 8rem for the samurai between the name and the menu (src/title/framing.mts); a tall menu scrolls. */
+	grid-template-rows: auto minmax(8rem, 1fr) auto;
 	max-width: 34rem;
 	margin-inline: auto;
 	padding: max(1.25rem, env(safe-area-inset-top)) max(1.25rem, env(safe-area-inset-right)) max(1.25rem, env(safe-area-inset-bottom)) max(1.25rem, env(safe-area-inset-left));
