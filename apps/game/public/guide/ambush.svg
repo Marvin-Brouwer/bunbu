@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 120">
+	<!-- How to play, an ambush: the answers on the scroll's paper, an arrow each, one cut through by a swipe toward its arrow. -->
+	<rect width="320" height="120" fill="#4a3426"/>
+	<!-- The scroll's rods and its paper. -->
+	<rect x="40" y="6" width="240" height="7" rx="3.5" fill="#8a6240"/>
+	<rect x="40" y="107" width="240" height="7" rx="3.5" fill="#8a6240"/>
+	<rect x="48" y="12" width="224" height="96" fill="#f1e8d3"/>
+	<!-- Three answers, ruled, each with its arrow. -->
+	<g stroke="#c9b48c" stroke-width="1">
+		<path d="M62 44 H258 M62 70 H258 M62 96 H258"/>
+	</g>
+	<g fill="#1f1c18" font-family="Georgia, serif" font-size="13">
+		<text x="64" y="38">←</text>
+		<text x="64" y="64">↑</text>
+		<text x="64" y="90">→</text>
+	</g>
+	<g fill="#5b5348">
+		<rect x="84" y="29" width="70" height="6" rx="3"/>
+		<rect x="84" y="81" width="56" height="6" rx="3"/>
+	</g>
+	<!-- The answer cut in two, its halves leaning apart along the cut, a red edge between them. -->
+	<g fill="#5b5348">
+		<rect x="84" y="56" width="44" height="6" rx="3" transform="rotate(-3 106 59)"/>
+		<rect x="132" y="56" width="42" height="6" rx="3" transform="rotate(3 152 59)"/>
+	</g>
+	<path d="M129 50 L131 68" stroke="#b3391f" stroke-width="2" stroke-linecap="round"/>
+	<!-- The swipe up, toward its arrow: a brush stroke fading to its tip. -->
+	<path d="M210 98 C206 82 204 66 206 46" fill="none" stroke="#1f1c18" stroke-width="5" stroke-linecap="round" opacity="0.18"/>
+	<path d="M206 46 L201 56 M206 46 L212 55" fill="none" stroke="#1f1c18" stroke-width="2.4" stroke-linecap="round" opacity="0.6"/>
+</svg>

@@ -29,7 +29,7 @@ import { headingOf } from './placement.mts'
 import { finishingOf, poseSeconds, type FigurePose } from '../../_shared/world/poses.mts'
 
 /** Metres per half a running cycle: one step, matched to the run clip at the run's pace. */
-const stepLength = 2.1
+export const stepLength = 2.1
 
 /** How quickly the camera and the samurai's heading settle, per second. */
 const settle = 4

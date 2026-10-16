@@ -40,6 +40,7 @@ import { layBlocks } from './blocks.mts'
 import { Batch, chunkOf, gableGeometry, glowTexture, partOf, placed, scatter, slatsTexture, within, type Cursor } from './kit.mts'
 import { beside, type Path, type PathPoint } from './path.mts'
 import { addAll, clearanceOf, facingPath, fogFar, isFree, passTime, sky, skyRadius, stamp, strip, type Daylight, type Owned, type Planting, type StageView, type Taken } from './landscape.mts'
+import type { BackdropRow } from './backdrop.mts'
 
 export { fogFar, skyRadius, type StageView }
 
@@ -68,6 +69,17 @@ const palette = {
 	water: 0x2d4a5a,
 	bridge: 0xa8261c,
 }
+
+/**
+ * Behind the streets and gardens ([backdrop](./backdrop.mts)): another row of town houses, then
+ * lower farmhouses, then woods up to the fog.
+ */
+export const townBackdrop: readonly BackdropRow[] = [
+	{ shape: 'house', from: 24, to: 36, perTile: 2, colours: [palette.plaster, palette.roofs] },
+	{ shape: 'hut', from: 38, to: 62, perTile: 1.6, colours: [palette.timber, [0x7a6440, 0x6a5a3c]] },
+	{ shape: 'pine', from: 60, to: 135, perTile: 2.4, colours: [[0x4a3a2c], [0x2f4a2e, 0x35502e]] },
+	{ shape: 'broadleaf', from: 55, to: 135, perTile: 1.6, colours: [[0x4a3a2c], [0x4a6634, 0x8e3a24, 0x6a7a34]] },
+]
 
 /** From dusk to night: the sun goes down and the shops and lanterns light up. One light per quarter of the stage ({@link passTime}). */
 const daylight: Daylight = [

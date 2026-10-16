@@ -22,6 +22,7 @@ import { ambushRoomOf, noRoom, type AmbushRoom } from './ambush-room.mts'
 import { Scroll } from '../_shared/scroll/scroll.mts'
 import { RunOverlays } from './overlays/overlays.mts'
 import { createRunWorld } from './world/world.mts'
+import { playRunSounds } from './sound.mts'
 import styles from './run.css'
 
 export type RunScreenOptions = {
@@ -129,5 +130,6 @@ export const RunScreen = component<RunScreenOptions>({
 		signal.addEventListener('abort', () => { cancelAnimationFrame(pending) }, { once: true })
 
 		show((viewport) => createRunWorld(game, viewport, () => room.below), signal)
+		playRunSounds(game, signal)
 	},
 })

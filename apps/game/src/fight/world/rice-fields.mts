@@ -35,6 +35,7 @@ import type { GLTF } from 'three/addons/loaders/GLTFLoader.js'
 import { layBlocks } from './blocks.mts'
 import { Batch, chunkOf, placed, scatter, type Cursor } from './kit.mts'
 import { addAll, clearanceOf, facingPath, fogFar, isFree, passTime, sky, skyRadius, stamp, strip, type Daylight, type Owned, type Planting, type StageView, type Taken } from './landscape.mts'
+import type { BackdropRow } from './backdrop.mts'
 import { beside, type Leg, type Path } from './path.mts'
 
 const palette = {
@@ -45,6 +46,17 @@ const palette = {
 	/** Near mountains to far, bluer and paler with distance. */
 	mountains: [0x5d7a6a, 0x7d93a0, 0x9fb0c0],
 }
+
+/**
+ * Past the paddies ([backdrop](./backdrop.mts)): groves and the odd farmstead, then low hills under
+ * the mountains.
+ */
+export const riceBackdrop: readonly BackdropRow[] = [
+	{ shape: 'broadleaf', from: 34, to: 75, perTile: 3, colours: [[0x5a4630], [0x5e8a3a, 0x6f9440, 0x4f7a34]] },
+	{ shape: 'pine', from: 40, to: 85, perTile: 1.2, colours: [[0x5a4630], [0x3f6a3a, 0x46703c]] },
+	{ shape: 'hut', from: 38, to: 75, perTile: 0.5, colours: [[0x7a5a3c, 0x8a6a46], [0xb09a62, 0xa08a58]] },
+	{ shape: 'hill', from: 75, to: 125, perTile: 0.6, colours: [[0x6f8a4a, 0x7a9254, 0x66804a]] },
+]
 
 /** From late morning to a golden evening. One light per quarter of the stage ({@link passTime}). */
 const daylight: Daylight = [
