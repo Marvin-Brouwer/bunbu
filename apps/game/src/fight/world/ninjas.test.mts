@@ -3,8 +3,8 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { coverSpotsAt } from './cover.mts'
-import { clashSeconds, coverOf, fleeSideOf, leapConfig, motionOf, outOf } from './ninjas.mts'
+import { coverAhead, coverHeight, coverReach, coverSpotsAt } from './cover.mts'
+import { clashSeconds, coverOf, fleeSideOf, leapConfig, motionOf, outOf, strikeDelaySeconds } from './ninjas.mts'
 import { createPath, townRound } from './path.mts'
 import { spotOf } from './placement.mts'
 
@@ -29,7 +29,7 @@ describe('a ninja in the outcome', () => {
 
 	it('cuts through the scroll from where it stands, then charges in alone to land the hit', () => {
 		expect(motionOf('strike', true, 0.5, 0.1)).toEqual({ approach: 0.5, pose: 'strike', time: 0.1, hop: 0 })
-		expect(motionOf('strike', true, 0.5, 0.75).approach).toBeGreaterThan(0.5)
+		expect(motionOf('strike', true, 0.5, strikeDelaySeconds + 0.1).approach).toBeGreaterThan(0.5)
 		expect(motionOf('strike', true, 0.5, 2).approach).toBe(1)
 	})
 
@@ -37,7 +37,7 @@ describe('a ninja in the outcome', () => {
 		const waiting = motionOf('strike', false, 0.5, 0.3)
 		expect(waiting).toMatchObject({ approach: 0.5, pose: 'strike', hop: 0 })
 		expect(motionOf('strike', false, 0.5, 0.5)).toEqual(waiting)
-		expect(motionOf('strike', false, 0.5, 0.75)).toEqual({ approach: 0.5, pose: 'fleeing', time: expect.closeTo(0.1) as number, hop: 0 })
+		expect(motionOf('strike', false, 0.5, strikeDelaySeconds + 0.1)).toEqual({ approach: 0.5, pose: 'fleeing', time: expect.closeTo(0.1) as number, hop: 0 })
 	})
 })
 
@@ -45,7 +45,7 @@ describe('a ninja done with its move', () => {
 	it('flees straight after landing its hit, without waiting for the others', () => {
 		expect(motionOf('strike', undefined, 0.3, 0.2).pose).toBe('strike')
 		expect(motionOf('strike', undefined, 0.3, 0.6)).toMatchObject({ approach: 1, pose: 'fleeing' })
-		expect(motionOf('strike', true, 0.3, 0.65 + 0.6)).toMatchObject({ approach: 1, pose: 'fleeing' })
+		expect(motionOf('strike', true, 0.3, strikeDelaySeconds + 0.6)).toMatchObject({ approach: 1, pose: 'fleeing' })
 	})
 
 	it('flees straight after it is knocked back', () => {
@@ -73,7 +73,7 @@ describe('a ninja coming in', () => {
 	const covers = coverSpotsAt(path, 30, 3.3)
 
 	it('runs out from behind the cover on its side, the nearest', () => {
-		expect(coverOf(spotOf('left', 0, 0), 1, frame, covers)).toMatchObject({ x: expect.closeTo(-3.3) as number, z: expect.closeTo(frame.z - 9) as number })
+		expect(coverOf(spotOf('left', 0, 0), 1, frame, covers)).toMatchObject({ x: expect.closeTo(-3.3) as number, z: expect.closeTo(frame.z - coverAhead[0]) as number })
 		expect(coverOf(spotOf('up-right', 1, 0), 1, frame, covers)?.x).toBeCloseTo(3.3)
 	})
 
@@ -90,20 +90,26 @@ describe('a ninja coming in', () => {
 })
 
 describe('a ninja leaping out from behind its cover', () => {
-	// The samurai at the origin, the cover 10 m ahead, where the ninja stands for the fight 8 m ahead.
+	// The samurai at the origin, the cover 15 m ahead, where the ninja stands for the fight 8 m ahead.
 	const from = { x: 0, z: 0 }
-	const cover = { x: 0, z: -10 }
+	const cover = { x: 0, z: -15 }
 	const to = { x: 0, z: -8 }
 
 	it('waits behind it, out of the samurai\'s way', () => {
-		expect(outOf(cover, from, to, 0)).toEqual({ x: 0, z: -10 - leapConfig.behind, hop: 0 })
+		expect(outOf(cover, from, to, 0)).toEqual({ x: 0, z: -15 - leapConfig.behind, hop: 0, doing: 'hiding' })
 	})
 
-	it('leaps over it, higher than the cover stands, and lands in front of it', () => {
+	it('leaps over it and lands in front of it', () => {
 		const middle = (leapConfig.waits + leapConfig.lands) / 2
-		expect(outOf(cover, from, to, middle).hop).toBeCloseTo(leapConfig.height)
-		expect(leapConfig.height).toBeGreaterThan(2.4)
-		expect(outOf(cover, from, to, leapConfig.lands)).toMatchObject({ z: expect.closeTo(-10 + leapConfig.ahead) as number, hop: 0 })
+		expect(outOf(cover, from, to, middle)).toMatchObject({ hop: expect.closeTo(leapConfig.height) as number, doing: 'leaping' })
+		expect(outOf(cover, from, to, leapConfig.lands)).toMatchObject({ z: expect.closeTo(-15 + leapConfig.ahead) as number, hop: 0, doing: 'running' })
+	})
+
+	it('clears the whole cover all the way over, not only at the top of its leap', () => {
+		const over = Array.from({ length: 201 }, (_, step) => outOf(cover, from, to, step / 200))
+			.filter((at) => Math.hypot(at.x - cover.x, at.z - cover.z) <= coverReach)
+		expect(over.length).toBeGreaterThan(0)
+		expect(Math.min(...over.map((at) => at.hop))).toBeGreaterThan(coverHeight)
 	})
 
 	it('then runs on to where it stands for the fight, always toward the samurai', () => {

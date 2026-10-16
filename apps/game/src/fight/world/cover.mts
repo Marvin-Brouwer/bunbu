@@ -38,10 +38,18 @@ export type CoverSet = {
 
 /**
  * Where the covers of an ambush stand, around the samurai with the way ahead along `-z` as the
- * ninjas' spots are ([placement](./placement.mts)): two either side, past where the ninjas start,
- * so each runs out from behind one toward the samurai.
+ * ninjas' spots are ([placement](./placement.mts)): two either side, well past where the ninjas
+ * start (11 m ahead at most, 12.4 m in the back row), so each leaps out from behind one and runs on
+ * toward the samurai to its spot before the scroll opens.
  */
-export const coverAhead = [9, 13.5] as const
+export const coverAhead = [15, 19.5] as const
+
+/**
+ * How far any cover reaches from its middle, its turn included, and how high it stands: a leap
+ * over it must clear that much.
+ */
+export const coverReach = 1.5
+export const coverHeight = 2.25
 
 /** Where a cover stands on the ground. */
 export type CoverSpot = { readonly x: number; readonly z: number }

@@ -32,6 +32,11 @@ export type RunState = {
 	/** Where the samurai was when the ambush sprang, and the metres he would have run on since at his pace: he runs on far less ({@link runOnOf}). */
 	readonly ambushFrom: number
 	readonly ranOn: number
+	/**
+	 * Metres the samurai's legs have run at his pace, slow motion and all, though in an ambush he
+	 * hardly gets anywhere: his steps, drawn and heard, go by this.
+	 */
+	readonly stepped: number
 	/** Seconds left of the 3-2-1 countdown after resuming, `0` when not counting down. */
 	readonly countdown: number
 	/** The phase to return to when the pause or the countdown ends. */
@@ -90,7 +95,7 @@ export const runConfig = {
 	 * How long he holds when the time ran out: the scroll is cut and its halves fall, and the
 	 * slicer charges in and lands the hit while the others flee.
 	 */
-	slicedSeconds: 1.3,
+	slicedSeconds: 1.6,
 }
 
 /**
@@ -127,6 +132,7 @@ export const notRunning: RunState = {
 	slowedFor: 0,
 	ambushFrom: 0,
 	ranOn: 0,
+	stepped: 0,
 	countdown: 0,
 	resumeTo: 'running',
 	recovery: 0,
@@ -144,7 +150,7 @@ function countDown(state: RunState, realDelta: number): Partial<RunState> {
 
 function introduce(state: RunState, realDelta: number): Partial<RunState> {
 	const elapsed = state.elapsed + realDelta
-	return { elapsed, phase: elapsed >= runConfig.introSeconds ? 'running' : 'intro' }
+	return { elapsed, stepped: state.stepped + runConfig.pace * realDelta, phase: elapsed >= runConfig.introSeconds ? 'running' : 'intro' }
 }
 
 /** Holding after an ambush: time passes, the samurai does not move. */
@@ -180,10 +186,11 @@ export function runOnOf(ranOn: number): number {
 function advance(state: RunState, worldDelta: number, realDelta: number): Partial<RunState> {
 	const elapsed = state.elapsed + realDelta
 	const moved = state.distance + runConfig.pace * worldDelta
-	if (state.phase !== 'ambush') return { elapsed, distance: Math.max(state.distance, Math.min(moved, state.stageLength)) }
+	const stepped = state.stepped + runConfig.pace * worldDelta
+	if (state.phase !== 'ambush') return { elapsed, stepped, distance: Math.max(state.distance, Math.min(moved, state.stageLength)) }
 	const slowedFor = state.slowedFor + realDelta
 	const ranOn = state.ranOn + runConfig.pace * worldDelta
-	return { elapsed, distance: state.ambushFrom + runOnOf(ranOn), ranOn, slowedFor, worldScale: slowMotionOf(slowedFor) }
+	return { elapsed, stepped, distance: state.ambushFrom + runOnOf(ranOn), ranOn, slowedFor, worldScale: slowMotionOf(slowedFor) }
 }
 
 export function createRun(initial: RunState = notRunning): Run {

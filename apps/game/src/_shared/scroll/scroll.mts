@@ -192,15 +192,15 @@ export const Scroll = component<ScrollOptions>({
 		const follow = (next: AmbushState) => {
 			const change = scrollChangeOf(shown, next)
 			if (change === 'unroll') due = true
-			// The first scroll of an ambush unrolls at once, as the world slows down and the view
-			// moves; the swipes and the time wait for the ninjas to come in. A next round is revealed
+			// The first scroll of an ambush unrolls once the ninjas have come out and run in, so they are
+			// seen first; in practice, where nobody comes in, at once. A next round is revealed
 			// under the scroll still on screen: answering a round closes it for a moment, which
 			// starts it rolling up, and the next round opens it again in the same breath.
 			if (due && next.round > 1 && stage !== 'hidden' && stage !== 'slice') {
 				due = false
 				reveal(lastOpen, next)
 			}
-			else if (due && (next.openingLeft === 0 || (next.round === 1 && stage === 'hidden'))) {
+			else if (due && next.openingLeft === 0) {
 				due = false
 				unroll(next)
 			}

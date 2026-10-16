@@ -1,6 +1,6 @@
 /**
  * The run's sounds ([sound](../_shared/sound/sound.mts)): the samurai's steps, the ninjas rushing in
- * and the scroll unrolling as an ambush springs, his sword cutting the air, the ninjas cut down,
+ * as an ambush springs and the scroll unrolling once they are in, his sword cutting the air, the ninjas cut down,
  * blades meeting on a block, and the thud of a hit.
  *
  * Like the renderer, it only listens to the run's stores and never changes them
@@ -12,12 +12,8 @@ import { maximumDelta } from '../canvas/loop.mts'
 import { play } from '../_shared/sound/sound.mts'
 import { finishingLands } from '../_shared/world/poses.mts'
 import type { RunGame } from './state/game.mts'
-import { runInLeft, type RunState } from './state/run.mts'
 import { bladeLandsAfter, clashSeconds, strikeDelaySeconds } from './world/ninjas.mts'
 import { stepLength } from './world/world.mts'
-
-/** How far the samurai has run, his run in to the start included. */
-const ranOf = (state: RunState) => state.distance - runInLeft(state)
 
 /** Plays the sounds of `game` until `signal` aborts, usually the run screen's own. */
 export function playRunSounds(game: RunGame, signal: AbortSignal): void {
@@ -35,24 +31,31 @@ export function playRunSounds(game: RunGame, signal: AbortSignal): void {
 		for (const sound of due) sound.play()
 	})
 
-	// A step each time a foot comes down, softer in the ambush's slow motion: from his run in to the
-	// start on, which the world draws him running ([world](./world/world.mts)).
-	let steps = Math.floor(ranOf(game.run.value) / stepLength)
+	// A step each time a foot comes down, softer in the ambush's slow motion: by the metres his legs
+	// have run, as the world draws them ([world](./world/world.mts)), his run in to the start included.
+	let steps = Math.floor(game.run.value.stepped / stepLength)
 	let open = game.ambush.value.open
 	game.run.on('change', signal, ({ detail }) => {
 		const { worldScale, phase } = detail.state
-		const step = Math.floor(ranOf(detail.state) / stepLength)
+		const step = Math.floor(detail.state.stepped / stepLength)
 		if (step !== steps && (phase === 'intro' || phase === 'running' || phase === 'ambush')) play('step', 0.4 + 0.6 * worldScale)
 		steps = step
 	})
 
-	// The ninjas rush in as the scroll unrolls; the next round of the same attack only unrolls its scroll.
+	// The ninjas rush in as the ambush springs, and the scroll unrolls once they are in; the next
+	// round of the same attack unrolls its scroll at once.
+	let unrolled = true
 	game.ambush.on('change', signal, ({ detail }) => {
-		if (detail.state.open && !open) {
-			if (detail.state.round <= 1) play('rush')
-			play('unroll')
+		const { state } = detail
+		if (state.open && !open) {
+			if (state.round <= 1) play('rush')
+			unrolled = false
 		}
-		open = detail.state.open
+		if (state.open && !unrolled && (state.round > 1 || state.openingLeft === 0)) {
+			play('unroll')
+			unrolled = true
+		}
+		open = state.open
 	})
 
 	// The samurai cuts the air, and takes his hit when the blade lands.
