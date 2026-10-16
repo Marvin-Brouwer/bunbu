@@ -48,7 +48,7 @@ export const Fallen = component<FallenOptions>({
 		const misses = game.quiz.value.misses()
 		const done = questionsAnswered(snapshot<QuizState & QuizActions>(game.quiz))
 		const where = endless
-			? `Endless · ${stageNames[endlessStage(stageAt(distance, stageQuestions(quiz), answersOn(done, true)))]} · ${formatWhole(done)} questions · ${formatWhole(Math.floor(distance))} m`
+			? `Endless · ${stageNames[endlessStage(stageAt(distance, stageQuestions(quiz), answersOn(snapshot<QuizState & QuizActions>(game.quiz), true)))]} · ${formatWhole(done)} questions · ${formatWhole(Math.floor(distance))} m`
 			: `${stageNames[selection.value.stage]} · ${formatWhole(Math.floor(distance))} of ${formatWhole(stageLength)} m`
 		const scoreNote = !endless ? 'not a high score' : newBest ? 'new endless high score' : best === undefined ? 'endless' : `endless best ${formatWhole(best.points)}`
 

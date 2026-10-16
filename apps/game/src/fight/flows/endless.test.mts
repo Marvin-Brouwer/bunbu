@@ -32,10 +32,16 @@ describe('the stages of endless', () => {
 		expect(stageAt(stageStart(3, questions), questions, 9)).toBe(2)
 	})
 
-	it('keep him in the stage he fell in, even on its last question', () => {
-		const questions = 4
-		expect(stageAt(stageStart(1, questions) + 80, questions, answersOn(4, true))).toBe(0)
-		expect(stageAt(stageStart(1, questions) + 80, questions, answersOn(4, false))).toBe(1)
+	it('keep him in the stage he fell in, on its last question, or halfway through a question of rounds', () => {
+		const questions = 1
+		const solutions = { type: 'solutions', options: { length: 2 } }
+		const quiz = { questions: [{ type: 'yes-no' }, solutions] }
+		// Rice fields done, then a miss on the first of the two rounds of Bamboo forest's question.
+		const fell = { quiz, order: [0, 1], answered: 2 }
+		expect(stageAt(stageStart(1, questions) + 10, questions, answersOn(fell, true))).toBe(1)
+		// The last question of the first stage, fallen on: still there.
+		expect(stageAt(stageStart(1, questions) + 80, questions, answersOn({ quiz, order: [0, 1], answered: 1 }, true))).toBe(0)
+		expect(stageAt(stageStart(1, questions) + 80, questions, answersOn({ quiz, order: [0, 1], answered: 1 }, false))).toBe(1)
 	})
 
 })

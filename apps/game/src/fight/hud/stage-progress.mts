@@ -69,7 +69,7 @@ export const StageProgress = component<StageProgressOptions>({
 		const showRun = (state: RunState) => {
 			if (endless) {
 				// The stage of endless that is on, its marks its own.
-				const index = stageAt(state.distance, questions(), answersOn(questionsAnswered(quiz.value), options.life.value.empty()))
+				const index = stageAt(state.distance, questions(), answersOn(quiz.value, options.life.value.empty()))
 				const start = stageStart(index, questions())
 				const end = stageStart(index + 1, questions())
 				const fraction = Math.max(0, Math.min(1, (state.distance - start) / (end - start)))

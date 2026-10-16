@@ -20,8 +20,6 @@ import { skyRadius } from './landscape.mts'
 import { createStageWorld, stageModels } from './stages.mts'
 import { selection, type Stage } from '../../_shared/state/selection.mts'
 import { answersOn, endlessStage, stageAt, stageQuestions, stageStart } from '../flows/endless.mts'
-import { questionsAnswered } from '../../_shared/state/quiz.mts'
-import { metresPerAmbush } from '../flows/run.mts'
 import { createEffects } from './effects.mts'
 import { createPetals } from '../../_shared/world/petals.mts'
 import { createCharacter, ninjaLook, placeholderBody, samuraiLook, type Body } from '../../_shared/world/character.mts'
@@ -173,7 +171,7 @@ export function createRunWorld(game: RunGame, viewport: Viewport, roomBelow: () 
 			const quiz = game.quiz.value.quiz
 			if (endless && quiz !== undefined) {
 				const questions = stageQuestions(quiz)
-				const index = stageAt(run.distance, questions, answersOn(questionsAnswered(game.quiz.value), game.life.value.empty()))
+				const index = stageAt(run.distance, questions, answersOn(game.quiz.value, game.life.value.empty()))
 				if (index !== stageIndex) {
 					laid.view.dispose()
 					scene.remove(...laid.added)
@@ -189,7 +187,10 @@ export function createRunWorld(game: RunGame, viewport: Viewport, roomBelow: () 
 			const distance = run.distance - offset
 			const here = path.at(distance)
 			stage.follow(here.x, here.z, distance)
-			const lengthHere = endless && quiz !== undefined ? stageQuestions(quiz) * metresPerAmbush : run.stageLength
+			// In endless the stage on show, from where it starts to where the next does, as the HUD's notches go.
+			const lengthHere = endless && quiz !== undefined
+				? stageStart(stageIndex + 1, stageQuestions(quiz)) - stageStart(stageIndex, stageQuestions(quiz))
+				: run.stageLength
 			stage.passTime(marksPassed({ distance, stageLength: lengthHere }), delta)
 
 			if (shogun.sequence === seen) {
