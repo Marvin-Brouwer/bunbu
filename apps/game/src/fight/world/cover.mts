@@ -75,6 +75,23 @@ const tileLength = 20
 const behind = 30
 const ahead = 140
 
+/**
+ * The decoys of tile `tile` of `path`, laid out from `seed`: none or a few, one side or the other,
+ * well away from where an ambush springs, and never on an ambush's own covers, which can stand
+ * past that: two covers never stand in each other. With the heading they stand along.
+ */
+export function decoysOf(path: Path, set: CoverSet, tile: number, every: number, seed: number): (CoverSpot & { heading: number })[] {
+	const random = randomOf(seed ^ Math.imul(tile, 0x9e3779b1) ^ 0x5bd1e995)
+	const from = tile * tileLength
+	const count = Math.floor(random() * 2.2)
+	return Array.from({ length: count }, () => ({ distance: from + random() * tileLength, side: random() > 0.5 ? 1 : -1 }))
+		.filter(({ distance }) => Math.abs(distance - Math.round(distance / every) * every) >= 22 && !nearAmbushCover(distance, every, 2 * coverReach + 0.5))
+		.map(({ distance, side }) => {
+			const point = path.at(distance)
+			return { ...beside(point, side * set.aside), heading: point.heading }
+		})
+}
+
 /** The shapes the covers are made of, one unit in size, standing on the ground. */
 function shapesOf(): { box: BufferGeometry; barrel: BufferGeometry; wheel: BufferGeometry; rock: BufferGeometry } {
 	return {
@@ -168,16 +185,7 @@ export function createCover(path: Path, set: CoverSet, every: number, seed: numb
 			if (ambush <= 0) continue
 			parts.push(...coversAt(coverSpotsAt(path, ambush, set.aside), path.at(ambush).heading, random))
 		}
-		// Decoys, one side or the other, kept away from the ambushes' own.
-		const decoys = Math.floor(random() * 2.2)
-		for (let index = 0; index < decoys; index++) {
-			const distance = from + random() * tileLength
-			const nearest = Math.round(distance / every) * every
-			if (Math.abs(distance - nearest) < 22) continue
-			const point = path.at(distance)
-			const spot = beside(point, (random() > 0.5 ? 1 : -1) * set.aside)
-			parts.push(...coversAt([spot], point.heading, random))
-		}
+		for (const decoy of decoysOf(path, set, tile, every, seed)) parts.push(...coversAt([decoy], decoy.heading, random))
 		return parts
 	}
 
