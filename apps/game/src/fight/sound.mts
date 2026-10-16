@@ -11,8 +11,12 @@
 import { play } from '../_shared/sound/sound.mts'
 import { finishingLands } from '../_shared/world/poses.mts'
 import type { RunGame } from './state/game.mts'
-import { bladeLandsAfter, clashSeconds } from './world/ninjas.mts'
+import { runInLeft, type RunState } from './state/run.mts'
+import { bladeLandsAfter, clashSeconds, strikeDelaySeconds } from './world/ninjas.mts'
 import { stepLength } from './world/world.mts'
+
+/** How far the samurai has run, his run in to the start included. */
+const ranOf = (state: RunState) => state.distance - runInLeft(state)
 
 /** Plays the sounds of `game` until `signal` aborts, usually the run screen's own. */
 export function playRunSounds(game: RunGame, signal: AbortSignal): void {
@@ -30,20 +34,21 @@ export function playRunSounds(game: RunGame, signal: AbortSignal): void {
 		for (const sound of due) sound.play()
 	})
 
-	// A step each time a foot comes down, softer in the ambush's slow motion.
-	let steps = Math.floor(game.run.value.distance / stepLength)
+	// A step each time a foot comes down, softer in the ambush's slow motion: from his run in to the
+	// start on, which the world draws him running ([world](./world/world.mts)).
+	let steps = Math.floor(ranOf(game.run.value) / stepLength)
 	let open = game.ambush.value.open
 	game.run.on('change', signal, ({ detail }) => {
-		const { distance, worldScale, phase } = detail.state
-		const step = Math.floor(distance / stepLength)
-		if (step !== steps && (phase === 'running' || phase === 'ambush')) play('step', 0.4 + 0.6 * worldScale)
+		const { worldScale, phase } = detail.state
+		const step = Math.floor(ranOf(detail.state) / stepLength)
+		if (step !== steps && (phase === 'intro' || phase === 'running' || phase === 'ambush')) play('step', 0.4 + 0.6 * worldScale)
 		steps = step
 	})
 
-	// The ninjas rush in as the scroll unrolls.
+	// The ninjas rush in as the scroll unrolls; the next round of the same attack only unrolls its scroll.
 	game.ambush.on('change', signal, ({ detail }) => {
 		if (detail.state.open && !open) {
-			play('rush')
+			if (detail.state.round <= 1) play('rush')
 			play('unroll')
 		}
 		open = detail.state.open
@@ -76,7 +81,10 @@ export function playRunSounds(game: RunGame, signal: AbortSignal): void {
 			seen.set(ninja.id, ninja.sequence)
 			if (ninja.pose === 'slain') play('cut')
 			if (ninja.pose === 'blocked') later(clashSeconds, () => { play('clash') })
+			// Striking: at once in an outcome; when the time ran out, the slicer only once the halves of
+			// the scroll have fallen, and the others flee without a cut.
 			if (ninja.pose === 'strike' && ninja.slicer === undefined) play('swing', 0.6)
+			if (ninja.pose === 'strike' && ninja.slicer === true) later(strikeDelaySeconds, () => { play('swing', 0.6) })
 		}
 		for (const id of seen.keys()) if (!detail.state.active.some((ninja) => ninja.id === id)) seen.delete(id)
 	})

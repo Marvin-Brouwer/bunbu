@@ -55,6 +55,10 @@ function unlock(): void {
 
 if (typeof window !== 'undefined') {
 	for (const gesture of ['pointerdown', 'pointerup', 'keydown'] as const) window.addEventListener(gesture, unlock, { capture: true, passive: true })
+	// The volume follows the setting at once, so turning it down silences what is still sounding.
+	settings.on('change', new AbortController().signal, ({ detail }) => {
+		if (made !== undefined) made.master.gain.value = detail.state.volume
+	})
 }
 
 /** The audio, at the volume of the settings, once it runs. */
