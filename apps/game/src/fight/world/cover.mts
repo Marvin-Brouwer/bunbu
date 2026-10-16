@@ -369,7 +369,8 @@ function partsOf(kind: CoverKind, colours: readonly number[], random: () => numb
 		return [
 			{ shape: 'box', matrix: placed(0, 0.35, 0, 0, 1.1, 1.2, 1.7), colour: lacquer },
 			{ shape: 'box', matrix: placed(0, 1.55, 0, 0, 1.3, 0.12, 1.9), colour: 0x2a1e1a },
-			{ shape: 'box', matrix: placed(0, 1.75, 0, 0, 0.14, 0.14, 3.6), colour: 0x8a6240 },
+			// The pole no longer than the leap over it clears (`coverReach` either side).
+			{ shape: 'box', matrix: placed(0, 1.75, 0, 0, 0.14, 0.14, 2 * coverReach - 0.1), colour: 0x8a6240 },
 			...[-0.4, 0.4].map((x) => ({ shape: 'box' as const, matrix: placed(x, 0, 0, 0, 0.12, 0.35, 1.5), colour: 0x2a1e1a })),
 		]
 	}
@@ -436,7 +437,7 @@ function villagerOf(pick: () => number, random: () => number): Part[] {
 		]
 	}
 	// Two of them, talking.
-	return [...personAt(-0.45, robe), ...personAt(0.45, pick(), 0xb89a55).map((part) => ({ ...part, matrix: within(placed(0, 0, 0, Math.PI), part.matrix) }))]
+	return [...personAt(-0.45, robe), ...personAt(0, pick(), 0xb89a55).map((part) => ({ ...part, matrix: within(placed(0.45, 0, 0, Math.PI), part.matrix) }))]
 }
 
 /** A tilt about `x`, forward. */
