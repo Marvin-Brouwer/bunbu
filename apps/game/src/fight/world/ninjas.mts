@@ -156,7 +156,11 @@ export function outOf(cover: CoverSpot, from: { x: number; z: number }, to: { x:
 	const away = Math.hypot(cover.x - from.x, cover.z - from.z) || 1
 	const out = { x: (cover.x - from.x) / away, z: (cover.z - from.z) / away }
 	const hidden = { x: cover.x + out.x * behind, z: cover.z + out.z * behind }
-	const landed = { x: cover.x - out.x * ahead, z: cover.z - out.z * ahead }
+	// It lands in front of the cover, but never nearer the samurai than where it stands for the fight,
+	// so from there it only comes on toward him.
+	const toward = (to.x - from.x) * out.x + (to.z - from.z) * out.z
+	const landing = Math.min(ahead, Math.max(0, away - toward))
+	const landed = { x: cover.x - out.x * landing, z: cover.z - out.z * landing }
 	if (amount <= waits) return { ...hidden, hop: 0 }
 	if (amount < lands) {
 		const leap = (amount - waits) / (lands - waits)
@@ -253,18 +257,19 @@ export function coverOf(start: { x: number; z: number }, id: number, frame: View
 	const side = fleeSideOf(start.x, id)
 	const sin = Math.sin(frame.heading)
 	const cos = Math.cos(frame.heading)
-	let best: { cover: CoverSpot; away: number } | undefined
-	for (const cover of covers) {
+	// Of the covers on its side, the nearest one at least as far ahead as where it starts, so it
+	// comes toward the samurai all the way; else the farthest.
+	const startAhead = -start.z
+	const onSide = covers.flatMap((cover) => {
 		const dx = cover.x - frame.x
 		const dz = cover.z - frame.z
 		// The cover round the samurai: how far to his right, and how far ahead ({@link beside} undone).
 		const right = dx * cos - dz * sin
 		const ahead = -dx * sin - dz * cos
-		if (Math.sign(right) !== side || ahead <= 0) continue
-		const away = Math.hypot(right - start.x, ahead + start.z)
-		if (best === undefined || away < best.away) best = { cover, away }
-	}
-	return best?.cover
+		return Math.sign(right) === side && ahead > 0 ? [{ cover, ahead }] : []
+	})
+	const beyond = onSide.filter(({ ahead }) => ahead >= startAhead).toSorted((one, other) => one.ahead - other.ahead)
+	return (beyond[0] ?? onSide.toSorted((one, other) => other.ahead - one.ahead)[0])?.cover
 }
 
 /** `parent` is in world space, and `make` makes a ninja's body. */
@@ -287,6 +292,12 @@ export function createNinjasView(parent: Group, make: () => Body): NinjasView {
 
 			for (const ninja of active) {
 				let entry = shown.get(ninja.id)
+				// A new ambush gives its ninjas the ids the last one's had, at once: one that comes in
+				// again after the fight is a new ninja, with its own cover and entrance.
+				if (entry !== undefined && entry.pose !== 'approach' && ninja.pose === 'approach') {
+					drop(ninja.id, entry)
+					entry = undefined
+				}
 				if (entry === undefined) {
 					const mark = markOf(ninja, options, kind) ?? (kind === 'yes-no' ? yesNoSpotOf(ninja.id) : markById(ninja.id))
 					entry = {

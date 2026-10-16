@@ -48,8 +48,8 @@ export type CoverSpot = { readonly x: number; readonly z: number }
 
 /** The spots of the covers of an ambush at `distance`, for `aside` metres off the middle of the path. */
 export function coverSpotsAt(path: Path, distance: number, aside: number): CoverSpot[] {
-	const point = path.at(distance)
-	return [-1, 1].flatMap((side) => coverAhead.map((ahead) => beside(point, side * aside, ahead)))
+	// Along the path itself, so round a bend the covers keep to its side rather than stand on it.
+	return [-1, 1].flatMap((side) => coverAhead.map((ahead) => beside(path.at(distance + ahead), side * aside)))
 }
 
 /** Metres of path per tile of decoys, and how far behind and ahead of the samurai covers stand. */
