@@ -67,17 +67,23 @@ export function createRunWorld(game: RunGame, viewport: Viewport, roomBelow: () 
 	// The stage's own world, after the figures, so the figures' models are asked for first. In
 	// endless the next stage takes its place as the samurai comes to it, its path starting there.
 	const { endless } = selection.value
+	let stageIndex = 0
+	/** Where the stage on show starts along the run, in metres: its path's `0`. */
+	let offset = 0
+	/** How long the stage on show is, for its districts: in endless, from where it starts to where the next does. */
+	const lengthOfStage = () => {
+		const quiz = game.quiz.value.quiz
+		if (!endless) return game.run.value.stageLength
+		return quiz === undefined ? 0 : stageStart(stageIndex + 1, stageQuestions(quiz)) - stageStart(stageIndex, stageQuestions(quiz))
+	}
 	// `start` is where the stage starts along the run: in endless halfway between two ambushes, so
 	// its covers stand that far along its own path.
 	const layStage = (which: Stage, start = 0) => {
 		const before = new Set(scene.children)
-		const world = createStageWorld(which, scene, (((-start) % metresPerAmbush) + metresPerAmbush) % metresPerAmbush)
+		const world = createStageWorld(which, scene, lengthOfStage, (((-start) % metresPerAmbush) + metresPerAmbush) % metresPerAmbush)
 		return { ...world, added: scene.children.filter((child) => !before.has(child)) }
 	}
 	let laid = layStage(endless ? endlessStage(0) : selection.value.stage)
-	let stageIndex = 0
-	/** Where the stage on show starts along the run, in metres: its path's `0`. */
-	let offset = 0
 
 	const parts = createFigureParts()
 	const fighters = new Group()

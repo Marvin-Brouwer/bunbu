@@ -34,7 +34,7 @@ import type { GLTF } from 'three/addons/loaders/GLTFLoader.js'
 import { layBlocks } from './blocks.mts'
 import { Batch, chunkOf, placed, scatter, type Cursor } from './kit.mts'
 import { addAll, clearanceOf, facingPath, isFree, passTime, sky, skyRadius, stamp, strip, type Daylight, type Owned, type Planting, type StageView, type Taken } from './landscape.mts'
-import type { BackdropRow } from './backdrop.mts'
+import type { District } from './backdrop.mts'
 import type { CoverSet } from './cover.mts'
 import { beside, type Leg, type Path } from './path.mts'
 
@@ -45,15 +45,6 @@ const palette = {
 	stalk: 0x7fa046,
 	shaft: 0xfff2c0,
 }
-
-/**
- * Deeper into the forest ([backdrop](./backdrop.mts)): more bamboo past the stands along the path,
- * and broadleaf trees farther in.
- */
-export const bambooBackdrop: readonly BackdropRow[] = [
-	{ shape: 'bamboo', from: 26, to: 70, perTile: 6, colours: [[0x7fa046, 0x8aa84e, 0x6f9440]] },
-	{ shape: 'broadleaf', from: 50, to: 110, perTile: 1.4, colours: [[0x4a3a2c], [0x4a6634, 0x557038]] },
-]
 
 /** From a misty noon to a misty dusk. One light per quarter of the stage ({@link passTime}). */
 const daylight: Daylight = [
@@ -107,8 +98,50 @@ const pathHalfWidth = 1.6
 export const bambooCover: CoverSet = {
 	kinds: ['rock', 'bales'],
 	aside: pathHalfWidth + 1.3,
-	colours: { rock: [palette.stone, 0x7f8a6a], bales: [palette.stalk, 0x9ab05a] },
+	colours: { rock: [palette.stone, 0x7f8a6a], bales: [palette.stalk, 0x9ab05a], 'bamboo-bundle': [0xa8a05a, 0x9a9a50, 0xb0a868], jizo: [0x8d877b, 0x7f8a6a], woodpile: [0x6a4a30, 0x7a5236] },
 }
+
+/**
+ * The forest's four districts ([districts](./districts.mts)), deeper in past the stands along the
+ * path ([backdrop](./backdrop.mts)): the deep grove, the mossy stones, the shrine path and the
+ * forest's edge.
+ */
+export const bambooDistricts: readonly District[] = [
+	{
+		name: 'Deep grove',
+		cover: [{ kind: 'bamboo-bundle' }, { kind: 'rock' }, { kind: 'panda', ambush: 0.15, decoy: 0.5 }],
+		rows: [
+			{ shape: 'bamboo', from: 26, to: 70, perTile: 6, colours: [[0x7fa046, 0x8aa84e, 0x6f9440]] },
+			{ shape: 'broadleaf', from: 50, to: 110, perTile: 1.4, colours: [[0x4a3a2c], [0x4a6634, 0x557038]] },
+		],
+	},
+	{
+		name: 'Mossy stones',
+		cover: [{ kind: 'jizo' }, { kind: 'rock' }],
+		rows: [
+			{ shape: 'rock', from: 26, to: 60, perTile: 2.2, colours: [[palette.stone, 0x7f8a6a, 0x6f7a5a]] },
+			{ shape: 'bamboo', from: 30, to: 70, perTile: 4, colours: [[0x7fa046, 0x8aa84e, 0x6f9440]] },
+		],
+	},
+	{
+		name: 'Shrine path',
+		cover: [{ kind: 'bamboo-bundle' }, { kind: 'crates' }],
+		rows: [
+			{ shape: 'torii', across: true, span: pathHalfWidth * 2 + 0.4, from: 0, to: 0, perTile: 0.6, colours: [[0xa8261c], [0xa8261c], [0x2a2a2e, 0x8e2a22]] },
+			{ shape: 'lantern', from: pathHalfWidth + 0.7, to: pathHalfWidth + 1, perTile: 0.5, colours: [[0x8d877b, 0x9a958a], [0x8d877b, 0x7a756c]] },
+			{ shape: 'bamboo', from: 26, to: 70, perTile: 5, colours: [[0x7fa046, 0x8aa84e, 0x6f9440]] },
+		],
+	},
+	{
+		name: 'Forest edge',
+		cover: [{ kind: 'woodpile' }, { kind: 'bamboo-bundle' }],
+		rows: [
+			{ shape: 'broadleaf', from: 26, to: 90, perTile: 3, colours: [[0x4a3a2c], [0x4a6634, 0x557038, 0x6f9440]] },
+			{ shape: 'pine', from: 40, to: 110, perTile: 2, colours: [[0x4a3a2c], [0x2f4a32, 0x355238]] },
+			{ shape: 'bamboo', from: 26, to: 50, perTile: 1.5, colours: [[0x7fa046, 0x8aa84e]] },
+		],
+	},
+]
 
 /** Bamboo stands from just off the path to this far out. */
 const forestDepth = 24

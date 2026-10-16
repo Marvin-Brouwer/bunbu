@@ -75,7 +75,43 @@ In dev builds only, one button under the stages toggles them for the chosen quiz
 - 3D samurai, always centred, auto-running toward a torii. No input until an ambush.
 - The run starts once the stage has loaded. Until then the samurai waits out of view, behind the camera; then he runs in to his place and the stage starts.
 - HUD: **score** with best to beat, **life bar** (full = 100%, empty = the pass mark), and a **pause** button.
-- Progress bar: stage name and the questions done (`Castle town · 7 / 40`). In endless the bar is the stage that is on, and the count has no end: `Endless · Castle town · 47`. A notch marks each quarter of the stage, and a block marks the boss. Passing a notch moves the stage's time of day on, fading over a few seconds: castle town goes from dusk to night as its shops and lanterns light up.
+- Progress bar: stage name and the questions done (`Castle town · 7 / 40`). In endless the bar is the stage that is on, and the count has no end: `Endless · Castle town · 47`. A notch marks each quarter of the stage, and a block marks the boss. Passing a notch moves the stage's time of day on, fading over a few seconds: castle town goes from dusk to night as its shops and lanterns light up. Each quarter is also a **district** of its own, with its own backdrop and things by the way, fading into the next over about 90 m around the notch:
+
+  | Stage | Districts |
+  | --- | --- |
+  | Rice fields | village edge, open paddies, irrigation ponds, shrine grove (torii over the path) |
+  | Bamboo forest | deep grove, mossy stones, shrine path (torii and stone lanterns), forest edge |
+  | Mountain temple | foothill pines, rock garden, pagoda terrace, snowy heights |
+  | Castle town | gate gardens (torii, red maples), shop street, pond and red bridge, castle approach (walls and the keep) |
+  | Edo castle | retainers' quarter, castle gardens, pine walk, the keep's approach |
+
+  Some districts have their own things for the ninjas to hide behind ([cover](gameplay.md#ambush)), in place of the stage's crates, barrels, carts, straw and boulders, and the same stand along the way as decoys:
+
+  | District | Covers |
+  | --- | --- |
+  | Rice fields, village edge | a basket heaped with rice, a scarecrow in a straw coat with a wheelbarrow of straw in front, straw bales; a scarecrow on its own, which a ninja never comes from |
+  | Rice fields, open paddies | straw bales, a scarecrow with a wheelbarrow; a scarecrow on its own, never a ninja's |
+  | Rice fields, irrigation ponds | a water wheel by its channel, straw bales |
+  | Rice fields, shrine grove | a tall stone lantern, boulders |
+  | Bamboo forest, deep grove | bundles of cut bamboo, boulders, now and then a panda eating bamboo (a ninja comes from behind one even more rarely) |
+  | Bamboo forest, mossy stones | three little jizō statues with red bibs before a stone wall, boulders |
+  | Bamboo forest, shrine path | bundles of cut bamboo, crates |
+  | Bamboo forest, forest edge | a woodpile, bundles of cut bamboo |
+  | Mountain temple, foothill pines | a woodpile, boulders |
+  | Mountain temple, rock garden | a tall stone lantern, boulders |
+  | Mountain temple, pagoda terrace | a temple bell in its roofed frame, barrels, boulders |
+  | Castle town, gate gardens | a market stand, crates, a villager (mostly just there, rarely one a ninja comes from) |
+  | Castle town, shop street | a market stand, a cart, barrels, a villager |
+  | Castle town, pond and red bridge | sake barrels in straw, boulders, a villager |
+  | Castle town, castle approach | a guard with a spear (mostly just there), sake barrels, crates |
+  | Edo castle, retainers' quarter | a rack of spears, a guard, crates |
+  | Edo castle, castle gardens | a palanquin set down, boulders |
+  | Edo castle, pine walk | a palanquin, crates |
+  | Edo castle, the keep's approach | a guard, a palanquin, boulders |
+
+  A villager is one of a few: with a basket on the back, with buckets on a carrying pole, under a paper parasol, an old one bent over a stick, or two of them talking.
+
+  A district is at least 5 questions long, so a short test has fewer: 10 questions run through the first and the last, 15 through three. The stage's own streets, fields and paths stay the same throughout.
 
 ### 4 Ambush
 

@@ -9,15 +9,15 @@ import type { GLTF } from 'three/addons/loaders/GLTFLoader.js'
 import { loadModel } from '../../canvas/models.mts'
 import type { Stage } from '../../_shared/state/selection.mts'
 import { metresPerAmbush } from '../flows/run.mts'
-import { createBackdrop, type BackdropRow } from './backdrop.mts'
+import { createBackdrop, type District } from './backdrop.mts'
 import { ambushNear, coverSpotsAt, createCover, type CoverSet, type CoverSpot } from './cover.mts'
-import { createCastleTown, townBackdrop, townCover } from './castle-town.mts'
+import { createCastleTown, townDistricts, townCover } from './castle-town.mts'
 import type { Owned, StageView } from './landscape.mts'
 import { createPath, townRound, type Path } from './path.mts'
-import { bambooBackdrop, bambooCover, bambooRound, createBambooForest } from './bamboo-forest.mts'
-import { castleBackdrop, castleCover, castleRound, createEdoCastle } from './edo-castle.mts'
-import { createMountainTemple, mountainBackdrop, mountainCover, mountainRound } from './mountain-temple.mts'
-import { createRiceFields, riceBackdrop, riceCover, riceRound } from './rice-fields.mts'
+import { bambooDistricts, bambooCover, bambooRound, createBambooForest } from './bamboo-forest.mts'
+import { castleDistricts, castleCover, castleRound, createEdoCastle } from './edo-castle.mts'
+import { createMountainTemple, mountainDistricts, mountainCover, mountainRound } from './mountain-temple.mts'
+import { createRiceFields, riceDistricts, riceCover, riceRound } from './rice-fields.mts'
 
 export type StageWorld = {
 	readonly path: Path
@@ -62,13 +62,15 @@ function newSeed(use: number): number {
 }
 
 /**
- * Puts `rows` of backdrop behind a stage's own scenery ([backdrop](./backdrop.mts)) and `cover` by
- * its path for the ninjas to hide behind ([cover](./cover.mts)), laid out differently every run.
+ * Puts the backdrop of a stage's `districts` behind its own scenery ([backdrop](./backdrop.mts)),
+ * district after district along a stage of `stageLength()` metres ([districts](./districts.mts)),
+ * and `cover` by its path for the ninjas to hide behind ([cover](./cover.mts)), laid out
+ * differently every run.
  */
-function around(scene: Scene, { path, view }: OwnWorld, rows: readonly BackdropRow[], cover: CoverSet, phase: number): StageWorld {
+function around(scene: Scene, { path, view }: OwnWorld, districts: readonly District[], cover: CoverSet, stageLength: () => number, phase: number): StageWorld {
 	const owned: Owned = { geometries: [], materials: [], textures: [] }
-	const backdrop = createBackdrop(path, rows, newSeed(0), owned)
-	const covers = createCover(path, cover, metresPerAmbush, newSeed(1), owned, phase)
+	const backdrop = createBackdrop(path, districts, newSeed(0), owned, stageLength)
+	const covers = createCover(path, cover, metresPerAmbush, newSeed(1), owned, districts, stageLength, phase)
 	scene.add(backdrop.group, covers.group)
 	return {
 		path,
@@ -97,25 +99,25 @@ function around(scene: Scene, { path, view }: OwnWorld, rows: readonly BackdropR
 /**
  * Lays out `stage`'s world in `scene`: a path that goes on for as long as the run does, the stage's
  * scenery along it, in blocks stitched together ahead of the samurai ([blocks](./blocks.mts)), and
- * the backdrop behind it and the covers beside it.
+ * the backdrop behind it, district by district along `stageLength()` metres, and the covers beside it.
  */
-export function createStageWorld(stage: Stage, scene: Scene, phase = 0): StageWorld {
+export function createStageWorld(stage: Stage, scene: Scene, stageLength: () => number = () => 0, phase = 0): StageWorld {
 	if (stage === 'rice-fields') {
 		const path = createPath(riceRound)
-		return around(scene, { path, view: createRiceFields(scene, path, stageModels(stage)) }, riceBackdrop, riceCover, phase)
+		return around(scene, { path, view: createRiceFields(scene, path, stageModels(stage)) }, riceDistricts, riceCover, stageLength, phase)
 	}
 	if (stage === 'bamboo-forest') {
 		const path = createPath(bambooRound)
-		return around(scene, { path, view: createBambooForest(scene, path, stageModels(stage)) }, bambooBackdrop, bambooCover, phase)
+		return around(scene, { path, view: createBambooForest(scene, path, stageModels(stage)) }, bambooDistricts, bambooCover, stageLength, phase)
 	}
 	if (stage === 'mountain-temple') {
 		const path = createPath(mountainRound)
-		return around(scene, { path, view: createMountainTemple(scene, path, stageModels(stage)) }, mountainBackdrop, mountainCover, phase)
+		return around(scene, { path, view: createMountainTemple(scene, path, stageModels(stage)) }, mountainDistricts, mountainCover, stageLength, phase)
 	}
 	if (stage === 'edo-castle') {
 		const path = createPath(castleRound)
-		return around(scene, { path, view: createEdoCastle(scene, path, stageModels(stage)) }, castleBackdrop, castleCover, phase)
+		return around(scene, { path, view: createEdoCastle(scene, path, stageModels(stage)) }, castleDistricts, castleCover, stageLength, phase)
 	}
 	const path = createPath(townRound)
-	return around(scene, { path, view: createCastleTown(scene, path, stageModels(stage)) }, townBackdrop, townCover, phase)
+	return around(scene, { path, view: createCastleTown(scene, path, stageModels(stage)) }, townDistricts, townCover, stageLength, phase)
 }
