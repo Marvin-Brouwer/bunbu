@@ -17,7 +17,7 @@ import { highScores } from '../state/highscores.mts'
 import { lastRun } from '../state/lastrun.mts'
 import { runConfig, stageDistanceOf } from '../state/run.mts'
 import { pointOf, type HighScore } from '../state/score.mts'
-import { stageAfter, stageResults } from '../state/stage-results.mts'
+import { opensNextStage, stageAfter, stageResults } from '../state/stage-results.mts'
 import { missShare, openAmbush, tickAmbush, tickOutcome } from './ambush.mts'
 import { stageQuestions } from './endless.mts'
 
@@ -165,10 +165,12 @@ export function recordRun(game: RunGame): void {
 	// The stage can't change during a run: the fight setup is the only place it is chosen.
 	const { stage } = selection.value
 	const next = stageAfter(stage)
-	const unlocks = !fallen && next !== undefined && !stageResults.value.unlocked(quiz.id, quiz.version, next)
-	stageResults.value.submit(quiz.id, quiz.version, stage, { distance: stageDistanceOf(game.run.value), cleared: !fallen, ...(!fallen && difficulty === 'shogun' ? { shogun: true } : {}) })
+	const opens = !fallen && opensNextStage(difficulty, game.life.value.value)
+	const unlocks = opens && next !== undefined && !stageResults.value.unlocked(quiz.id, quiz.version, next)
+	const endlessBefore = stageResults.value.endlessUnlocked(quiz.id, quiz.version)
+	stageResults.value.submit(quiz.id, quiz.version, stage, { distance: stageDistanceOf(game.run.value), cleared: !fallen, opens, ...(!fallen && difficulty === 'shogun' ? { shogun: true } : {}) })
 	const newBest = !fallen && highScores.value.submit(quiz.id, quiz.version, { points, seconds, correct, answered, difficulty })
-	game.score.value.settle(newBest, unlocks ? next : undefined)
+	game.score.value.settle(newBest, unlocks ? next : undefined, !endlessBefore && stageResults.value.endlessUnlocked(quiz.id, quiz.version))
 }
 
 /**

@@ -48,13 +48,15 @@ export type ScoreState = {
 	readonly newBest: boolean
 	/** The stage this run unlocked by passing, for the results, or `undefined` when it unlocked none. */
 	readonly unlocked: Stage | undefined
+	/** Whether this run unlocked endless, clearing the last stage still to clear on Shogun. */
+	readonly unlockedEndless: boolean
 }
 
 export type ScoreActions = {
 	addCorrect: () => void
 	addMiss: () => void
-	/** Ends the run, with whether it set the high score and the stage it unlocked. */
-	settle: (newBest: boolean, unlocked?: Stage) => void
+	/** Ends the run, with whether it set the high score, the stage it unlocked, and whether it unlocked endless. */
+	settle: (newBest: boolean, unlocked?: Stage, unlockedEndless?: boolean) => void
 	/** Starts a run against `best`, the quiz's high score, or against none when it has no high score yet. */
 	reset: (best?: HighScore) => void
 }
@@ -62,7 +64,7 @@ export type ScoreActions = {
 /** The store, with its actions on its state. Change it through those, not `update`. */
 export type Score = Store<ScoreState & ScoreActions>
 
-export const noScore: ScoreState = { points: 0, correct: 0, answered: 0, best: undefined, newBest: false, unlocked: undefined }
+export const noScore: ScoreState = { points: 0, correct: 0, answered: 0, best: undefined, newBest: false, unlocked: undefined, unlockedEndless: false }
 
 /** Whether `score` beats `best`: more points, or the same points in less time. */
 export function beats(score: HighScore, best: HighScore | undefined): boolean {
@@ -88,8 +90,8 @@ export function createScore(initial: ScoreState = noScore): Score {
 			store.update((state) => ({ answered: state.answered + 1 }))
 		},
 
-		settle(newBest, unlocked) {
-			store.update(() => ({ newBest, unlocked }))
+		settle(newBest, unlocked, unlockedEndless = false) {
+			store.update(() => ({ newBest, unlocked, unlockedEndless }))
 		},
 
 		reset(best) {

@@ -8,6 +8,9 @@
  *
  * The pictures are in `public/stages/`, taken, and checked in CI, by `e2e/stage-pictures.spec.mts`.
  *
+ * A stage cleared as Shogun on the chosen quiz has a Shogun seal on its picture, so the player sees
+ * which are still to clear for endless.
+ *
  * After the stages, endless ([endless](../../../../../docs/design/gameplay.md#endless)): locked
  * until every stage has been cleared on Shogun with the chosen quiz.
  */
@@ -28,16 +31,22 @@ function unlocked(stage: Stage): boolean {
 
 /**
  * `Best 860 m`, or `Best 1,440 m · cleared`; `Not run yet` before the stage was run on this quiz.
- * `Clear Rice fields to unlock` while it is locked.
+ * `Clear Rice fields as Samurai to unlock` while it is locked: Apprentice unlocks no stages.
  */
 function resultOf(stage: Stage): string | undefined {
 	const before = stageBefore(stage)
-	if (!unlocked(stage) && before !== undefined) return `Clear ${stageNames[before]} to unlock`
+	if (!unlocked(stage) && before !== undefined) return `Clear ${stageNames[before]} as Samurai to unlock`
 	const { quiz } = selection.value
 	const result = quiz === undefined ? undefined : stageResults.value.of(quiz.id, quiz.version, stage)
 	if (result === undefined) return quiz === undefined ? undefined : 'Not run yet'
 	const best = `Best ${formatWhole(result.distance)} m`
 	return result.cleared ? `${best} · cleared` : best
+}
+
+/** Whether the stage has been cleared as Shogun on the chosen quiz. */
+function clearedAsShogun(stage: Stage): boolean {
+	const { quiz } = selection.value
+	return quiz !== undefined && stageResults.value.of(quiz.id, quiz.version, stage)?.shogun === true
 }
 
 /** Whether endless is open on the chosen quiz. */
@@ -48,7 +57,7 @@ function endlessUnlocked(): boolean {
 
 /** `Best 1,200`: endless's high score on the chosen quiz, or how to open it while it is locked. */
 function endlessResultOf(): string | undefined {
-	if (!endlessUnlocked()) return 'Clear every stage on Shogun to unlock'
+	if (!endlessUnlocked()) return 'Clear every stage as Shogun to unlock'
 	const { quiz } = selection.value
 	const best = quiz === undefined ? undefined : highScores.value.of(quiz.id, quiz.version, true)
 	return best === undefined ? undefined : `Best ${formatWhole(best.points)}`
@@ -148,7 +157,7 @@ export const StagePicker = component({
 							},
 						},
 					}),
-					// Every stage in turn: a strip of each one's picture.
+					// Every stage in turn: a slanted slice of each one's picture.
 					element('span', {
 						classes: [
 							styles.stagePicture,
@@ -243,6 +252,18 @@ export const StagePicker = component({
 								draggable: false,
 							}),
 							create(ChoiceStamp),
+							clearedAsShogun(stage)
+								? element('span', {
+									classes: styles.stageMedal,
+									lang: 'ja',
+									textContent: '将',
+									role: 'img',
+									title: 'Cleared as Shogun',
+									aria: {
+										label: 'Cleared as Shogun',
+									},
+								})
+								: undefined,
 							element('span', {
 								classes: styles.stageText,
 								children: [

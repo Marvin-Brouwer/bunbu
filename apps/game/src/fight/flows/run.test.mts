@@ -10,7 +10,7 @@ import { highScores } from '../state/highscores.mts'
 import { lastRun } from '../state/lastrun.mts'
 import { shareOfOnePoint } from '../state/life.mts'
 import { runConfig } from '../state/run.mts'
-import { stageResults } from '../state/stage-results.mts'
+import { samuraiOpensWith, stageResults } from '../state/stage-results.mts'
 import { nextScrollSeconds } from '../../_shared/state/ambush.mts'
 import { commitAmbush, outcomeDelaySeconds } from './ambush.mts'
 import { loaded, questionsAnswered } from '../../_shared/state/quiz.mts'
@@ -235,13 +235,13 @@ describe('stage results', () => {
 	it('marks the stage cleared by a finished run, at its full length', () => {
 		play([true, true, true, true])
 
-		expect(stageResults.value.of('fixture', '1', 'rice-fields')).toEqual({ distance: 4 * metresPerAmbush, cleared: true })
+		expect(stageResults.value.of('fixture', '1', 'rice-fields')).toEqual({ distance: 4 * metresPerAmbush, cleared: true, opens: true })
 	})
 
 	it('keeps how far a fallen run got', () => {
 		play([false, false])
 
-		expect(stageResults.value.of('fixture', '1', 'rice-fields')).toEqual({ distance: ambushAt(1), cleared: false })
+		expect(stageResults.value.of('fixture', '1', 'rice-fields')).toEqual({ distance: ambushAt(1), cleared: false, opens: false })
 	})
 
 	it('keeps the best of the runs on a stage', () => {
@@ -281,6 +281,58 @@ describe('unlocking stages', () => {
 
 		expect(stageResults.value.unlocked('fixture', '1', 'bamboo-forest')).toBe(false)
 		expect(game.score.value.unlocked).toBeUndefined()
+	})
+
+	it('unlocks nothing as Apprentice, though the stage is cleared', () => {
+		quizDifficulties.value.choose('fixture', '1', 'apprentice')
+		startRun(game, fixtureQuiz)
+
+		play([true, true, true, true])
+
+		expect(stageResults.value.of('fixture', '1', 'rice-fields')).toMatchObject({ cleared: true, opens: false })
+		expect(stageResults.value.unlocked('fixture', '1', 'bamboo-forest')).toBe(false)
+		expect(game.score.value.unlocked).toBeUndefined()
+	})
+
+	it('unlocks as Samurai only with half the life bar left or more', () => {
+		play([true, true, true, false])
+
+		expect(game.life.value.value).toBeLessThan(samuraiOpensWith)
+		expect(stageResults.value.of('fixture', '1', 'rice-fields')).toMatchObject({ cleared: true, opens: false })
+		expect(stageResults.value.unlocked('fixture', '1', 'bamboo-forest')).toBe(false)
+	})
+
+	it('unlocks on the harder difficulties with any life left', () => {
+		quizDifficulties.value.choose('fixture', '1', 'daimyo')
+		startRun(game, fixtureQuiz)
+
+		play([true, true, true, false])
+
+		expect(stageResults.value.unlocked('fixture', '1', 'bamboo-forest')).toBe(true)
+	})
+
+	it('keeps a stage unlocked by an earlier run, whatever the next run does', () => {
+		play([true, true, true, true])
+		quizDifficulties.value.choose('fixture', '1', 'apprentice')
+		startRun(game, fixtureQuiz)
+
+		play([true, true, true, true])
+
+		expect(stageResults.value.unlocked('fixture', '1', 'bamboo-forest')).toBe(true)
+	})
+
+	it('tells the run that clears the last stage still to clear on Shogun that it unlocked endless', () => {
+		for (const stage of stages.slice(0, -1)) stageResults.value.submit('fixture', '1', stage, { distance: 1, cleared: true, shogun: true })
+		selection.value.chooseStage('edo-castle')
+		quizDifficulties.value.choose('fixture', '1', 'shogun')
+		startRun(game, fixtureQuiz)
+
+		play([true, true, true, true])
+
+		expect(game.score.value.unlockedEndless).toBe(true)
+		startRun(game, fixtureQuiz)
+		play([true, true, true, true])
+		expect(game.score.value.unlockedEndless).toBe(false)
 	})
 
 	it('tells only the run that unlocked it', () => {

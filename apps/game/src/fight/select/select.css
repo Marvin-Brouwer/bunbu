@@ -87,18 +87,45 @@
 	background: var(--paper-shade);
 }
 
-/* Endless: a strip of every stage's picture, side by side. */
+/*
+ * Endless: every stage's picture in turn, in slanted slices from the top left to the bottom right,
+ * as the stages run into each other. `--slice` is the stage's place, 0 to 4.
+ */
 .endlessPicture {
-	display: grid;
-	grid-template-columns: repeat(5, 1fr);
-	gap: 2px;
+	position: relative;
 	overflow: hidden;
 }
 
 .endlessPicture img {
+	position: absolute;
+	inset: 0;
 	width: 100%;
 	height: 100%;
 	object-fit: cover;
+	--slice: 0;
+	/* A band a fifth of the way across, slanted by `--lean`; the first and last run on to the edges. */
+	--lean: 18%;
+	--from: calc(var(--slice) * 20% - var(--lean) / 2);
+	--to: calc((var(--slice) + 1) * 20% - var(--lean) / 2);
+	clip-path: polygon(
+		calc(var(--from) + var(--lean)) 0,
+		calc(var(--to) + var(--lean)) 0,
+		var(--to) 100%,
+		var(--from) 100%
+	);
+}
+
+.endlessPicture img:nth-child(2) { --slice: 1; }
+.endlessPicture img:nth-child(3) { --slice: 2; }
+.endlessPicture img:nth-child(4) { --slice: 3; }
+.endlessPicture img:nth-child(5) { --slice: 4; }
+
+.endlessPicture img:first-child {
+	--from: -50%;
+}
+
+.endlessPicture img:last-child {
+	--to: 150%;
 }
 
 /* Locked, or not built yet: in ink-wash grey. */
@@ -192,6 +219,26 @@
 	font-weight: 400;
 	letter-spacing: 0.08em;
 	text-transform: uppercase;
+}
+
+/* Cleared as Shogun: a vermilion seal on the picture. */
+.stageMedal {
+	position: absolute;
+	top: 1rem;
+	right: 1rem;
+	display: grid;
+	place-items: center;
+	width: 2rem;
+	height: 2rem;
+	border: 2px solid var(--paper-light);
+	border-radius: 50%;
+	background: var(--vermilion);
+	box-shadow: var(--shadow);
+	color: var(--paper-light);
+	font-family: var(--font-display);
+	font-size: 1.05rem;
+	font-weight: 700;
+	rotate: -8deg;
 }
 
 /* Dev only: unlock or lock every stage of the quiz. */

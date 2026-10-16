@@ -2,7 +2,11 @@
  * 7 Finished ([screens.md](../../../../../docs/design/screens.md#7-finished-results-and-mistakes)):
  * the quiz is passed. The score, and the high score it beat; correct, time and distance; the
  * mistakes; then Next stage, and Share beside Menu to dare a friend to beat it, all on one scroll
- * over the world.
+ * over the world. A run that didn't unlock the next stage offers Retry instead: as Samurai after
+ * Apprentice, which unlocks none ([stages](../../../../../docs/design/gameplay.md#stages)).
+ *
+ * The run that unlocks endless shows a scroll that says so first, to start an endless run at once
+ * or go on to the results ([endless](../../../../../docs/design/gameplay.md#endless)).
  */
 
 import { component } from '@rooted/components'
@@ -12,9 +16,12 @@ import { builtStages, selection, stageNames, stages } from '../../_shared/state/
 import { ScrollSheet } from '../../_shared/scroll/scroll-sheet.mts'
 import { snapshot } from '../../_shared/state/store.mts'
 import type { QuizActions, QuizState } from '../../_shared/state/quiz.mts'
+import { difficultyNames, quizDifficulties } from '../state/difficulty.mts'
 import type { RunGame } from '../state/game.mts'
+import { stageResults } from '../state/stage-results.mts'
 import { pointsIn, pointsPerCorrect } from '../state/score.mts'
 import { AfterRun } from './after-run.mts'
+import { MenuButton, type MenuButtonOptions } from '../../_shared/menu/menu-button.mts'
 import { Mistakes } from './mistakes.mts'
 import type { ScorePicture } from './score-picture.mts'
 import { StatTile } from './stat-tile.mts'
@@ -30,18 +37,43 @@ export type FinishedOptions = {
 export const Finished = component<FinishedOptions>({
 	name: 'finished',
 	styles,
-	onMount({ append, create, element, options }) {
+	onMount({ create, element, options, replace }) {
 		const { game } = options
 		const { quiz, refs } = snapshot<QuizState & QuizActions>(game.quiz)
 		if (quiz === undefined) return
 
-		const { points, correct, best, newBest, unlocked } = game.score.value
+		const { points, correct, best, newBest, unlocked, unlockedEndless } = game.score.value
 		const { elapsed, stageLength, difficulty } = game.run.value
 		const total = pointsIn(quiz, refs)
 		const misses = game.quiz.value.misses()
 		// The same quiz on the next stage that has a world (docs/plan.md#open-questions), or this one
 		// again after the last. Passing has unlocked it, now or before.
 		const next = stages.slice(stages.indexOf(selection.value.stage) + 1).find((stage) => builtStages.has(stage))
+		const nextAction = ((): MenuButtonOptions => {
+			if (next === undefined) return { label: 'Run again', action: options.restart }
+			if (stageResults.value.unlocked(quiz.id, quiz.version, next)) {
+				return {
+					label: 'Next stage',
+					note: next === unlocked ? `${stageNames[next]} · unlocked` : stageNames[next],
+					action: () => {
+						selection.value.chooseStage(next)
+						options.restart()
+					},
+				}
+			}
+			// Cleared, but not so that it unlocks the next stage.
+			if (difficulty === 'apprentice') {
+				return {
+					label: `Retry as ${difficultyNames.samurai}`,
+					note: `${difficultyNames.apprentice} unlocks no stages`,
+					action: () => {
+						quizDifficulties.value.choose(quiz.id, quiz.version, 'samurai')
+						options.restart()
+					},
+				}
+			}
+			return { label: 'Retry', note: 'Half the life bar to unlock', action: options.restart }
+		})()
 		// The top of the results, which Share sends as a picture too.
 		const picture: ScorePicture = {
 			quizTitle: quiz.title,
@@ -74,7 +106,7 @@ export const Finished = component<FinishedOptions>({
 			],
 		}
 
-		append(
+		const showResults = () => replace(
 			element('section', {
 				classes: styles.results,
 				'data-outcome': 'finished',
@@ -143,22 +175,70 @@ export const Finished = component<FinishedOptions>({
 							picture,
 						},
 						leave: options.leave,
-						next: next === undefined
-							? {
-								label: 'Run again',
-								action: options.restart,
-							}
-							: {
-								label: 'Next stage',
-								note: next === unlocked ? `${stageNames[next]} · unlocked` : stageNames[next],
-								action: () => {
-									selection.value.chooseStage(next)
-									options.restart()
-								},
-							},
+						next: nextAction,
 					}),
 				}),
 			})
 		)
+
+		// Endless unlocked: that first, on a scroll of its own.
+		const showEndlessUnlocked = () => replace(
+			element('section', {
+				classes: styles.results,
+				'data-outcome': 'endless-unlocked',
+				children: create(ScrollSheet, {
+					unroll: true,
+					children: element('div', {
+						classes: styles.sheetBody,
+						children: element('header', {
+							classes: styles.header,
+							children: [
+								element('span', {
+									classes: styles.seal,
+									lang: 'ja',
+									textContent: '極',
+									aria: {
+										hidden: 'true',
+									},
+								}),
+								element('div', {
+									classes: styles.headline,
+									children: [
+										element('h1', {
+											classes: styles.verdict,
+											textContent: 'Endless unlocked',
+										}),
+										element('p', {
+											classes: styles.summary,
+											textContent: `Every stage cleared as ${difficultyNames.shogun}. In endless the stages run on into each other, every question once and then again, until you fall.`,
+										}),
+									],
+								}),
+							],
+						}),
+					}),
+					footer: element('nav', {
+						classes: styles.actions,
+						children: [
+							create(MenuButton, {
+								label: 'Start endless run now',
+								kind: 'primary',
+								action: () => {
+									selection.value.chooseEndless()
+									options.restart()
+								},
+							}),
+							create(MenuButton, {
+								label: 'See the results',
+								action: showResults,
+							}),
+						],
+					}),
+				}),
+			})
+		)
+
+		if (unlockedEndless) showEndlessUnlocked()
+		else showResults()
 	},
 })
