@@ -14,10 +14,10 @@ import { loadModel } from '../../canvas/models.mts'
 import type { View } from '../../canvas/stage.mts'
 import type { Viewport } from '../../canvas/viewport.mts'
 import type { RunGame } from '../state/game.mts'
-import { marksPassed } from '../state/run.mts'
+import { marksPassed, runInLeft } from '../state/run.mts'
 import { framedIn, runFraming, viewOnPath } from './camera.mts'
 import { skyRadius } from './landscape.mts'
-import { createStageWorld } from './stages.mts'
+import { createStageWorld, stageModels } from './stages.mts'
 import { selection, type Stage } from '../../_shared/state/selection.mts'
 import { endlessStage, stageAt, stageQuestions, stageStart } from '../flows/endless.mts'
 import { metresPerAmbush } from '../flows/run.mts'
@@ -43,6 +43,14 @@ const shortWay = (from: number, to: number) => Math.atan2(Math.sin(to - from), M
 
 /** How quickly the camera moves the fight into the room below the scroll and back, per second. */
 const reframe = 3
+
+/**
+ * Resolves once the models of a run on `stage` are in, the figures' and the scenery's, or have
+ * failed: until then the run waits to start, so the samurai doesn't run into a world still coming in.
+ */
+export function runWorldLoaded(stage: Stage): Promise<void> {
+	return Promise.allSettled([loadModel('samurai'), loadModel('ninja'), stageModels(stage)]).then(() => undefined)
+}
 
 /**
  * `roomBelow` is how many CSS pixels below the scroll an ambush keeps free for the fight
@@ -188,7 +196,9 @@ export function createRunWorld(game: RunGame, viewport: Viewport, roomBelow: () 
 				since = 0
 				previous = shown
 			}
-			const cycle = (distance / stepLength) * Math.PI
+			// Before the run he waits behind the camera, and in the intro he runs in to where the stage starts.
+			const ran = distance - runInLeft(run)
+			const cycle = (ran / stepLength) * Math.PI
 			const fallen = shogun.pose === 'fallen'
 			// Falling, the samurai is finished off first and goes down as the blade lands.
 			const finish = fallen ? finishingOf(since) : undefined
@@ -219,8 +229,9 @@ export function createRunWorld(game: RunGame, viewport: Viewport, roomBelow: () 
 				? shortWay(here.heading, view.frame.heading + headingOf(aimed))
 				: 0
 			turnedTo += shortWay(turnedTo, turnTo) * damp(delta, 14)
-			samurai.root.position.set(here.x, 0, here.z)
-			samurai.root.rotation.y = here.heading + turnedTo
+			const at = ran === distance ? here : path.at(ran)
+			samurai.root.position.set(at.x, 0, at.z)
+			samurai.root.rotation.y = at.heading + turnedTo
 
 
 			if (finish === undefined) {
