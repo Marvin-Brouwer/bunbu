@@ -20,6 +20,7 @@ import { skyRadius } from './landscape.mts'
 import { createStageWorld, stageModels } from './stages.mts'
 import { selection, type Stage } from '../../_shared/state/selection.mts'
 import { endlessStage, stageAt, stageQuestions, stageStart } from '../flows/endless.mts'
+import { questionsAnswered } from '../../_shared/state/quiz.mts'
 import { metresPerAmbush } from '../flows/run.mts'
 import { createEffects } from './effects.mts'
 import { createPetals } from '../../_shared/world/petals.mts'
@@ -170,7 +171,7 @@ export function createRunWorld(game: RunGame, viewport: Viewport, roomBelow: () 
 			const quiz = game.quiz.value.quiz
 			if (endless && quiz !== undefined) {
 				const questions = stageQuestions(quiz)
-				const index = stageAt(run.distance, questions)
+				const index = stageAt(run.distance, questions, questionsAnswered(game.quiz.value))
 				if (index !== stageIndex) {
 					laid.view.dispose()
 					scene.remove(...laid.added)

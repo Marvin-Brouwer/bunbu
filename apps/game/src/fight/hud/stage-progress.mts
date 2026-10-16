@@ -65,20 +65,25 @@ export const StageProgress = component<StageProgressOptions>({
 		let passed = -1
 		const showRun = (state: RunState) => {
 			if (endless) {
-				const index = stageAt(state.distance, questions())
+				// The stage of endless that is on, its marks its own.
+				const index = stageAt(state.distance, questions(), questionsAnswered(quiz.value))
 				const start = stageStart(index, questions())
 				const end = stageStart(index + 1, questions())
-				track.style.setProperty('--travelled', String(Math.min(1, (state.distance - start) / (end - start))))
+				const fraction = Math.max(0, Math.min(1, (state.distance - start) / (end - start)))
+				track.style.setProperty('--travelled', String(fraction))
 				if (stageNames[endlessStage(index)] !== stage) {
 					stage = stageNames[endlessStage(index)]
 					showQuiz(quiz.value)
 				}
+				showMarks(quarterMarks.filter((mark) => fraction >= mark).length)
 				return
 			}
 			const distance = stageDistanceOf(state)
 			const fraction = state.stageLength === 0 ? 0 : distance / state.stageLength
 			track.style.setProperty('--travelled', String(fraction))
-			const now = marksPassed(state)
+			showMarks(marksPassed(state))
+		}
+		function showMarks(now: number) {
 			if (now === passed) return
 			passed = now
 			marks.forEach((mark, index) => {

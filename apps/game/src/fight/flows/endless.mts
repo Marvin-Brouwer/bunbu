@@ -28,8 +28,13 @@ export const stageOfQuestion = (asked: number, questions: number): number => Mat
 /** Where the `index`th stage of endless starts, in metres: halfway along the leg before its first ambush. */
 export const stageStart = (index: number, questions: number): number => index === 0 ? 0 : (index * questions + 0.5) * metresPerAmbush
 
-/** Which stage of endless the samurai is in, `distance` metres along. */
-export function stageAt(distance: number, questions: number): number {
-	return Math.max(0, Math.floor((distance - metresPerAmbush / 2) / (questions * metresPerAmbush)))
+/**
+ * Which stage of endless the samurai is in, `distance` metres along with `answered` questions
+ * done: never past the stage whose questions are not all answered yet, however far a long ambush
+ * has carried him on.
+ */
+export function stageAt(distance: number, questions: number, answered = Infinity): number {
+	const along = Math.max(0, Math.floor((distance - metresPerAmbush / 2) / (questions * metresPerAmbush)))
+	return Math.min(along, Math.floor(answered / questions))
 }
 

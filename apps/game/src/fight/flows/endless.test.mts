@@ -24,4 +24,12 @@ describe('the stages of endless', () => {
 		expect(stageStart(0, questions)).toBe(0)
 	})
 
+	it('never go on past a stage before its last question is answered, however far a long ambush carried him', () => {
+		const questions = 4
+		// The fourth ambush of the first stage, run on far past where the second would start.
+		expect(stageAt(stageStart(1, questions) + 80, questions, 3)).toBe(0)
+		expect(stageAt(stageStart(1, questions) + 80, questions, 4)).toBe(1)
+		expect(stageAt(stageStart(3, questions), questions, 9)).toBe(2)
+	})
+
 })

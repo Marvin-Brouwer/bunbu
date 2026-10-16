@@ -16,6 +16,7 @@ import { fightable } from '../_shared/quiz/read-quiz.mts'
 import { Select } from './select/select.mts'
 import { createRunGame, type RunGame } from './state/game.mts'
 import { runWorldLoaded } from './world/world.mts'
+import { endlessStage } from './flows/endless.mts'
 
 export const Fight = component({
 	name: 'fight',
@@ -50,7 +51,8 @@ export const Fight = component({
 			}
 			const game = createRunGame()
 			showRun(game)
-			void runWorldLoaded(selection.value.stage).then(() => {
+			// Endless starts in the first stage, whichever stage was chosen before it.
+			void runWorldLoaded(selection.value.endless ? endlessStage(0) : selection.value.stage).then(() => {
 				// A frame with the models in first, so the intro doesn't start on the one that sets them up.
 				requestAnimationFrame(() => {
 					if (signal.aborted || game !== shown) return
