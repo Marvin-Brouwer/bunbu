@@ -34,6 +34,14 @@ function loadSome<Name extends string>(names: Readonly<Record<Name, string>>): P
 	})
 }
 
+/** The models `stage`'s scenery is built from, each one there only if it loaded. */
+export function stageModels(stage: Stage) {
+	if (stage === 'rice-fields') return loadSome({ maple: 'maple', kit: 'stage-kit' })
+	if (stage === 'bamboo-forest' || stage === 'edo-castle') return loadSome({ kit: 'stage-kit', temple: 'temple-kit' })
+	if (stage === 'mountain-temple') return loadSome({ temple: 'temple-kit', kit: 'stage-kit' })
+	return loadSome({ maple: 'maple', torii: 'torii', bamboo: 'bamboo', kit: 'town-kit' })
+}
+
 /**
  * Lays out `stage`'s world in `scene`: a path that goes on for as long as the run does, and the
  * stage's scenery along it, in blocks stitched together ahead of the samurai ([blocks](./blocks.mts)).
@@ -41,20 +49,20 @@ function loadSome<Name extends string>(names: Readonly<Record<Name, string>>): P
 export function createStageWorld(stage: Stage, scene: Scene): StageWorld {
 	if (stage === 'rice-fields') {
 		const path = createPath(riceRound)
-		return { path, view: createRiceFields(scene, path, loadSome({ maple: 'maple', kit: 'stage-kit' })) }
+		return { path, view: createRiceFields(scene, path, stageModels(stage)) }
 	}
 	if (stage === 'bamboo-forest') {
 		const path = createPath(bambooRound)
-		return { path, view: createBambooForest(scene, path, loadSome({ kit: 'stage-kit', temple: 'temple-kit' })) }
+		return { path, view: createBambooForest(scene, path, stageModels(stage)) }
 	}
 	if (stage === 'mountain-temple') {
 		const path = createPath(mountainRound)
-		return { path, view: createMountainTemple(scene, path, loadSome({ temple: 'temple-kit', kit: 'stage-kit' })) }
+		return { path, view: createMountainTemple(scene, path, stageModels(stage)) }
 	}
 	if (stage === 'edo-castle') {
 		const path = createPath(castleRound)
-		return { path, view: createEdoCastle(scene, path, loadSome({ kit: 'stage-kit', temple: 'temple-kit' })) }
+		return { path, view: createEdoCastle(scene, path, stageModels(stage)) }
 	}
 	const path = createPath(townRound)
-	return { path, view: createCastleTown(scene, path, loadSome({ maple: 'maple', torii: 'torii', bamboo: 'bamboo', kit: 'town-kit' })) }
+	return { path, view: createCastleTown(scene, path, stageModels(stage)) }
 }

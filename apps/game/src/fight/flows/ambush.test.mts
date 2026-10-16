@@ -56,7 +56,7 @@ beforeEach(() => {
 	settings.value.reset()
 	game = createRunGame()
 	startRun(game, fixtureQuiz)
-	tickRun(game, 2, 2)
+	tickRun(game, runConfig.introSeconds, runConfig.introSeconds)
 })
 
 describe('commitAmbush', () => {

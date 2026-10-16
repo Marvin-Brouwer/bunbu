@@ -27,8 +27,11 @@ const lookHeight = 1
 const standsAt = 0.6
 const cameraHeight = 1.9
 
-/** On a wide screen, where across the screen the samurai stands: `-1` the left edge, `0` the middle. */
-const wideAt = -0.55
+/**
+ * The least room the layout leaves him, in CSS pixels (`title.css`, 8rem): a long quiz title can
+ * make the menu tall, and then the screen scrolls rather than squeezing him out.
+ */
+export const minimumGap = 128
 
 export type TitleShot = {
 	readonly position: Point
@@ -40,22 +43,22 @@ export type TitleShot = {
 	readonly shift: number
 }
 
+/** The farthest the camera stands back, in metres, however little room the gap leaves. */
+export const farthest = 40
+
 /**
- * The camera for a `width` × `height` screen with `gap` free for the samurai. `sway` moves it from
- * side to side, as a share of its distance. On a wide screen the menu stands in the middle, so the
- * samurai stands to its left with the whole height of the screen to himself.
+ * The camera for a `width` × `height` screen with `gap` free for the samurai, on a phone and a
+ * laptop alike: the path, the temple and he in the middle. `sway` moves it from side to side, as a
+ * share of its distance.
  */
 export function titleShot(width: number, height: number, gap: Gap, sway = 0): TitleShot {
 	const aspect = width / height
-	const wide = aspect > 1.1
-	const free = wide ? { top: 0, height } : { top: Math.max(0, gap.top), height: Math.max(1, Math.min(gap.height, height)) }
+	const free = { top: Math.max(0, gap.top), height: Math.max(minimumGap, Math.min(gap.height, height)) }
 	const halfTan = Math.tan((titleFraming.fov * Math.PI) / 360)
-	// Back far enough that the torii fits across, and that he fits in the gap.
+	// Back far enough that the torii fits across, and that he fits in the gap; never out of sight.
 	const fitsGap = (samuraiHeight * height) / (2 * halfTan * filled * free.height)
-	const distance = Math.max(distanceFor(aspect, titleFraming), fitsGap)
-	// The camera moves over sideways, keeping the view straight down the path.
-	const aside = wide ? -wideAt * distance * halfTan * aspect : 0
-	const x = aside + sway * distance
+	const distance = Math.min(farthest, Math.max(distanceFor(aspect, titleFraming), fitsGap))
+	const x = sway * distance
 	return {
 		position: [x, cameraHeight, distance],
 		look: [x, lookHeight, 0],
