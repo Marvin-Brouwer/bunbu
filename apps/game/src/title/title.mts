@@ -135,6 +135,11 @@ export const Title = component({
 				},
 			},
 		})
+		// When a tall menu makes the screen scroll, the gap moves without anything changing size.
+		title.addEventListener('scroll', () => {
+			cancelAnimationFrame(pending)
+			pending = requestAnimationFrame(measure)
+		}, { passive: true, signal })
 		signal.addEventListener('abort', () => { cancelAnimationFrame(pending) }, { once: true })
 		show((viewport) => createTitleWorld(viewport, () => gap), signal)
 	},
