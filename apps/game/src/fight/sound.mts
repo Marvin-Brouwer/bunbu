@@ -8,6 +8,7 @@
  * it times each sound to what is drawn: a block rings when the blades meet, a hit when it lands.
  */
 
+import { maximumDelta } from '../canvas/loop.mts'
 import { play } from '../_shared/sound/sound.mts'
 import { finishingLands } from '../_shared/world/poses.mts'
 import type { RunGame } from './state/game.mts'
@@ -66,10 +67,18 @@ export function playRunSounds(game: RunGame, signal: AbortSignal): void {
 			later(bladeLandsAfter(slicer), () => { play('hit') })
 		}
 		// Fallen, a ninja of its own runs in and finishes him off. The run's clock has stopped with
-		// the run, and it can't be paused any more, so this one goes by the wall clock.
+		// the run, so this one goes by the frames the world draws the finishing blow with, which stop
+		// while the page is hidden, as the blow does.
 		if (pose === 'fallen') {
-			const timer = setTimeout(() => { play('hit') }, finishingLands * 1000)
-			signal.addEventListener('abort', () => { clearTimeout(timer) }, { once: true })
+			let left = finishingLands
+			let last = performance.now()
+			let frame = requestAnimationFrame(function wait(now) {
+				left -= Math.min(maximumDelta, (now - last) / 1000)
+				last = now
+				if (left <= 0) play('hit')
+				else frame = requestAnimationFrame(wait)
+			})
+			signal.addEventListener('abort', () => { cancelAnimationFrame(frame) }, { once: true })
 		}
 	})
 
@@ -84,7 +93,11 @@ export function playRunSounds(game: RunGame, signal: AbortSignal): void {
 			// Striking: at once in an outcome; when the time ran out, the slicer only once the halves of
 			// the scroll have fallen, and the others flee without a cut.
 			if (ninja.pose === 'strike' && ninja.slicer === undefined) play('swing', 0.6)
-			if (ninja.pose === 'strike' && ninja.slicer === true) later(strikeDelaySeconds, () => { play('swing', 0.6) })
+			// The slicer cuts right through the scroll at once, then charges in once its halves have fallen.
+			if (ninja.pose === 'strike' && ninja.slicer === true) {
+				play('slice')
+				later(strikeDelaySeconds, () => { play('swing', 0.6) })
+			}
 		}
 		for (const id of seen.keys()) if (!detail.state.active.some((ninja) => ninja.id === id)) seen.delete(id)
 	})

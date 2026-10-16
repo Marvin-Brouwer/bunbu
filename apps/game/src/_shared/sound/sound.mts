@@ -27,6 +27,8 @@ export type Sound =
 	| 'unroll'
 	/** A swipe cutting the paper of an answer. */
 	| 'paper'
+	/** A blade slicing right through the scroll, when the time runs out. */
+	| 'slice'
 
 /** What every sound plays through: the audio context, its loudness, and noise to filter. */
 type Audio = {
@@ -170,9 +172,19 @@ export function play(sound: Sound, loudness = 1): void {
 			break
 		}
 		case 'paper': {
-			// A tear: a dry crackle that runs up the sheet, and the snap where it parts.
-			whoosh(sounding, { from: 2800, to: 5500, seconds: 0.16, loudness: loud(0.7), q: 0.7, paper: true })
-			whoosh(sounding, { from: 6000, to: 3500, seconds: 0.05, loudness: loud(0.25), type: 'highpass', q: 0.7, delay: 0.1 })
+			// A swipe slicing through the answer's line: a quick, bright stroke, then the paper tearing
+			// along it in a dry crackle, and the snap where it parts.
+			whoosh(sounding, { from: 1800, to: 7500, seconds: 0.07, loudness: loud(0.35), q: 1.6 })
+			whoosh(sounding, { from: 3200, to: 6500, seconds: 0.12, loudness: loud(0.85), q: 0.8, paper: true, delay: 0.03 })
+			whoosh(sounding, { from: 7000, to: 4000, seconds: 0.04, loudness: loud(0.35), type: 'highpass', q: 0.7, delay: 0.12 })
+			break
+		}
+		case 'slice': {
+			// The blade's swing, the whole scroll torn through in a long crackle, and the halves dropping.
+			whoosh(sounding, { from: 500, to: 4500, seconds: 0.2, loudness: loud(0.6), q: 0.9 })
+			whoosh(sounding, { from: 2500, to: 6000, seconds: 0.32, loudness: loud(1), q: 0.6, paper: true, delay: 0.05 })
+			whoosh(sounding, { from: 6500, to: 3000, seconds: 0.06, loudness: loud(0.4), type: 'highpass', q: 0.7, delay: 0.33 })
+			whoosh(sounding, { from: 1200, to: 400, seconds: 0.35, loudness: loud(0.15), q: 0.5, paper: true, delay: 0.4 })
 			break
 		}
 	}
