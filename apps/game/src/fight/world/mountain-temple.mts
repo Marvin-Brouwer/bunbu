@@ -30,7 +30,7 @@ import type { GLTF } from 'three/addons/loaders/GLTFLoader.js'
 import { layBlocks } from './blocks.mts'
 import { Batch, chunkOf, placed, scatter, type Cursor } from './kit.mts'
 import { addAll, clearanceOf, cutAway, facingPath, fogFar, isFree, passTime, sky, skyRadius, stamp, strip, type Daylight, type Owned, type Planting, type StageView, type Taken } from './landscape.mts'
-import type { BackdropRow } from './backdrop.mts'
+import type { District } from './backdrop.mts'
 import type { CoverSet } from './cover.mts'
 import { beside, type Leg, type Path } from './path.mts'
 
@@ -43,19 +43,6 @@ const palette = {
 	peaks: [0x6e7a86, 0x8a96a4, 0xa8b3c0],
 	snow: 0xf4f6fa,
 }
-
-/**
- * Up and down the mountainside past the rocks ([backdrop](./backdrop.mts)): pines, thinning out
- * into the mist.
- */
-export const mountainBackdrop: readonly BackdropRow[] = [
-	// Close behind the rocks, so the slope is wooded right up to the steps' own pines.
-	{ shape: 'pine', from: 24, to: 45, perTile: 4.5, colours: [[0x4a3a2c], [0x2f4a32, 0x355238, 0x3a5a3c]] },
-	{ shape: 'pine', from: 45, to: 130, perTile: 3.5, colours: [[0x4a3a2c], [0x2f4a32, 0x355238, 0x3a5a3c]] },
-	{ shape: 'broadleaf', from: 28, to: 110, perTile: 1.6, colours: [[0x4a3a2c], [0x4a6634, 0x8e5a2a, 0xb8402a]] },
-	// The mountainside rising behind them.
-	{ shape: 'hill', from: 70, to: 130, perTile: 0.5, colours: [[0x6a6f4c, 0x5e6446, 0x76795a]] },
-]
 
 /** From a clear noon to the glow on the snow at sunset. One light per quarter of the stage ({@link passTime}). */
 const daylight: Daylight = [
@@ -113,8 +100,59 @@ const pathHalfWidth = 1.6
 export const mountainCover: CoverSet = {
 	kinds: ['rock', 'rock', 'barrels'],
 	aside: pathHalfWidth + 1.5,
-	colours: { rock: [palette.rock, 0x7a776f, 0x96938b], barrels: [0x5a4030] },
+	colours: { rock: [palette.rock, 0x7a776f, 0x96938b], barrels: [0x5a4030], woodpile: [0x6a4a30, 0x7a5236], 'stone-lantern': [0x8d877b, 0x9a958a] },
 }
+
+/**
+ * The mountain's four districts ([districts](./districts.mts)), up and down the mountainside past
+ * the rocks ([backdrop](./backdrop.mts)): the foothill pines, the rock garden, the pagoda terrace
+ * and the snowy heights.
+ */
+export const mountainDistricts: readonly District[] = [
+	{
+		name: 'Foothill pines',
+		cover: [{ kind: 'woodpile' }, { kind: 'rock' }],
+		rows: [
+			// Close behind the rocks, so the slope is wooded right up to the steps' own pines.
+			{ shape: 'pine', from: 24, to: 45, perTile: 4.5, colours: [[0x4a3a2c], [0x2f4a32, 0x355238, 0x3a5a3c]] },
+			{ shape: 'pine', from: 45, to: 130, perTile: 3.5, colours: [[0x4a3a2c], [0x2f4a32, 0x355238, 0x3a5a3c]] },
+			{ shape: 'broadleaf', from: 28, to: 110, perTile: 1.6, colours: [[0x4a3a2c], [0x4a6634, 0x8e5a2a, 0xb8402a]] },
+			// The mountainside rising behind them.
+			{ shape: 'hill', from: 70, to: 130, perTile: 0.5, colours: [[0x6a6f4c, 0x5e6446, 0x76795a]] },
+		],
+	},
+	{
+		name: 'Rock garden',
+		cover: [{ kind: 'stone-lantern' }, { kind: 'rock' }],
+		rows: [
+			{ shape: 'pine', from: 24, to: 40, perTile: 2.5, colours: [[0x4a3a2c], [0x2f4a32, 0x355238]] },
+			{ shape: 'hill', from: 70, to: 130, perTile: 0.5, colours: [[0x6a6f4c, 0x5e6446, 0x76795a]] },
+			{ shape: 'rock', from: 30, to: 80, perTile: 2.5, colours: [[palette.rock, 0x7a776f, 0x96938b]] },
+			{ shape: 'lantern', from: pathHalfWidth + 1, to: pathHalfWidth + 1.6, perTile: 0.5, colours: [[0x8d877b, 0x9a958a], [0x8d877b, 0x7a756c]] },
+			{ shape: 'pine', from: 40, to: 130, perTile: 1.5, colours: [[0x4a3a2c], [0x2f4a32, 0x355238]] },
+		],
+	},
+	{
+		name: 'Pagoda terrace',
+		cover: [{ kind: 'temple-bell', ambush: 0.7 }, { kind: 'barrels' }, { kind: 'rock' }],
+		rows: [
+			{ shape: 'pine', from: 24, to: 40, perTile: 2.5, colours: [[0x4a3a2c], [0x2f4a32, 0x355238]] },
+			{ shape: 'hill', from: 70, to: 130, perTile: 0.5, colours: [[0x6a6f4c, 0x5e6446, 0x76795a]] },
+			{ shape: 'pagoda', from: 45, to: 100, perTile: 0.15, colours: [[0xa8261c, 0x8e2a22], [0x2a2a2e, 0x34404f]] },
+			{ shape: 'broadleaf', from: 32, to: 90, perTile: 1.2, colours: [[0x4a3a2c], [0xb8402a, 0xd0602e]] },
+			{ shape: 'pine', from: 32, to: 130, perTile: 2.5, colours: [[0x4a3a2c], [0x2f4a32, 0x355238]] },
+		],
+	},
+	{
+		name: 'Snowy heights',
+		rows: [
+			{ shape: 'pine', from: 24, to: 40, perTile: 2.5, colours: [[0x4a3a2c], [0x2f4a32, 0x355238]] },
+			{ shape: 'hill', from: 70, to: 130, perTile: 0.5, colours: [[0x6a6f4c, 0x5e6446, 0x76795a]] },
+			{ shape: 'pine', from: 32, to: 130, perTile: 3, colours: [[0x4a3a2c], [0xe8eef4, 0xd4dde6, 0x3a5a3c]] },
+			{ shape: 'rock', from: 30, to: 90, perTile: 1.5, colours: [[palette.snow, 0xd8dee6, palette.rock]] },
+		],
+	},
+]
 
 /** The torii of a tunnel: how far apart, and how tall, so their posts stand just off the steps. */
 const toriiEvery = 2.4

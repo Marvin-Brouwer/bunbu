@@ -13,6 +13,7 @@ import {
 	Color,
 	ConeGeometry,
 	CylinderGeometry,
+	DodecahedronGeometry,
 	Group,
 	IcosahedronGeometry,
 	InstancedMesh,
@@ -23,10 +24,25 @@ import {
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js'
 import { gableGeometry, placed, within } from './kit.mts'
 import type { Owned } from './landscape.mts'
-import { beside, type Path } from './path.mts'
+import { beside, type Path, type Zone } from './path.mts'
+import { districtAt } from './districts.mts'
+import type { CoverChoice } from './cover.mts'
 
 /** The shapes a backdrop is made of. */
-export type BackdropShape = 'house' | 'hut' | 'pine' | 'broadleaf' | 'bamboo' | 'hill'
+export type BackdropShape =
+	| 'house' | 'hut' | 'pine' | 'broadleaf' | 'bamboo' | 'hill'
+	/** A gate over the way: two posts and two beams, `span` metres between the posts. */
+	| 'torii'
+	/** A stone lantern by the way. */
+	| 'lantern'
+	/** A pond, and one with a red bridge over it. */
+	| 'pond' | 'bridge'
+	/** A boulder. */
+	| 'rock'
+	/** A stretch of castle wall: a stone base under white plaster and a tiled top. */
+	| 'wall'
+	/** A pagoda of five storeys, or a castle keep, on the skyline. */
+	| 'pagoda'
 
 /**
  * A row along both sides of the path: `shape`s from `from` to `to` metres off it, about `perTile`
@@ -39,6 +55,20 @@ export type BackdropRow = {
 	readonly perTile: number
 	/** One list of colours per part of the shape ({@link partsOf}), picked from at random. */
 	readonly colours: readonly (readonly number[])[]
+	/** Over the way rather than beside it, as a torii: square to the path, `span` metres across. */
+	readonly across?: boolean
+	/** How wide the way is under a shape `across` it, in metres. */
+	readonly span?: number
+	/** Only where the path runs through a street, or a garden. */
+	readonly zone?: Zone
+}
+
+/** A district of a stage ([districts](./districts.mts)): its name, and the rows of its backdrop. */
+export type District = {
+	readonly name: string
+	readonly rows: readonly BackdropRow[]
+	/** The covers by the way in this district ([cover](./cover.mts)), when it has its own. */
+	readonly cover?: readonly CoverChoice[]
 }
 
 /** Metres of path per tile: what is laid out at once as the samurai comes up to it. */
@@ -53,7 +83,10 @@ export const backdropReach = { behind: 460, ahead: 460 }
 const { behind, ahead } = backdropReach
 
 /** How many parts each shape has, each a mesh of its own colour: a body and a roof, a trunk and a crown. */
-export const partsOf: Readonly<Record<BackdropShape, number>> = { house: 2, hut: 2, pine: 2, broadleaf: 2, bamboo: 1, hill: 1 }
+export const partsOf: Readonly<Record<BackdropShape, number>> = {
+	house: 2, hut: 2, pine: 2, broadleaf: 2, bamboo: 1, hill: 1,
+	torii: 3, lantern: 2, pond: 1, bridge: 3, rock: 1, wall: 3, pagoda: 2,
+}
 
 /** One thing in the backdrop: where it stands, and how each of its parts is placed and coloured. */
 export type Item = {
@@ -72,8 +105,50 @@ export function randomOf(seed: number): () => number {
 	}
 }
 
-/** The parts of `shape` as matrices round its foot, at a size and in proportions picked with `random`. */
-function shapeOf(shape: BackdropShape, random: () => number): Matrix4[] {
+/** The parts of `shape` as matrices round its foot, at a size and in proportions picked with `random`; `span` for a shape over the way. */
+function shapeOf(shape: BackdropShape, random: () => number, span = 4): Matrix4[] {
+	if (shape === 'torii') {
+		// The posts either side of the way, the lintel through them and the curved top beam over it.
+		const height = 4.6 + random() * 0.6
+		const half = span / 2 + 0.4
+		return [
+			placed(-half, height / 2, 0, 0, 0.32, height, 0.32),
+			placed(half, height / 2, 0, 0, 0.32, height, 0.32),
+			placed(0, height, 0, 0, span + 2.2, 0.38, 0.5),
+		]
+	}
+	if (shape === 'lantern') {
+		// A post and the fire box on it, under its cap.
+		const height = 1.5 + random() * 0.4
+		return [placed(0, height * 0.35, 0, 0, 0.32, height * 0.7, 0.32), placed(0, height * 0.82, 0, 0, 0.6, height * 0.3, 0.6)]
+	}
+	if (shape === 'pond') {
+		const radius = 4 + random() * 5
+		return [placed(0, 0.03, 0, 0, radius, 0.05, radius * (0.6 + random() * 0.3))]
+	}
+	if (shape === 'bridge') {
+		// A pond with a red arched bridge across it: its deck and a rail either side.
+		const radius = 5 + random() * 3
+		return [
+			placed(0, 0.03, 0, 0, radius, 0.05, radius * 0.7),
+			placed(0, 0.6, 0, 0, 1.6, 0.18, radius * 1.6),
+			placed(0, 1.1, 0, 0, 1.8, 0.5, radius * 1.6),
+		]
+	}
+	if (shape === 'rock') {
+		const size = 1 + random() * 2.2
+		return [placed(0, size * 0.25, 0, random() * 6.28, size * 1.3, size * 0.8, size)]
+	}
+	if (shape === 'wall') {
+		// A long stretch, laid along the way: the stone base sloping in, plaster, and a tiled top.
+		const length = 14 + random() * 10
+		return [placed(0, 2.2, 0, 0, length, 4.4, 2.6), placed(0, 5.4, 0, 0, length, 2, 1), placed(0, 6.6, 0, 0, length + 0.6, 0.7, 1.8)]
+	}
+	if (shape === 'pagoda') {
+		// Storeys narrowing upward, each under its roof: one mesh for the walls, one for the roofs.
+		const size = 6 + random() * 4
+		return [placed(0, size * 1.6, 0, 0, size, size * 3.2, size), placed(0, size * 3.3, 0, random() * 6.28, size * 1.9, size * 0.5, size * 1.9)]
+	}
 	if (shape === 'house') {
 		// A town house: plastered walls under a gable roof, two storeys or one.
 		const width = 6 + random() * 5
@@ -128,6 +203,13 @@ function geometriesOf(): Record<BackdropShape, BufferGeometry[]> {
 		broadleaf: [trunk, new IcosahedronGeometry(1, 0)],
 		bamboo: [bambooClump()],
 		hill: [new IcosahedronGeometry(1, 1)],
+		torii: [box, box, box],
+		lantern: [box, box],
+		pond: [new CylinderGeometry(1, 1, 1, 20)],
+		bridge: [new CylinderGeometry(1, 1, 1, 20), box, box],
+		rock: [new DodecahedronGeometry(1, 0)],
+		wall: [box, box, box],
+		pagoda: [box, new ConeGeometry(1, 1, 4)],
 	}
 }
 
@@ -149,31 +231,49 @@ function clearOfPath(points: readonly { x: number; z: number }[], x: number, z: 
 	return points.every((point) => Math.hypot(point.x - x, point.z - z) >= clear)
 }
 
-/** Lays out tile `tile`'s backdrop: its rows either side, each thing clear of the path all round. */
-export function layTile(path: Path, rows: readonly BackdropRow[], seed: number, tile: number): Item[] {
+/**
+ * Lays out tile `tile`'s backdrop: the rows of its district either side, each thing clear of the
+ * path all round. Where two districts meet, the rows of both, the one thinning out as the other
+ * comes in.
+ */
+export function layTile(path: Path, districts: readonly District[], seed: number, tile: number, stageLength: number): Item[] {
 	const random = randomOf(seed ^ Math.imul(tile, 0x9e3779b1))
 	const around = pathAround(path, tile)
+	const { from, to, mix } = districtAt((tile + 0.5) * tileLength, stageLength)
+	const weighted = from === to
+		? [{ rows: districts[from]?.rows ?? [], share: 1 }]
+		: [{ rows: districts[from]?.rows ?? [], share: 1 - mix }, { rows: districts[to]?.rows ?? [], share: mix }]
 	const items: Item[] = []
-	for (const row of rows) {
-		for (const side of [-1, 1]) {
-			// About `perTile`, more or fewer, so the rows thin out and crowd together along the way.
-			const count = Math.floor(row.perTile * (0.4 + random() * 1.2) + random())
-			for (let index = 0; index < count; index++) {
-				const distance = (tile + random()) * tileLength
-				const out = row.from + random() * (row.to - row.from)
-				const at = beside(path.at(distance), side * out)
-				const turn = random() * Math.PI * 2
-				const parts = shapeOf(row.shape, random)
-				// Never nearer the path than the row starts, also where the path bends back toward it.
-				if (!clearOfPath(around, at.x, at.z, row.from - 1)) continue
-				const where = placed(at.x, 0, at.z, turn)
-				items.push({
-					shape: row.shape,
-					parts: parts.map((matrix, part) => {
-						const colours = row.colours[part] ?? row.colours[0] ?? [0x808080]
-						return { matrix: within(where, matrix), colour: colours[Math.floor(random() * colours.length)] ?? 0x808080 }
-					}),
-				})
+	for (const { rows, share } of weighted) {
+		for (const row of rows) {
+			for (const side of row.across === true ? [0] : [-1, 1]) {
+				// About `perTile`, more or fewer, so the rows thin out and crowd together along the way.
+				const count = Math.floor(row.perTile * share * (0.4 + random() * 1.2) + random())
+				for (let index = 0; index < count; index++) {
+					const distance = (tile + random()) * tileLength
+					const point = path.at(distance)
+					const parts = shapeOf(row.shape, random, row.span)
+					const turn = random() * Math.PI * 2
+					if (row.zone !== undefined && point.zone !== row.zone) continue
+					let where: Matrix4
+					if (row.across === true) {
+						where = placed(point.x, 0, point.z, point.heading)
+					} else {
+						const out = row.from + random() * (row.to - row.from)
+						const at = beside(point, side * out)
+						// Never nearer the path than the row starts, also where the path bends back toward it.
+						if (!clearOfPath(around, at.x, at.z, row.from - 1)) continue
+						// A wall runs along the way; the rest stand at any angle.
+						where = placed(at.x, 0, at.z, row.shape === 'wall' ? point.heading + Math.PI / 2 : turn)
+					}
+					items.push({
+						shape: row.shape,
+						parts: parts.map((matrix, part) => {
+							const colours = row.colours[part] ?? row.colours[0] ?? [0x808080]
+							return { matrix: within(where, matrix), colour: colours[Math.floor(random() * colours.length)] ?? 0x808080 }
+						}),
+					})
+				}
 			}
 		}
 	}
@@ -189,10 +289,13 @@ export type Backdrop = {
 }
 
 /**
- * The backdrop of `rows` along `path`, laid out at random from `seed`: a new one every run. One
- * flat-shaded material shades it all, fog included; each part gets its own colour.
+ * The backdrop of a stage's `districts` along `path`, laid out at random from `seed`: a new one
+ * every run. Which district is where goes by the length of the stage, `stageLength()` metres, read
+ * as each stretch is laid out. One flat-shaded material shades it all, fog included; each part
+ * gets its own colour.
  */
-export function createBackdrop(path: Path, rows: readonly BackdropRow[], seed: number, owned: Owned): Backdrop {
+export function createBackdrop(path: Path, districts: readonly District[], seed: number, owned: Owned, stageLength: () => number): Backdrop {
+	const rows = districts.flatMap((district) => district.rows)
 	const geometries = geometriesOf()
 	const material = new MeshStandardMaterial({ roughness: 1, flatShading: true })
 	owned.materials.push(material)
@@ -203,6 +306,7 @@ export function createBackdrop(path: Path, rows: readonly BackdropRow[], seed: n
 	const group = new Group()
 	const meshes = new Map<BackdropShape, InstancedMesh[]>()
 	for (const shape of new Set(rows.map((row) => row.shape))) {
+		// Two districts can meet in a tile: room for all of their rows.
 		const most = rows.filter((row) => row.shape === shape).reduce((sum, row) => sum + Math.ceil(row.perTile * 1.6 + 1) * 2, 0) * tiles
 		const parts = geometries[shape].map((geometry) => {
 			const mesh = new InstancedMesh(geometry, material, most)
@@ -251,7 +355,7 @@ export function createBackdrop(path: Path, rows: readonly BackdropRow[], seed: n
 			if (window?.[0] === first && window[1] === last) return
 			window = [first, last]
 			for (const tile of laid.keys()) if (tile < first || tile > last) laid.delete(tile)
-			for (let tile = first; tile <= last; tile++) if (!laid.has(tile)) laid.set(tile, layTile(path, rows, seed, tile))
+			for (let tile = first; tile <= last; tile++) if (!laid.has(tile)) laid.set(tile, layTile(path, districts, seed, tile, stageLength()))
 			show()
 		},
 

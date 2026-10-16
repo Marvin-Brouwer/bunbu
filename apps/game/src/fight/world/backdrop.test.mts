@@ -34,7 +34,7 @@ describe('the backdrop', () => {
 			const path = createPath(round)
 			for (let seed = 1; seed <= 6; seed++) {
 				for (let tile = 0; tile < Math.ceil((2 * path.round) / tileLength); tile++) {
-					for (const item of layTile(path, rows, seed, tile)) {
+					for (const item of layTile(path, [{ name: 'test', rows }], seed, tile, 0)) {
 						const [part] = item.parts
 						if (part === undefined) continue
 						const x = part.matrix.elements[12]

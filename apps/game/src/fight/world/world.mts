@@ -63,7 +63,7 @@ export function createRunWorld(game: RunGame, viewport: Viewport, roomBelow: () 
 	const samuraiModel = loadModel('samurai')
 	const ninjaModel = loadModel('ninja')
 	// The stage's own world, after the figures, so the figures' models are asked for first.
-	const { path, view: stage, covers } = createStageWorld(selection.value.stage, scene)
+	const { path, view: stage, covers } = createStageWorld(selection.value.stage, scene, () => game.run.value.stageLength)
 
 	const parts = createFigureParts()
 	const fighters = new Group()
