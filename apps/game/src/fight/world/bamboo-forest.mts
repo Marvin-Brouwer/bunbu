@@ -34,6 +34,7 @@ import type { GLTF } from 'three/addons/loaders/GLTFLoader.js'
 import { layBlocks } from './blocks.mts'
 import { Batch, chunkOf, placed, scatter, type Cursor } from './kit.mts'
 import { addAll, clearanceOf, facingPath, isFree, passTime, sky, skyRadius, stamp, strip, type Daylight, type Owned, type Planting, type StageView, type Taken } from './landscape.mts'
+import type { BackdropRow } from './backdrop.mts'
 import { beside, type Leg, type Path } from './path.mts'
 
 const palette = {
@@ -43,6 +44,15 @@ const palette = {
 	stalk: 0x7fa046,
 	shaft: 0xfff2c0,
 }
+
+/**
+ * Deeper into the forest ([backdrop](./backdrop.mts)): more bamboo past the stands along the path,
+ * and broadleaf trees farther in.
+ */
+export const bambooBackdrop: readonly BackdropRow[] = [
+	{ shape: 'bamboo', from: 26, to: 70, perTile: 6, colours: [[0x7fa046, 0x8aa84e, 0x6f9440]] },
+	{ shape: 'broadleaf', from: 50, to: 110, perTile: 1.4, colours: [[0x4a3a2c], [0x4a6634, 0x557038]] },
+]
 
 /** From a misty noon to a misty dusk. One light per quarter of the stage ({@link passTime}). */
 const daylight: Daylight = [
