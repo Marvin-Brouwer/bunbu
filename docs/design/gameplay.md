@@ -140,7 +140,7 @@ A wrong answer is never explained during the run. Every miss is reviewed at the 
 
 ## Sound
 
-Swords and steps, made by the game as they play (Web Audio: filtered noise and short tones, no sound files): the samurai's steps as he runs, softer in slow motion; the ninjas rushing in and the scroll unrolling as an ambush springs; the paper of an answer cut by a swipe, in the run and in practice; his sword cutting the air, a ninja cut down, blades ringing on a block, and a dull thud when he is hit. The ninjas make no voices. The volume is in the settings; at 0 the game is silent.
+Swords and steps, made by the game as they play (Web Audio: filtered noise and short tones, no sound files): the samurai's steps as he runs, softer in slow motion; the ninjas rushing in and the scroll unrolling as an ambush springs; a pencil scratching over the paper as long as a swipe is drawn, louder the faster it goes, and the paper of an answer cut by it, in the run and in practice; a blade slicing through the scroll when the time runs out; his sword cutting the air, a ninja cut down, blades ringing on a block, and a dull thud when he is hit. The ninjas make no voices. The volume is in the settings; at 0 the game is silent.
 
 ## Reading aloud
 

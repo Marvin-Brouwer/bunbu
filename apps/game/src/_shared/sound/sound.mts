@@ -183,9 +183,69 @@ export function play(sound: Sound, loudness = 1): void {
 			// The blade's swing, the whole scroll torn through in a long crackle, and the halves dropping.
 			whoosh(sounding, { from: 500, to: 4500, seconds: 0.2, loudness: loud(0.6), q: 0.9 })
 			whoosh(sounding, { from: 2500, to: 6000, seconds: 0.32, loudness: loud(1), q: 0.6, paper: true, delay: 0.05 })
-			whoosh(sounding, { from: 6500, to: 3000, seconds: 0.06, loudness: loud(0.4), type: 'highpass', q: 0.7, delay: 0.33 })
-			whoosh(sounding, { from: 1200, to: 400, seconds: 0.35, loudness: loud(0.15), q: 0.5, paper: true, delay: 0.4 })
+			// Soft noise rather than crackle, so the slice dies away without a tick at the end.
+			whoosh(sounding, { from: 1200, to: 400, seconds: 0.35, loudness: loud(0.12), q: 0.5, delay: 0.3 })
 			break
 		}
+	}
+}
+
+/** A pencil on the paper for as long as a stroke is drawn ({@link scribble}). */
+export type Scribble = {
+	/** The pencil moves `speed` pixels a second: the faster, the louder it scratches. */
+	readonly move: (speed: number) => void
+	/** The pencil is lifted: the scratch dies away. */
+	readonly stop: () => void
+}
+
+/** How the pencil sounds: its loudness at full speed, and the speed in pixels a second that is full. */
+const pencil = { loudness: 0.5, fullSpeed: 1800 }
+
+/**
+ * Starts the scratch of a pencil drawn over paper: the grain of the paper in a narrow band of
+ * noise, with a little crackle, silent until it {@link Scribble.move moves}. Nothing when the sound
+ * is off or not running yet.
+ */
+export function scribble(): Scribble | undefined {
+	if (settings.value.volume <= 0) return undefined
+	const sounding = audio()
+	if (sounding === undefined) return undefined
+	const { context, master, noise, crackle } = sounding
+	const gain = context.createGain()
+	gain.gain.value = 0
+	gain.connect(master)
+	const grain = context.createBiquadFilter()
+	grain.type = 'bandpass'
+	grain.frequency.value = 3800
+	grain.Q.value = 1.4
+	grain.connect(gain)
+	const sources = [noise, crackle].map((buffer) => {
+		const source = context.createBufferSource()
+		source.buffer = buffer
+		source.loop = true
+		source.connect(grain)
+		source.start(context.currentTime, Math.random() * 0.5)
+		return source
+	})
+	let stopped = false
+	return {
+		move(speed) {
+			if (stopped) return
+			const share = Math.min(1, speed / pencil.fullSpeed)
+			const now = context.currentTime
+			gain.gain.cancelScheduledValues(now)
+			gain.gain.setTargetAtTime(pencil.loudness * Math.sqrt(share), now, 0.03)
+			// A pointer held still sends no moves: unless another one comes, the scratch dies away.
+			gain.gain.setTargetAtTime(0, now + 0.08, 0.05)
+			// The pencil pitches up a little as it goes faster.
+			grain.frequency.setTargetAtTime(3000 + 2500 * share, now, 0.05)
+		},
+		stop() {
+			if (stopped) return
+			stopped = true
+			gain.gain.cancelScheduledValues(context.currentTime)
+			gain.gain.setTargetAtTime(0, context.currentTime, 0.03)
+			for (const source of sources) source.stop(context.currentTime + 0.2)
+		},
 	}
 }

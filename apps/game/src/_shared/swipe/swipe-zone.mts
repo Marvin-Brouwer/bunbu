@@ -20,7 +20,7 @@
 
 import { component } from '@rooted/components'
 import { buzz, buzzes } from '../haptics.mts'
-import { play } from '../sound/sound.mts'
+import { play, scribble, type Scribble } from '../sound/sound.mts'
 import { ambushConfig } from '../state/ambush-time.mts'
 import { timeUp, type Ambush, type AmbushState, type Mark } from '../state/ambush.mts'
 import { AnswerSheet } from './answer-sheet.mts'
@@ -57,6 +57,9 @@ export const SwipeZone = component<SwipeZoneOptions>({
 		let pointer: number | undefined
 		let stroke: Stroke | undefined
 		let strikeTimer: ReturnType<typeof setTimeout> | undefined
+		// The pencil scratching while a stroke is drawn, and where and when the pointer was last.
+		let pencil: Scribble | undefined
+		let drawn: { point: Point; time: number } | undefined
 
 		const available = () => ambush.value.options.map((option) => option.mark)
 
@@ -69,12 +72,30 @@ export const SwipeZone = component<SwipeZoneOptions>({
 		/** The frame that checks the stroke under way for a hold. */
 		let watching = 0
 
+		const liftPencil = () => {
+			pencil?.stop()
+			pencil = undefined
+			drawn = undefined
+		}
+
 		const forgetStroke = () => {
 			cancelAnimationFrame(watching)
+			liftPencil()
 			pointer = undefined
 			stroke = undefined
 		}
-		signal.addEventListener('abort', () => { cancelAnimationFrame(watching) }, { once: true })
+		signal.addEventListener('abort', () => {
+			cancelAnimationFrame(watching)
+			liftPencil()
+		}, { once: true })
+
+		/** The pencil scratches as fast as the pointer moves. */
+		const draw = (point: Point, time: number) => {
+			if (drawn !== undefined && time > drawn.time) {
+				pencil?.move(Math.hypot(point.x - drawn.point.x, point.y - drawn.point.y) / ((time - drawn.time) / 1000))
+			}
+			drawn = { point, time }
+		}
 
 		const strike = () => {
 			cancelStrike()
@@ -181,6 +202,8 @@ export const SwipeZone = component<SwipeZoneOptions>({
 					stroke = strokeAt(pointOf(event))
 					clearTrace()
 					traceTo(pointOf(event))
+					pencil = scribble()
+					drawn = { point: pointOf(event), time: event.timeStamp }
 					watchForHold()
 					// Keeps the stroke when the finger slides out of the zone, over the scroll.
 					event.currentTarget.setPointerCapture(event.pointerId)
@@ -190,6 +213,7 @@ export const SwipeZone = component<SwipeZoneOptions>({
 					const step = follow(stroke, pointOf(event), available())
 					stroke = step.stroke
 					traceTo(pointOf(event))
+					draw(pointOf(event), event.timeStamp)
 					choose(step.mark)
 				},
 				pointerup(event) {
