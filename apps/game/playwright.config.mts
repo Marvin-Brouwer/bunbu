@@ -7,8 +7,13 @@ const ci = process.env.CI !== undefined
 
 export default defineConfig({
 	testDir: 'e2e',
-	testMatch: '**/*.spec.mts',
 	forbidOnly: ci,
+	// The stage pictures after the rest: rendering them in software takes every core there is, and
+	// the screens' own tests would run out of time beside them.
+	projects: [
+		{ name: 'screens', testMatch: '**/*.spec.mts', testIgnore: '**/stage-pictures.spec.mts' },
+		{ name: 'stage pictures', testMatch: '**/stage-pictures.spec.mts', dependencies: ['screens'] },
+	],
 	reporter: ci ? 'github' : 'list',
 	use: {
 		baseURL: `http://localhost:${port}/bunbu/`,
