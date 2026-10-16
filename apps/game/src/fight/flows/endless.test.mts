@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { endlessStage, stageAt, stageQuestions, stageStart } from './endless.mts'
+import { answersOn, endlessStage, stageAt, stageQuestions, stageStart } from './endless.mts'
 import { ambushAt } from './run.mts'
 
 describe('the stages of endless', () => {
@@ -30,6 +30,12 @@ describe('the stages of endless', () => {
 		expect(stageAt(stageStart(1, questions) + 80, questions, 3)).toBe(0)
 		expect(stageAt(stageStart(1, questions) + 80, questions, 4)).toBe(1)
 		expect(stageAt(stageStart(3, questions), questions, 9)).toBe(2)
+	})
+
+	it('keep him in the stage he fell in, even on its last question', () => {
+		const questions = 4
+		expect(stageAt(stageStart(1, questions) + 80, questions, answersOn(4, true))).toBe(0)
+		expect(stageAt(stageStart(1, questions) + 80, questions, answersOn(4, false))).toBe(1)
 	})
 
 })

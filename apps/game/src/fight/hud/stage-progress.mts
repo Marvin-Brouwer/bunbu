@@ -12,12 +12,15 @@ import { questionsAnswered, type Asked, type Quiz, type QuizState } from '../../
 import { selection, stageNames } from '../../_shared/state/selection.mts'
 import { marksPassed, quarterMarks, stageDistanceOf, type Run, type RunState } from '../state/run.mts'
 import { formatWhole } from '../../_shared/numbers.mts'
-import { endlessStage, stageAt, stageQuestions, stageStart } from '../flows/endless.mts'
+import { answersOn, endlessStage, stageAt, stageQuestions, stageStart } from '../flows/endless.mts'
+import type { Life } from '../state/life.mts'
 import styles from './hud.css'
 
 export type StageProgressOptions = {
 	readonly run: Run
 	readonly quiz: Quiz
+	/** In endless, a fall keeps the bar on the stage he fell in. */
+	readonly life: Life
 }
 
 export const StageProgress = component<StageProgressOptions>({
@@ -66,7 +69,7 @@ export const StageProgress = component<StageProgressOptions>({
 		const showRun = (state: RunState) => {
 			if (endless) {
 				// The stage of endless that is on, its marks its own.
-				const index = stageAt(state.distance, questions(), questionsAnswered(quiz.value))
+				const index = stageAt(state.distance, questions(), answersOn(questionsAnswered(quiz.value), options.life.value.empty()))
 				const start = stageStart(index, questions())
 				const end = stageStart(index + 1, questions())
 				const fraction = Math.max(0, Math.min(1, (state.distance - start) / (end - start)))

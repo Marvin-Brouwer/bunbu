@@ -46,6 +46,7 @@ export const Hud = component<HudOptions>({
 					create(StageProgress, {
 						run: game.run,
 						quiz: game.quiz,
+						life: game.life,
 					}),
 				],
 			})

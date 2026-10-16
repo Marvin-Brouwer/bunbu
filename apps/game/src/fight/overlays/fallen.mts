@@ -15,7 +15,7 @@ import { selection, stageNames } from '../../_shared/state/selection.mts'
 import { ScrollSheet } from '../../_shared/scroll/scroll-sheet.mts'
 import { snapshot } from '../../_shared/state/store.mts'
 import { questionsAnswered, type QuizActions, type QuizState } from '../../_shared/state/quiz.mts'
-import { endlessStage, stageAt, stageQuestions } from '../flows/endless.mts'
+import { answersOn, endlessStage, stageAt, stageQuestions } from '../flows/endless.mts'
 import { isEndless } from '../flows/run.mts'
 import type { RunGame } from '../state/game.mts'
 import { pointsIn } from '../state/score.mts'
@@ -48,7 +48,7 @@ export const Fallen = component<FallenOptions>({
 		const misses = game.quiz.value.misses()
 		const done = questionsAnswered(snapshot<QuizState & QuizActions>(game.quiz))
 		const where = endless
-			? `Endless · ${stageNames[endlessStage(stageAt(distance, stageQuestions(quiz), done))]} · ${formatWhole(done)} questions · ${formatWhole(Math.floor(distance))} m`
+			? `Endless · ${stageNames[endlessStage(stageAt(distance, stageQuestions(quiz), answersOn(done, true)))]} · ${formatWhole(done)} questions · ${formatWhole(Math.floor(distance))} m`
 			: `${stageNames[selection.value.stage]} · ${formatWhole(Math.floor(distance))} of ${formatWhole(stageLength)} m`
 		const scoreNote = !endless ? 'not a high score' : newBest ? 'new endless high score' : best === undefined ? 'endless' : `endless best ${formatWhole(best.points)}`
 

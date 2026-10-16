@@ -31,10 +31,13 @@ export const stageStart = (index: number, questions: number): number => index ==
 /**
  * Which stage of endless the samurai is in, `distance` metres along with `answered` questions
  * done: never past the stage whose questions are not all answered yet, however far a long ambush
- * has carried him on.
+ * has carried him on. Pass the answers that count toward going on ({@link answersOn}).
  */
 export function stageAt(distance: number, questions: number, answered = Infinity): number {
 	const along = Math.max(0, Math.floor((distance - metresPerAmbush / 2) / (questions * metresPerAmbush)))
 	return Math.min(along, Math.floor(answered / questions))
 }
 
+
+/** The answers that take the run on to the next stage: all of them, but the one he fell on. */
+export const answersOn = (answered: number, fallen: boolean): number => (fallen ? Math.max(0, answered - 1) : answered)
