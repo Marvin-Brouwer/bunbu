@@ -34,7 +34,7 @@ const entranceDistance = 8
  */
 const entranceScale = 0.15
 /** When the time ran out, the halves of the scroll fall before the ninjas strike. */
-const strikeDelaySeconds = 0.65
+export const strikeDelaySeconds = 0.65
 
 
 /**
