@@ -68,7 +68,11 @@ export const runConfig = {
 	 * at a third after twice that, and so on, but never slower than `slowest`.
 	 */
 	slowMotion: { halfSpeedAfter: 0.25, slowest: 0.03 },
-	introSeconds: 1.5,
+	/**
+	 * How long the samurai takes to run in from behind the camera to where he runs the stage from:
+	 * at the run's pace that is about 20 m, farther back than the camera stands on the narrowest phone.
+	 */
+	introSeconds: 2.2,
 	countdownSeconds: 3,
 	/** How long the samurai holds after slaying or blocking. */
 	strikeSeconds: 0.5,
@@ -86,6 +90,18 @@ export const runConfig = {
  * moves the stage's light on ([3 Running](../../../../../docs/design/screens.md#3-running)).
  */
 export const quarterMarks = [0.25, 0.5, 0.75] as const
+
+/**
+ * Metres the samurai still has to run in before the stage starts: all of it before the run starts,
+ * less and less in the intro, none after.
+ */
+export function runInLeft(state: Pick<RunState, 'phase' | 'resumeTo' | 'elapsed'>): number {
+	// Paused in the intro, he holds where he is.
+	const phase = state.phase === 'paused' ? state.resumeTo : state.phase
+	if (phase === 'idle') return runConfig.pace * runConfig.introSeconds
+	if (phase !== 'intro') return 0
+	return runConfig.pace * Math.max(0, runConfig.introSeconds - state.elapsed)
+}
 
 /** How many of the {@link quarterMarks} the samurai has passed. */
 export function marksPassed({ distance, stageLength }: Pick<RunState, 'distance' | 'stageLength'>): number {
@@ -168,7 +184,7 @@ export function createRun(initial: RunState = notRunning): Run {
 
 		tick(worldDelta, realDelta) {
 			const state = store.value
-			if (over(state.phase)) return
+			if (over(state.phase) || state.phase === 'idle') return
 
 			if (state.countdown > 0) store.update(() => countDown(state, realDelta))
 			else if (state.phase === 'intro') store.update(() => introduce(state, realDelta))

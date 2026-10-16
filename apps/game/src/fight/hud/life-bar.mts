@@ -20,7 +20,15 @@ export const LifeBar = component<LifeBarOptions>({
 	onMount({ append, element, options, signal }) {
 		const { life, quiz } = options
 
-		const passingScore = quiz.value.quiz?.passingScore
+		// The pass mark of the quiz the run is on; the run's screen comes up before its quiz is loaded.
+		const passMark = element('span', {
+			classes: styles.label,
+		})
+		const showPassMark = (passingScore: number | undefined) => {
+			passMark.textContent = passingScore === undefined ? '' : `empty = ${passingScore}%`
+		}
+		showPassMark(quiz.value.quiz?.passingScore)
+		quiz.on('change', signal, ({ detail }) => { showPassMark(detail.state.quiz?.passingScore) })
 		const bar = element('div', {
 			classes: styles.bar,
 			role: 'meter',
@@ -44,10 +52,7 @@ export const LifeBar = component<LifeBarOptions>({
 								classes: styles.label,
 								textContent: 'LIFE',
 							}),
-							element('span', {
-								classes: styles.label,
-								textContent: passingScore === undefined ? '' : `empty = ${passingScore}%`,
-							}),
+							passMark,
 						],
 					}),
 					bar,
