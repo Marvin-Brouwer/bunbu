@@ -55,6 +55,16 @@
 	margin: 0;
 }
 
+/* The illustrations, one under each heading of how to play, across the page like the dojo's cards. */
+.prose img {
+	display: block;
+	width: 100%;
+	height: auto;
+	aspect-ratio: 320 / 120;
+	border-radius: var(--radius);
+	box-shadow: var(--shadow);
+}
+
 .prose ul {
 	display: grid;
 	gap: 0.5rem;

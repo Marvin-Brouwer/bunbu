@@ -20,6 +20,7 @@ import { readdirSync } from 'node:fs'
 import { mkdir } from 'node:fs/promises'
 import { homedir, platform } from 'node:os'
 import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 const base = process.env.BUNBU_URL ?? 'http://localhost:5173/bunbu/'
 const size = { width: 390, height: 844 }
@@ -201,7 +202,7 @@ for (let ambush = 0; ambush < right.length; ambush++) {
 	await page.getByText('Tap or swipe up to answer').click()
 	await pause(page, 0.5)
 	await answer(page)
-	if (ambush === 0) await page.screenshot({ path: new URL('how-to-play.jpg', out).pathname, type: 'jpeg', quality: 75 })
+	if (ambush === 0) await page.screenshot({ path: fileURLToPath(new URL('how-to-play.jpg', out)), type: 'jpeg', quality: 75 })
 	await caption(page, ambush === right.length - 1 ? undefined : 'Right: the samurai cuts them down, and runs on.')
 	await pause(page, 3.5)
 	await film.stop()
@@ -214,6 +215,6 @@ await pause(page, 4.5)
 await film.stop()
 await browser.close()
 
-await encode(film.shots, new URL('how-to-play.webm', out).pathname)
+await encode(film.shots, fileURLToPath(new URL('how-to-play.webm', out)))
 const seconds = film.shots.reduce((sum, shot) => sum + ((shot.at(-1)?.time ?? 0) - (shot[0]?.time ?? 0)), 0)
 console.log(`guide/how-to-play.webm (${seconds.toFixed(1)} s in ${String(film.shots.length)} shots), guide/how-to-play.jpg`)
