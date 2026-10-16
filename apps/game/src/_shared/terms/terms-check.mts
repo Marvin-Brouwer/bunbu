@@ -7,6 +7,7 @@
 import { component, environment } from '@rooted/components'
 import { agreementKey, agreements, termsKinds, type AgreementsState, type TermsKind } from '../state/agreements.mts'
 import { selection } from '../state/selection.mts'
+import { loaded } from '../loading.mts'
 import { snapshot } from '../state/store.mts'
 import { library, type LibraryEntry, type LibraryState } from '../storage/library.mts'
 import { TermsScroll } from './terms-scroll.mts'
@@ -65,8 +66,8 @@ export const TermsCheck = component({
 			}
 		}
 
-		// One scroll at a time.
-		const check = () => termsKinds.reduce((asked, kind) => asked.then(() => recheck(kind)), Promise.resolve())
+		// One scroll at a time, once the loading screen has gone: a dialog would open over it.
+		const check = () => termsKinds.reduce((asked, kind) => asked.then(() => recheck(kind)), loaded())
 
 		// Once, as soon as the saved quizzes are back.
 		if (library.value.restored) {

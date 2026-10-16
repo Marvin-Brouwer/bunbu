@@ -7,6 +7,8 @@ Wireframe source: the project's design canvas (`design/wireframes/*.dc.html` and
 ## Flow
 
 ```text
+0 Loading ──► the screen opened, usually 1 Title
+
 1 Title ──► 2 Fight setup ──► 3 Running ──► 4 Ambush ──► 5 Outcome ──► 3 Running …
    │                              │                                   │
    │                              └─► 6 Pause                         ├─► 7 Finished
@@ -16,6 +18,15 @@ Wireframe source: the project's design canvas (`design/wireframes/*.dc.html` and
 ```
 
 ## Main game
+
+### 0 Loading
+
+<img src="screens/0-loading-designs.png" alt="Three designs for the loading screen: A, the rising sun, is the one built" width="585">
+
+- Whenever Bunbu opens, on any screen: the app icon on papyrus, the torii in ink with the red sun rising behind it and sinking again, and under it 文武 · **Bunbu** · Shogun Scholar. It is in the page itself, so it shows from the first paint.
+- It fades out once the screen has settled: the saved quizzes are back, the fonts are in and its world's models have loaded (or failed). That way the buttons and the 3D scene don't flicker in one by one. It never stays longer than 6 seconds.
+- The tab's icon (`favicon.svg`) is the same picture on a rounded tile, without the ground.
+- Of the three designs, A is the one built; B (the sun as an ink ring on the night) and C (a scroll with a loading bar) were left.
 
 ### 1 Title / menu
 
