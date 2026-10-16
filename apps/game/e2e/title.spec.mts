@@ -6,7 +6,7 @@
 
 import { expect, test, type Page } from '@playwright/test'
 import { PerspectiveCamera, Vector3 } from 'three'
-import { minimumGap, samuraiHeight, titleFraming, titleShot, type Gap } from '../src/title/framing.mts'
+import { samuraiHeight, titleFraming, titleShot, type Gap } from '../src/title/framing.mts'
 
 /** Phones from small to large, a tablet, and a laptop. */
 const screens = [
@@ -116,6 +116,6 @@ async function expectInFrame(page: Page, width: number, height: number, scrolled
 		expect(box.left).toBeGreaterThanOrEqual(0)
 		expect(box.right).toBeLessThanOrEqual(width)
 		expect(box.top).toBeGreaterThanOrEqual(top)
-		expect(box.bottom).toBeLessThanOrEqual(Math.max(bottom, top + minimumGap))
+		expect(box.bottom).toBeLessThanOrEqual(bottom)
 	}
 }
