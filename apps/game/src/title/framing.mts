@@ -53,7 +53,10 @@ export const farthest = 40
  */
 export function titleShot(width: number, height: number, gap: Gap, sway = 0): TitleShot {
 	const aspect = width / height
-	const free = { top: Math.max(0, gap.top), height: Math.max(minimumGap, Math.min(gap.height, height)) }
+	// What shows of the gap: scrolled, it can run off the top of the screen.
+	const top = Math.max(0, gap.top)
+	const bottom = Math.min(height, gap.top + gap.height)
+	const free = { top, height: Math.max(minimumGap, bottom - top) }
 	const halfTan = Math.tan((titleFraming.fov * Math.PI) / 360)
 	// Back far enough that the torii fits across, and that he fits in the gap; never out of sight.
 	const fitsGap = (samuraiHeight * height) / (2 * halfTan * filled * free.height)
