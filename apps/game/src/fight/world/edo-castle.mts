@@ -31,7 +31,8 @@ import { layBlocks } from './blocks.mts'
 import { Batch, chunkOf, placed, scatter, type Cursor } from './kit.mts'
 import { addAll, clearanceOf, cutAway, facingPath, fogFar, isFree, passTime, sky, skyRadius, stamp, strip, type Daylight, type Owned, type Planting, type StageView, type Taken } from './landscape.mts'
 import type { District } from './backdrop.mts'
-import type { CoverSet } from './cover.mts'
+import { nearAmbushCover, type CoverSet } from './cover.mts'
+import { metresPerAmbush } from '../flows/run.mts'
 import { beside, type Leg, type Path } from './path.mts'
 
 const palette = {
@@ -280,9 +281,9 @@ export function createEdoCastle(scene: Scene, path: Path, models: Promise<Castle
 			}
 		}
 
-		// Stone lanterns in pairs along the way, now and then.
+		// Stone lanterns in pairs along the way, now and then, but not where an ambush's covers stand.
 		for (let distance = from + 30; distance + 1.2 <= to; distance += 45) {
-			if (nearGate(distance)) continue
+			if (nearGate(distance) || nearAmbushCover(distance, metresPerAmbush)) continue
 			const point = path.at(distance)
 			for (const side of [-1, 1]) {
 				const at = beside(point, side * (pathHalfWidth + 1.2))

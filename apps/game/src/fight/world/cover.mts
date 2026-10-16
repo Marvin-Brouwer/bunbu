@@ -39,10 +39,11 @@ export type CoverSet = {
 /**
  * Where the covers of an ambush stand, around the samurai with the way ahead along `-z` as the
  * ninjas' spots are ([placement](./placement.mts)): two either side, well past where the ninjas
- * start (11 m ahead at most, 12.4 m in the back row), so each leaps out from behind one and runs on
- * toward the samurai to its spot before the scroll opens.
+ * stand (12.4 m ahead at most, and 2.5 m more once the samurai has run on), so they leap out from
+ * behind the nearer one, land beyond their spots and run in toward the samurai before the scroll
+ * opens. The farther one stands so the cover gives nothing away.
  */
-export const coverAhead = [15, 19.5] as const
+export const coverAhead = [18, 23] as const
 
 /**
  * How far any cover reaches from its middle, its turn included, and how high it stands: a leap
@@ -50,6 +51,15 @@ export const coverAhead = [15, 19.5] as const
  */
 export const coverReach = 1.5
 export const coverHeight = 2.25
+
+/**
+ * Whether `distance` along the path is within `margin` metres of where an ambush's covers stand,
+ * with an ambush every `every` metres: a stage's own things by the way keep clear of them there.
+ */
+export function nearAmbushCover(distance: number, every: number, margin = 2.5): boolean {
+	const ambush = Math.round(distance / every) * every
+	return [ambush - every, ambush].some((at) => at > 0 && coverAhead.some((ahead) => Math.abs(distance - (at + ahead)) < margin))
+}
 
 /** Where a cover stands on the ground. */
 export type CoverSpot = { readonly x: number; readonly z: number }

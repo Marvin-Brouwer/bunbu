@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "e2e": "playwright test",
+    "how-to-play-video": "node scripts/how-to-play-video.mts",
     "stage-pictures": "UPDATE_STAGE_PICTURES=1 playwright test --project \"stage pictures\" --no-deps"
   },
   "dependencies": {
