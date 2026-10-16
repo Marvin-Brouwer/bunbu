@@ -115,14 +115,17 @@ export const castleDistricts: readonly District[] = [
 	{
 		name: "Retainers' quarter",
 		rows: [
-			{ shape: 'house', from: 32, to: 50, perTile: 1.4, colours: [[0xeae4d4, 0xddd5c2], [0x2e3036, 0x34404f]] },
+			// Right behind the walls and the moat, pines and the first roofs, so no lawn lies bare.
+			{ shape: 'pine', from: 22, to: 40, perTile: 4, colours: [[0x3a2e26], [0x2a3e2a, 0x30482e]] },
+			{ shape: 'house', from: 26, to: 50, perTile: 2, colours: [[0xeae4d4, 0xddd5c2], [0x2e3036, 0x34404f]] },
 			{ shape: 'pine', from: 40, to: 120, perTile: 4, colours: [[0x3a2e26], [0x2a3e2a, 0x30482e]] },
-			{ shape: 'broadleaf', from: 60, to: 135, perTile: 1, colours: [[0x3a2e26], [0x3e5430, 0x4a5a2e]] },
+			{ shape: 'broadleaf', from: 45, to: 135, perTile: 1.6, colours: [[0x3a2e26], [0x3e5430, 0x4a5a2e, 0x8e3a24]] },
 		],
 	},
 	{
 		name: 'Castle gardens',
 		rows: [
+			{ shape: 'pine', from: 22, to: 34, perTile: 2.5, colours: [[0x3a2e26], [0x2a3e2a, 0x30482e]] },
 			{ shape: 'bridge', from: 32, to: 60, perTile: 0.6, colours: [[0x2d4a5a], [0xa8261c], [0xa8261c]] },
 			{ shape: 'pond', from: 34, to: 70, perTile: 0.6, colours: [[0x2d4a5a, 0x34566a]] },
 			{ shape: 'broadleaf', from: 32, to: 90, perTile: 2, colours: [[0x3a2e26], [0xb8402a, 0xd0602e, 0x4a5a2e]] },
@@ -133,12 +136,13 @@ export const castleDistricts: readonly District[] = [
 		name: 'Pine walk',
 		rows: [
 			{ shape: 'lantern', from: pathHalfWidth + 0.6, to: pathHalfWidth + 0.9, perTile: 0.6, colours: [[0x8d877b, 0x9a958a], [0x8d877b, 0x7a756c]] },
-			{ shape: 'pine', from: 34, to: 120, perTile: 5, colours: [[0x3a2e26], [0x2a3e2a, 0x30482e]] },
+			{ shape: 'pine', from: 22, to: 120, perTile: 6, colours: [[0x3a2e26], [0x2a3e2a, 0x30482e]] },
 		],
 	},
 	{
 		name: "Keep's approach",
 		rows: [
+			{ shape: 'pine', from: 22, to: 32, perTile: 2.5, colours: [[0x3a2e26], [0x2a3e2a, 0x30482e]] },
 			{ shape: 'wall', from: 32, to: 48, perTile: 1.4, colours: [[0x8d877b, 0x7a756c], [0xeae4d4, 0xddd5c2], [0x2e3036, 0x34404f]] },
 			{ shape: 'pagoda', from: 60, to: 130, perTile: 0.2, colours: [[0xeae4d4], [0x2e3036, 0x34404f]] },
 			{ shape: 'pine', from: 48, to: 120, perTile: 2, colours: [[0x3a2e26], [0x2a3e2a, 0x30482e]] },

@@ -4,7 +4,7 @@
 
 import { describe, expect, it } from 'vitest'
 import { coverSpotsAt } from './cover.mts'
-import { clashSeconds, coverOf, fleeSideOf, motionOf } from './ninjas.mts'
+import { clashSeconds, coverOf, fleeSideOf, leapConfig, motionOf, outOf } from './ninjas.mts'
 import { createPath, townRound } from './path.mts'
 import { spotOf } from './placement.mts'
 
@@ -86,5 +86,33 @@ describe('a ninja coming in', () => {
 		expect(coverOf(spotOf('down', 0, 0), 0, frame, covers)).toBeUndefined()
 		expect(coverOf(spotOf('down-left', 0, 0), 0, frame, covers)).toBeUndefined()
 		expect(coverOf(spotOf('left', 0, 0), 0, frame, [])).toBeUndefined()
+	})
+})
+
+describe('a ninja leaping out from behind its cover', () => {
+	// The samurai at the origin, the cover 10 m ahead, where the ninja stands for the fight 8 m ahead.
+	const from = { x: 0, z: 0 }
+	const cover = { x: 0, z: -10 }
+	const to = { x: 0, z: -8 }
+
+	it('waits behind it, out of the samurai\'s way', () => {
+		expect(outOf(cover, from, to, 0)).toEqual({ x: 0, z: -10 - leapConfig.behind, hop: 0 })
+	})
+
+	it('leaps over it, higher than the cover stands, and lands in front of it', () => {
+		const middle = (leapConfig.waits + leapConfig.lands) / 2
+		expect(outOf(cover, from, to, middle).hop).toBeCloseTo(leapConfig.height)
+		expect(leapConfig.height).toBeGreaterThan(2.4)
+		expect(outOf(cover, from, to, leapConfig.lands)).toMatchObject({ z: expect.closeTo(-10 + leapConfig.ahead) as number, hop: 0 })
+	})
+
+	it('then runs on to where it stands for the fight, always toward the samurai', () => {
+		expect(outOf(cover, from, to, 1)).toMatchObject({ x: 0, z: -8, hop: 0 })
+		let last = outOf(cover, from, to, 0).z
+		for (let amount = 0.05; amount <= 1; amount += 0.05) {
+			const { z } = outOf(cover, from, to, amount)
+			expect(z).toBeGreaterThanOrEqual(last - 1e-9)
+			last = z
+		}
 	})
 })

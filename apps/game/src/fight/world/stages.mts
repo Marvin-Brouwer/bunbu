@@ -42,6 +42,14 @@ function loadSome<Name extends string>(names: Readonly<Record<Name, string>>): P
 	})
 }
 
+/** The models `stage`'s scenery is built from, each one there only if it loaded. */
+export function stageModels(stage: Stage) {
+	if (stage === 'rice-fields') return loadSome({ maple: 'maple', kit: 'stage-kit' })
+	if (stage === 'bamboo-forest' || stage === 'edo-castle') return loadSome({ kit: 'stage-kit', temple: 'temple-kit' })
+	if (stage === 'mountain-temple') return loadSome({ temple: 'temple-kit', kit: 'stage-kit' })
+	return loadSome({ maple: 'maple', torii: 'torii', bamboo: 'bamboo', kit: 'town-kit' })
+}
+
 /** A seed for what is laid out at random, new every run. */
 const newSeed = () => Math.floor(Math.random() * 2 ** 31)
 
@@ -85,20 +93,20 @@ function around(scene: Scene, { path, view }: OwnWorld, districts: readonly Dist
 export function createStageWorld(stage: Stage, scene: Scene, stageLength: () => number = () => 0): StageWorld {
 	if (stage === 'rice-fields') {
 		const path = createPath(riceRound)
-		return around(scene, { path, view: createRiceFields(scene, path, loadSome({ maple: 'maple', kit: 'stage-kit' })) }, riceDistricts, riceCover, stageLength)
+		return around(scene, { path, view: createRiceFields(scene, path, stageModels(stage)) }, riceDistricts, riceCover, stageLength)
 	}
 	if (stage === 'bamboo-forest') {
 		const path = createPath(bambooRound)
-		return around(scene, { path, view: createBambooForest(scene, path, loadSome({ kit: 'stage-kit', temple: 'temple-kit' })) }, bambooDistricts, bambooCover, stageLength)
+		return around(scene, { path, view: createBambooForest(scene, path, stageModels(stage)) }, bambooDistricts, bambooCover, stageLength)
 	}
 	if (stage === 'mountain-temple') {
 		const path = createPath(mountainRound)
-		return around(scene, { path, view: createMountainTemple(scene, path, loadSome({ temple: 'temple-kit', kit: 'stage-kit' })) }, mountainDistricts, mountainCover, stageLength)
+		return around(scene, { path, view: createMountainTemple(scene, path, stageModels(stage)) }, mountainDistricts, mountainCover, stageLength)
 	}
 	if (stage === 'edo-castle') {
 		const path = createPath(castleRound)
-		return around(scene, { path, view: createEdoCastle(scene, path, loadSome({ kit: 'stage-kit', temple: 'temple-kit' })) }, castleDistricts, castleCover, stageLength)
+		return around(scene, { path, view: createEdoCastle(scene, path, stageModels(stage)) }, castleDistricts, castleCover, stageLength)
 	}
 	const path = createPath(townRound)
-	return around(scene, { path, view: createCastleTown(scene, path, loadSome({ maple: 'maple', torii: 'torii', bamboo: 'bamboo', kit: 'town-kit' })) }, townDistricts, townCover, stageLength)
+	return around(scene, { path, view: createCastleTown(scene, path, stageModels(stage)) }, townDistricts, townCover, stageLength)
 }
