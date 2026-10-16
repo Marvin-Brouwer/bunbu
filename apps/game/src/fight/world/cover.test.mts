@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { metresPerAmbush } from '../flows/run.mts'
 import { randomOf } from './backdrop.mts'
 import { townCover, townDistricts } from './castle-town.mts'
+import { mountainCover, mountainDistricts } from './mountain-temple.mts'
 import { coverKindAt, coverReach, coverSpotsAt, decoysOf } from './cover.mts'
 import { createPath, townRound } from './path.mts'
 
@@ -28,7 +29,9 @@ describe('the covers of a district', () => {
 		const gateGardens = new Set(townDistricts[0]!.cover!.map((choice) => choice.kind))
 
 		expect(kindsIn(100, 'ambush').every((kind) => gateGardens.has(kind))).toBe(true)
-		expect(new Set(kindsIn(stageLength * 0.6, 'ambush'))).toEqual(new Set(townCover.kinds))
+		// The mountain temple's snowy heights, its last district, has none of its own.
+		const snowy = Array.from({ length: 2000 }, () => coverKindAt(mountainCover, mountainDistricts, stageLength * 0.95, stageLength, 'ambush', random))
+		expect(new Set(snowy)).toEqual(new Set(mountainCover.kinds))
 	})
 
 	it('have a villager mostly just there, rarely one a ninja comes from', () => {

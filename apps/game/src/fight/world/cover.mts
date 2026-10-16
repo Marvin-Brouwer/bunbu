@@ -44,8 +44,25 @@ export type CoverKind =
 	| 'panda'
 	/** A market stand: a table of goods under a cloth roof on four posts. */
 	| 'market-stand'
-	/** A villager in a robe and a straw hat, with a basket on the back. */
+	/**
+	 * A villager in a robe and a straw hat, one of a few: a basket on the back, buckets on a carrying
+	 * pole, a paper parasol, an old one with a stick, or two of them talking.
+	 */
 	| 'villager'
+	/** A water wheel turning by its channel. */
+	| 'water-wheel'
+	/** A tall stone lantern on its base. */
+	| 'stone-lantern'
+	/** Three little stone jizō statues with red bibs, on a stone step. */
+	| 'jizo'
+	/** Logs stacked between two stakes. */
+	| 'woodpile'
+	/** Sake barrels in straw, stacked. */
+	| 'sake-barrels'
+	/** A guard in armour with a spear. */
+	| 'guard'
+	/** A rack of spears. */
+	| 'weapon-rack'
 	/** A temple bell hung in its little roofed frame. */
 	| 'temple-bell'
 	/** A lacquered palanquin on its pole, set down. */
@@ -238,14 +255,80 @@ function partsOf(kind: CoverKind, colours: readonly number[], random: () => numb
 			{ shape: 'barrel', matrix: placed(0.4, 0.9, 0.2, 0, 0.5, 0.4, 0.5), colour: 0x9a7a45 },
 		]
 	}
-	if (kind === 'villager') {
-		// A robe in one of the town's colours, a straw hat, and a basket carried on the back.
-		const robe = pick()
+	if (kind === 'villager') return villagerOf(pick, random)
+	if (kind === 'water-wheel') {
+		// The wheel stands across the way it turns, its paddles round its rim, by a wooden channel.
 		return [
-			{ shape: 'cone', matrix: placed(0, 0, 0, 0, 0.75, 1.45, 0.65), colour: robe },
-			{ shape: 'rock', matrix: placed(0, 1.4, 0, 0, 0.36), colour: 0xe0b48a },
-			{ shape: 'cone', matrix: placed(0, 1.62, 0, 0, 0.75, 0.22, 0.75), colour: 0xc9a75e },
-			{ shape: 'barrel', matrix: placed(0, 0.65, 0.35, 0, 0.55, 0.7, 0.45), colour: 0x9a7a45 },
+			{ shape: 'wheel', matrix: placed(0, 1.15, 0, 0, 0.3, 2.3, 2.3), colour: 0x6a4a30 },
+			{ shape: 'wheel', matrix: placed(0, 1.15, 0, 0, 0.42, 0.5, 0.5), colour: 0x3e2c20 },
+			...Array.from({ length: 8 }, (_, index) => ({ shape: 'box' as const, matrix: within(placed(0, 1.15, 0), within(new Matrix4().makeRotationX((index * Math.PI) / 4), placed(0, 0.85, 0, 0, 0.36, 0.5, 0.08))), colour: 0x8a6240 })),
+			{ shape: 'box', matrix: placed(0.55, 0, 0, 0, 0.5, 0.5, 2.8), colour: 0x5c3d24 },
+			{ shape: 'box', matrix: placed(-0.3, 0, 0, 0, 0.14, 1.2, 0.14), colour: 0x3e2c20 },
+		]
+	}
+	if (kind === 'stone-lantern') {
+		const stone = pick()
+		return [
+			{ shape: 'box', matrix: placed(0, 0, 0, 0, 1.1, 0.3, 1.1), colour: stone },
+			{ shape: 'barrel', matrix: placed(0, 0.3, 0, 0, 0.4, 0.9, 0.4), colour: stone },
+			{ shape: 'box', matrix: placed(0, 1.2, 0, 0, 0.9, 0.15, 0.9), colour: stone },
+			{ shape: 'box', matrix: placed(0, 1.35, 0, 0, 0.6, 0.45, 0.6), colour: 0xf6d79a },
+			{ shape: 'cone', matrix: placed(0, 1.8, 0, Math.PI / 4, 1.5, 0.45, 1.5), colour: stone },
+			{ shape: 'rock', matrix: placed(0, 2.15, 0, 0, 0.3), colour: stone },
+		]
+	}
+	if (kind === 'jizo') {
+		// Small: they stand on a step, with a stone wall behind them to hide behind.
+		const stone = pick()
+		return [
+			{ shape: 'box', matrix: placed(0, 0, -0.45, 0, 2, 2, 0.5), colour: stone },
+			{ shape: 'box', matrix: placed(0, 0, 0.15, 0, 1.9, 0.3, 0.7), colour: stone },
+			...[-0.6, 0, 0.6].flatMap((x) => [
+				{ shape: 'barrel' as const, matrix: placed(x, 0.3, 0.2, 0, 0.42, 0.7, 0.4), colour: stone },
+				{ shape: 'cone' as const, matrix: placed(x, 0.65, 0.25, 0, 0.5, 0.3, 0.45), colour: 0xb3391f },
+				{ shape: 'rock' as const, matrix: placed(x, 0.98, 0.2, 0, 0.34), colour: stone },
+			]),
+		]
+	}
+	if (kind === 'woodpile') {
+		const bark = pick()
+		return [
+			...[-1.05, 1.05].map((x) => ({ shape: 'box' as const, matrix: placed(x, 0, 0, 0, 0.14, 2.1, 0.14), colour: 0x3e2c20 })),
+			...Array.from({ length: 4 }, (_, row) => row).flatMap((row) => [-0.55, 0, 0.55].slice(0, row === 3 ? 2 : 3).map((z) => ({
+				shape: 'wheel' as const,
+				matrix: placed(0, 0.25 + row * 0.46, z + (row === 3 ? 0.27 : 0), 0, 2.1, 0.46, 0.46),
+				colour: bark,
+			}))),
+		]
+	}
+	if (kind === 'sake-barrels') {
+		// Barrels wrapped in straw and bound with rope, three, two and one.
+		const straw = pick()
+		return [[-0.9, 0, 0.9], [-0.45, 0.45], [0]].flatMap((row, level) => row.flatMap((x) => [
+			{ shape: 'barrel' as const, matrix: placed(x, level * 0.82, 0, 0, 0.88, 0.82, 0.88), colour: straw },
+			{ shape: 'barrel' as const, matrix: placed(x, level * 0.82 + 0.6, 0, 0, 0.9, 0.08, 0.9), colour: 0x5c3d24 },
+		]))
+	}
+	if (kind === 'guard') {
+		const armour = pick()
+		return [
+			...[-0.15, 0.15].map((x) => ({ shape: 'box' as const, matrix: placed(x, 0, 0, 0, 0.2, 0.8, 0.25), colour: 0x2a2626 })),
+			{ shape: 'box', matrix: placed(0, 0.75, 0, 0, 0.7, 0.75, 0.42), colour: armour },
+			{ shape: 'cone', matrix: placed(0, 0.6, 0, 0, 0.85, 0.35, 0.6), colour: armour },
+			{ shape: 'rock', matrix: placed(0, 1.6, 0, 0, 0.36), colour: 0xe0b48a },
+			{ shape: 'cone', matrix: placed(0, 1.72, 0, 0, 0.55, 0.32, 0.55), colour: 0x2a2626 },
+			{ shape: 'box', matrix: placed(0.45, 0, 0, 0, 0.06, 2.7, 0.06), colour: 0x5c3d24 },
+			{ shape: 'cone', matrix: placed(0.45, 2.7, 0, 0, 0.12, 0.3, 0.12), colour: 0xc9c4b8 },
+		]
+	}
+	if (kind === 'weapon-rack') {
+		return [
+			...[-0.95, 0.95].map((x) => ({ shape: 'box' as const, matrix: placed(x, 0, 0, 0, 0.14, 1.6, 0.4), colour: 0x5c3d24 })),
+			...[0.3, 1.3].map((y) => ({ shape: 'box' as const, matrix: placed(0, y, 0, 0, 2, 0.1, 0.3), colour: 0x8a6240 })),
+			...[-0.65, -0.32, 0, 0.32, 0.65].flatMap((x) => [
+				{ shape: 'box' as const, matrix: placed(x, 0.05, 0.02, 0, 0.06, 2.5, 0.06), colour: 0x3e2c20 },
+				{ shape: 'cone' as const, matrix: placed(x, 2.55, 0.02, 0, 0.12, 0.3, 0.12), colour: 0xc9c4b8 },
+			]),
 		]
 	}
 	if (kind === 'temple-bell') {
@@ -284,6 +367,53 @@ export type Cover = {
  * The covers of `set` along `path`: at every `every` metres, where an ambush springs, and at
  * random in between from `seed`, a new one every run.
  */
+/** One villager, standing at `x`: robe, face, straw hat. */
+function personAt(x: number, robe: number, hat = 0xc9a75e): Part[] {
+	return [
+		{ shape: 'cone', matrix: placed(x, 0, 0, 0, 0.75, 1.45, 0.65), colour: robe },
+		{ shape: 'rock', matrix: placed(x, 1.4, 0, 0, 0.36), colour: 0xe0b48a },
+		{ shape: 'cone', matrix: placed(x, 1.62, 0, 0, 0.75, 0.22, 0.75), colour: hat },
+	]
+}
+
+/** A villager, one of a few kinds picked with `random`, in a robe picked with `pick`. */
+function villagerOf(pick: () => number, random: () => number): Part[] {
+	const robe = pick()
+	const which = random()
+	// A basket carried on the back.
+	if (which < 0.3) return [...personAt(0, robe), { shape: 'barrel', matrix: placed(0, 0.65, 0.35, 0, 0.55, 0.7, 0.45), colour: 0x9a7a45 }]
+	// Two buckets hung from a pole across the shoulders.
+	if (which < 0.5) {
+		return [
+			...personAt(0, robe),
+			{ shape: 'box', matrix: placed(0, 1.25, 0, 0, 1.9, 0.07, 0.07), colour: 0x8a6240 },
+			...[-0.9, 0.9].flatMap((x) => [
+				{ shape: 'box' as const, matrix: placed(x, 0.55, 0, 0, 0.03, 0.7, 0.03), colour: 0x3e2c20 },
+				{ shape: 'barrel' as const, matrix: placed(x, 0.25, 0, 0, 0.5, 0.42, 0.5), colour: 0x9a7a45 },
+			]),
+		]
+	}
+	// A paper parasol held up.
+	if (which < 0.7) {
+		const paper = [0xb3391f, 0x2f4a7a, 0xe0a040][Math.floor(random() * 3)] ?? 0xb3391f
+		return [
+			...personAt(0, robe, robe),
+			{ shape: 'box', matrix: placed(0.2, 0.9, 0, 0, 0.04, 1.2, 0.04), colour: 0x5c3d24 },
+			{ shape: 'cone', matrix: placed(0.2, 1.95, 0, 0, 1.5, 0.35, 1.5), colour: paper },
+		]
+	}
+	// An old one, bent over a stick.
+	if (which < 0.85) {
+		const bent = within(placed(0, 0, 0), new Matrix4().makeRotationX(-0.25))
+		return [
+			...personAt(0, robe).map((part) => ({ ...part, matrix: within(bent, part.matrix) })),
+			{ shape: 'box', matrix: within(placed(0.35, 0, -0.2), new Matrix4().makeRotationX(-0.15).multiply(placed(0, 0, 0, 0, 0.05, 1.25, 0.05))), colour: 0x5c3d24 },
+		]
+	}
+	// Two of them, talking.
+	return [...personAt(-0.45, robe), ...personAt(0.45, pick(), 0xb89a55).map((part) => ({ ...part, matrix: within(placed(0, 0, 0, Math.PI), part.matrix) }))]
+}
+
 /** A tilt about `x`, forward. */
 function rotatedX(angle: number): Matrix4 {
 	return new Matrix4().makeRotationX(angle)

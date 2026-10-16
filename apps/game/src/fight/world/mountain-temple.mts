@@ -100,7 +100,7 @@ const pathHalfWidth = 1.6
 export const mountainCover: CoverSet = {
 	kinds: ['rock', 'rock', 'barrels'],
 	aside: pathHalfWidth + 1.5,
-	colours: { rock: [palette.rock, 0x7a776f, 0x96938b], barrels: [0x5a4030] },
+	colours: { rock: [palette.rock, 0x7a776f, 0x96938b], barrels: [0x5a4030], woodpile: [0x6a4a30, 0x7a5236], 'stone-lantern': [0x8d877b, 0x9a958a] },
 }
 
 /**
@@ -111,6 +111,7 @@ export const mountainCover: CoverSet = {
 export const mountainDistricts: readonly District[] = [
 	{
 		name: 'Foothill pines',
+		cover: [{ kind: 'woodpile' }, { kind: 'rock' }],
 		rows: [
 			// Close behind the rocks, so the slope is wooded right up to the steps' own pines.
 			{ shape: 'pine', from: 24, to: 45, perTile: 4.5, colours: [[0x4a3a2c], [0x2f4a32, 0x355238, 0x3a5a3c]] },
@@ -122,6 +123,7 @@ export const mountainDistricts: readonly District[] = [
 	},
 	{
 		name: 'Rock garden',
+		cover: [{ kind: 'stone-lantern' }, { kind: 'rock' }],
 		rows: [
 			{ shape: 'pine', from: 24, to: 40, perTile: 2.5, colours: [[0x4a3a2c], [0x2f4a32, 0x355238]] },
 			{ shape: 'hill', from: 70, to: 130, perTile: 0.5, colours: [[0x6a6f4c, 0x5e6446, 0x76795a]] },

@@ -100,7 +100,7 @@ const pathHalfWidth = 1.5
 export const riceCover: CoverSet = {
 	kinds: ['bales', 'bales', 'cart'],
 	aside: pathHalfWidth + 1.2,
-	colours: { bales: [0xc9b06a, 0xb89f5c, 0xd4bd78], cart: [0xd8c8a0, 0xa08a64], 'rice-basket': [0x9a7a45, 0xa88a50], scarecrow: [0xc9a75e, 0xb89a55] },
+	colours: { bales: [0xc9b06a, 0xb89f5c, 0xd4bd78], cart: [0xd8c8a0, 0xa08a64], 'rice-basket': [0x9a7a45, 0xa88a50], scarecrow: [0xc9a75e, 0xb89a55], 'stone-lantern': [0x8d877b, 0x9a958a] },
 }
 
 /**
@@ -130,6 +130,7 @@ export const riceDistricts: readonly District[] = [
 	},
 	{
 		name: 'Irrigation ponds',
+		cover: [{ kind: 'water-wheel' }, { kind: 'bales' }],
 		rows: [
 			{ shape: 'pond', from: 32, to: 70, perTile: 1, colours: [[0x2d4a5a, 0x34566a]] },
 			{ shape: 'bamboo', from: 40, to: 80, perTile: 2, colours: [[0x7fa046, 0x8aa84e]] },
@@ -139,6 +140,7 @@ export const riceDistricts: readonly District[] = [
 	},
 	{
 		name: 'Shrine grove',
+		cover: [{ kind: 'stone-lantern' }, { kind: 'rock' }],
 		rows: [
 			{ shape: 'torii', across: true, span: pathHalfWidth * 2 + 0.4, from: 0, to: 0, perTile: 0.4, colours: [[0xa8261c], [0xa8261c], [0x2a2a2e, 0x8e2a22]] },
 			{ shape: 'lantern', from: pathHalfWidth + 0.4, to: pathHalfWidth + 0.7, perTile: 0.4, colours: [[0x8d877b, 0x9a958a], [0x8d877b, 0x7a756c]] },

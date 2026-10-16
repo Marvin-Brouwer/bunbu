@@ -98,7 +98,7 @@ const pathHalfWidth = 1.6
 export const bambooCover: CoverSet = {
 	kinds: ['rock', 'bales'],
 	aside: pathHalfWidth + 1.3,
-	colours: { rock: [palette.stone, 0x7f8a6a], bales: [palette.stalk, 0x9ab05a], 'bamboo-bundle': [0xa8a05a, 0x9a9a50, 0xb0a868] },
+	colours: { rock: [palette.stone, 0x7f8a6a], bales: [palette.stalk, 0x9ab05a], 'bamboo-bundle': [0xa8a05a, 0x9a9a50, 0xb0a868], jizo: [0x8d877b, 0x7f8a6a], woodpile: [0x6a4a30, 0x7a5236] },
 }
 
 /**
@@ -117,6 +117,7 @@ export const bambooDistricts: readonly District[] = [
 	},
 	{
 		name: 'Mossy stones',
+		cover: [{ kind: 'jizo' }, { kind: 'rock' }],
 		rows: [
 			{ shape: 'rock', from: 26, to: 60, perTile: 2.2, colours: [[palette.stone, 0x7f8a6a, 0x6f7a5a]] },
 			{ shape: 'bamboo', from: 30, to: 70, perTile: 4, colours: [[0x7fa046, 0x8aa84e, 0x6f9440]] },
@@ -133,6 +134,7 @@ export const bambooDistricts: readonly District[] = [
 	},
 	{
 		name: 'Forest edge',
+		cover: [{ kind: 'woodpile' }, { kind: 'bamboo-bundle' }],
 		rows: [
 			{ shape: 'broadleaf', from: 26, to: 90, perTile: 3, colours: [[0x4a3a2c], [0x4a6634, 0x557038, 0x6f9440]] },
 			{ shape: 'pine', from: 40, to: 110, perTile: 2, colours: [[0x4a3a2c], [0x2f4a32, 0x355238]] },

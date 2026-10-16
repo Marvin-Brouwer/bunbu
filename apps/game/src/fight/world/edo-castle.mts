@@ -104,7 +104,7 @@ const gateAt = 6
 export const castleCover: CoverSet = {
 	kinds: ['crates', 'barrels', 'rock'],
 	aside: pathHalfWidth + 1.6,
-	colours: { crates: [0x8a6a46, 0x7a5a3a], barrels: [0x5a4030, 0x6a4a30], rock: [0x8d877b, 0x7a756c], palanquin: [0x2a1e1a, 0x6e1f0f] },
+	colours: { crates: [0x8a6a46, 0x7a5a3a], barrels: [0x5a4030, 0x6a4a30], rock: [0x8d877b, 0x7a756c], palanquin: [0x2a1e1a, 0x6e1f0f], guard: [0x2f3a44, 0x6e1f0f] },
 }
 
 /**
@@ -115,6 +115,7 @@ export const castleCover: CoverSet = {
 export const castleDistricts: readonly District[] = [
 	{
 		name: "Retainers' quarter",
+		cover: [{ kind: 'weapon-rack' }, { kind: 'guard', ambush: 0.3, decoy: 1.5 }, { kind: 'crates' }],
 		rows: [
 			// Right behind the walls and the moat, pines and the first roofs, so no lawn lies bare.
 			{ shape: 'pine', from: 22, to: 40, perTile: 4, colours: [[0x3a2e26], [0x2a3e2a, 0x30482e]] },
@@ -144,6 +145,7 @@ export const castleDistricts: readonly District[] = [
 	},
 	{
 		name: "Keep's approach",
+		cover: [{ kind: 'guard', ambush: 0.3, decoy: 1.5 }, { kind: 'palanquin' }, { kind: 'rock' }],
 		rows: [
 			{ shape: 'pine', from: 22, to: 32, perTile: 2.5, colours: [[0x3a2e26], [0x2a3e2a, 0x30482e]] },
 			{ shape: 'wall', from: 32, to: 48, perTile: 1.4, colours: [[0x8d877b, 0x7a756c], [0xeae4d4, 0xddd5c2], [0x2e3036, 0x34404f]] },

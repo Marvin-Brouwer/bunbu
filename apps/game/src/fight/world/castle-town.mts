@@ -100,6 +100,7 @@ export const townDistricts: readonly District[] = [
 	},
 	{
 		name: 'Pond and red bridge',
+		cover: [{ kind: 'sake-barrels' }, { kind: 'rock' }, { kind: 'villager', ambush: 0.3, decoy: 1.5 }],
 		rows: [
 			{ shape: 'lantern', from: gardenHalfWidth + 0.8, to: gardenHalfWidth + 1.4, zone: 'garden', perTile: 0.8, colours: [[0x8d877b, 0x9a958a], [0x8d877b, 0x7a756c]] },
 			{ shape: 'bridge', from: 22, to: 40, perTile: 0.9, colours: [[0x2d4a5a], [0xa8261c], [0xa8261c]] },
@@ -111,6 +112,7 @@ export const townDistricts: readonly District[] = [
 	},
 	{
 		name: 'Castle approach',
+		cover: [{ kind: 'guard', ambush: 0.3, decoy: 1.5 }, { kind: 'sake-barrels' }, { kind: 'crates' }],
 		rows: [
 			{ shape: 'wall', from: 22, to: 30, perTile: 1.6, colours: [[0x8d877b, 0x7a756c], [0xeae4d4, 0xddd5c2], [0x2e3036, 0x34404f]] },
 			{ shape: 'pagoda', from: 45, to: 90, perTile: 0.3, colours: [[0xeae4d4], [0x2e3036, 0x34404f]] },
@@ -123,7 +125,7 @@ export const townDistricts: readonly District[] = [
 export const townCover: CoverSet = {
 	kinds: ['crates', 'barrels', 'cart'],
 	aside: streetHalfWidth - 1.3,
-	colours: { crates: [0xb89a6a, 0x8a6a46, 0x7a5a3a], barrels: [0x6a4a30, 0x5a4030, 0x7a5236], cart: [0xd8c8a0, 0xc2ad84], 'market-stand': [0x2f4a7a, 0xb3391f, 0x4f6b2f], villager: [0x2f4a7a, 0x5b5348, 0x4f6b2f, 0x8e2a22] },
+	colours: { crates: [0xb89a6a, 0x8a6a46, 0x7a5a3a], barrels: [0x6a4a30, 0x5a4030, 0x7a5236], cart: [0xd8c8a0, 0xc2ad84], 'market-stand': [0x2f4a7a, 0xb3391f, 0x4f6b2f], villager: [0x2f4a7a, 0x5b5348, 0x4f6b2f, 0x8e2a22], 'sake-barrels': [0xe8dcc0, 0xd8c8a0], guard: [0x2f3a44, 0x6e1f0f] },
 }
 
 /** From dusk to night: the sun goes down and the shops and lanterns light up. One light per quarter of the stage ({@link passTime}). */
