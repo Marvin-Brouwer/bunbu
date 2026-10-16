@@ -79,6 +79,7 @@ const palette = {
 export const townDistricts: readonly District[] = [
 	{
 		name: 'Gate gardens',
+		cover: [{ kind: 'market-stand' }, { kind: 'crates' }, { kind: 'villager', ambush: 0.3, decoy: 2 }],
 		rows: [
 			{ shape: 'torii', across: true, span: gardenHalfWidth * 2 + 0.6, zone: 'garden', from: 0, to: 0, perTile: 0.8, colours: [[0xa8261c], [0xa8261c], [0x2a2a2e, 0x8e2a22]] },
 			{ shape: 'torii', across: true, span: streetHalfWidth * 2 + 0.4, zone: 'street', from: 0, to: 0, perTile: 0.25, colours: [[0xa8261c], [0xa8261c], [0x2a2a2e, 0x8e2a22]] },
@@ -89,6 +90,7 @@ export const townDistricts: readonly District[] = [
 	},
 	{
 		name: 'Shop street',
+		cover: [{ kind: 'market-stand' }, { kind: 'cart' }, { kind: 'barrels' }, { kind: 'villager', ambush: 0.3, decoy: 1.5 }],
 		rows: [
 			{ shape: 'house', from: 24, to: 36, perTile: 2, colours: [palette.plaster, palette.roofs] },
 			{ shape: 'hut', from: 38, to: 62, perTile: 1.6, colours: [palette.timber, [0x7a6440, 0x6a5a3c]] },
@@ -121,7 +123,7 @@ export const townDistricts: readonly District[] = [
 export const townCover: CoverSet = {
 	kinds: ['crates', 'barrels', 'cart'],
 	aside: streetHalfWidth - 1.3,
-	colours: { crates: [0xb89a6a, 0x8a6a46, 0x7a5a3a], barrels: [0x6a4a30, 0x5a4030, 0x7a5236], cart: [0xd8c8a0, 0xc2ad84] },
+	colours: { crates: [0xb89a6a, 0x8a6a46, 0x7a5a3a], barrels: [0x6a4a30, 0x5a4030, 0x7a5236], cart: [0xd8c8a0, 0xc2ad84], 'market-stand': [0x2f4a7a, 0xb3391f, 0x4f6b2f], villager: [0x2f4a7a, 0x5b5348, 0x4f6b2f, 0x8e2a22] },
 }
 
 /** From dusk to night: the sun goes down and the shops and lanterns light up. One light per quarter of the stage ({@link passTime}). */

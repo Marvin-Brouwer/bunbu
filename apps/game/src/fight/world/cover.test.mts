@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { metresPerAmbush } from '../flows/run.mts'
-import { townCover } from './castle-town.mts'
-import { coverReach, coverSpotsAt, decoysOf } from './cover.mts'
+import { randomOf } from './backdrop.mts'
+import { townCover, townDistricts } from './castle-town.mts'
+import { coverKindAt, coverReach, coverSpotsAt, decoysOf } from './cover.mts'
 import { createPath, townRound } from './path.mts'
 
 describe('the decoys', () => {
@@ -14,5 +15,24 @@ describe('the decoys', () => {
 
 		expect(decoys.length).toBeGreaterThan(1000)
 		expect(closest).toBeGreaterThan(2 * coverReach)
+	})
+})
+
+describe('the covers of a district', () => {
+	const stageLength = 40 * metresPerAmbush
+	const random = randomOf(11)
+	const kindsIn = (distance: number, role: 'ambush' | 'decoy') => Array.from({ length: 4000 }, () => coverKindAt(townCover, townDistricts, distance, stageLength, role, random))
+	const share = (kinds: readonly string[], kind: string) => kinds.filter((one) => one === kind).length / kinds.length
+
+	it('are the district\'s own where it has them, and the stage\'s elsewhere', () => {
+		const gateGardens = new Set(townDistricts[0]!.cover!.map((choice) => choice.kind))
+
+		expect(kindsIn(100, 'ambush').every((kind) => gateGardens.has(kind))).toBe(true)
+		expect(new Set(kindsIn(stageLength * 0.6, 'ambush'))).toEqual(new Set(townCover.kinds))
+	})
+
+	it('have a villager mostly just there, rarely one a ninja comes from', () => {
+		expect(share(kindsIn(100, 'decoy'), 'villager')).toBeGreaterThan(0.35)
+		expect(share(kindsIn(100, 'ambush'), 'villager')).toBeLessThan(0.15)
 	})
 })

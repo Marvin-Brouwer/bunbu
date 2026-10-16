@@ -132,6 +132,7 @@ export const mountainDistricts: readonly District[] = [
 	},
 	{
 		name: 'Pagoda terrace',
+		cover: [{ kind: 'temple-bell', ambush: 0.7 }, { kind: 'barrels' }, { kind: 'rock' }],
 		rows: [
 			{ shape: 'pine', from: 24, to: 40, perTile: 2.5, colours: [[0x4a3a2c], [0x2f4a32, 0x355238]] },
 			{ shape: 'hill', from: 70, to: 130, perTile: 0.5, colours: [[0x6a6f4c, 0x5e6446, 0x76795a]] },

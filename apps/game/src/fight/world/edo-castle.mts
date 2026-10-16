@@ -104,7 +104,7 @@ const gateAt = 6
 export const castleCover: CoverSet = {
 	kinds: ['crates', 'barrels', 'rock'],
 	aside: pathHalfWidth + 1.6,
-	colours: { crates: [0x8a6a46, 0x7a5a3a], barrels: [0x5a4030, 0x6a4a30], rock: [0x8d877b, 0x7a756c] },
+	colours: { crates: [0x8a6a46, 0x7a5a3a], barrels: [0x5a4030, 0x6a4a30], rock: [0x8d877b, 0x7a756c], palanquin: [0x2a1e1a, 0x6e1f0f] },
 }
 
 /**
@@ -125,6 +125,7 @@ export const castleDistricts: readonly District[] = [
 	},
 	{
 		name: 'Castle gardens',
+		cover: [{ kind: 'palanquin' }, { kind: 'rock' }],
 		rows: [
 			{ shape: 'pine', from: 22, to: 34, perTile: 2.5, colours: [[0x3a2e26], [0x2a3e2a, 0x30482e]] },
 			{ shape: 'bridge', from: 32, to: 60, perTile: 0.6, colours: [[0x2d4a5a], [0xa8261c], [0xa8261c]] },
@@ -135,6 +136,7 @@ export const castleDistricts: readonly District[] = [
 	},
 	{
 		name: 'Pine walk',
+		cover: [{ kind: 'palanquin' }, { kind: 'crates' }],
 		rows: [
 			{ shape: 'lantern', from: pathHalfWidth + 0.6, to: pathHalfWidth + 0.9, perTile: 0.6, colours: [[0x8d877b, 0x9a958a], [0x8d877b, 0x7a756c]] },
 			{ shape: 'pine', from: 22, to: 120, perTile: 6, colours: [[0x3a2e26], [0x2a3e2a, 0x30482e]] },

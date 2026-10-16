@@ -98,7 +98,7 @@ const pathHalfWidth = 1.6
 export const bambooCover: CoverSet = {
 	kinds: ['rock', 'bales'],
 	aside: pathHalfWidth + 1.3,
-	colours: { rock: [palette.stone, 0x7f8a6a], bales: [palette.stalk, 0x9ab05a] },
+	colours: { rock: [palette.stone, 0x7f8a6a], bales: [palette.stalk, 0x9ab05a], 'bamboo-bundle': [0xa8a05a, 0x9a9a50, 0xb0a868] },
 }
 
 /**
@@ -109,6 +109,7 @@ export const bambooCover: CoverSet = {
 export const bambooDistricts: readonly District[] = [
 	{
 		name: 'Deep grove',
+		cover: [{ kind: 'bamboo-bundle' }, { kind: 'rock' }, { kind: 'panda', ambush: 0.15, decoy: 0.5 }],
 		rows: [
 			{ shape: 'bamboo', from: 26, to: 70, perTile: 6, colours: [[0x7fa046, 0x8aa84e, 0x6f9440]] },
 			{ shape: 'broadleaf', from: 50, to: 110, perTile: 1.4, colours: [[0x4a3a2c], [0x4a6634, 0x557038]] },
@@ -123,6 +124,7 @@ export const bambooDistricts: readonly District[] = [
 	},
 	{
 		name: 'Shrine path',
+		cover: [{ kind: 'bamboo-bundle' }, { kind: 'crates' }],
 		rows: [
 			{ shape: 'torii', across: true, span: pathHalfWidth * 2 + 0.4, from: 0, to: 0, perTile: 0.6, colours: [[0xa8261c], [0xa8261c], [0x2a2a2e, 0x8e2a22]] },
 			{ shape: 'lantern', from: pathHalfWidth + 0.7, to: pathHalfWidth + 1, perTile: 0.5, colours: [[0x8d877b, 0x9a958a], [0x8d877b, 0x7a756c]] },

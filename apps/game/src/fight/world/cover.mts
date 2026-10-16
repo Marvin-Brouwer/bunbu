@@ -4,14 +4,20 @@
  * out from behind them rather than out of nowhere. More stand along the way at random where no
  * ambush is, so the ones at an ambush give nothing away.
  *
+ * Each district of a stage ([districts](./districts.mts)) can have covers of its own, as fits it: a
+ * basket of rice or a scarecrow at the village edge, a market stand or a villager by the town's
+ * gate gardens, now and then a panda eating bamboo in the deep grove. A rare one is rarer still at an
+ * ambush: a villager is mostly just there.
+ *
  * Laid out round the samurai as he runs, like the backdrop ([backdrop](./backdrop.mts)), afresh
- * every run. Plain low-poly shapes, a little over a ninja's height so one fits behind.
+ * every run. Plain low-poly shapes, about a ninja's height or more so one fits behind.
  */
 
 import {
 	BoxGeometry,
 	BufferGeometry,
 	Color,
+	ConeGeometry,
 	CylinderGeometry,
 	DodecahedronGeometry,
 	Group,
@@ -19,13 +25,38 @@ import {
 	Matrix4,
 	MeshStandardMaterial,
 } from 'three'
-import { randomOf } from './backdrop.mts'
+import { randomOf, type District } from './backdrop.mts'
+import { districtAt } from './districts.mts'
 import { placed, within } from './kit.mts'
 import type { Owned } from './landscape.mts'
 import { beside, type Path } from './path.mts'
 
 /** The things a ninja hides behind. */
-export type CoverKind = 'crates' | 'barrels' | 'cart' | 'bales' | 'rock'
+export type CoverKind =
+	| 'crates' | 'barrels' | 'cart' | 'bales' | 'rock'
+	/** A big woven basket heaped with rice, and a smaller one. */
+	| 'rice-basket'
+	/** A scarecrow in a straw coat and hat, with straw bales at its foot. */
+	| 'scarecrow'
+	/** Cut bamboo bound in upright bundles. */
+	| 'bamboo-bundle'
+	/** A panda sitting and eating a stalk of bamboo. */
+	| 'panda'
+	/** A market stand: a table of goods under a cloth roof on four posts. */
+	| 'market-stand'
+	/** A villager in a robe and a straw hat, with a basket on the back. */
+	| 'villager'
+	/** A temple bell hung in its little roofed frame. */
+	| 'temple-bell'
+	/** A lacquered palanquin on its pole, set down. */
+	| 'palanquin'
+
+/**
+ * A cover a district has, and how likely it is against the others there, at an ambush and as a
+ * decoy where none is: `1` each unless given. A villager is mostly just there, so it is far likelier
+ * as a decoy than at an ambush.
+ */
+export type CoverChoice = { readonly kind: CoverKind; readonly ambush?: number; readonly decoy?: number }
 
 /** What stands by a stage's path: which kinds, how far off its middle, and in which colours. */
 export type CoverSet = {
@@ -80,7 +111,7 @@ const ahead = 140
  * well away from where an ambush springs, and never on an ambush's own covers, which can stand
  * past that: two covers never stand in each other. With the heading they stand along.
  */
-export function decoysOf(path: Path, set: CoverSet, tile: number, every: number, seed: number): (CoverSpot & { heading: number })[] {
+export function decoysOf(path: Path, set: CoverSet, tile: number, every: number, seed: number): (CoverSpot & { heading: number; distance: number })[] {
 	const random = randomOf(seed ^ Math.imul(tile, 0x9e3779b1) ^ 0x5bd1e995)
 	const from = tile * tileLength
 	const count = Math.floor(random() * 2.2)
@@ -88,13 +119,14 @@ export function decoysOf(path: Path, set: CoverSet, tile: number, every: number,
 		.filter(({ distance }) => Math.abs(distance - Math.round(distance / every) * every) >= 22 && !nearAmbushCover(distance, every, 2 * coverReach + 0.5))
 		.map(({ distance, side }) => {
 			const point = path.at(distance)
-			return { ...beside(point, side * set.aside), heading: point.heading }
+			return { ...beside(point, side * set.aside), heading: point.heading, distance }
 		})
 }
 
 /** The shapes the covers are made of, one unit in size, standing on the ground. */
-function shapesOf(): { box: BufferGeometry; barrel: BufferGeometry; wheel: BufferGeometry; rock: BufferGeometry } {
+function shapesOf(): { box: BufferGeometry; barrel: BufferGeometry; wheel: BufferGeometry; rock: BufferGeometry; cone: BufferGeometry } {
 	return {
+		cone: new ConeGeometry(0.5, 1, 8).translate(0, 0.5, 0),
 		box: new BoxGeometry(1, 1, 1).translate(0, 0.5, 0),
 		barrel: new CylinderGeometry(0.5, 0.45, 1, 10).translate(0, 0.5, 0),
 		wheel: new CylinderGeometry(0.5, 0.5, 1, 12).rotateZ(Math.PI / 2),
@@ -144,6 +176,95 @@ function partsOf(kind: CoverKind, colours: readonly number[], random: () => numb
 			{ shape: 'barrel', matrix: placed(0, 1.3, 0, 0, 0.8, 0.9, 0.8), colour: pick() },
 		]
 	}
+	if (kind === 'rice-basket') {
+		const basket = pick()
+		return [
+			{ shape: 'barrel', matrix: placed(0, 0, 0, 0, 1.7, 1.3, 1.7), colour: basket },
+			{ shape: 'cone', matrix: placed(0, 1.3, 0, 0, 1.6, 0.8, 1.6), colour: 0xf2ede0 },
+			{ shape: 'barrel', matrix: placed(1.05, 0, 0.35, 0, 0.9, 0.7, 0.9), colour: basket },
+			{ shape: 'cone', matrix: placed(1.05, 0.7, 0.35, 0, 0.85, 0.4, 0.85), colour: 0xf2ede0 },
+		]
+	}
+	if (kind === 'scarecrow') {
+		const straw = pick()
+		return [
+			{ shape: 'box', matrix: placed(0, 0, 0, 0, 0.14, 2.3, 0.14), colour: 0x5c3d24 },
+			{ shape: 'box', matrix: placed(0, 1.65, 0, 0, 1.8, 0.1, 0.1), colour: 0x5c3d24 },
+			{ shape: 'cone', matrix: placed(0, 0.75, 0, 0, 1.1, 1.1, 1.1), colour: straw },
+			{ shape: 'rock', matrix: placed(0, 1.75, 0, 0, 0.5), colour: 0xe4d8bd },
+			{ shape: 'cone', matrix: placed(0, 2.05, 0, 0, 1, 0.35, 1), colour: straw },
+			{ shape: 'barrel', matrix: placed(-0.55, 0, 0.3, 0, 0.9, 1.2, 0.9), colour: straw },
+			{ shape: 'barrel', matrix: placed(0.6, 0, 0.35, 0, 0.85, 1.1, 0.85), colour: straw },
+		]
+	}
+	if (kind === 'bamboo-bundle') {
+		const cane = pick()
+		return [-0.55, 0.5].flatMap((x, index) => {
+			const height = index === 0 ? 2.4 : 2.1
+			return [
+				{ shape: 'barrel' as const, matrix: placed(x, 0, index * 0.2, 0, 0.95, height, 0.95), colour: cane },
+				{ shape: 'barrel' as const, matrix: placed(x, height * 0.3, index * 0.2, 0, 1, 0.12, 1), colour: 0x5c3d24 },
+				{ shape: 'barrel' as const, matrix: placed(x, height * 0.7, index * 0.2, 0, 1, 0.12, 1), colour: 0x5c3d24 },
+			]
+		})
+	}
+	if (kind === 'panda') {
+		// Black and white, sitting up facing back down the way, a stalk of bamboo in its paws, a few
+		// more stalks behind it.
+		const white = 0xf2efe6
+		const black = 0x2a2626
+		return [
+			{ shape: 'rock', matrix: placed(0, 0, 0, 0.4, 1.5, 1.3, 1.4), colour: white },
+			{ shape: 'rock', matrix: placed(-0.45, 0, 0.35, 0, 0.6), colour: black },
+			{ shape: 'rock', matrix: placed(0.45, 0, 0.35, 0, 0.6), colour: black },
+			{ shape: 'rock', matrix: placed(0, 0.7, 0.15, 0, 1.1, 0.5, 0.9), colour: black },
+			{ shape: 'rock', matrix: placed(0, 1.05, 0.05, 0.3, 1), colour: white },
+			{ shape: 'rock', matrix: placed(-0.32, 1.65, 0, 0, 0.3), colour: black },
+			{ shape: 'rock', matrix: placed(0.32, 1.65, 0, 0, 0.3), colour: black },
+			{ shape: 'box', matrix: placed(-0.16, 1.4, 0.42, 0, 0.16, 0.1, 0.05), colour: black },
+			{ shape: 'box', matrix: placed(0.16, 1.4, 0.42, 0, 0.16, 0.1, 0.05), colour: black },
+			{ shape: 'barrel', matrix: within(placed(0.2, 0.55, 0.55), within(rotatedX(0.5), placed(0, 0, 0, 0, 0.09, 1.5, 0.09))), colour: 0x7fa046 },
+			...[[-0.8, -0.5], [0.1, -0.8], [0.85, -0.45]].map(([x, z]) => ({ shape: 'barrel' as const, matrix: placed(x!, 0, z!, 0, 0.14, 2.6, 0.14), colour: 0x7fa046 })),
+		]
+	}
+	if (kind === 'market-stand') {
+		const cloth = pick()
+		return [
+			{ shape: 'box', matrix: placed(0, 0, 0, 0, 2, 0.9, 1), colour: 0x8a6240 },
+			...[[-0.95, -0.55], [0.95, -0.55], [-0.95, 0.55], [0.95, 0.55]].map(([x, z]) => ({ shape: 'box' as const, matrix: placed(x!, 0, z!, 0, 0.1, 2.2, 0.1), colour: 0x5c3d24 })),
+			{ shape: 'box', matrix: placed(0, 2.2, 0, 0, 2.3, 0.08, 1.4), colour: cloth },
+			{ shape: 'box', matrix: placed(0, 1.75, -0.7, 0, 2.3, 0.45, 0.04), colour: cloth },
+			...[-0.6, -0.15, 0.3, 0.7].map((x) => ({ shape: 'rock' as const, matrix: placed(x, 0.85, -0.1, 0, 0.35), colour: random() > 0.5 ? 0xd9765f : 0xe0a040 })),
+			{ shape: 'barrel', matrix: placed(0.4, 0.9, 0.2, 0, 0.5, 0.4, 0.5), colour: 0x9a7a45 },
+		]
+	}
+	if (kind === 'villager') {
+		// A robe in one of the town's colours, a straw hat, and a basket carried on the back.
+		const robe = pick()
+		return [
+			{ shape: 'cone', matrix: placed(0, 0, 0, 0, 0.75, 1.45, 0.65), colour: robe },
+			{ shape: 'rock', matrix: placed(0, 1.4, 0, 0, 0.36), colour: 0xe0b48a },
+			{ shape: 'cone', matrix: placed(0, 1.62, 0, 0, 0.75, 0.22, 0.75), colour: 0xc9a75e },
+			{ shape: 'barrel', matrix: placed(0, 0.65, 0.35, 0, 0.55, 0.7, 0.45), colour: 0x9a7a45 },
+		]
+	}
+	if (kind === 'temple-bell') {
+		return [
+			...[[-0.75, -0.75], [0.75, -0.75], [-0.75, 0.75], [0.75, 0.75]].map(([x, z]) => ({ shape: 'box' as const, matrix: placed(x!, 0, z!, 0, 0.16, 2.3, 0.16), colour: 0xa8261c })),
+			{ shape: 'cone', matrix: placed(0, 2.25, 0, Math.PI / 4, 2.6, 0.6, 2.6), colour: 0x3a3a44 },
+			{ shape: 'barrel', matrix: placed(0, 0.75, 0, 0, 1, 1.3, 1), colour: 0x6b5a3a },
+			{ shape: 'cone', matrix: placed(0, 2.02, 0, 0, 0.9, 0.12, 0.9), colour: 0x6b5a3a },
+		]
+	}
+	if (kind === 'palanquin') {
+		const lacquer = pick()
+		return [
+			{ shape: 'box', matrix: placed(0, 0.35, 0, 0, 1.1, 1.2, 1.7), colour: lacquer },
+			{ shape: 'box', matrix: placed(0, 1.55, 0, 0, 1.3, 0.12, 1.9), colour: 0x2a1e1a },
+			{ shape: 'box', matrix: placed(0, 1.75, 0, 0, 0.14, 0.14, 3.6), colour: 0x8a6240 },
+			...[-0.4, 0.4].map((x) => ({ shape: 'box' as const, matrix: placed(x, 0, 0, 0, 0.12, 0.35, 1.5), colour: 0x2a1e1a })),
+		]
+	}
 	// A boulder, and a smaller one leaning on it.
 	const size = 2.1 + random() * 0.5
 	return [
@@ -163,15 +284,36 @@ export type Cover = {
  * The covers of `set` along `path`: at every `every` metres, where an ambush springs, and at
  * random in between from `seed`, a new one every run.
  */
-export function createCover(path: Path, set: CoverSet, every: number, seed: number, owned: Owned): Cover {
+/** A tilt about `x`, forward. */
+function rotatedX(angle: number): Matrix4 {
+	return new Matrix4().makeRotationX(angle)
+}
+
+/**
+ * The kind of cover at `distance` along a stage of `stageLength` metres, for an ambush or as a
+ * decoy: from the district there, picked by how likely each of its covers is, else from `set`.
+ */
+export function coverKindAt(set: CoverSet, districts: readonly District[], distance: number, stageLength: number, role: 'ambush' | 'decoy', random: () => number): CoverKind {
+	const { from, to, mix } = districtAt(distance, stageLength)
+	const choices: readonly CoverChoice[] = districts[random() < mix ? to : from]?.cover ?? set.kinds.map((kind) => ({ kind }))
+	const weights = choices.map((choice) => choice[role] ?? 1)
+	let left = random() * weights.reduce((sum, weight) => sum + weight, 0)
+	for (const [index, choice] of choices.entries()) {
+		left -= weights[index] ?? 0
+		if (left < 0) return choice.kind
+	}
+	return choices.at(-1)?.kind ?? 'crates'
+}
+
+export function createCover(path: Path, set: CoverSet, every: number, seed: number, owned: Owned, districts: readonly District[] = [], stageLength: () => number = () => 0): Cover {
 	const shapes = shapesOf()
 	owned.geometries.push(...Object.values(shapes))
 	const material = new MeshStandardMaterial({ roughness: 0.95, flatShading: true })
 	owned.materials.push(material)
 
 	/** The covers round one point: their parts, turned to face the path, each of a kind picked at random. */
-	const coversAt = (spots: readonly CoverSpot[], heading: number, random: () => number): Part[] => spots.flatMap((spot) => {
-		const kind = set.kinds[Math.floor(random() * set.kinds.length)] ?? 'crates'
+	const coversAt = (spots: readonly CoverSpot[], distance: number, role: 'ambush' | 'decoy', heading: number, random: () => number): Part[] => spots.flatMap((spot) => {
+		const kind = coverKindAt(set, districts, distance, stageLength(), role, random)
 		const where = placed(spot.x, 0, spot.z, heading + (random() - 0.5) * 0.6)
 		return partsOf(kind, set.colours[kind] ?? [0x7a5a3a], random).map((part) => ({ ...part, matrix: within(where, part.matrix) }))
 	})
@@ -183,9 +325,9 @@ export function createCover(path: Path, set: CoverSet, every: number, seed: numb
 		const parts: Part[] = []
 		for (let ambush = Math.ceil(from / every) * every; ambush < from + tileLength; ambush += every) {
 			if (ambush <= 0) continue
-			parts.push(...coversAt(coverSpotsAt(path, ambush, set.aside), path.at(ambush).heading, random))
+			parts.push(...coversAt(coverSpotsAt(path, ambush, set.aside), ambush, 'ambush', path.at(ambush).heading, random))
 		}
-		for (const decoy of decoysOf(path, set, tile, every, seed)) parts.push(...coversAt([decoy], decoy.heading, random))
+		for (const decoy of decoysOf(path, set, tile, every, seed)) parts.push(...coversAt([decoy], decoy.distance, 'decoy', decoy.heading, random))
 		return parts
 	}
 

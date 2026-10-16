@@ -62,7 +62,7 @@ const newSeed = () => Math.floor(Math.random() * 2 ** 31)
 function around(scene: Scene, { path, view }: OwnWorld, districts: readonly District[], cover: CoverSet, stageLength: () => number): StageWorld {
 	const owned: Owned = { geometries: [], materials: [], textures: [] }
 	const backdrop = createBackdrop(path, districts, newSeed(), owned, stageLength)
-	const covers = createCover(path, cover, metresPerAmbush, newSeed(), owned)
+	const covers = createCover(path, cover, metresPerAmbush, newSeed(), owned, districts, stageLength)
 	scene.add(backdrop.group, covers.group)
 	return {
 		path,

@@ -26,6 +26,7 @@ import { gableGeometry, placed, within } from './kit.mts'
 import type { Owned } from './landscape.mts'
 import { beside, type Path, type Zone } from './path.mts'
 import { districtAt } from './districts.mts'
+import type { CoverChoice } from './cover.mts'
 
 /** The shapes a backdrop is made of. */
 export type BackdropShape =
@@ -66,6 +67,8 @@ export type BackdropRow = {
 export type District = {
 	readonly name: string
 	readonly rows: readonly BackdropRow[]
+	/** The covers by the way in this district ([cover](./cover.mts)), when it has its own. */
+	readonly cover?: readonly CoverChoice[]
 }
 
 /** Metres of path per tile: what is laid out at once as the samurai comes up to it. */

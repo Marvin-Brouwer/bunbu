@@ -85,6 +85,20 @@ In dev builds only, one button under the stages toggles them for the chosen quiz
   | Castle town | gate gardens (torii, red maples), shop street, pond and red bridge, castle approach (walls and the keep) |
   | Edo castle | retainers' quarter, castle gardens, pine walk, the keep's approach |
 
+  Some districts have their own things for the ninjas to hide behind ([cover](gameplay.md#ambush)), in place of the stage's crates, barrels, carts, straw and boulders, and the same stand along the way as decoys:
+
+  | District | Covers |
+  | --- | --- |
+  | Rice fields, village edge | a basket heaped with rice, a scarecrow in a straw coat, straw bales |
+  | Rice fields, open paddies | straw bales, a scarecrow |
+  | Bamboo forest, deep grove | bundles of cut bamboo, boulders, now and then a panda eating bamboo (a ninja comes from behind one even more rarely) |
+  | Bamboo forest, shrine path | bundles of cut bamboo, crates |
+  | Mountain temple, pagoda terrace | a temple bell in its roofed frame, barrels, boulders |
+  | Castle town, gate gardens | a market stand, crates, a villager with a basket on the back (mostly just there, rarely one a ninja comes from) |
+  | Castle town, shop street | a market stand, a cart, barrels, a villager |
+  | Edo castle, castle gardens | a palanquin set down, boulders |
+  | Edo castle, pine walk | a palanquin, crates |
+
   A district is at least 5 questions long, so a short test has fewer: 10 questions run through the first and the last, 15 through three. The stage's own streets, fields and paths stay the same throughout.
 
 ### 4 Ambush
