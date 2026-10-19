@@ -29,7 +29,7 @@ import {
 import type { GLTF } from 'three/addons/loaders/GLTFLoader.js'
 import { layBlocks } from './blocks.mts'
 import { Batch, chunkOf, placed, scatter, type Cursor } from './kit.mts'
-import { addAll, clearanceOf, cutAway, facingPath, fogFar, isFree, passTime, sky, skyRadius, stamp, strip, type Daylight, type Owned, type Planting, type StageView, type Taken } from './landscape.mts'
+import { addAll, castShadows, clearanceOf, facingPath, fadeNear, followSun, fogFar, isFree, passTime, sky, skyRadius, stamp, strip, type Daylight, type Owned, type Planting, type StageView, type Taken } from './landscape.mts'
 import type { District } from './backdrop.mts'
 import { nearAmbushCover, type CoverSet } from './cover.mts'
 import { metresPerAmbush } from '../flows/run.mts'
@@ -201,13 +201,7 @@ export function createEdoCastle(scene: Scene, path: Path, models: Promise<Castle
 	scene.add(ambient)
 	// A low sun, warm and long-shadowed.
 	const sun = new DirectionalLight(first.sun.colour, first.sun.intensity)
-	sun.castShadow = true
-	sun.shadow.mapSize.set(1024, 1024)
-	for (const side of ['left', 'bottom'] as const) sun.shadow.camera[side] = -18
-	for (const side of ['right', 'top'] as const) sun.shadow.camera[side] = 18
-	sun.shadow.camera.near = 1
-	sun.shadow.camera.far = 80
-	sun.shadow.bias = -0.0008
+	castShadows(sun)
 	scene.add(sun, sun.target)
 	const sunFrom = { x: -26, y: 22, z: 10 }
 
@@ -300,8 +294,8 @@ export function createEdoCastle(scene: Scene, path: Path, models: Promise<Castle
 	})
 	scene.add(blocks.group)
 
-	// How near the camera the gatehouses are cut away, in view depth; set every frame.
-	const cut = { value: 0 }
+	// The samurai's depth in view, where the gatehouses begin to fade; set every frame.
+	const fade = { value: 0 }
 	const samurai = new Vector3()
 
 	let disposed = false
@@ -317,7 +311,7 @@ export function createEdoCastle(scene: Scene, path: Path, models: Promise<Castle
 			if (wall !== undefined) addAll(group, stamp(wall, pending.walls, heightOf(wall), true, owned))
 			if (gate !== undefined) {
 				const made = stamp(gate, pending.gates, heightOf(gate), true, owned)
-				for (const mesh of made) cutAway(mesh.material as Material, cut)
+				for (const mesh of made) fadeNear(mesh.material as Material, fade)
 				addAll(group, made)
 			}
 			if (keep !== undefined) addAll(group, stamp(keep, pending.keeps, heightOf(keep), false, owned))
@@ -332,16 +326,14 @@ export function createEdoCastle(scene: Scene, path: Path, models: Promise<Castle
 		passTime: passTime({ scene, fog, backdrop, ambient, sun }, daylight),
 
 		frame(camera, x, z) {
-			// The samurai's depth in view, less a little, so the gate he is passing under still shows.
-			cut.value = Math.max(0, -samurai.set(x, 1, z).applyMatrix4(camera.matrixWorldInverse).z - 3)
+			fade.value = -samurai.set(x, 1, z).applyMatrix4(camera.matrixWorldInverse).z
 		},
 
 		follow(x, z, distance) {
 			blocks.follow(distance)
 			ground.position.set(x, 0, z)
 			backdrop.position.set(x, 0, z)
-			sun.position.set(x + sunFrom.x, sunFrom.y, z + sunFrom.z)
-			sun.target.position.set(x, 0, z)
+			followSun(sun, sunFrom, path, distance)
 		},
 
 		dispose() {
