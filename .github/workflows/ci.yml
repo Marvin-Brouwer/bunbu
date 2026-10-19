@@ -51,3 +51,15 @@ jobs:
 
       # Starts the dev server itself (apps/game/playwright.config.mts).
       - run: pnpm e2e
+
+      # The How to play video is CI's, filmed with its fonts: when it is out of date, it is filmed
+      # again here, to download from the run and commit (apps/game/e2e/how-to-play-video.spec.mts).
+      - id: film
+        if: failure() && hashFiles('apps/game/test-results/how-to-play-video-*/**') != ''
+        run: pnpm --filter @bunbu/game how-to-play-video
+
+      - if: failure() && steps.film.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: how-to-play-video
+          path: apps/game/public/guide/how-to-play.*

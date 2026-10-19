@@ -1,14 +1,16 @@
 /**
  * The video guide on How to play (`public/guide/how-to-play.webm`, with a still of it as its
- * poster, `how-to-play.jpg`) is up to date: the run is filmed again and compared with the one in
- * the repository. When the game looks different, film it again and commit it:
- * `pnpm --filter @bunbu/game how-to-play-video`.
+ * poster, `how-to-play.jpg`) is up to date: the run is filmed again on CI and compared with the one
+ * in the repository. The game's text is in the device's own fonts, so the video is the one CI
+ * films: when it is out of date, CI films it again and adds it to the run as `how-to-play-video`,
+ * to download and commit. `pnpm --filter @bunbu/game how-to-play-video` films it on this machine,
+ * to see it; only the check on CI compares it.
  *
  * The video is a run on the fixture quiz from the title to the results, every kind of question
  * answered by swiping as a player would, with captions saying what happens. The running between
  * the ambushes is left out. As with the stage pictures (`stage-pictures.spec.mts`), time and chance
  * are fixed: Playwright's clock moves on one frame of the video at a time, the page's animations
- * with it, and `Math.random` is seeded, so a run films the same on every machine but for
+ * with it, and `Math.random` is seeded, so a run films the same on the same machine but for
  * {@link tolerance}. Encoding it takes Playwright's ffmpeg, which comes with its browsers
  * (`playwright install chromium`).
  */
@@ -30,6 +32,7 @@ const size = { width: 390, height: 844 }
 const fps = 25
 const bitRate = '450k'
 const update = process.env.UPDATE_HOW_TO_PLAY_VIDEO !== undefined
+const ci = process.env.CI !== undefined
 /**
  * How far a frame may be from the same frame of the video in the repository: the share of its
  * pixels that may be off by more than {@link changed} in a colour. Encoding blurs a frame
@@ -321,7 +324,9 @@ test.use({
 })
 
 test('the video on How to play is up to date', async ({ page }) => {
-	test.setTimeout(1_800_000)
+	test.skip(!update && !ci, 'the video is CI\'s, filmed with its fonts: it is compared on CI only')
+	// Filming draws every frame in software, which takes CI the better part of an hour.
+	test.setTimeout(update ? 7_200_000 : 1_800_000)
 	// The same chance every run, and a clock that only moves when it is told to.
 	await page.addInitScript(() => {
 		let state = 7
