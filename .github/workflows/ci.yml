@@ -35,6 +35,11 @@ jobs:
 
   e2e:
     runs-on: ubuntu-latest
+    # Playwright's image, browsers and fonts included, the one the How to play video is filmed in
+    # (apps/game/scripts/how-to-play-video.mts). Its version is @playwright/test's.
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.0-noble
+      options: --ipc=host
     steps:
       - uses: actions/checkout@v5
 
@@ -47,19 +52,5 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - run: pnpm --filter @bunbu/game exec playwright install --with-deps chromium
-
       # Starts the dev server itself (apps/game/playwright.config.mts).
       - run: pnpm e2e
-
-      # The How to play video is CI's, filmed with its fonts: when it is out of date, it is filmed
-      # again here, to download from the run and commit (apps/game/e2e/how-to-play-video.spec.mts).
-      - id: film
-        if: failure() && hashFiles('apps/game/test-results/how-to-play-video-*/**') != ''
-        run: pnpm --filter @bunbu/game how-to-play-video
-
-      - if: failure() && steps.film.outcome == 'success'
-        uses: actions/upload-artifact@v4
-        with:
-          name: how-to-play-video
-          path: apps/game/public/guide/how-to-play.*

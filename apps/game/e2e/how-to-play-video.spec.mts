@@ -1,10 +1,11 @@
 /**
  * The video guide on How to play (`public/guide/how-to-play.webm`, with a still of it as its
- * poster, `how-to-play.jpg`) is up to date: the run is filmed again on CI and compared with the one
- * in the repository. The game's text is in the device's own fonts, so the video is the one CI
- * films: when it is out of date, CI films it again and adds it to the run as `how-to-play-video`,
- * to download and commit. `pnpm --filter @bunbu/game how-to-play-video` films it on this machine,
- * to see it; only the check on CI compares it.
+ * poster, `how-to-play.jpg`) is up to date: the run is played again on CI and a frame a second
+ * compared with the stills kept of it (`how-to-play-video/`). When the game looks different, film it
+ * again, which takes the stills again too, and commit them:
+ * `pnpm --filter @bunbu/game how-to-play-video`. The game's text is in the device's own fonts, so
+ * that films it in Playwright's Docker image, the one CI runs in (`scripts/how-to-play-video.mts`),
+ * and only CI compares it.
  *
  * The video is a run on the fixture quiz from the title to the results, every kind of question
  * answered by swiping as a player would, with captions saying what happens. The running between
@@ -21,7 +22,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { spawn } from 'node:child_process'
 import { readdirSync } from 'node:fs'
-import { readFile, writeFile } from 'node:fs/promises'
+import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { homedir, platform } from 'node:os'
 import { createRequire } from 'node:module'
 import { dirname, join } from 'node:path'
@@ -34,7 +35,7 @@ const bitRate = '450k'
 const update = process.env.UPDATE_HOW_TO_PLAY_VIDEO !== undefined
 const ci = process.env.CI !== undefined
 /**
- * How far a frame may be from the same frame of the video in the repository: the share of its
+ * How far a frame may be from its still in the repository: the share of its
  * pixels that may be off by more than {@link changed} in a colour. Encoding blurs a frame
  * everywhere a little, which a mean over the frame would let a changed line of text hide in.
  */
@@ -42,13 +43,16 @@ const tolerance = 0.001
 /** How far, of 255, a pixel's colour may be off before it counts as changed. */
 const changed = 96
 /**
- * Every how many frames one is compared with the video in the repository: one a second. Only those
- * are drawn, as drawing a frame in software is most of the time it takes.
+ * Every how many frames one is kept as a still, to compare with: one a second. Only those are drawn
+ * when comparing, as drawing a frame in software is most of the time it takes.
  */
-const compareEvery = fps
+const stillEvery = fps
 
 const videoFile = new URL('../public/guide/how-to-play.webm', import.meta.url)
 const posterFile = new URL('../public/guide/how-to-play.jpg', import.meta.url)
+/** The stills of the video, by frame: what the check compares with. */
+const stillsFolder = new URL('how-to-play-video/', import.meta.url)
+const stillName = (index: number) => `frame-${String(index).padStart(4, '0')}.jpg`
 
 /** The right answers of the fixture quiz (`src/_temp/quiz.mts`), by the text of their options, in order. */
 const right = [['yes'], ['alt'], ['GET', 'HEAD'], ['User-agent stylesheet', 'Author stylesheet', 'Inline style attribute']]
@@ -116,8 +120,6 @@ function camera(page: Page, pictured: (index: number) => boolean) {
 
 	return {
 		frames,
-		/** How many frames the video has so far. */
-		count: () => count,
 		/** The next frame: filmed while filming, else a tenth of a second on, the longest a frame of the game loop takes. */
 		async frame() {
 			if (filming) await film(false)
@@ -274,34 +276,6 @@ async function changedShare(page: Page, one: Buffer, other: Buffer): Promise<num
 }
 
 /**
- * The frames of `video` at `indices`, as JPEGs, and how many frames it has, decoded by the browser
- * on a blank page.
- */
-async function framesOf(page: Page, video: Buffer, indices: readonly number[]): Promise<{ count: number; frames: Buffer[] }> {
-	await page.goto('about:blank')
-	const { count, frames } = await page.evaluate(async ([data, at, rate]) => {
-		const player = document.createElement('video')
-		player.muted = true
-		player.src = URL.createObjectURL(new Blob([Uint8Array.from(atob(data), (character) => character.codePointAt(0) ?? 0)], { type: 'video/webm' }))
-		await new Promise((resolve) => { player.addEventListener('loadeddata', resolve, { once: true }) })
-		const canvas = new OffscreenCanvas(player.videoWidth, player.videoHeight)
-		const context = canvas.getContext('2d')
-		const taken: string[] = []
-		for (const index of at) {
-			// The middle of the frame, so rounding can't land on the one before.
-			player.currentTime = (index + 0.5) / rate
-			await new Promise((resolve) => { player.addEventListener('seeked', resolve, { once: true }) })
-			context?.drawImage(player, 0, 0)
-			const blob = await canvas.convertToBlob({ type: 'image/jpeg', quality: 0.95 })
-			const bytes = new Uint8Array(await blob.arrayBuffer())
-			taken.push(btoa(Array.from(bytes, (byte) => String.fromCodePoint(byte)).join('')))
-		}
-		return { count: Math.round(player.duration * rate), frames: taken }
-	}, [video.toString('base64'), indices, fps] as const)
-	return { count, frames: frames.map((frame) => Buffer.from(frame, 'base64')) }
-}
-
-/**
  * Has the page draw its WebGL only while `data-drawing` on its root isn't `off`. Everything else
  * runs as before, so the frames that are drawn come out the same as when every frame is.
  */
@@ -317,16 +291,16 @@ function drawOnlyWhenAsked() {
 	}
 }
 
-// SwiftShader, the same renderer on every machine and in CI, so the frames come out the same.
+// SwiftShader, the same renderer on every machine and in CI, so the frames come out the same. Its
+// WebGL back end draws a frame in a fraction of the time the Vulkan one takes.
 test.use({
 	viewport: size,
-	launchOptions: { args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] },
+	launchOptions: { args: ['--use-gl=angle', '--use-angle=swiftshader-webgl', '--enable-unsafe-swiftshader'] },
 })
 
 test('the video on How to play is up to date', async ({ page }) => {
-	test.skip(!update && !ci, 'the video is CI\'s, filmed with its fonts: it is compared on CI only')
-	// Filming draws every frame in software, which takes CI the better part of an hour.
-	test.setTimeout(update ? 7_200_000 : 1_800_000)
+	test.skip(!update && !ci, 'filmed with the fonts of Playwright\'s Docker image, so compared on CI only')
+	test.setTimeout(1_800_000)
 	// The same chance every run, and a clock that only moves when it is told to.
 	await page.addInitScript(() => {
 		let state = 7
@@ -342,14 +316,24 @@ test('the video on How to play is up to date', async ({ page }) => {
 	await page.goto('./')
 	await page.getByRole('link', { name: 'Select quiz' }).click()
 	await page.getByText('Fixture quiz').click()
-	await page.goBack()
-	await page.getByRole('link', { name: 'Fight' }).waitFor()
-	// Held still while the title's models come in.
-	await page.clock.pauseAt(1_000_000)
+	// A run started once, unfilmed: a fresh dev server finds the run's last dependencies there and
+	// reloads the page once it has bundled them.
+	await page.goto('fight/')
+	await page.getByRole('button', { name: 'Start run' }).click()
 	await page.waitForLoadState('networkidle')
-	await page.waitForTimeout(3000)
+	await page.waitForTimeout(5000)
 
-	const film = camera(page, (index) => update || index % compareEvery === 0)
+	// The title from its start, on a clock that only moves when told to. Each of its first frames
+	// waits in real time for what it began to load, so the models are in at the same frame every run.
+	await page.clock.pauseAt(1_000_000)
+	await page.goto('./')
+	const film = camera(page, (index) => update || index % stillEvery === 0)
+	for (let frame = 0; frame < 10; frame++) {
+		await page.waitForLoadState('networkidle')
+		await page.waitForTimeout(500)
+		await film.frame()
+	}
+	await page.getByRole('link', { name: 'Fight' }).waitFor()
 	let poster: Buffer | undefined
 	await film.hold(1)
 	film.start()
@@ -399,20 +383,21 @@ test('the video on How to play is up to date', async ({ page }) => {
 	film.stop()
 
 	if (poster === undefined) throw new Error('no ambush was filmed')
+	const stills = [...film.frames].filter(([index]) => index % stillEvery === 0)
 	if (update) {
 		await encode(film.frames.values(), videoFile)
 		await writeFile(posterFile, poster)
+		await rm(stillsFolder, { recursive: true, force: true })
+		await mkdir(stillsFolder)
+		for (const [index, frame] of stills) await writeFile(new URL(stillName(index), stillsFolder), frame)
 		return
 	}
 	const outOfDate = 'public/guide/how-to-play.webm is out of date: pnpm --filter @bunbu/game how-to-play-video'
-	const indices = [...film.frames.keys()]
-	const kept = await framesOf(page, await readFile(videoFile), indices)
-	expect(kept.count, outOfDate).toBe(film.count())
-	for (const [position, index] of indices.entries()) {
-		const taken = film.frames.get(index)
-		const keptFrame = kept.frames[position]
-		if (taken === undefined || keptFrame === undefined) continue
-		expect(await changedShare(page, taken, keptFrame), `${outOfDate} (frame ${String(index)})`).toBeLessThan(tolerance)
+	// As many as there were: a longer or shorter run is out of date too.
+	expect((await readdir(stillsFolder)).toSorted(), outOfDate).toEqual(stills.map(([index]) => stillName(index)))
+	for (const [index, frame] of stills) {
+		const kept = await readFile(new URL(stillName(index), stillsFolder))
+		expect(await changedShare(page, frame, kept), `${outOfDate} (${stillName(index)})`).toBeLessThan(tolerance)
 	}
 	expect(await changedShare(page, poster, await readFile(posterFile)), outOfDate).toBeLessThan(tolerance)
 })
