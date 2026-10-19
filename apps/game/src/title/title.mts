@@ -114,12 +114,14 @@ export const Title = component({
 		library.on('change', signal, showChosen)
 
 		// The gap the name and the menu leave for the samurai, which the world frames him in. Also
-		// on the screen as `--gap-top` and `--gap-height`, so tests can see it.
+		// on the screen as `--gap-top` and `--gap-height`, so tests can see it. It ends at the quiz
+		// card, not at the menu's top, so the new version notice above the card covers a bit of the
+		// world rather than moving the samurai up.
 		let gap: Gap = { top: 0, height: window.innerHeight }
 		let pending = 0
 		const measure = () => {
 			const top = name.getBoundingClientRect().bottom
-			const bottom = Math.min(menu.getBoundingClientRect().top, window.innerHeight)
+			const bottom = Math.min(chosen.getBoundingClientRect().top, window.innerHeight)
 			gap = { top, height: Math.max(0, bottom - top) }
 			title.style.setProperty('--gap-top', `${gap.top}px`)
 			title.style.setProperty('--gap-height', `${gap.height}px`)

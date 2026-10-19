@@ -25,6 +25,7 @@ Wireframe source: the project's design canvas (`design/wireframes/*.dc.html` and
 
 - Whenever Bunbu opens, on any screen: the app icon on papyrus, the torii in ink with the red sun rising behind it and sinking again, and under it 文武 · **Bunbu** · Shogun Scholar. It is in the page itself, so it shows from the first paint.
 - It fades out once the screen has settled: the saved quizzes are back, the fonts are in and its world's models have loaded (or failed). That way the buttons and the 3D scene don't flicker in one by one. It never stays longer than 6 seconds.
+- It fades back in when the player presses **Update** on the title for a new version: the new version opens on it, so it reads as one loading screen.
 - The tab's icon (`favicon.svg`) is the same picture on a rounded tile, without the ground.
 - Of the three designs, A is the one built; B (the sun as an ink ring on the night) and C (a scroll with a loading bar) were left.
 
@@ -33,6 +34,7 @@ Wireframe source: the project's design canvas (`design/wireframes/*.dc.html` and
 <img src="screens/1-title.png" alt="Title screen" width="195">
 
 - 3D samurai idling under a torii, falling petals. He stands in the gap between the name and the menu, a little below its middle, on any phone and on a laptop: on a short screen the camera steps back until he fits, and the name and the menu close up. The gap is at least 8rem: a long quiz title makes the screen scroll rather than squeeze him out. `pnpm e2e` checks this on a set of phones, a tablet and a laptop.
+- When a new version is waiting, a line says so above the quiz card, with a red **Update** button that greys out once pressed. It lies over the world rather than moving the samurai up.
 - 文武 · **Bunbu** · Shogun Scholar.
 - The quiz card. While the saved quizzes come back it says **Loading…**; without a quiz it has one red **Select quiz**, which leads to Quizzes. With one: its title, and its high score in two small lines, `high score · 2,480 · shogun` (the difficulty it was set at) and `correct · 17 / 20` (or "No high score yet"), and **Share**, which sends the quiz on as a `.bunbu` file ([sharing](data-format.md#sharing)): the share sheet where the browser says it takes the file (`navigator.canShare`). Otherwise a scroll explains how to share by hand, without saying why: a friend needs the quiz and Bunbu, so **Download the quiz**, **Share Bunbu** (a link to the game; copied where there is no share sheet), and they load the file under Quizzes. **Close** leaves it. Under that, on the card: **Fight**, and **Change quiz** under it.
 - **Dojo**, **How to play** and **Settings** in a row, and the credits as a link, "About the Bunbu app".
