@@ -159,5 +159,5 @@ There is no speaker button in the main game. Reading aloud is a learning aid and
 ## To tune
 
 - **Playtest defaults:** the timer numbers, `timeScale` values and the 0.8 s commit pause.
-- **The run's tempo:** the deployed game runs twice as fast as a dev build: the samurai's pace, his running, the ninjas running in and the time between questions (`tempo` in the run's state). Dev keeps the slower speed, to look closely.
+- **The run's tempo:** the deployed game runs 1.5 times as fast as a dev build: the samurai's pace, his running, the ninjas running in and the time between questions (`tempo` in the run's state). Dev keeps the slower speed, to look closely.
 - **On a real phone:** how far a swipe has to go and how sharp a turn starts the next one (`swipeConfig` in the swipe zone).

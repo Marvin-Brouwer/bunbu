@@ -68,9 +68,9 @@ export type Run = Store<RunState & RunActions>
 /**
  * How much faster the run goes than its dev speed: the samurai's pace, and so his running and the
  * time between questions, and the ninjas running in. Dev runs at `1`, slow enough to look closely;
- * the deployed game twice as fast.
+ * the deployed game 1.5 times as fast.
  */
-export const tempo = import.meta.env.DEV ? 1 : 2
+export const tempo = import.meta.env.DEV ? 1 : 1.5
 
 /** Defaults to tune in playtests ([to tune](../../../../../docs/design/gameplay.md#to-tune)). */
 export const runConfig = {
