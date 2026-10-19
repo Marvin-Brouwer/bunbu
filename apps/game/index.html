@@ -28,6 +28,7 @@
 				transition: opacity 0.4s ease-out;
 			}
 			#opening.settled { opacity: 0; pointer-events: none; }
+			#opening[hidden] { display: none; }
 			#opening svg { width: min(12rem, 45vmin); }
 			#opening .sun { animation: rise 2.4s ease-in-out infinite alternate; }
 			#opening .name {

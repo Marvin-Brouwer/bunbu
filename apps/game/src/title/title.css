@@ -208,10 +208,8 @@
 	box-shadow: none;
 }
 
-/* Taking the update: pressed in, and not to be pressed again. */
+/* Taking the update: faded, the same size, and not to be pressed again. */
 .panelButton:disabled {
-	translate: 0 var(--bevel-height);
-	box-shadow: none;
 	opacity: 0.7;
 	cursor: progress;
 }
