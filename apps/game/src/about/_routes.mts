@@ -1,7 +1,7 @@
 import { route } from '@rooted/router/routes'
 
 /**
- * How to play, from the title: a run on video (`scripts/how-to-play-video.mts`), then the rules in
+ * How to play, from the title: a run on video (`e2e/how-to-play-video.spec.mts`), then the rules in
  * a page, written in Markdown and rendered at build time.
  */
 export const HowToPlayRoute = route`/how-to-play/`({

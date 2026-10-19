@@ -7,7 +7,6 @@
     "src",
     "test",
     "e2e",
-    "scripts",
     "*.mts"
   ]
 }

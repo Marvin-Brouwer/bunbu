@@ -14,8 +14,9 @@
 // One stage after another on one dev server, each picture frame by frame.
 /* oxlint-disable no-await-in-loop */
 
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import { readFile, writeFile } from 'node:fs/promises'
+import { difference } from './difference.mts'
 
 const stages = {
 	'rice-fields': 'Rice fields',
@@ -34,28 +35,6 @@ const update = process.env.UPDATE_STAGE_PICTURES !== undefined
 const tolerance = 6
 
 const pictureOf = (stage: string) => new URL(`../public/stages/${stage}.jpg`, import.meta.url)
-
-/** The mean difference per colour between two JPEGs of the same size, decoded by the browser. */
-async function difference(page: Page, one: Buffer, other: Buffer): Promise<number> {
-	return page.evaluate(async ([first, second]) => {
-		// In the page, where it runs: a function from outside the callback isn't sent along.
-		// oxlint-disable-next-line unicorn/consistent-function-scoping
-		const pixels = async (data: string) => {
-			const image = new Image()
-			image.src = `data:image/jpeg;base64,${data}`
-			await image.decode()
-			const canvas = new OffscreenCanvas(image.width, image.height)
-			const context = canvas.getContext('2d')
-			context?.drawImage(image, 0, 0)
-			return context?.getImageData(0, 0, image.width, image.height).data ?? new Uint8ClampedArray()
-		}
-		const [a, b] = await Promise.all([pixels(first), pixels(second)])
-		if (a.length !== b.length || a.length === 0) return 255
-		let sum = 0
-		for (let index = 0; index < a.length; index++) if (index % 4 !== 3) sum += Math.abs((a[index] ?? 0) - (b[index] ?? 0))
-		return sum / (a.length * 0.75)
-	}, [one.toString('base64'), other.toString('base64')] as const)
-}
 
 test.describe.configure({ mode: 'serial' })
 // SwiftShader, the same renderer on every machine and in CI, so the pictures come out the same.
