@@ -10,7 +10,7 @@ import { loadModel } from '../../canvas/models.mts'
 import type { Stage } from '../../_shared/state/selection.mts'
 import { metresPerAmbush } from '../flows/run.mts'
 import { createBackdrop, type District } from './backdrop.mts'
-import { ambushNear, coverSpotsAt, createCover, type CoverSet, type CoverSpot } from './cover.mts'
+import { ambushNear, coverSpotsAt, createCover, type Cover, type CoverSet, type CoverSpot } from './cover.mts'
 import { createCastleTown, townDistricts, townCover } from './castle-town.mts'
 import type { Owned, StageView } from './landscape.mts'
 import { createPath, townRound, type Path } from './path.mts'
@@ -27,8 +27,8 @@ export type StageWorld = {
 	readonly covers: (distance: number) => readonly CoverSpot[]
 }
 
-/** A stage's own world, before the backdrop and the covers are put round it. */
-type OwnWorld = Pick<StageWorld, 'path' | 'view'>
+/** A stage's own scenery along its path, which may make way for the covers put beside it. */
+type OwnView = (cover: Cover) => StageView
 
 /** The models `names`, each one there only if it loaded: a stage stands without the ones that fail. */
 function loadSome<Name extends string>(names: Readonly<Record<Name, string>>): Promise<Partial<Record<Name, GLTF>>> {
@@ -68,10 +68,11 @@ function newSeed(use: number): number {
  * and `cover` by its path for the ninjas to hide behind ([cover](./cover.mts)), laid out
  * differently every run.
  */
-function around(scene: Scene, { path, view }: OwnWorld, districts: readonly District[], cover: CoverSet, stageLength: () => number, phase: number): StageWorld {
+function around(scene: Scene, path: Path, ownView: OwnView, districts: readonly District[], cover: CoverSet, stageLength: () => number, phase: number): StageWorld {
 	const owned: Owned = { geometries: [], materials: [], textures: [] }
 	const backdrop = createBackdrop(path, districts, newSeed(0), owned, stageLength)
 	const covers = createCover(path, cover, metresPerAmbush, newSeed(1), owned, districts, stageLength, phase)
+	const view = ownView(covers)
 	scene.add(backdrop.group, covers.group)
 	return {
 		path,
@@ -105,20 +106,20 @@ function around(scene: Scene, { path, view }: OwnWorld, districts: readonly Dist
 export function createStageWorld(stage: Stage, scene: Scene, stageLength: () => number = () => 0, phase = 0): StageWorld {
 	if (stage === 'rice-fields') {
 		const path = createPath(riceRound)
-		return around(scene, { path, view: createRiceFields(scene, path, stageModels(stage)) }, riceDistricts, riceCover, stageLength, phase)
+		return around(scene, path, () => createRiceFields(scene, path, stageModels(stage)), riceDistricts, riceCover, stageLength, phase)
 	}
 	if (stage === 'bamboo-forest') {
 		const path = createPath(bambooRound)
-		return around(scene, { path, view: createBambooForest(scene, path, stageModels(stage)) }, bambooDistricts, bambooCover, stageLength, phase)
+		return around(scene, path, (covers) => createBambooForest(scene, path, stageModels(stage), covers), bambooDistricts, bambooCover, stageLength, phase)
 	}
 	if (stage === 'mountain-temple') {
 		const path = createPath(mountainRound)
-		return around(scene, { path, view: createMountainTemple(scene, path, stageModels(stage)) }, mountainDistricts, mountainCover, stageLength, phase)
+		return around(scene, path, () => createMountainTemple(scene, path, stageModels(stage)), mountainDistricts, mountainCover, stageLength, phase)
 	}
 	if (stage === 'edo-castle') {
 		const path = createPath(castleRound)
-		return around(scene, { path, view: createEdoCastle(scene, path, stageModels(stage)) }, castleDistricts, castleCover, stageLength, phase)
+		return around(scene, path, () => createEdoCastle(scene, path, stageModels(stage)), castleDistricts, castleCover, stageLength, phase)
 	}
 	const path = createPath(townRound)
-	return around(scene, { path, view: createCastleTown(scene, path, stageModels(stage)) }, townDistricts, townCover, stageLength, phase)
+	return around(scene, path, () => createCastleTown(scene, path, stageModels(stage)), townDistricts, townCover, stageLength, phase)
 }
