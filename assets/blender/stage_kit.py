@@ -114,9 +114,11 @@ def bamboo_clump():
         stalk = cylinder(clump, 'Bamboo', (0, 0, 0), 0.07, tall, sides=6, top_radius=0.045)
         stalk.location = kit.at(x, 0, z)
         stalk.rotation_euler = (lean, lean * 0.6, 0)
+        # The rings lean with their stalk, so each sits on it rather than beside it.
         for node in range(1, int(tall / 2.0)):
-            ring = cylinder(clump, 'BambooNode', (0, 0, 0), 0.08 - node * 0.004, 0.06, sides=6)
-            ring.location = kit.at(x + math.sin(lean * 0.6) * node * 2.0, node * 2.0, z - math.sin(lean) * node * 2.0)
+            ring = cylinder(clump, 'BambooNode', (0, node * 2.0 - 0.03, 0), 0.08 - node * 0.004, 0.06, sides=6)
+            ring.location = stalk.location
+            ring.rotation_euler = stalk.rotation_euler
         # Leaves: a few flat sprays near the top, pointing out and drooping.
         for leaf in range(5):
             angle = leaf * 2 * math.pi / 5 + x

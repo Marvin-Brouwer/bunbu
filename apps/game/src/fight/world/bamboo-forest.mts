@@ -13,7 +13,6 @@
 import {
 	AdditiveBlending,
 	Box3,
-	CanvasTexture,
 	CircleGeometry,
 	Color,
 	CylinderGeometry,
@@ -24,12 +23,12 @@ import {
 	HemisphereLight,
 	type InstancedMesh,
 	Mesh,
-	MeshBasicMaterial,
 	MeshStandardMaterial,
 	PlaneGeometry,
-	SRGBColorSpace,
+	ShaderMaterial,
 	type Object3D,
 	type Scene,
+	Vector3,
 } from 'three'
 import type { GLTF } from 'three/addons/loaders/GLTFLoader.js'
 import { blockVariants, layBlocks } from './blocks.mts'
@@ -154,29 +153,49 @@ export type BambooModels = Partial<{
 	readonly temple: GLTF
 }>
 
-/** A shaft of light: bright down its middle, fading to nothing at its edges and toward the ground. */
-function shaftTexture(): CanvasTexture {
-	const canvas = document.createElement('canvas')
-	canvas.width = 32
-	canvas.height = 128
-	const context = canvas.getContext('2d')
-	if (context !== null) {
-		const across = context.createLinearGradient(0, 0, 32, 0)
-		across.addColorStop(0, 'rgba(255,255,255,0)')
-		across.addColorStop(0.5, 'rgba(255,255,255,1)')
-		across.addColorStop(1, 'rgba(255,255,255,0)')
-		context.fillStyle = across
-		context.fillRect(0, 0, 32, 128)
-		context.globalCompositeOperation = 'destination-in'
-		const down = context.createLinearGradient(0, 0, 0, 128)
-		down.addColorStop(0, 'rgba(255,255,255,0.9)')
-		down.addColorStop(1, 'rgba(255,255,255,0)')
-		context.fillStyle = down
-		context.fillRect(0, 0, 32, 128)
-	}
-	const texture = new CanvasTexture(canvas)
-	texture.colorSpace = SRGBColorSpace
-	return texture
+/**
+ * Shafts of light: each a strip from the ground toward the sun, turned about that line to face the
+ * camera, so none is ever seen edge on. Bright down its middle, it fades to nothing at its edges, toward
+ * the ground and up among the leaves, and with distance, so it neither pops up far off nor fills the view up close.
+ */
+function shaftMaterial(colour: number, toSun: Vector3): ShaderMaterial {
+	return new ShaderMaterial({
+		uniforms: {
+			colour: { value: new Color(colour) },
+			toSun: { value: toSun },
+		},
+		vertexShader: /* glsl */ `
+			uniform vec3 toSun;
+			varying vec2 vUv;
+			varying float vViewDepth;
+			void main() {
+				vec3 foot = (modelMatrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
+				vec3 side = normalize(cross(toSun, cameraPosition - foot));
+				vec4 seen = viewMatrix * vec4(foot + side * position.x + toSun * position.y, 1.0);
+				vUv = uv;
+				vViewDepth = -seen.z;
+				gl_Position = projectionMatrix * seen;
+			}
+		`,
+		fragmentShader: /* glsl */ `
+			uniform vec3 colour;
+			varying vec2 vUv;
+			varying float vViewDepth;
+			void main() {
+				float across = smoothstep(0.0, 0.5, 1.0 - abs(vUv.x * 2.0 - 1.0));
+				float along = smoothstep(0.0, 0.35, vUv.y) * (1.0 - smoothstep(0.6, 1.0, vUv.y));
+				float near = smoothstep(4.0, 10.0, vViewDepth);
+				float far = 1.0 - smoothstep(30.0, 60.0, vViewDepth);
+				gl_FragColor = vec4(colour, 0.6 * across * along * near * far);
+				#include <tonemapping_fragment>
+				#include <colorspace_fragment>
+			}
+		`,
+		transparent: true,
+		depthWrite: false,
+		blending: AdditiveBlending,
+		side: DoubleSide,
+	})
 }
 
 /** How tall `model` stands, so a model made to size is stamped at its own size. */
@@ -298,21 +317,11 @@ export function createBambooForest(scene: Scene, path: Path, models: Promise<Bam
 	const stalkMaterial = new MeshStandardMaterial({ color: palette.stalk, roughness: 0.7 })
 	owned.geometries.push(stalkGeometry)
 	owned.materials.push(stalkMaterial)
-	// Shafts of light slanting down between the stalks, across the path.
-	const shaftGeometry = new PlaneGeometry(3.2, 22).translate(0, 11, 0)
-	const shaftMaterial = new MeshBasicMaterial({
-		color: palette.shaft,
-		map: shaftTexture(),
-		transparent: true,
-		opacity: 0.55,
-		depthWrite: false,
-		blending: AdditiveBlending,
-		side: DoubleSide,
-		fog: false,
-	})
-	if (shaftMaterial.map !== null) owned.textures.push(shaftMaterial.map)
+	// Shafts of light slanting down between the stalks, across the path, all from the sun.
+	const shaftGeometry = new PlaneGeometry(3.2, 14).translate(0, 7, 0)
+	const shafts = shaftMaterial(palette.shaft, new Vector3(sunFrom.x, sunFrom.y, sunFrom.z).normalize())
 	owned.geometries.push(shaftGeometry)
-	owned.materials.push(shaftMaterial)
+	owned.materials.push(shafts)
 
 	// The forest, a round of the path at a time ([blocks](./blocks.mts)).
 	const blocks = layBlocks<BambooPending>(path, (from, to, base) => {
@@ -408,9 +417,10 @@ export function createBambooForest(scene: Scene, path: Path, models: Promise<Bam
 
 		for (let distance = from + 10, index = base; distance < to; distance += 26 + scatter(index) * 20, index++) {
 			const at = beside(path.at(distance), (scatter(index + 1) - 0.5) * 6)
-			const shaft = new Mesh(shaftGeometry, shaftMaterial)
+			const shaft = new Mesh(shaftGeometry, shafts)
 			shaft.position.set(at.x, 0, at.z)
-			shaft.rotation.set(0, scatter(index + 2) * Math.PI, 0.35)
+			// Turned to the camera on the screen, so it would be culled by its unturned bounds.
+			shaft.frustumCulled = false
 			shaft.renderOrder = 3
 			group.add(shaft)
 		}
