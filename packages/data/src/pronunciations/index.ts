@@ -1,7 +1,7 @@
-import type { BunbuData } from "../types";
-import brands from "./brands.json" with { type: "json" };
-import languages from "./languages.json" with { type: "json" };
-import technologies from "./technologies.json" with { type: "json" };
+import type { BunbuData } from '../types'
+import brands from './brands.json' with { type: 'json' }
+import languages from './languages.json' with { type: 'json' }
+import technologies from './technologies.json' with { type: 'json' }
 
 /*
  * Built-in pronunciations for generic terms: common technologies, programming and query
@@ -15,20 +15,22 @@ import technologies from "./technologies.json" with { type: "json" };
 
 /** The built-in dictionaries by name, for maintenance and tests. */
 export const pronunciationDictionaries: Readonly<Record<string, Readonly<Record<string, string>>>> = {
-  technologies,
-  languages,
-  brands,
-};
+	technologies,
+	languages,
+	brands,
+}
 
-const defaults: Record<string, string> = Object.values(pronunciationDictionaries)
-  .reduce<Record<string, string>>((merged, dictionary) => Object.assign(merged, dictionary), {});
+const defaults: Record<string, string> = Object.values(pronunciationDictionaries).reduce<Record<string, string>>(
+	(merged, dictionary) => Object.assign(merged, dictionary),
+	{}
+)
 
 /** All built-in pronunciations, merged. */
 export function defaultPronunciations(): Record<string, string> {
-  return { ...defaults };
+	return { ...defaults }
 }
 
 /** The pronunciations to use for a quiz: the built-in ones, overridden by the quiz's own. */
 export function resolvePronunciations(quiz: BunbuData): Record<string, string> {
-  return { ...defaults, ...quiz.pronunciations };
+	return { ...defaults, ...quiz.pronunciations }
 }

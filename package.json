@@ -17,6 +17,6 @@
     "globals": "^17.13.0",
     "oxlint": "^1.87.0",
     "oxlint-tsgolint": "^7.0.2003",
-    "typescript": "~6.0.3"
+    "typescript": "^7.0.2"
   }
 }
