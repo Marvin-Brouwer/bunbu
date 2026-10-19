@@ -101,8 +101,7 @@ pull request when the game looks different. Filming it yourself is optional; it 
 pnpm --filter @bunbu/game how-to-play-video   # films in the image the workflow checks in
 ```
 
-Commit `apps/game/public/guide/how-to-play.*` and the stills in `apps/game/e2e/how-to-play-video/`
-together, in a commit of their own.
+Commit `apps/game/public/guide/how-to-play.*` in a commit of its own.
 
 ## Seeing your work
 

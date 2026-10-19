@@ -51,12 +51,10 @@ jobs:
         uses: peter-evans/create-pull-request@v7
         with:
           branch: how-to-play-video
-          add-paths: |
-            apps/game/public/guide/how-to-play.*
-            apps/game/e2e/how-to-play-video/
+          add-paths: apps/game/public/guide/how-to-play.*
           commit-message: Film the How to play video again
           title: Film the How to play video again
           body: |
-            The game looks different from the How to play video, so it is filmed again. The stills in
-            `apps/game/e2e/how-to-play-video/` show what changed.
+            The game looks different from the How to play video, so it is filmed again. Compare the
+            new `apps/game/public/guide/how-to-play.webm` with the one on main to see what changed.
           assignees: Marvin-Brouwer

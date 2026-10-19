@@ -2,8 +2,8 @@
  * Films the video guide on How to play (`e2e/how-to-play-video.spec.mts`) in Playwright's Docker
  * image, the one the weekly workflow checks it in: the game's text is in the device's own fonts, so
  * only a video filmed with that image's fonts and browser matches. Needs Docker; run it from
- * anywhere with `pnpm --filter @bunbu/game how-to-play-video`, then commit `public/guide/how-to-play.*`
- * and the stills. Optional: the workflow opens a pull request with them once a week otherwise.
+ * anywhere with `pnpm --filter @bunbu/game how-to-play-video`, then commit `public/guide/how-to-play.*`.
+ * Optional: the workflow opens a pull request with it once a week otherwise.
  *
  * The repository is mounted as it is, with the image's own `node_modules` over the host's, which
  * may be built for another system; the pnpm store is kept in a volume between runs.
