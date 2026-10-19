@@ -238,10 +238,13 @@ async function encode(frames: Iterable<Buffer>, file: URL): Promise<void> {
 	], { stdio: ['pipe', 'inherit', 'inherit'] })
 	const done = new Promise<void>((resolve, reject) => {
 		encoder.on('error', reject)
+		// Writing to an ffmpeg that stopped early.
+		encoder.stdin.on('error', reject)
 		encoder.on('close', (code) => { if (code === 0) resolve(); else reject(new Error(`ffmpeg stopped with ${String(code)}`)) })
 	})
 	for (const frame of frames) {
-		if (!encoder.stdin.write(frame)) await new Promise((resolve) => encoder.stdin.once('drain', resolve))
+		// Wait for ffmpeg to take more, or for it to stop.
+		if (!encoder.stdin.write(frame)) await Promise.race([new Promise((resolve) => encoder.stdin.once('drain', resolve)), done])
 	}
 	encoder.stdin.end()
 	await done
