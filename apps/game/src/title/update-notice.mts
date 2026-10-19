@@ -5,12 +5,14 @@
  * service worker has a new version waiting.
  *
  * Taking the update can take a moment, as the new version has to take over before the page
- * reloads, so the button says so and can't be pressed again meanwhile.
+ * reloads, so the button can't be pressed again and the loading screen fades in meanwhile: the
+ * new version opens on it, so it looks like one loading screen.
  */
 
 import { component } from '@rooted/components'
 import { applyUpdate } from '@rooted/pwa'
 import { UpdateNotification } from '@rooted/pwa/components'
+import { showLoading } from '../_shared/loading.mts'
 import styles from './title.css'
 
 export const UpdateNotice = component({
@@ -24,12 +26,12 @@ export const UpdateNotice = component({
 			on: {
 				click() {
 					button.disabled = true
-					button.textContent = 'Updating…'
+					const hideLoading = showLoading()
 					void applyUpdate().then((updating) => {
-						// Nothing was waiting after all: the button is back as it was.
+						// Nothing was waiting after all: the title and the button are back as they were.
 						if (updating) return
+						hideLoading()
 						button.disabled = false
-						button.textContent = 'Update'
 					})
 				},
 			},
