@@ -23,7 +23,6 @@ The 3D models are listed here as they join the game. Every one of them is free u
 - [markdown-it](https://github.com/markdown-it/markdown-it), MIT.
 - [highlight.js](https://highlightjs.org/), BSD 3-Clause.
 - [DOMPurify](https://github.com/cure53/DOMPurify), Apache 2.0 or MPL 2.0.
-- [ArkType](https://arktype.io/), MIT.
 - [yaml](https://eemeli.org/yaml/), ISC.
 - [Ajv](https://ajv.js.org/), MIT.
 - [lzma-web](https://github.com/biw/lzma-web), MIT.

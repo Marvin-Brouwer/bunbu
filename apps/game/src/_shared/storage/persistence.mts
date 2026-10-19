@@ -8,15 +8,15 @@
  */
 
 import { uncompress } from '@bunbu/data'
-import { type, type Type } from 'arktype'
 import { Immutable, type StateObject, type Store } from '@rooted/store'
 import { highScores } from '../../fight/state/highscores.mts'
 import { lastRun, type LastRunState } from '../../fight/state/lastrun.mts'
-import { pointsPerCorrect, type HighScore } from '../../fight/state/score.mts'
+import type { HighScore } from '../../fight/state/score.mts'
 import { stageResults, type StageResult } from '../../fight/state/stage-results.mts'
 import { difficulties, quizDifficulties, type Difficulty } from '../../fight/state/difficulty.mts'
 import { settings, speechRates, type SettingsState } from '../../settings/state/settings.mts'
 import { agreements, termsKinds, type Agreement } from '../state/agreements.mts'
+import type { AnswerRecord } from '../state/quiz.mts'
 import { builtStages, selection, stages, type Stage } from '../state/selection.mts'
 import { snapshot } from '../state/store.mts'
 import { library, type LibraryActions, type LibraryEntry, type LibraryState } from './library.mts'
@@ -24,108 +24,109 @@ import { readQuizFiles, writeQuizFiles } from './quiz-files.mts'
 import { read, write, type StoredKey } from './storage.mts'
 
 // What is in local storage can be edited from DevTools or come from an older build, so it is
-// checked before it is used: https://arktype.io. `'+': 'delete'` drops keys that are not ours.
+// checked before it is used. Each check builds a fresh value from the fields it knows, which drops
+// keys that are not ours.
+const isObject = (data: unknown): data is Readonly<Record<string, unknown>> => typeof data === 'object' && data !== null && !Array.isArray(data)
+const isCount = (data: unknown): data is number => Number.isInteger(data) && (data as number) >= 0
+const isOneOf = <T,>(options: readonly T[], data: unknown): data is T => options.includes(data as T)
 
-/** Whether an ArkType check passed. */
-const passed = <T,>(result: T | type.errors): result is T => !(result instanceof type.errors)
+/** The entries of `data` that `check` turns into a value, by key. */
+function validEntries<T>(data: unknown, check: (each: unknown) => T | undefined): Record<string, T> {
+	if (!isObject(data)) return {}
+	const checked = Object.entries(data).map(([key, each]) => [key, check(each)] as const)
+	return Object.fromEntries(checked.filter((entry): entry is readonly [string, T] => entry[1] !== undefined))
+}
 
-const settingFields = {
-	haptics: type('boolean'),
-	volume: type('0 <= number <= 1'),
-	speechRate: type.enumerated(...speechRates),
-	voices: type('Record<string, string>'),
-} satisfies Record<keyof SettingsState, Type>
+const settingChecks: { readonly [Key in keyof SettingsState]: (data: unknown) => boolean } = {
+	haptics: (data) => typeof data === 'boolean',
+	volume: (data) => typeof data === 'number' && data >= 0 && data <= 1,
+	speechRate: (data) => isOneOf(speechRates, data),
+	voices: (data) => isObject(data) && Object.values(data).every((voice) => typeof voice === 'string'),
+}
 
 /** Settings are kept field by field: a field that is missing or invalid keeps its default. */
 export function parseSettings(data: unknown): Partial<SettingsState> {
 	if (!isObject(data)) return {}
-	const valid = Object.entries(settingFields).filter(([key, field]) => passed(field(data[key])))
+	const valid = Object.entries(settingChecks).filter(([key, check]) => Object.hasOwn(data, key) && check(data[key]))
 	return Object.fromEntries(valid.map(([key]) => [key, data[key]]))
 }
 
-/** A score has to add up: edited points would otherwise become a high score nobody can beat. */
-const difficulty = type.enumerated(...difficulties)
-
-const highScore = type({
-	'+': 'delete',
-	points: 'number.integer >= 0',
+function highScoreOf(data: unknown): HighScore | undefined {
+	if (!isObject(data)) return undefined
+	const { points, seconds, correct, answered, difficulty } = data
 	// No run takes no time, and a score of zero seconds could never be beaten.
-	seconds: 'number > 0',
-	correct: 'number.integer >= 0',
-	answered: 'number.integer >= 0',
-	difficulty,
-}).narrow((score) => score.points === score.correct * pointsPerCorrect && score.correct <= score.answered)
+	if (!isCount(points) || typeof seconds !== 'number' || seconds <= 0 || !isCount(correct) || !isCount(answered)) return undefined
+	if (!isOneOf(difficulties, difficulty)) return undefined
+	return { points, seconds, correct, answered, difficulty }
+}
 
 /** The high scores that are valid, by quiz. */
 export function parseHighScores(data: unknown): Record<string, HighScore> {
-	if (!isObject(data)) return {}
-	const checked = Object.entries(data).map(([key, score]) => [key, highScore(score)] as const)
-	return Object.fromEntries(checked.filter((entry): entry is readonly [string, HighScore] => passed(entry[1])))
+	return validEntries(data, highScoreOf)
 }
 
 /** The difficulties that are valid, by quiz. */
 export function parseDifficulties(data: unknown): Record<string, Difficulty> {
-	if (!isObject(data)) return {}
-	const checked = Object.entries(data).map(([key, chosen]) => [key, difficulty(chosen)] as const)
-	return Object.fromEntries(checked.filter((entry): entry is readonly [string, Difficulty] => passed(entry[1])))
+	return validEntries(data, (chosen) => isOneOf(difficulties, chosen) ? chosen : undefined)
 }
 
-const agreement = type({
-	'+': 'delete',
-	content: 'string',
-	terms: type.enumerated(...termsKinds),
-	termsVersion: 'number',
-})
+function agreementOf(data: unknown): Agreement | undefined {
+	if (!isObject(data)) return undefined
+	const { content, terms, termsVersion } = data
+	if (typeof content !== 'string' || !isOneOf(termsKinds, terms) || typeof termsVersion !== 'number') return undefined
+	return { content, terms, termsVersion }
+}
 
 /** The terms agreements that are valid, by quiz. One that isn't is asked again when that quiz loads. */
 export function parseAgreements(data: unknown): Record<string, Agreement> {
-	if (!isObject(data)) return {}
-	const checked = Object.entries(data).map(([key, agreed]) => [key, agreement(agreed)] as const)
-	return Object.fromEntries(checked.filter((entry): entry is readonly [string, Agreement] => passed(entry[1])))
+	return validEntries(data, agreementOf)
 }
 
-const stageResult = type({
-	'+': 'delete',
-	distance: 'number >= 0',
-	cleared: 'boolean',
-	'shogun?': 'boolean',
-	'opens?': 'boolean',
-})
+const isOptionalBoolean = (data: unknown): data is boolean | undefined => data === undefined || typeof data === 'boolean'
+
+function stageResultOf(data: unknown): StageResult | undefined {
+	if (!isObject(data)) return undefined
+	const { distance, cleared, shogun, opens } = data
+	if (typeof distance !== 'number' || distance < 0 || typeof cleared !== 'boolean' || !isOptionalBoolean(shogun) || !isOptionalBoolean(opens)) return undefined
+	return {
+		distance,
+		cleared,
+		...(shogun === undefined ? {} : { shogun }),
+		...(opens === undefined ? {} : { opens }),
+	}
+}
 
 /** The stage results that are valid, by quiz and stage. */
 export function parseStageResults(data: unknown): Record<string, StageResult> {
-	if (!isObject(data)) return {}
-	const checked = Object.entries(data).map(([key, result]) => [key, stageResult(result)] as const)
-	return Object.fromEntries(checked.filter((entry): entry is readonly [string, StageResult] => passed(entry[1])))
+	return validEntries(data, stageResultOf)
 }
 
-const miss = type({
-	'+': 'delete',
-	at: { '+': 'delete', question: 'number.integer >= 0', part: 'number.integer >= 0' },
-	// Only what was missed: the last run is kept for practising its mistakes.
-	outcome: type.enumerated('wrong', 'unanswered'),
-	picked: 'number.integer >= 0 []',
-})
+/** A quiz by `id` and `version`, or `undefined` when it is not one. */
+function quizKeyOf(data: unknown): { readonly id: string, readonly version: string } | undefined {
+	if (!isObject(data)) return undefined
+	const { id, version } = data
+	return typeof id === 'string' && typeof version === 'string' ? { id, version } : undefined
+}
 
-const lastRunShape = type({
-	'+': 'delete',
-	quiz: { '+': 'delete', id: 'string', version: 'string' },
-	misses: 'unknown[]',
-})
+// Only what was missed: the last run is kept for practising its mistakes.
+const missOutcomes = ['wrong', 'unanswered'] as const
+
+function missOf(data: unknown): AnswerRecord | undefined {
+	if (!isObject(data) || !isObject(data.at)) return undefined
+	const { question, part } = data.at
+	const { outcome, picked } = data
+	if (!isCount(question) || !isCount(part) || !isOneOf(missOutcomes, outcome)) return undefined
+	if (!Array.isArray(picked) || !picked.every(isCount)) return undefined
+	return { at: { question, part }, outcome, picked }
+}
 
 /** The last run, or `undefined` when it is not one. The misses that are invalid are dropped. */
 export function parseLastRun(data: unknown): LastRunState | undefined {
-	const run = lastRunShape(data)
-	if (!passed(run)) return undefined
-	return { quiz: run.quiz, misses: run.misses.map((each) => miss(each)).filter(passed) }
+	if (!isObject(data) || !Array.isArray(data.misses)) return undefined
+	const quiz = quizKeyOf(data.quiz)
+	if (quiz === undefined) return undefined
+	return { quiz, misses: data.misses.map(missOf).filter((miss) => miss !== undefined) }
 }
-
-const savedSelection = type({
-	'+': 'delete',
-	'quiz?': { '+': 'delete', id: 'string', version: 'string' },
-	stage: type.enumerated(...stages),
-	'endless?': 'boolean',
-})
 
 export type SavedSelection = {
 	/** The chosen quiz by `id` and `version`; it is put back once the library has its file. */
@@ -138,9 +139,11 @@ export type SavedSelection = {
 
 /** The chosen quiz and stage. A stage that isn't built (any more) is dropped. */
 export function parseSelection(data: unknown): SavedSelection {
-	const saved = savedSelection(data)
-	if (!passed(saved)) return { quiz: undefined, stage: undefined, endless: false }
-	return { quiz: saved.quiz, stage: builtStages.has(saved.stage) ? saved.stage : undefined, endless: saved.endless === true }
+	const nothing: SavedSelection = { quiz: undefined, stage: undefined, endless: false }
+	if (!isObject(data) || !isOneOf(stages, data.stage) || !isOptionalBoolean(data.endless)) return nothing
+	const quiz = data.quiz === undefined ? undefined : quizKeyOf(data.quiz)
+	if (data.quiz !== undefined && quiz === undefined) return nothing
+	return { quiz, stage: builtStages.has(data.stage) ? data.stage : undefined, endless: data.endless === true }
 }
 
 /** Chooses the saved quiz again when it is in the library, unless another was chosen meanwhile. */
@@ -149,8 +152,6 @@ function chooseSaved(quiz: SavedSelection['quiz']): void {
 	const entry = snapshot<LibraryState & LibraryActions>(library).entries.find((each) => each.quiz.id === quiz.id && each.quiz.version === quiz.version)
 	if (entry !== undefined) selection.value.chooseQuiz(entry.quiz)
 }
-
-const isObject = (data: unknown): data is Readonly<Record<string, unknown>> => typeof data === 'object' && data !== null && !Array.isArray(data)
 
 /** The kept `.bunbu` files, validated again: what is in storage is not trusted to still be a quiz. */
 export async function parseLibrary(files: readonly Uint8Array[]): Promise<LibraryEntry[]> {

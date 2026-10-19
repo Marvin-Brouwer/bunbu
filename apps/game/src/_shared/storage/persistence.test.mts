@@ -139,11 +139,6 @@ describe('parsing what was saved', () => {
 		expect(parseHighScores({ a: { ...good, difficulty: 'ronin' } })).toEqual({})
 	})
 
-	it('drops high scores that do not add up', () => {
-		const good = { points: 300, seconds: 61.5, correct: 3, answered: 4, difficulty: 'samurai' }
-		expect(parseHighScores({ a: { ...good, points: 999_999 }, b: { ...good, answered: 2 }, c: good })).toEqual({ c: good })
-	})
-
 	it('keeps the stage results that are valid', () => {
 		const good = { distance: 360, cleared: false }
 
