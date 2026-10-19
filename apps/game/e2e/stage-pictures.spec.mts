@@ -4,10 +4,10 @@
  * When a stage's world changes, take them again and commit them:
  * `pnpm --filter @bunbu/game stage-pictures`.
  *
- * A picture is a stage seven seconds into a run, without the samurai, the ninjas or the HUD
- * (`?scenery`, dev only). Time and chance are fixed, so a run looks the same every time:
- * Playwright's clock moves the frames on, `Math.random` is seeded, and the stage is laid out from a
- * seed of its own (`?seed`, dev only), whatever else drew on `Math.random` first. What still differs between
+ * A picture is a stage seven seconds into a run, without the samurai, the ninjas or the HUD (the
+ * `scenery` test hook, `src/_shared/test-hooks.mts`). Time and chance are fixed, so a run looks the
+ * same every time: Playwright's clock moves the frames on, `Math.random` is seeded, and the stage is
+ * laid out from a seed of its own (the `seed` hook), whatever else drew on `Math.random` first. What still differs between
  * machines, as the GPU's own rounding, is under {@link tolerance}.
  */
 
@@ -70,6 +70,7 @@ for (const [stage, name] of Object.entries(stages)) {
 		test.setTimeout(300_000)
 		// The same chance every run, and a clock that only moves when it is told to.
 		await page.addInitScript(() => {
+			window.bunbuTestHooks = { scenery: true, seed: 7 }
 			let state = 7
 			Math.random = () => {
 				state = (state * 16_807) % 2_147_483_647
@@ -82,7 +83,7 @@ for (const [stage, name] of Object.entries(stages)) {
 		await page.goto('./')
 		await page.getByRole('link', { name: 'Select quiz' }).click()
 		await page.getByText('Fixture quiz').click()
-		await page.goto('fight/?scenery&seed=7')
+		await page.goto('fight/')
 		await page.getByRole('button', { name: 'Start run' }).waitFor()
 		const unlock = page.getByRole('button', { name: /Unlock all stages/ })
 		if (await unlock.isVisible()) await unlock.click()

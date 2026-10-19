@@ -7,6 +7,7 @@
 import type { Scene } from 'three'
 import type { GLTF } from 'three/addons/loaders/GLTFLoader.js'
 import { loadModel } from '../../canvas/models.mts'
+import { testHooks } from '../../_shared/test-hooks.mts'
 import type { Stage } from '../../_shared/state/selection.mts'
 import { metresPerAmbush } from '../flows/run.mts'
 import { createBackdrop, type District } from './backdrop.mts'
@@ -52,13 +53,11 @@ export function stageModels(stage: Stage) {
 
 /**
  * A seed for what is laid out at random, new every run, one for each of the things laid out (`use`).
- * Dev only: `?seed=7` lays every run out the same, whatever else drew on `Math.random` before (the
- * sound's noise draws as many as its sample rate, which differs between machines), for the stage
- * pictures (`e2e/stage-pictures.spec.mts`).
+ * A test can lay every run out the same ([test hooks](../../_shared/test-hooks.mts)).
  */
 function newSeed(use: number): number {
-	const fixed = import.meta.env.DEV ? Number(new URLSearchParams(location.search).get('seed') ?? Number.NaN) : Number.NaN
-	return Number.isInteger(fixed) ? fixed + use * 7919 : Math.floor(Math.random() * 2 ** 31)
+	const { seed } = testHooks()
+	return seed === undefined ? Math.floor(Math.random() * 2 ** 31) : seed + use * 7919
 }
 
 /**
