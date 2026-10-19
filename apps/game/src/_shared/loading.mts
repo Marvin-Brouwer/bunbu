@@ -6,6 +6,7 @@
  *
  * Until then the app under it is `inert` (`index.html`), so no key or screen reader reaches what
  * can't be seen, and what would open over it, as the terms asked again, waits for {@link loaded}.
+ * Taking an update fades it back in ({@link showLoading}).
  */
 
 import { modelsSettled } from '../canvas/models.mts'
@@ -83,7 +84,34 @@ export function hideLoading(signal: AbortSignal): void {
 		document.getElementById('app')?.removeAttribute('inert')
 		gone()
 		screen.classList.add('settled')
-		// After its fade (index.html), timed rather than on `transitionend`, which a hidden tab never sends.
-		setTimeout(() => { screen.remove() }, 500)
+		fadedOut(screen)
 	})
+}
+
+/** Hidden after its fade (index.html), timed rather than on `transitionend`, which a hidden tab never sends. */
+function fadedOut(screen: HTMLElement): void {
+	setTimeout(() => {
+		if (screen.classList.contains('settled')) screen.hidden = true
+	}, 500)
+}
+
+/**
+ * Fades the loading screen back in, while the update the player took reloads the page: the new
+ * version opens on it, so it looks like one loading screen. Returns how to fade it out again, for
+ * when there was nothing to update after all.
+ */
+export function showLoading(): () => void {
+	const screen = document.getElementById('opening')
+	const app = document.getElementById('app')
+	if (screen === null) return () => undefined
+	app?.setAttribute('inert', '')
+	screen.hidden = false
+	// Laid out once at nothing, so it fades in rather than appears.
+	screen.getBoundingClientRect()
+	screen.classList.remove('settled')
+	return () => {
+		app?.removeAttribute('inert')
+		screen.classList.add('settled')
+		fadedOut(screen)
+	}
 }

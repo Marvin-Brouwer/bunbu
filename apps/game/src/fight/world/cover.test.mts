@@ -4,7 +4,7 @@ import { randomOf } from './backdrop.mts'
 import { townCover, townDistricts } from './castle-town.mts'
 import { mountainCover, mountainDistricts } from './mountain-temple.mts'
 import { riceCover, riceDistricts } from './rice-fields.mts'
-import { ambushNear, coverKindAt, coverReach, coverSpotsAt, decoysOf } from './cover.mts'
+import { ambushNear, coverKindAt, coverReach, coverSpotsAt, createCover, decoysOf } from './cover.mts'
 import { createPath, townRound } from './path.mts'
 
 describe('the decoys', () => {
@@ -29,6 +29,20 @@ describe('the decoys', () => {
 	it('keep apart the two Copilot found 2 cm apart (seed 3137, tile 2)', () => {
 		const [one, other] = decoysOf(path, townCover, 2, metresPerAmbush, 3137)
 		expect(other === undefined || Math.hypot(one!.x - other.x, one!.z - other.z) > 2 * coverReach).toBe(true)
+	})
+})
+
+describe('where the covers stand', () => {
+	const path = createPath(townRound)
+
+	it('is known along any stretch of path, laid out or not, for what by the way makes room for them', () => {
+		const cover = createCover(path, townCover, metresPerAmbush, 3137, { geometries: [], materials: [], textures: [] })
+		const spots = cover.spotsBetween(0, 1000)
+		const ambushCovers = Array.from({ length: 8 }, (_, at) => coverSpotsAt(path, (at + 1) * metresPerAmbush, townCover.aside)).flat()
+		const decoys = Array.from({ length: 50 }, (_, tile) => decoysOf(path, townCover, tile, metresPerAmbush, 3137)).flat()
+
+		expect(decoys.length).toBeGreaterThan(10)
+		for (const { x, z } of [...ambushCovers, ...decoys]) expect(spots).toContainEqual(expect.objectContaining({ x, z }))
 	})
 })
 

@@ -17,6 +17,7 @@ import type { RunGame } from '../state/game.mts'
 import { marksPassed, runInLeft } from '../state/run.mts'
 import { framedIn, runFraming, viewOnPath } from './camera.mts'
 import { skyRadius } from './landscape.mts'
+import { pictureSettings } from './picture-settings.mts'
 import { createStageWorld, stageModels } from './stages.mts'
 import { selection, type Stage } from '../../_shared/state/selection.mts'
 import { answersOn, endlessStage, stageAt, stageQuestions, stageStart } from '../flows/endless.mts'
@@ -87,8 +88,8 @@ export function createRunWorld(game: RunGame, viewport: Viewport, roomBelow: () 
 	const parts = createFigureParts()
 	const fighters = new Group()
 	scene.add(fighters)
-	// Dev only: `?scenery` leaves the figures out, for the stage pictures (e2e/stage-pictures.spec.mts).
-	fighters.visible = !(import.meta.env.DEV && new URLSearchParams(location.search).has('scenery'))
+	// A test's `scenery` leaves the figures out, for the stage pictures (e2e/stage-pictures.spec.mts).
+	fighters.visible = pictureSettings().scenery !== true
 	let samurai: Body = placeholderBody(parts, { body: 0x7a2a22, skin: 0xe2c4a0, band: 0x1f1c18, blade: 0xdfe3ea })
 	fighters.add(samurai.root)
 	let makeNinja = (): Body => placeholderBody(parts, { body: 0x2e2d38, skin: 0x2e2d38, band: 0xa3322a, blade: 0xb8bcc4 })
