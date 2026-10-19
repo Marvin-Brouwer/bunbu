@@ -57,8 +57,8 @@ export type FigureColours = {
 
 export type Figure = {
 	readonly root: Group
-	/** Poses the figure. A `fade` below 1, times `faded` for the back row, makes it see-through. */
-	pose: (rig: Rig, faded?: number) => void
+	/** Poses the figure. A `fade` below 1 makes it see-through. */
+	pose: (rig: Rig) => void
 	/** Blends every colour toward ink-wash grey, `0` none, `1` fully grey. */
 	grey: (amount: number) => void
 	dispose: () => void
@@ -121,7 +121,7 @@ export function createFigure(parts: FigureParts, colours: FigureColours): Figure
 	return {
 		root,
 
-		pose(rig, faded = 1) {
+		pose(rig) {
 			hips.position.set(0, hipHeight + rig.rise, -rig.shift)
 			// The shadow goes where the body goes, knocked back or running off.
 			ground.position.z = -rig.shift
@@ -138,7 +138,7 @@ export function createFigure(parts: FigureParts, colours: FigureColours): Figure
 			dropped.position.y = 0.03 + (swordLength + 0.05) * (1 - rig.drop)
 			dropped.rotation.z = (Math.PI / 2) * rig.drop
 
-			const opacity = rig.fade * faded
+			const opacity = rig.fade
 			root.visible = opacity > 0
 			const see = opacity < 1
 			if (body.transparent !== see) {
