@@ -14,6 +14,7 @@ import { ambushNear, coverSpotsAt, createCover, type CoverSet, type CoverSpot } 
 import { createCastleTown, townDistricts, townCover } from './castle-town.mts'
 import type { Owned, StageView } from './landscape.mts'
 import { createPath, townRound, type Path } from './path.mts'
+import { pictureSettings } from './picture-settings.mts'
 import { bambooDistricts, bambooCover, bambooRound, createBambooForest } from './bamboo-forest.mts'
 import { castleDistricts, castleCover, castleRound, createEdoCastle } from './edo-castle.mts'
 import { createMountainTemple, mountainDistricts, mountainCover, mountainRound } from './mountain-temple.mts'
@@ -52,13 +53,13 @@ export function stageModels(stage: Stage) {
 
 /**
  * A seed for what is laid out at random, new every run, one for each of the things laid out (`use`).
- * Dev only: `?seed=7` lays every run out the same, whatever else drew on `Math.random` before (the
- * sound's noise draws as many as its sample rate, which differs between machines), for the stage
- * pictures (`e2e/stage-pictures.spec.mts`).
+ * A test's `seed` ([picture settings](./picture-settings.mts)) lays every run out the same, whatever
+ * else drew on `Math.random` before (the sound's noise draws as many as its sample rate, which
+ * differs between machines), for the stage pictures (`e2e/stage-pictures.spec.mts`).
  */
 function newSeed(use: number): number {
-	const fixed = import.meta.env.DEV ? Number(new URLSearchParams(location.search).get('seed') ?? Number.NaN) : Number.NaN
-	return Number.isInteger(fixed) ? fixed + use * 7919 : Math.floor(Math.random() * 2 ** 31)
+	const fixed = pictureSettings().seed
+	return fixed !== undefined ? fixed + use * 7919 : Math.floor(Math.random() * 2 ** 31)
 }
 
 /**
