@@ -23,7 +23,10 @@ import { beside } from './path.mts'
 import { lungeOf, spotOf } from './placement.mts'
 import { poseSeconds, type FigurePose } from '../../_shared/world/poses.mts'
 
-/** The back row is drawn faded ([more than 3 options](../../../../../docs/design/gameplay.md#more-than-3-options)). */
+/**
+ * The back row is drawn faded ([more than 3 options](../../../../../docs/design/gameplay.md#more-than-3-options)),
+ * except the ones from below: there they have no row behind the others, and stand right by the camera.
+ */
 const backRowOpacity = 0.5
 
 /**
@@ -443,7 +446,7 @@ export function createNinjasView(parent: Group, make: () => Body): NinjasView {
 				const pose = windingUp ? 'strike' : standing ? 'idle' : motion.pose
 				const time = windingUp ? windUpTime : standing ? entry.time : motion.time
 				// In the air its legs keep the stride it took off with.
-				entry.body.show(pose, time, entry.cycle, ninja.wave > 0 ? backRowOpacity : 1)
+				entry.body.show(pose, time, entry.cycle, ninja.wave > 0 && !entry.mark.startsWith('down') ? backRowOpacity : 1)
 			}
 
 			for (const [id, entry] of shown) {

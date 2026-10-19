@@ -23,6 +23,10 @@ describe('placement', () => {
 		expect(spotOf('down', 0, 1).z).toBeGreaterThan(0)
 	})
 
+	it('never brings a ninja straight in from behind', () => {
+		for (const approach of [0, 1]) expect(spotOf('down', 0, approach).x).toBeGreaterThan(0.2)
+	})
+
 	it('brings them in from far away to within reach as the time runs out', () => {
 		for (const mark of marks) {
 			const far = spotOf(mark, 0, 0)
