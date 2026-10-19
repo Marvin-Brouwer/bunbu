@@ -65,10 +65,17 @@ export type RunActions = {
 /** The store, with its actions on its state. Change it through those, not `update`. */
 export type Run = Store<RunState & RunActions>
 
+/**
+ * How much faster the run goes than its dev speed: the samurai's pace, and so his running and the
+ * time between questions, and the ninjas running in. Dev runs at `1`, slow enough to look closely;
+ * the deployed game 1.5 times as fast.
+ */
+export const tempo = import.meta.env.DEV ? 1 : 1.5
+
 /** Defaults to tune in playtests ([to tune](../../../../../docs/design/gameplay.md#to-tune)). */
 export const runConfig = {
 	/** Metres per second along the path. */
-	pace: 9,
+	pace: 9 * tempo,
 	/**
 	 * The ambush's slow motion: the world runs at half speed after `halfSpeedAfter` real seconds,
 	 * at a third after twice that, and so on, but never slower than `slowest`.
@@ -85,7 +92,7 @@ export const runConfig = {
 	 * How long the samurai takes to run in from behind the camera to where he runs the stage from:
 	 * at the run's pace that is about 20 m, farther back than the camera stands on the narrowest phone.
 	 */
-	introSeconds: 2.2,
+	introSeconds: 2.2 / tempo,
 	countdownSeconds: 3,
 	/** How long the samurai holds after slaying or blocking. */
 	strikeSeconds: 0.5,

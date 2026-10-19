@@ -14,7 +14,7 @@ import type { Group } from 'three'
 import type { AmbushKind, AmbushOption, Mark } from '../../_shared/state/ambush.mts'
 import { marks } from '../../_shared/state/ambush.mts'
 import type { Ninja, NinjaPose } from '../state/ninjas.mts'
-import { runConfig } from '../state/run.mts'
+import { runConfig, tempo } from '../state/run.mts'
 import type { Body } from '../../_shared/world/character.mts'
 import type { ViewFrame } from './camera.mts'
 import { coverReach, type CoverSpot } from './cover.mts'
@@ -32,9 +32,9 @@ const backRowOpacity = 0.5
 /**
  * Real seconds a ninja takes to come into view when an ambush springs: steady, while the world
  * keeps slowing down, and within the ambush's opening, so they are all in before the scroll opens,
- * the ones that wait their turn behind a shared cover too.
+ * the ones that wait their turn behind a shared cover too. As fast as the samurai runs, by the run's `tempo`.
  */
-export const entranceSeconds = 1.35
+export const entranceSeconds = 1.35 / tempo
 /**
  * Ninjas that share a cover come out from behind it one after another, this much of the entrance
  * apart and a little to the side of each other, and at most this many behind one.
