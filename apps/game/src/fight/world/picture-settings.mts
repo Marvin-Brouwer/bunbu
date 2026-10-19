@@ -1,7 +1,8 @@
 /**
  * How a run is set up for taking pictures of it, as the stage pictures do
- * (`e2e/stage-pictures.spec.mts`). Only a test sets these, by putting `window.pictureSettings` on the
- * page before it loads, so the game as it is played never has them and no link can turn them on.
+ * (`e2e/stage-pictures.spec.mts`). A test sets these by putting `window.pictureSettings` on the page
+ * before it loads. Only a build with `VITE_PICTURE_SETTINGS=on` reads them, as the e2e tests' dev
+ * server is; the deployed game is built without it, so the code isn't in it at all.
  */
 
 export type PictureSettings = {
@@ -19,4 +20,5 @@ declare global {
 }
 
 /** The settings a test put on the page, or none. */
-export const pictureSettings = (): PictureSettings => window.pictureSettings?.() ?? {}
+export const pictureSettings = (): PictureSettings =>
+	(import.meta.env.VITE_PICTURE_SETTINGS === 'on' ? window.pictureSettings?.() : undefined) ?? {}
