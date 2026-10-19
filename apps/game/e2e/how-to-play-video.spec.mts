@@ -1,11 +1,11 @@
 /**
  * The video guide on How to play (`public/guide/how-to-play.webm`, with a still of it as its
- * poster, `how-to-play.jpg`) is up to date: the run is played again on CI and a frame a second
- * compared with the stills kept of it (`how-to-play-video/`). When the game looks different, film it
- * again, which takes the stills again too, and commit them:
- * `pnpm --filter @bunbu/game how-to-play-video`. The game's text is in the device's own fonts, so
- * that films it in Playwright's Docker image, the one CI runs in (`scripts/how-to-play-video.mts`),
- * and only CI compares it.
+ * poster, `how-to-play.jpg`) is up to date: the run is played again and a frame a second compared
+ * with the stills kept of it (`how-to-play-video/`). The game's text is in the device's own fonts,
+ * so it is filmed and checked in Playwright's Docker image only: every week by
+ * `.github/workflows/how-to-play-video.yml`, which films it again and opens a pull request when the
+ * game looks different, or by hand with `pnpm --filter @bunbu/game how-to-play-video`
+ * (`scripts/how-to-play-video.mts`), which takes the stills again too. Plain `pnpm e2e` skips it.
  *
  * The video is a run on the fixture quiz from the title to the results, every kind of question
  * answered by swiping as a player would, with captions saying what happens. The running between
@@ -33,7 +33,7 @@ const size = { width: 390, height: 844 }
 const fps = 25
 const bitRate = '450k'
 const update = process.env.UPDATE_HOW_TO_PLAY_VIDEO !== undefined
-const ci = process.env.CI !== undefined
+const check = process.env.CHECK_HOW_TO_PLAY_VIDEO !== undefined
 /**
  * How far a frame may be from its still in the repository: the share of its
  * pixels that may be off by more than {@link changed} in a colour. Encoding blurs a frame
@@ -299,7 +299,7 @@ test.use({
 })
 
 test('the video on How to play is up to date', async ({ page }) => {
-	test.skip(!update && !ci, 'filmed with the fonts of Playwright\'s Docker image, so compared on CI only')
+	test.skip(!update && !check, 'filmed and checked on its own, in Playwright\'s Docker image (.github/workflows/how-to-play-video.yml)')
 	test.setTimeout(1_800_000)
 	// The same chance every run, and a clock that only moves when it is told to.
 	await page.addInitScript(() => {

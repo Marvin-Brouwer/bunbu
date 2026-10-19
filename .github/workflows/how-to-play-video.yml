@@ -1,0 +1,62 @@
+name: How to play video
+
+# Once a week, checks that the How to play video still matches the game (apps/game/e2e/how-to-play-video.spec.mts)
+# and, when it doesn't, films it again and opens a pull request with it. Opening one needs
+# "Allow GitHub Actions to create and approve pull requests" in the repository's Actions settings.
+
+on:
+  schedule:
+    - cron: '0 3 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: how-to-play-video
+  cancel-in-progress: true
+
+jobs:
+  film:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    # Playwright's image, browsers and fonts included, the one `pnpm --filter @bunbu/game how-to-play-video`
+    # films in (apps/game/scripts/how-to-play-video.mts). Its version is @playwright/test's.
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.0-noble
+      options: --ipc=host
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - id: check
+        continue-on-error: true
+        working-directory: apps/game
+        run: CHECK_HOW_TO_PLAY_VIDEO=1 pnpm exec playwright test --project "how to play video"
+
+      - if: steps.check.outcome == 'failure'
+        working-directory: apps/game
+        run: UPDATE_HOW_TO_PLAY_VIDEO=1 pnpm exec playwright test --project "how to play video"
+
+      - if: steps.check.outcome == 'failure'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: how-to-play-video
+          add-paths: |
+            apps/game/public/guide/how-to-play.*
+            apps/game/e2e/how-to-play-video/
+          commit-message: Film the How to play video again
+          title: Film the How to play video again
+          body: |
+            The game looks different from the How to play video, so it is filmed again. The stills in
+            `apps/game/e2e/how-to-play-video/` show what changed.
+          assignees: Marvin-Brouwer
