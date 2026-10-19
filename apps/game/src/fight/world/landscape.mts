@@ -292,22 +292,53 @@ export function stamp(template: Object3D, plantings: readonly Planting[], height
 	return meshes
 }
 
+/** The least of `material` that {@link fadeNear} leaves showing, right in front of the camera. */
+const fadedLeast = 0.3
+
 /**
- * Cuts away whatever of `material` is nearer the camera than `cut.value`, in view depth: what the camera
- * passes through or under (a tunnel of torii, a gatehouse) would otherwise fill the screen. Its shadow stays.
+ * Fades whatever of `material` is nearer the camera than `fade.value`, in view depth: what the camera
+ * passes through or under (a tunnel of torii, a gatehouse) would otherwise fill the screen. It shows
+ * whole at that depth and fades the nearer the camera it comes, to {@link fadedLeast}; its shadow stays.
+ * Drawn as a fine scatter of dropped pixels, so copies behind it still show through it in any order.
  */
-export function cutAway(material: Material, cut: { value: number }): void {
+export function fadeNear(material: Material, fade: { value: number }): void {
 	material.onBeforeCompile = (shader) => {
-		shader.uniforms.cutDepth = cut
+		shader.uniforms.fadeDepth = fade
 		shader.vertexShader = `varying float vViewDepth;\n${shader.vertexShader}`.replace(
 			'#include <project_vertex>',
 			'#include <project_vertex>\n\tvViewDepth = -mvPosition.z;',
 		)
-		shader.fragmentShader = `uniform float cutDepth;\nvarying float vViewDepth;\n${shader.fragmentShader}`.replace(
+		shader.fragmentShader = `uniform float fadeDepth;\nvarying float vViewDepth;\n${shader.fragmentShader}`.replace(
 			'void main() {',
-			'void main() {\n\tif (vViewDepth < cutDepth) discard;',
+			[
+				'void main() {',
+				`\tfloat shown = mix(${fadedLeast.toFixed(2)}, 1.0, clamp(vViewDepth / max(fadeDepth, 0.001), 0.0, 1.0));`,
+				'\tif (shown < fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715))))) discard;',
+			].join('\n'),
 		)
 	}
-	material.customProgramCacheKey = () => 'cut-away'
+	material.customProgramCacheKey = () => 'fade-near'
 	material.needsUpdate = true
+}
+
+/** How far ahead of the samurai the sun's shadows are centred, and how far round that they reach, in metres. */
+const shadowsAhead = 20
+const shadowsReach = 30
+
+/** Lets the stage's `sun` cast shadows, far enough ahead that they are there before he comes near. */
+export function castShadows(sun: DirectionalLight): void {
+	sun.castShadow = true
+	sun.shadow.mapSize.set(2048, 2048)
+	for (const side of ['left', 'bottom'] as const) sun.shadow.camera[side] = -shadowsReach
+	for (const side of ['right', 'top'] as const) sun.shadow.camera[side] = shadowsReach
+	sun.shadow.camera.near = 1
+	sun.shadow.camera.far = 80
+	sun.shadow.bias = -0.0008
+}
+
+/** Keeps the `sun`, shining `from` there, over the way ahead of the samurai `distance` metres along `path`. */
+export function followSun(sun: DirectionalLight, from: { readonly x: number; readonly y: number; readonly z: number }, path: Path, distance: number): void {
+	const ahead = path.at(distance + shadowsAhead)
+	sun.position.set(ahead.x + from.x, from.y, ahead.z + from.z)
+	sun.target.position.set(ahead.x, 0, ahead.z)
 }

@@ -39,7 +39,7 @@ import type { GLTF } from 'three/addons/loaders/GLTFLoader.js'
 import { layBlocks } from './blocks.mts'
 import { Batch, chunkOf, gableGeometry, glowTexture, partOf, placed, scatter, slatsTexture, within, type Cursor } from './kit.mts'
 import { beside, type Path, type PathPoint } from './path.mts'
-import { addAll, clearanceOf, facingPath, fogFar, isFree, passTime, sky, skyRadius, stamp, strip, type Daylight, type Owned, type Planting, type StageView, type Taken } from './landscape.mts'
+import { addAll, castShadows, clearanceOf, facingPath, followSun, fogFar, isFree, passTime, sky, skyRadius, stamp, strip, type Daylight, type Owned, type Planting, type StageView, type Taken } from './landscape.mts'
 import type { District } from './backdrop.mts'
 import type { CoverSet } from './cover.mts'
 
@@ -641,15 +641,7 @@ export function createCastleTown(scene: Scene, path: Path, models: Promise<TownM
 	const ambient = new HemisphereLight(first.ambient.sky, first.ambient.ground, first.ambient.intensity)
 	scene.add(ambient)
 	const sun = new DirectionalLight(first.sun.colour, first.sun.intensity)
-	sun.castShadow = true
-	sun.shadow.mapSize.set(1024, 1024)
-	sun.shadow.camera.left = -18
-	sun.shadow.camera.right = 18
-	sun.shadow.camera.top = 18
-	sun.shadow.camera.bottom = -18
-	sun.shadow.camera.near = 1
-	sun.shadow.camera.far = 80
-	sun.shadow.bias = -0.0008
+	castShadows(sun)
 	scene.add(sun, sun.target)
 	const sunFrom = { x: -22, y: 30, z: 14 }
 
@@ -739,8 +731,7 @@ export function createCastleTown(scene: Scene, path: Path, models: Promise<TownM
 			blocks.follow(distance)
 			ground.position.set(x, 0, z)
 			backdrop.position.set(x, 0, z)
-			sun.position.set(x + sunFrom.x, sunFrom.y, z + sunFrom.z)
-			sun.target.position.set(x, 0, z)
+			followSun(sun, sunFrom, path, distance)
 		},
 
 		dispose() {
