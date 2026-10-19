@@ -20,10 +20,13 @@ import type { ViewFrame } from './camera.mts'
 import { coverReach, type CoverSpot } from './cover.mts'
 import type { ClashSpot, SlainSpot } from './effects.mts'
 import { beside } from './path.mts'
-import { lungeOf, spotOf } from './placement.mts'
+import { headingOf, lungeOf, spotOf } from './placement.mts'
 import { poseSeconds, type FigurePose } from '../../_shared/world/poses.mts'
 
-/** The back row is drawn faded ([more than 3 options](../../../../../docs/design/gameplay.md#more-than-3-options)). */
+/**
+ * The back row is drawn faded ([more than 3 options](../../../../../docs/design/gameplay.md#more-than-3-options)),
+ * except the ones from below: there they have no row behind the others, and stand right by the camera.
+ */
 const backRowOpacity = 0.5
 
 /**
@@ -98,6 +101,8 @@ type Shown = {
 	/** The cover it leaps out from behind, in the world, if there is one on its side ahead, and its place among the ninjas behind it. */
 	cover: CoverSpot | undefined
 	lane: number
+	/** The side it comes in on from ↓, picked at random: `1` right, `-1` left. */
+	below: 1 | -1
 	/** Where the samurai was when it came. */
 	came: { x: number; z: number }
 	/** How far through its running cycle it is, where it was last drawn, and how fast it went, smoothed. */
@@ -255,8 +260,8 @@ export type NinjasView = {
 	draw: (active: readonly Ninja[], options: readonly AmbushOption[], kind: AmbushKind, frame: ViewFrame, delta: number, worldDelta: number, covers?: readonly CoverSpot[]) => void
 	/** Swaps every figure's body for one made by `make`, for when the real model has loaded. */
 	remake: (make: () => Body) => void
-	/** The mark the ninja with `id` was last drawn at, for the samurai to turn toward. */
-	markOf: (id: number) => Mark | undefined
+	/** The heading from the samurai toward where the ninja with `id` was last drawn, for him to turn toward. */
+	headingOf: (id: number) => number | undefined
 	/** Where each slain ninja lies, and for how long, for his ink splash. */
 	slain: () => SlainSpot[]
 	/** Where blades met on a block, and how long ago, for the white flash. */
@@ -348,6 +353,7 @@ export function createNinjasView(parent: Group, make: () => Body): NinjasView {
 						cover,
 						// The first one behind its middle, the others either side.
 						lane: [0, 1, -1][sharing] ?? 0,
+						below: Math.random() < 0.5 ? 1 : -1,
 						came: { x: frame.x, z: frame.z },
 						cycle: ninja.id * 1.7,
 						last: undefined,
@@ -373,11 +379,11 @@ export function createNinjasView(parent: Group, make: () => Body): NinjasView {
 
 				if (!beaten.has(ninja.pose) && motion.pose !== 'fleeing') entry.beatenAt = undefined
 				else entry.beatenAt ??= frame
-				const spot = spotOf(entry.mark, ninja.wave, motion.approach)
+				const spot = spotOf(entry.mark, ninja.wave, motion.approach, entry.below)
 				// Enter from farther out the same way, or from behind its cover. From farther out it can
 				// disappear behind a tree or house and then run out into view, instead of appearing at
 				// the ambush's first visible position.
-				const far = spotOf(entry.mark, ninja.wave, 0)
+				const far = spotOf(entry.mark, ninja.wave, 0, entry.below)
 				const length = Math.hypot(far.x, far.z)
 				const entrance = length > 0
 					? { x: far.x * (1 + entranceDistance / length), z: far.z * (1 + entranceDistance / length) }
@@ -424,7 +430,7 @@ export function createNinjasView(parent: Group, make: () => Body): NinjasView {
 				entry.stood = standing ? entry.stood + worldDelta : 0
 				const time = windingUp ? windUpTime * ninja.approach : standing ? entry.stood : motion.time
 				// In the air its legs keep the stride it took off with.
-				entry.body.show(pose, time, entry.cycle, ninja.wave > 0 ? backRowOpacity : 1)
+				entry.body.show(pose, time, entry.cycle, ninja.wave > 0 && !entry.mark.startsWith('down') ? backRowOpacity : 1)
 			}
 
 			for (const [id, entry] of shown) {
@@ -442,7 +448,10 @@ export function createNinjasView(parent: Group, make: () => Body): NinjasView {
 			}
 		},
 
-		markOf: (id) => shown.get(id)?.mark,
+		headingOf(id) {
+			const entry = shown.get(id)
+			return entry === undefined ? undefined : headingOf(entry.mark, entry.below)
+		},
 
 		slain: () => [...shown]
 			.filter(([, entry]) => entry.pose === 'slain')
