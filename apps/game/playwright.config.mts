@@ -19,7 +19,9 @@ export default defineConfig({
 		baseURL: `http://localhost:${port}/bunbu/`,
 	},
 	webServer: {
+		// The stage pictures set up their runs through window.pictureSettings (src/fight/world/picture-settings.mts).
 		command: `vite --port ${port} --strictPort`,
+		env: { VITE_PICTURE_SETTINGS: 'on' },
 		url: `http://localhost:${port}/bunbu/`,
 		reuseExistingServer: !ci,
 	},
