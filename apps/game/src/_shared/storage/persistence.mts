@@ -27,6 +27,8 @@ import { read, write, type StoredKey } from './storage.mts'
 // checked before it is used. Each check builds a fresh value from the fields it knows, which drops
 // keys that are not ours.
 const isObject = (data: unknown): data is Readonly<Record<string, unknown>> => typeof data === 'object' && data !== null && !Array.isArray(data)
+// `Number.isFinite` also turns away the `Infinity` that `JSON.parse('1e999')` gives.
+const isNumber = (data: unknown): data is number => Number.isFinite(data)
 const isCount = (data: unknown): data is number => Number.isInteger(data) && (data as number) >= 0
 const isOneOf = <T,>(options: readonly T[], data: unknown): data is T => options.includes(data as T)
 
@@ -39,7 +41,7 @@ function validEntries<T>(data: unknown, check: (each: unknown) => T | undefined)
 
 const settingChecks: { readonly [Key in keyof SettingsState]: (data: unknown) => boolean } = {
 	haptics: (data) => typeof data === 'boolean',
-	volume: (data) => typeof data === 'number' && data >= 0 && data <= 1,
+	volume: (data) => isNumber(data) && data >= 0 && data <= 1,
 	speechRate: (data) => isOneOf(speechRates, data),
 	voices: (data) => isObject(data) && Object.values(data).every((voice) => typeof voice === 'string'),
 }
@@ -55,7 +57,7 @@ function highScoreOf(data: unknown): HighScore | undefined {
 	if (!isObject(data)) return undefined
 	const { points, seconds, correct, answered, difficulty } = data
 	// No run takes no time, and a score of zero seconds could never be beaten.
-	if (!isCount(points) || typeof seconds !== 'number' || seconds <= 0 || !isCount(correct) || !isCount(answered)) return undefined
+	if (!isCount(points) || !isNumber(seconds) || seconds <= 0 || !isCount(correct) || !isCount(answered)) return undefined
 	if (!isOneOf(difficulties, difficulty)) return undefined
 	return { points, seconds, correct, answered, difficulty }
 }
@@ -73,7 +75,7 @@ export function parseDifficulties(data: unknown): Record<string, Difficulty> {
 function agreementOf(data: unknown): Agreement | undefined {
 	if (!isObject(data)) return undefined
 	const { content, terms, termsVersion } = data
-	if (typeof content !== 'string' || !isOneOf(termsKinds, terms) || typeof termsVersion !== 'number') return undefined
+	if (typeof content !== 'string' || !isOneOf(termsKinds, terms) || !isNumber(termsVersion)) return undefined
 	return { content, terms, termsVersion }
 }
 
@@ -87,7 +89,7 @@ const isOptionalBoolean = (data: unknown): data is boolean | undefined => data =
 function stageResultOf(data: unknown): StageResult | undefined {
 	if (!isObject(data)) return undefined
 	const { distance, cleared, shogun, opens } = data
-	if (typeof distance !== 'number' || distance < 0 || typeof cleared !== 'boolean' || !isOptionalBoolean(shogun) || !isOptionalBoolean(opens)) return undefined
+	if (!isNumber(distance) || distance < 0 || typeof cleared !== 'boolean' || !isOptionalBoolean(shogun) || !isOptionalBoolean(opens)) return undefined
 	return {
 		distance,
 		cleared,

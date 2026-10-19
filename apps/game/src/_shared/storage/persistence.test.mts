@@ -136,6 +136,7 @@ describe('parsing what was saved', () => {
 		expect(parseHighScores({ a: good, b: { ...good, points: -1 }, c: 'x' })).toEqual({ a: good })
 		expect(parseHighScores([good])).toEqual({})
 		expect(parseHighScores({ a: { ...good, seconds: 0 } })).toEqual({})
+		expect(parseHighScores({ a: { ...good, seconds: Infinity } })).toEqual({})
 		expect(parseHighScores({ a: { ...good, difficulty: 'ronin' } })).toEqual({})
 	})
 
