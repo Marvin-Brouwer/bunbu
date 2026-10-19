@@ -9,6 +9,7 @@ import { createLife, shareOfOnePoint, type Life } from './life.mts'
 import { createRunGame } from './game.mts'
 import { createRun, marksPassed, runConfig, runInLeft, runOnOf, slowMotionOf, stageDistanceOf, standsInAmbush, type Run } from './run.mts'
 import { beats, createScore, pointsPerCorrect, type HighScore, type Score } from './score.mts'
+import { openingSeconds } from '../../_shared/state/ambush.mts'
 
 // Every test gets its own stores: a game mode creates them per run, so tests do the same.
 let run: Run
@@ -58,9 +59,12 @@ describe('run', () => {
 		run.value.tick(runConfig.introSeconds, runConfig.introSeconds)
 		run.value.beginAmbush()
 		const { distance } = run.value
-		run.value.tick(0.1, 1)
-		expect(run.value.worldScale).toBeCloseTo(slowMotionOf(1))
+		// At full speed while the ninjas come in, slowing down once the scroll opens.
+		run.value.tick(0.1, openingSeconds)
+		expect(run.value.worldScale).toBe(1)
 		expect(run.value.distance).toBeCloseTo(distance + runOnOf(runConfig.pace * 0.1))
+		run.value.tick(0.01, 1)
+		expect(run.value.worldScale).toBeCloseTo(slowMotionOf(1))
 		run.value.tick(0.01, 1)
 		expect(run.value.worldScale).toBeLessThan(slowMotionOf(1))
 	})

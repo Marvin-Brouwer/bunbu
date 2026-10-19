@@ -229,11 +229,12 @@ export function createRunWorld(game: RunGame, viewport: Viewport, roomBelow: () 
 			samurai.show(standing ? 'idle' : shown.pose, standing ? stood : shown.time, cycle)
 			samurai.grey(finish?.samurai.pose === 'fallen' ? Math.min(1, finish.samurai.time / poseSeconds.fallen) : 0)
 
-			// During an ambush the fight moves into the room below the scroll, if there is any; when
-			// the scroll rolls up it fills the screen again.
+			// During an ambush the fight moves into the room below the scroll, if there is any, as the
+			// scroll opens once the ninjas are in; when it rolls up it fills the screen again.
 			const { clientWidth: width, clientHeight: height } = renderer.domElement
 			const below = roomBelow()
-			framed = below > 0 ? framed + ((ambush.open ? 1 : 0) - framed) * damp(delta, reframe) : 0
+			const zoomed = ambush.open && (ambush.round > 1 || ambush.openingLeft === 0)
+			framed = below > 0 ? framed + ((zoomed ? 1 : 0) - framed) * damp(delta, reframe) : 0
 			const frame = framedIn(width, height, height - (height - below) * framed, runFraming.fov)
 			const view = viewOnPath(path, distance, frame.aspect, fallen)
 
