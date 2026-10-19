@@ -8,6 +8,7 @@
  */
 
 import { createStore, type Store } from '@rooted/store'
+import { openingSeconds } from '../../_shared/state/ambush.mts'
 import { refuse } from '../../_shared/state/store.mts'
 import { usualDifficulty, type Difficulty } from './difficulty.mts'
 
@@ -27,15 +28,12 @@ export type RunState = {
 	readonly stageLength: number
 	/** How fast the world moves: `1` while running, lower and lower in the ambush's slow motion. */
 	readonly worldScale: number
-	/** Real seconds the ambush's slow motion has lasted, pauses left out. */
-	readonly slowedFor: number
+	/** Real seconds since the ambush sprang, pauses left out. */
+	readonly ambushedFor: number
 	/** Where the samurai was when the ambush sprang, and the metres he would have run on since at his pace: he runs on far less ({@link runOnOf}). */
 	readonly ambushFrom: number
 	readonly ranOn: number
-	/**
-	 * Metres the samurai's legs have run at his pace, slow motion and all, though in an ambush he
-	 * hardly gets anywhere: his steps, drawn and heard, go by this.
-	 */
+	/** Metres the samurai's legs have run, the intro included: his steps, drawn and heard, go by this. */
 	readonly stepped: number
 	/** Seconds left of the 3-2-1 countdown after resuming, `0` when not counting down. */
 	readonly countdown: number
@@ -84,10 +82,12 @@ export const runConfig = {
 	 */
 	slowMotion: { halfSpeedAfter: 0.25, slowest: 0.03 },
 	/**
-	 * The most metres the samurai runs on in an ambush, his steps shorter and shorter: the world
-	 * all but stops round him, so the ninjas visibly close in on him rather than run along with him.
+	 * The most metres the samurai runs on in an ambush, his steps shorter and shorter, until he
+	 * stands: the world all but stops round him, so nobody runs along with him.
 	 */
 	ambushRunOn: 2.5,
+	/** Metres a second below which he stands still in an ambush, ready for the attack, rather than runs. */
+	standingSpeed: 1,
 	/**
 	 * How long the samurai takes to run in from behind the camera to where he runs the stage from:
 	 * at the run's pace that is about 20 m, farther back than the camera stands on the narrowest phone.
@@ -136,7 +136,7 @@ export const notRunning: RunState = {
 	distance: 0,
 	stageLength: 0,
 	worldScale: 1,
-	slowedFor: 0,
+	ambushedFor: 0,
 	ambushFrom: 0,
 	ranOn: 0,
 	stepped: 0,
@@ -169,8 +169,9 @@ function recover(state: RunState, realDelta: number): Partial<RunState> {
 export const stageDistanceOf = (state: Pick<RunState, 'distance' | 'stageLength'>): number => Math.min(state.distance, state.stageLength)
 
 /**
- * How fast the world moves `seconds` into an ambush: slower and slower on a curve, so it slows down
- * hard at first and then hardly moves.
+ * How fast the world moves `seconds` into the slow motion: slower and slower on a curve, so it slows
+ * down hard at first and then hardly moves. It starts as the scroll opens, `openingSeconds` into
+ * the ambush, with the camera's zoom.
  */
 export function slowMotionOf(seconds: number): number {
 	const { halfSpeedAfter, slowest } = runConfig.slowMotion
@@ -187,17 +188,29 @@ export function runOnOf(ranOn: number): number {
 }
 
 /**
+ * Whether the samurai stands still in an ambush, ready for the attack: once he has slowed down
+ * below `standingSpeed`, the world all but stopped round him. Paused in an ambush, he still stands.
+ */
+export function standsInAmbush(state: Pick<RunState, 'phase' | 'resumeTo' | 'worldScale' | 'ranOn'>): boolean {
+	const phase = state.phase === 'paused' ? state.resumeTo : state.phase
+	if (phase !== 'ambush') return false
+	const speed = runConfig.pace * state.worldScale * Math.exp(-state.ranOn / runConfig.ambushRunOn)
+	return speed < runConfig.standingSpeed
+}
+
+/**
  * Running covers ground up to the end of the stage. In an ambush the samurai runs on in slow
  * motion, past the end too, for the last question is asked there.
  */
 function advance(state: RunState, worldDelta: number, realDelta: number): Partial<RunState> {
 	const elapsed = state.elapsed + realDelta
 	const moved = state.distance + runConfig.pace * worldDelta
-	const stepped = state.stepped + runConfig.pace * worldDelta
-	if (state.phase !== 'ambush') return { elapsed, stepped, distance: Math.max(state.distance, Math.min(moved, state.stageLength)) }
-	const slowedFor = state.slowedFor + realDelta
+	if (state.phase !== 'ambush') return { elapsed, stepped: state.stepped + runConfig.pace * worldDelta, distance: Math.max(state.distance, Math.min(moved, state.stageLength)) }
+	const ambushedFor = state.ambushedFor + realDelta
 	const ranOn = state.ranOn + runConfig.pace * worldDelta
-	return { elapsed, stepped, distance: state.ambushFrom + runOnOf(ranOn), ranOn, slowedFor, worldScale: slowMotionOf(slowedFor) }
+	const distance = state.ambushFrom + runOnOf(ranOn)
+	// His legs go by the ground he covers, so they slow down with it.
+	return { elapsed, stepped: state.stepped + distance - state.distance, distance, ranOn, ambushedFor, worldScale: slowMotionOf(ambushedFor - openingSeconds) }
 }
 
 export function createRun(initial: RunState = notRunning): Run {
@@ -228,7 +241,7 @@ export function createRun(initial: RunState = notRunning): Run {
 
 		beginAmbush() {
 			if (!expect('run.beginAmbush', 'running')) return
-			store.update((state) => ({ phase: 'ambush', worldScale: 1, slowedFor: 0, ambushFrom: state.distance, ranOn: 0 }))
+			store.update((state) => ({ phase: 'ambush', worldScale: 1, ambushedFor: 0, ambushFrom: state.distance, ranOn: 0 }))
 		},
 
 		endAmbush(recovery = 0) {

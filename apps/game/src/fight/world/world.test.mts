@@ -23,6 +23,13 @@ describe('placement', () => {
 		expect(spotOf('down', 0, 1).z).toBeGreaterThan(0)
 	})
 
+	it('never brings a ninja straight in from behind', () => {
+		for (const approach of [0, 1]) {
+			expect(spotOf('down', 0, approach).x).toBeGreaterThan(0.2)
+			expect(spotOf('down', 0, approach, -1).x).toBeLessThan(-0.2)
+		}
+	})
+
 	it('brings them in from far away to within reach as the time runs out', () => {
 		for (const mark of marks) {
 			const far = spotOf(mark, 0, 0)
@@ -61,13 +68,13 @@ describe('placement', () => {
 	})
 
 	it('faces the samurai, and he faces back', () => {
-		for (const mark of marks) {
-			const spot = spotOf(mark, 0, 1)
+		for (const [mark, below] of marks.flatMap((each) => [[each, 1], [each, -1]] as const)) {
+			const spot = spotOf(mark, 0, 1, below)
 			// A figure faces -z when not turned: turned by `facing`, it looks at the origin.
 			const lookX = -Math.sin(spot.facing)
 			const lookZ = -Math.cos(spot.facing)
 			expect(lookX * -spot.x + lookZ * -spot.z).toBeCloseTo(placementConfig.reach)
-			const heading = headingOf(mark)
+			const heading = headingOf(mark, below)
 			expect(-Math.sin(heading) * spot.x + -Math.cos(heading) * spot.z).toBeCloseTo(placementConfig.reach)
 		}
 	})
