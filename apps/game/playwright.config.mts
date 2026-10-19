@@ -9,10 +9,12 @@ export default defineConfig({
 	testDir: 'e2e',
 	forbidOnly: ci,
 	// The stage pictures after the rest: rendering them in software takes every core there is, and
-	// the screens' own tests would run out of time beside them.
+	// the screens' own tests would run out of time beside them. The How to play video runs on its
+	// own (.github/workflows/how-to-play-video.yml).
 	projects: [
-		{ name: 'screens', testMatch: '**/*.spec.mts', testIgnore: '**/stage-pictures.spec.mts' },
+		{ name: 'screens', testMatch: '**/*.spec.mts', testIgnore: ['**/stage-pictures.spec.mts', '**/how-to-play-video.spec.mts'] },
 		{ name: 'stage pictures', testMatch: '**/stage-pictures.spec.mts', dependencies: ['screens'] },
+		{ name: 'how to play video', testMatch: '**/how-to-play-video.spec.mts' },
 	],
 	reporter: ci ? 'github' : 'list',
 	use: {

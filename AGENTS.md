@@ -93,6 +93,16 @@ pnpm e2e         # Playwright, in a real browser; first `pnpm --filter @bunbu/ga
 `pnpm lint` and `pnpm test` are the two that catch most of it, and CI runs all five on every pull
 request. No `oxlint-disable` without a comment saying why.
 
+The How to play video is checked once a week by
+[how-to-play-video.yml](.github/workflows/how-to-play-video.yml), which films it again and opens a
+pull request when the game looks different. Filming it yourself is optional; it needs Docker:
+
+```sh
+pnpm --filter @bunbu/game how-to-play-video   # films in the image the workflow checks in
+```
+
+Commit `apps/game/public/guide/how-to-play.*` in a commit of its own.
+
 ## Seeing your work
 
 ```sh
