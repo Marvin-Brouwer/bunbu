@@ -1,11 +1,13 @@
 /**
  * One of the game's own pages, written in Markdown in this folder and rendered at build time by
  * [`@rooted/markdown`](https://github.com/Marvin-Brouwer/rooted/blob/main/docs/guide/markdown.md).
- * The title comes from the file's frontmatter. At the end, a button back to the top.
+ * The title comes from the file's frontmatter. A link to another page of the game opens it in place,
+ * like a `Link` does. At the end, a button back to the top.
  */
 
 import { component } from '@rooted/components'
 import { Markdown } from '@rooted/markdown'
+import { navigate } from '@rooted/router'
 import { MenuButton } from '../_shared/menu/menu-button.mts'
 import { MenuScreen } from '../_shared/menu/menu-screen.mts'
 import styles from './page.css'
@@ -27,9 +29,21 @@ export type PageOptions = {
 export const Page = component<PageOptions>({
 	name: 'page',
 	styles,
-	onMount({ append, create, element, options }) {
+	onMount({ append, create, element, options, signal }) {
 		const { title } = options.source.frontmatter as { title: string }
 		const { video } = options
+
+		const prose = create(Markdown, {
+			source: options.source,
+			tag: 'article',
+			classes: styles.prose,
+		})
+		prose.addEventListener('click', (event) => {
+			const link = (event.target as Element).closest('a')
+			if (link?.origin !== location.origin) return
+			event.preventDefault()
+			navigate(link.href)
+		}, { signal })
 
 		const screen = create(MenuScreen, {
 			title,
@@ -52,11 +66,7 @@ export const Page = component<PageOptions>({
 							}),
 						],
 					}),
-				create(Markdown, {
-					source: options.source,
-					tag: 'article',
-					classes: styles.prose,
-				}),
+				prose,
 				create(MenuButton, {
 					label: 'Back to top',
 					action() {

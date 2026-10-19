@@ -37,4 +37,4 @@ Every right answer is worth 100 points. Your run time is shown as well: with equ
 
 ![The dojo's training dummy in front of its paper walls](../guide/dojo.svg)
 
-The results show every mistake with your answer, the right one and why. Practise them in the **dojo**, where there is no timer, no life bar and no score.
+The results show every mistake with your answer, the right one and why. Practise them in the [dojo](../dojo/), where there is no timer, no life bar and no score.
