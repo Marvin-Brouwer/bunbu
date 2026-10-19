@@ -85,7 +85,7 @@ Every ninja gets its own verdict from what was answered: **slain** when its opti
 
 ## Time limit
 
-There is no timer bar: the ambush opens in slow motion and **the duel strip is the timer**. The ninjas stand still about halfway in; just before the time runs out they wind up one after another, in a different order each time.
+There is no timer bar: the ambush opens in slow motion and **the duel strip is the timer**. The ninjas stand still about halfway in and wind up slowly as the time runs, their swords all the way up when it runs out.
 
 The ninjas close in on the samurai straight ahead, so the scroll hides them: on a phone in portrait it covers the whole width, and on a wider screen the fight is still behind it. So the ninjas have to be shown:
 

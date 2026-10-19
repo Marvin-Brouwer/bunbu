@@ -13,7 +13,7 @@
 import type { Group } from 'three'
 import type { AmbushKind, AmbushOption, Mark } from '../../_shared/state/ambush.mts'
 import { marks } from '../../_shared/state/ambush.mts'
-import { chargeOrder, type Ninja, type NinjaPose } from '../state/ninjas.mts'
+import type { Ninja, NinjaPose } from '../state/ninjas.mts'
 import { runConfig } from '../state/run.mts'
 import type { Body } from '../../_shared/world/character.mts'
 import type { ViewFrame } from './camera.mts'
@@ -70,11 +70,7 @@ export const bladeLandsAfter = (slicer: boolean): number => (slicer ? strikeDela
  * run in to there, stand still ready for the attack, and charge in to strike from there.
  */
 export const standReach = 0.6
-/** Seconds before the time runs out that the first ninja stops and winds up to charge. */
-export const chargeSeconds = 0.6
-/** Seconds after one ninja winds up before the next one does. */
-const chargeStagger = 0.1
-/** How far into the strike a ninja holds its blade up, winding up. */
+/** How far into the strike a ninja holds its blade up, wound up when the time runs out. */
 const windUpTime = poseSeconds.strike * 0.35
 /** Metres a ninja leaps up charging in from where it crept to. */
 const leapHeight = 0.6
@@ -253,11 +249,10 @@ export function motionOf(pose: NinjaPose, slicer: boolean | undefined, approach:
 export type NinjasView = {
 	/**
 	 * Makes the figures match `active`. `delta` is real time, `worldDelta` slowed down, `frame`
-	 * where the samurai is and the way ahead, and the seconds until the time runs out (`undefined`
-	 * without a time limit). A ninja that comes in runs out from behind one of `covers`, the
-	 * ambush's ([cover](./cover.mts)).
+	 * where the samurai is and the way ahead. A ninja that comes in runs out from behind one of
+	 * `covers`, the ambush's ([cover](./cover.mts)).
 	 */
-	draw: (active: readonly Ninja[], options: readonly AmbushOption[], kind: AmbushKind, frame: ViewFrame, delta: number, worldDelta: number, secondsLeft: number | undefined, covers?: readonly CoverSpot[]) => void
+	draw: (active: readonly Ninja[], options: readonly AmbushOption[], kind: AmbushKind, frame: ViewFrame, delta: number, worldDelta: number, covers?: readonly CoverSpot[]) => void
 	/** Swaps every figure's body for one made by `make`, for when the real model has loaded. */
 	remake: (make: () => Body) => void
 	/** The mark the ninja with `id` was last drawn at, for the samurai to turn toward. */
@@ -326,8 +321,7 @@ export function createNinjasView(parent: Group, make: () => Body): NinjasView {
 	}
 
 	return {
-		draw(active, options, kind, frame, delta, worldDelta, secondsLeft, covers = []) {
-			const charging = chargeOrder(active).map((ninja) => ninja.id)
+		draw(active, options, kind, frame, delta, worldDelta, covers = []) {
 
 			for (const ninja of active) {
 				let entry = shown.get(ninja.id)
@@ -422,13 +416,13 @@ export function createNinjasView(parent: Group, make: () => Body): NinjasView {
 				}
 				// Where the blades meet on a block: between the two, nearer the samurai's sword.
 				entry.clash = { x: samurai.x + (at.x - samurai.x) * 0.45, z: samurai.z + (at.z - samurai.z) * 0.45 }
-				// Winding up to charge just before the time runs out, one after another.
-				const turn = charging.indexOf(ninja.id)
-				const windingUp = secondsLeft !== undefined && ninja.pose === 'approach' && secondsLeft < chargeSeconds - turn * chargeStagger
 				const standing = motion.pose === 'approach' && (at.doing === 'hiding' || (at.doing === 'running' && entry.speed < standingSpeed))
+				// At its place it winds up as the time runs, its blade up when the time runs out: `approach`
+				// is how much of the time has gone. Answered, it holds where it got to.
+				const windingUp = standing && at.doing === 'running' && ninja.approach > 0
 				const pose = windingUp ? 'strike' : standing ? 'idle' : motion.pose
 				entry.stood = standing ? entry.stood + worldDelta : 0
-				const time = windingUp ? windUpTime : standing ? entry.stood : motion.time
+				const time = windingUp ? windUpTime * ninja.approach : standing ? entry.stood : motion.time
 				// In the air its legs keep the stride it took off with.
 				entry.body.show(pose, time, entry.cycle, ninja.wave > 0 ? backRowOpacity : 1)
 			}
