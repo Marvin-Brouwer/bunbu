@@ -112,16 +112,16 @@ export const bambooDistricts: readonly District[] = [
 		name: 'Deep grove',
 		cover: [{ kind: 'bamboo-bundle' }, { kind: 'rock' }, { kind: 'panda', ambush: 0.15, decoy: 0.5 }],
 		rows: [
-			{ shape: 'bamboo', from: 26, to: 70, perTile: 6, colours: [[0x7fa046, 0x8aa84e, 0x6f9440]] },
-			{ shape: 'broadleaf', from: 50, to: 110, perTile: 1.4, colours: [[0x4a3a2c], [0x4a6634, 0x557038]] },
+			{ shape: 'bamboo', from: 50, to: 94, perTile: 6, colours: [[0x7fa046, 0x8aa84e, 0x6f9440]] },
+			{ shape: 'broadleaf', from: 74, to: 134, perTile: 1.4, colours: [[0x4a3a2c], [0x4a6634, 0x557038]] },
 		],
 	},
 	{
 		name: 'Mossy stones',
 		cover: [{ kind: 'jizo' }, { kind: 'rock' }],
 		rows: [
-			{ shape: 'rock', from: 26, to: 60, perTile: 2.2, colours: [[palette.stone, 0x7f8a6a, 0x6f7a5a]] },
-			{ shape: 'bamboo', from: 30, to: 70, perTile: 4, colours: [[0x7fa046, 0x8aa84e, 0x6f9440]] },
+			{ shape: 'rock', from: 50, to: 84, perTile: 2.2, colours: [[palette.stone, 0x7f8a6a, 0x6f7a5a]] },
+			{ shape: 'bamboo', from: 54, to: 94, perTile: 4, colours: [[0x7fa046, 0x8aa84e, 0x6f9440]] },
 		],
 	},
 	{
@@ -130,22 +130,22 @@ export const bambooDistricts: readonly District[] = [
 		rows: [
 			{ shape: 'torii', across: true, span: pathHalfWidth * 2 + 0.4, from: 0, to: 0, perTile: 0.6, colours: [[0xa8261c], [0xa8261c], [0x2a2a2e, 0x8e2a22]] },
 			{ shape: 'lantern', from: pathHalfWidth + 0.7, to: pathHalfWidth + 1, perTile: 0.5, colours: [[0x8d877b, 0x9a958a], [0x8d877b, 0x7a756c]] },
-			{ shape: 'bamboo', from: 26, to: 70, perTile: 5, colours: [[0x7fa046, 0x8aa84e, 0x6f9440]] },
+			{ shape: 'bamboo', from: 50, to: 94, perTile: 5, colours: [[0x7fa046, 0x8aa84e, 0x6f9440]] },
 		],
 	},
 	{
 		name: 'Forest edge',
 		cover: [{ kind: 'woodpile' }, { kind: 'bamboo-bundle' }],
 		rows: [
-			{ shape: 'broadleaf', from: 26, to: 90, perTile: 3, colours: [[0x4a3a2c], [0x4a6634, 0x557038, 0x6f9440]] },
-			{ shape: 'pine', from: 40, to: 110, perTile: 2, colours: [[0x4a3a2c], [0x2f4a32, 0x355238]] },
-			{ shape: 'bamboo', from: 26, to: 50, perTile: 1.5, colours: [[0x7fa046, 0x8aa84e]] },
+			{ shape: 'broadleaf', from: 50, to: 114, perTile: 3, colours: [[0x4a3a2c], [0x4a6634, 0x557038, 0x6f9440]] },
+			{ shape: 'pine', from: 64, to: 134, perTile: 2, colours: [[0x4a3a2c], [0x2f4a32, 0x355238]] },
+			{ shape: 'bamboo', from: 50, to: 74, perTile: 1.5, colours: [[0x7fa046, 0x8aa84e]] },
 		],
 	},
 ]
 
 /** Bamboo stands from just off the path to this far out. */
-const forestDepth = 24
+const forestDepth = 48
 
 export type BambooModels = Partial<{
 	/** Our stage kit: `BambooClump`, `Shrine`, `Jizo`. */
