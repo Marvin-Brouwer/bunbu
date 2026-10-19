@@ -10,6 +10,7 @@
  */
 
 import { component, type GenericComponent } from '@rooted/components'
+import type { Store } from '@rooted/store'
 import { noAmbush, type Ambush, type AmbushState } from '../state/ambush.mts'
 import type { Quiz } from '../state/quiz.mts'
 import { headingOf } from './heading.mts'
@@ -29,6 +30,11 @@ export type ScrollOptions = {
 	readonly commit?: () => void
 	/** Whether the mode is paused or counting down to resume; see {@link SwipeZone}. */
 	readonly held?: () => boolean
+	/**
+	 * Rolls the scroll up while `true` and unrolls it again after, so the question can't be read
+	 * while the run is paused or counting down to resume.
+	 */
+	readonly closed?: Store<boolean>
 	/** How far the mode is, in place of the ninjas in the heading: `8 / 40` in practice. */
 	readonly progress?: (state: AmbushState) => string
 	/** Practice's read out loud for the scroll of `state`, after the query. */
@@ -45,7 +51,7 @@ export const Scroll = component<ScrollOptions>({
 	name: 'scroll',
 	styles,
 	onMount({ append, create, element, options, signal }) {
-		const { ambush, quiz, label, commit, held, progress, readAloud } = options
+		const { ambush, quiz, label, commit, held, closed, progress, readAloud } = options
 
 		const heading = (state: AmbushState) => headingOf(label, state, quiz.value.question(state.at)?.type, progress?.(state))
 
@@ -195,12 +201,14 @@ export const Scroll = component<ScrollOptions>({
 			// The first scroll of an ambush unrolls once the ninjas have come out and run in, so they are
 			// seen first; in practice, where nobody comes in, at once. A next round is revealed
 			// under the scroll still on screen: answering a round closes it for a moment, which
-			// starts it rolling up, and the next round opens it again in the same breath.
-			if (due && next.round > 1 && stage !== 'hidden' && stage !== 'slice') {
+			// starts it rolling up, and the next round opens it again in the same breath. While the
+			// scroll is closed, it waits.
+			const ready = due && closed?.value !== true
+			if (ready && next.round > 1 && stage !== 'hidden' && stage !== 'slice') {
 				due = false
 				reveal(lastOpen, next)
 			}
-			else if (due && next.openingLeft === 0) {
+			else if (ready && next.openingLeft === 0) {
 				due = false
 				unroll(next)
 			}
@@ -220,6 +228,19 @@ export const Scroll = component<ScrollOptions>({
 		follow(ambush.value)
 		ambush.on('change', signal, ({ detail }) => {
 			follow(detail.state)
+		})
+
+		// Closing rolls the open scroll up; opening again unrolls the ambush still open, from the top.
+		closed?.on('change', signal, ({ detail }) => {
+			if (detail.state) {
+				if (stage === 'unroll' || stage === 'reveal' || stage === 'open') setStage('roll-up')
+				return
+			}
+			const state = ambush.value
+			if (state.open && state.openingLeft === 0) {
+				due = false
+				unroll(state)
+			}
 		})
 	},
 })
