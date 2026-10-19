@@ -110,6 +110,8 @@ type Shown = {
 	speed: number
 	/** Seconds since the store last changed this ninja's pose. */
 	time: number
+	/** World seconds it has stood still, so it stands in slow motion too. */
+	stood: number
 	/** Where the samurai was when this ninja was beaten, so it stays on that spot as he runs on. */
 	beatenAt: ViewFrame | undefined
 	/** Where its blade meets the samurai's when he blocks it. */
@@ -347,6 +349,7 @@ export function createNinjasView(parent: Group, make: () => Body): NinjasView {
 						mark,
 						sequence: ninja.sequence,
 						time: 0,
+						stood: 0,
 						entrance: cover === undefined ? 0 : -sharing * shareConfig.stagger,
 						cover,
 						// The first one behind its middle, the others either side.
@@ -424,7 +427,8 @@ export function createNinjasView(parent: Group, make: () => Body): NinjasView {
 				const windingUp = secondsLeft !== undefined && ninja.pose === 'approach' && secondsLeft < chargeSeconds - turn * chargeStagger
 				const standing = motion.pose === 'approach' && (at.doing === 'hiding' || (at.doing === 'running' && entry.speed < standingSpeed))
 				const pose = windingUp ? 'strike' : standing ? 'idle' : motion.pose
-				const time = windingUp ? windUpTime : standing ? entry.time : motion.time
+				entry.stood = standing ? entry.stood + worldDelta : 0
+				const time = windingUp ? windUpTime : standing ? entry.stood : motion.time
 				// In the air its legs keep the stride it took off with.
 				entry.body.show(pose, time, entry.cycle, ninja.wave > 0 ? backRowOpacity : 1)
 			}

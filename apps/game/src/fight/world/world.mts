@@ -150,6 +150,8 @@ export function createRunWorld(game: RunGame, viewport: Viewport, roomBelow: () 
 
 	let seen = -1
 	let since = 0
+	// World seconds he has stood ready in an ambush, so he stands in slow motion too.
+	let stood = 0
 	// What he shows, and what he showed when the store last changed his pose: hurt, he keeps showing
 	// that while the blade is still on its way.
 	let shown: { pose: FigurePose; time: number } = { pose: 'idle', time: 0 }
@@ -222,7 +224,9 @@ export function createRunWorld(game: RunGame, viewport: Viewport, roomBelow: () 
 			if (finish !== undefined) shown = finish.samurai
 			else if (since < lands) shown = { pose: previous.pose, time: previous.time + since }
 			else shown = { pose: shogun.pose, time: since - lands }
-			samurai.show(shown.pose === 'run' && standsInAmbush(run) ? 'idle' : shown.pose, shown.time, cycle)
+			const standing = shown.pose === 'run' && standsInAmbush(run)
+			stood = standing ? stood + worldDelta : 0
+			samurai.show(standing ? 'idle' : shown.pose, standing ? stood : shown.time, cycle)
 			samurai.grey(finish?.samurai.pose === 'fallen' ? Math.min(1, finish.samurai.time / poseSeconds.fallen) : 0)
 
 			// During an ambush the fight moves into the room below the scroll, if there is any; when
