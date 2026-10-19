@@ -22,6 +22,7 @@ import {
 	Fog,
 	Group,
 	HemisphereLight,
+	type InstancedMesh,
 	Mesh,
 	MeshBasicMaterial,
 	MeshStandardMaterial,
@@ -31,11 +32,11 @@ import {
 	type Scene,
 } from 'three'
 import type { GLTF } from 'three/addons/loaders/GLTFLoader.js'
-import { layBlocks } from './blocks.mts'
+import { blockVariants, layBlocks } from './blocks.mts'
 import { Batch, chunkOf, placed, scatter, type Cursor } from './kit.mts'
-import { addAll, clearanceOf, facingPath, isFree, passTime, sky, skyRadius, stamp, strip, type Daylight, type Owned, type Planting, type StageView, type Taken } from './landscape.mts'
+import { addAll, facingPath, isFree, passTime, sky, skyRadius, stamp, strip, type Daylight, type Owned, type Planting, type StageView, type Taken } from './landscape.mts'
 import type { District } from './backdrop.mts'
-import type { CoverSet } from './cover.mts'
+import { coverReach, type Cover, type CoverSet, type CoverSpot } from './cover.mts'
 import { beside, type Leg, type Path } from './path.mts'
 
 const palette = {
@@ -185,19 +186,81 @@ function heightOf(model: Object3D): number {
 	return bounds.max.y - bounds.min.y
 }
 
+/** A clump of bamboo, and which way the path runs where it grew, the way it is shoved aside. */
+type Clump = Planting & { readonly heading: number }
+
+/**
+ * The bamboo of one stretch of path, and every mesh that draws it, each with its copies as they were
+ * laid, so a clump can be shoved aside and put back.
+ */
+type Thicket = {
+	readonly clumps: Clump[]
+	readonly meshes: { readonly mesh: InstancedMesh; readonly laid: Float32Array }[]
+}
+
 /** What a bamboo-forest block places once the models are in, and the stalks that stand in till then. */
 type BambooPending = {
 	readonly shrines: Planting[]
 	readonly jizos: Planting[]
 	readonly lanterns: Planting[]
-	readonly bamboo: Planting[]
+	/** The bamboo, per stretch of path. */
+	readonly bamboo: Map<number, Thicket>
 	readonly placeholders: Group
+	/** The covers round the block where it is shown now, in the place it was laid in. */
+	covers: readonly CoverSpot[]
 }
 
 /** Metres a shrine and the Jizō beside it reach along the path from where it stands. */
 const shrineReach = 4
 
-export function createBambooForest(scene: Scene, path: Path, models: Promise<BambooModels>): StageView {
+/** Metres apart the bamboo stands, give or take, all through the forest. */
+const bambooSpacing = 2.4
+
+/** How far a clump's stalks reach from its middle, at its largest. */
+const clumpReach = 0.6
+
+/**
+ * Shoves each clump of `thicket` that stands in one of `covers` out of its way, along the path so it
+ * never lands on it, and puts back the ones that no longer do.
+ */
+function shove(thicket: Thicket, covers: readonly CoverSpot[]): void {
+	const reach = coverReach + clumpReach
+	thicket.clumps.forEach(({ matrix, heading }, index) => {
+		const grew = { x: matrix.elements[12], z: matrix.elements[14] }
+		const at = { ...grew }
+		const ahead = { x: -Math.sin(heading), z: -Math.cos(heading) }
+		for (const cover of covers) {
+			const offset = { x: at.x - cover.x, z: at.z - cover.z }
+			if (Math.hypot(offset.x, offset.z) >= reach) continue
+			const along = offset.x * ahead.x + offset.z * ahead.z
+			const across = offset.x * -ahead.z + offset.z * ahead.x
+			const clear = (along < 0 ? -1 : 1) * Math.sqrt(reach * reach - across * across)
+			at.x += (clear - along) * ahead.x
+			at.z += (clear - along) * ahead.z
+		}
+		for (const { mesh, laid } of thicket.meshes) {
+			const copies = mesh.instanceMatrix.array
+			copies[index * 16 + 12] = (laid[index * 16 + 12] ?? 0) + at.x - grew.x
+			copies[index * 16 + 14] = (laid[index * 16 + 14] ?? 0) + at.z - grew.z
+		}
+	})
+	for (const { mesh } of thicket.meshes) {
+		mesh.instanceMatrix.needsUpdate = true
+		mesh.computeBoundingSphere()
+	}
+}
+
+/** Adds `meshes`, each drawing a thicket's clumps in order, to the ones it shoves. */
+function drawn(thicket: Thicket, meshes: readonly InstancedMesh[]): readonly InstancedMesh[] {
+	for (const mesh of meshes) thicket.meshes.push({ mesh, laid: Float32Array.from(mesh.instanceMatrix.array) })
+	return meshes
+}
+
+/**
+ * The bamboo forest along `path`. Where one of `cover`'s covers stands in the bamboo, the bamboo there
+ * is shoved out of its way.
+ */
+export function createBambooForest(scene: Scene, path: Path, models: Promise<BambooModels>, cover: Pick<Cover, 'spotsBetween'>): StageView {
 	// Thick mist: the forest closes in, and what is far off is only a green haze.
 	const [first] = daylight
 	const fog = new Fog(first.fog, 22, 115)
@@ -259,7 +322,6 @@ export function createBambooForest(scene: Scene, path: Path, models: Promise<Bam
 		group.add(strip(path, from, to, owned, { half: () => pathHalfWidth, colour: () => gravel, y: 0.03 }))
 
 		const cursor: Cursor = { chunk: 0 }
-		const clear = clearanceOf(path, from - 60, to + 60)
 		const taken: Taken = []
 
 		// Stepping stones down the middle of the path, a stride apart.
@@ -284,9 +346,10 @@ export function createBambooForest(scene: Scene, path: Path, models: Promise<Bam
 			const at = beside(point, side * (pathHalfWidth + 2.2))
 			shrines.push({ matrix: placed(at.x, 0, at.z, facingPath(point, side)), chunk })
 			taken.push({ x: at.x, z: at.z, radius: 3.2 })
+			// A stride apart, each on its own base, rather than in a huddle.
 			const figures = 1 + Math.floor(scatter(index + 13) * 3)
 			for (let figure = 0; figure < figures; figure++) {
-				const spot = beside(point, side * (pathHalfWidth + 1.4), 1.3 + figure * 0.55)
+				const spot = beside(point, side * (pathHalfWidth + 1.4), 1.5 + figure * 0.95)
 				jizos.push({ matrix: placed(spot.x, 0, spot.z, facingPath(point, side), 0.9 + scatter(index + figure) * 0.2), chunk })
 			}
 		}
@@ -300,31 +363,50 @@ export function createBambooForest(scene: Scene, path: Path, models: Promise<Bam
 			}
 		}
 
-		// The bamboo: dense stands either side, with a clearing here and there. A clump strays up to
-		// 0.8 m along the path, so the first and last keep that far in from the block's ends.
-		const bamboo: Planting[] = []
-		for (let distance = from + 1, index = base; distance + 1 <= to; distance += 2.3, index++) {
-			const point = path.at(distance)
-			const chunk = chunkOf(distance)
-			for (const side of [-1, 1]) {
-				for (let out = pathHalfWidth + 1.2; out < forestDepth; out += 2.4) {
-					const seed = index * 37 + Math.round(out * 10) * 3 + side
-					if (scatter(seed) < 0.22) continue
-					const at = beside(point, side * (out + (scatter(seed + 1) - 0.5) * 1.6), (scatter(seed + 2) - 0.5) * 1.6)
-					if (!clear(at.x, at.z, distance, pathHalfWidth + 0.9, 20)) continue
-					if (!isFree(taken, at.x, at.z, 0.8)) continue
-					bamboo.push({ matrix: placed(at.x, 0, at.z, scatter(seed + 3) * 6.28, 0.8 + scatter(seed + 4) * 0.45), chunk })
+		// The bamboo: an even stand all round, laid out on a grid over the ground rather than along the
+		// path, so it fills the outside of a bend as well as a straight, with a clearing here and there.
+		// A clump belongs to the block whose stretch of path it is nearest, 1 m clear of its ends.
+		const nearby: { distance: number; x: number; z: number; heading: number }[] = []
+		for (let distance = from - forestDepth; distance <= to + forestDepth; distance += 1) nearby.push({ distance, ...path.at(distance) })
+		const bounds = { left: Infinity, right: -Infinity, near: Infinity, far: -Infinity }
+		for (const { x, z } of nearby) {
+			bounds.left = Math.min(bounds.left, x - forestDepth)
+			bounds.right = Math.max(bounds.right, x + forestDepth)
+			bounds.near = Math.min(bounds.near, z - forestDepth)
+			bounds.far = Math.max(bounds.far, z + forestDepth)
+		}
+		const bamboo = new Map<number, Thicket>()
+		for (let column = Math.floor(bounds.left / bambooSpacing); column * bambooSpacing <= bounds.right; column++) {
+			for (let row = Math.floor(bounds.near / bambooSpacing); row * bambooSpacing <= bounds.far; row++) {
+				const seed = column * 7919 + row * 104_729 + base
+				if (scatter(seed) < 0.2) continue
+				const x = (column + 0.1 + scatter(seed + 1) * 0.8) * bambooSpacing
+				const z = (row + 0.1 + scatter(seed + 2) * 0.8) * bambooSpacing
+				let nearest = nearby[0]
+				let away = Infinity
+				for (const point of nearby) {
+					const apart = Math.hypot(point.x - x, point.z - z)
+					if (apart < away) {
+						away = apart
+						nearest = point
+					}
 				}
+				if (nearest === undefined || nearest.distance < from + 1 || nearest.distance > to - 1) continue
+				if (away < pathHalfWidth + 0.9 || away > forestDepth) continue
+				if (!isFree(taken, x, z, 0.8)) continue
+				const chunk = chunkOf(nearest.distance)
+				const thicket = bamboo.get(chunk) ?? { clumps: [], meshes: [] }
+				bamboo.set(chunk, thicket)
+				thicket.clumps.push({ matrix: placed(x, 0, z, scatter(seed + 3) * 6.28, 0.8 + scatter(seed + 4) * 0.45), chunk, heading: nearest.heading })
 			}
 		}
 
-		const stalks = new Batch(stalkGeometry, stalkMaterial, cursor)
-		for (const { matrix, chunk } of bamboo) {
-			cursor.chunk = chunk
-			stalks.add(matrix)
-		}
 		const placeholders = new Group()
-		addAll(placeholders, stalks.build())
+		for (const [chunk, thicket] of bamboo) {
+			const stalks = new Batch(stalkGeometry, stalkMaterial, { chunk })
+			for (const { matrix } of thicket.clumps) stalks.add(matrix)
+			addAll(placeholders, drawn(thicket, stalks.build()))
+		}
 
 		for (let distance = from + 10, index = base; distance < to; distance += 26 + scatter(index) * 20, index++) {
 			const at = beside(path.at(distance), (scatter(index + 1) - 0.5) * 6)
@@ -336,7 +418,12 @@ export function createBambooForest(scene: Scene, path: Path, models: Promise<Bam
 		}
 
 		addAll(group, [...stones.build(), placeholders])
-		return { group, pending: { shrines, jizos, lanterns, bamboo, placeholders } }
+		return { group, pending: { shrines, jizos, lanterns, bamboo, placeholders, covers: [] } }
+	}, blockVariants, (block, from, offset) => {
+		// The covers of the stretch it is shown on, moved back to where the block was laid.
+		block.pending.covers = cover.spotsBetween(from - clumpReach - coverReach, from + path.round + clumpReach + coverReach)
+			.map((spot) => ({ x: spot.x - offset.x, z: spot.z - offset.z }))
+		for (const thicket of block.pending.bamboo.values()) shove(thicket, block.pending.covers)
 	})
 	scene.add(blocks.group)
 
@@ -349,7 +436,10 @@ export function createBambooForest(scene: Scene, path: Path, models: Promise<Bam
 		const lantern = loaded.temple?.scene.getObjectByName('StoneLantern')
 		for (const { group, pending } of blocks.laid) {
 			if (clump !== undefined) {
-				addAll(group, stamp(clump, pending.bamboo, heightOf(clump), false, owned))
+				for (const thicket of pending.bamboo.values()) {
+					addAll(group, drawn(thicket, stamp(clump, thicket.clumps, heightOf(clump), false, owned)))
+					shove(thicket, pending.covers)
+				}
 				pending.placeholders.visible = false
 			}
 			if (shrine !== undefined) addAll(group, stamp(shrine, pending.shrines, heightOf(shrine), true, owned))

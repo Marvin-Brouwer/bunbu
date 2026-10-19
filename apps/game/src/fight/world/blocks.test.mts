@@ -94,6 +94,26 @@ describe('laid blocks', () => {
 			}
 		})
 
+		it(`tells where each block of ${name} is shown once it is put in a new place, and only then`, () => {
+			const path = createPath(round)
+			const told: { block: number; from: number }[] = []
+			const blocks = layBlocks(path, marked(path), undefined, (block, from, offset) => {
+				const laid = blocks.laid.indexOf(block)
+				told.push({ block: laid, from })
+				// Moved from its own round to the one it is shown on.
+				const start = path.at(laid * path.round)
+				const shown = path.at(from)
+				expect(Math.hypot(start.x + offset.x - shown.x, start.z + offset.z - shown.z)).toBeLessThan(1e-6)
+			})
+			blocks.follow(0)
+			expect(told.map(({ from }) => from).toSorted((one, other) => one - other)).toEqual(shownAround(0).map((slot) => slot * path.round))
+			told.length = 0
+			blocks.follow(10)
+			expect(told).toEqual([])
+			blocks.follow(path.round + 1)
+			expect(told.map(({ from }) => from)).toEqual([(1 + shownAhead) * path.round])
+		})
+
 		it(`shows every block of ${name} that could be seen through the fog ahead`, () => {
 			const path = createPath(round)
 			for (let distance = 0; distance < 6 * path.round; distance += 2) {
