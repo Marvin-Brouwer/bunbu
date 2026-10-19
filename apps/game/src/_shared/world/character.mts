@@ -30,8 +30,8 @@ import { clipPlays, clipTimeOf, helmetFlight, rigOf, type FigurePose } from './p
 /** A figure in the world, on the real model or on the placeholder until the model has loaded. */
 export type Body = {
 	readonly root: Group
-	/** Shows `pose`, `time` seconds after it began; `faded` below 1 for the back row. */
-	show: (pose: FigurePose, time: number, cycle: number, faded?: number) => void
+	/** Shows `pose`, `time` seconds after it began. */
+	show: (pose: FigurePose, time: number, cycle: number) => void
 	/** Blends every colour toward ink-wash grey, `0` none, `1` fully grey. */
 	grey: (amount: number) => void
 	dispose: () => void
@@ -69,8 +69,8 @@ export function placeholderBody(parts: FigureParts, colours: Parameters<typeof c
 	const figure = createFigure(parts, colours)
 	return {
 		root: figure.root,
-		show(pose, time, cycle, faded) {
-			figure.pose(rigOf(pose, time, cycle), faded)
+		show(pose, time, cycle) {
+			figure.pose(rigOf(pose, time, cycle))
 		},
 		grey: (amount) => { figure.grey(amount) },
 		dispose: () => { figure.dispose() },
@@ -216,7 +216,7 @@ export function createCharacter(model: GLTF, look: Look): Body {
 	return {
 		root,
 
-		show(pose, time, cycle, faded = 1) {
+		show(pose, time, cycle) {
 			const rig = rigOf(pose, time, cycle)
 			// The GLB sword is part of the animated scene rather than the procedural
 			// placeholder, so mirror the pose's drop explicitly when the samurai falls.
@@ -253,7 +253,7 @@ export function createCharacter(model: GLTF, look: Look): Body {
 
 			if (armour !== undefined) loseHelmet(armour, pose === 'fallen' ? time - helmetOff : undefined)
 
-			const opacity = rig.fade * faded
+			const opacity = rig.fade
 			root.visible = opacity > 0
 			const translucent = opacity < 1
 			if (translucent !== see) {
