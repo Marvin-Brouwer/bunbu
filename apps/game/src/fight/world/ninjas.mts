@@ -14,6 +14,7 @@ import type { Group } from 'three'
 import type { AmbushKind, AmbushOption, Mark } from '../../_shared/state/ambush.mts'
 import { marks } from '../../_shared/state/ambush.mts'
 import { chargeOrder, type Ninja, type NinjaPose } from '../state/ninjas.mts'
+import { runConfig } from '../state/run.mts'
 import type { Body } from '../../_shared/world/character.mts'
 import type { ViewFrame } from './camera.mts'
 import { coverReach, type CoverSpot } from './cover.mts'
@@ -65,10 +66,10 @@ const lungeSeconds = poseSeconds.strike * 0.6
 export const bladeLandsAfter = (slicer: boolean): number => (slicer ? strikeDelaySeconds : 0) + lungeSeconds
 
 /**
- * How far in the ninjas creep while the time runs, of the way from where they start to in reach:
- * they keep their distance, and charge in to strike from there.
+ * Where the ninjas stand while the time runs, of the way from where they start to in reach: they
+ * run in to there, stand still ready for the attack, and charge in to strike from there.
  */
-export const creepReach = 0.6
+export const standReach = 0.6
 /** Seconds before the time runs out that the first ninja stops and winds up to charge. */
 export const chargeSeconds = 0.6
 /** Seconds after one ninja winds up before the next one does. */
@@ -96,10 +97,6 @@ type Shown = {
 	 */
 	mark: Mark
 	sequence: number
-	/** Visual approach, advanced with world time so the run-in is also in slow motion. */
-	approach: number
-	/** The latest approach reported by the game state. */
-	targetApproach: number
 	/** `0` while entering from farther along the path, `1` once at the normal starting spot. */
 	entrance: number
 	/** The cover it leaps out from behind, in the world, if there is one on its side ahead, and its place among the ninjas behind it. */
@@ -256,9 +253,9 @@ export type NinjasView = {
 	 * Makes the figures match `active`. `delta` is real time, `worldDelta` slowed down, `frame`
 	 * where the samurai is and the way ahead, and the seconds until the time runs out (`undefined`
 	 * without a time limit). A ninja that comes in runs out from behind one of `covers`, the
-	 * ambush's ([cover](./cover.mts)), toward where the samurai will be once it is in, `then`.
+	 * ambush's ([cover](./cover.mts)).
 	 */
-	draw: (active: readonly Ninja[], options: readonly AmbushOption[], kind: AmbushKind, frame: ViewFrame, delta: number, worldDelta: number, secondsLeft: number | undefined, covers?: readonly CoverSpot[], then?: ViewFrame) => void
+	draw: (active: readonly Ninja[], options: readonly AmbushOption[], kind: AmbushKind, frame: ViewFrame, delta: number, worldDelta: number, secondsLeft: number | undefined, covers?: readonly CoverSpot[]) => void
 	/** Swaps every figure's body for one made by `make`, for when the real model has loaded. */
 	remake: (make: () => Body) => void
 	/** The mark the ninja with `id` was last drawn at, for the samurai to turn toward. */
@@ -283,38 +280,32 @@ function offLine(point: { x: number; z: number }, from: { x: number; z: number }
 const sameCover = (one: CoverSpot, other: CoverSpot) => Math.hypot(one.x - other.x, one.z - other.z) < 0.01
 
 /**
- * The cover a ninja starting at `start` (round the samurai at `frame`, the way ahead along `-z`)
+ * The cover a ninja that will stand at `start` (round the samurai at `frame`, the way ahead along `-z`)
  * runs out from behind: of the `covers` on its side ahead of him, the nearest one it can come out
  * from toward him all the way. It lands beyond where it will stand
- * for the fight, round him at `then`, where he has run on to in slow motion once it is in, and
- * runs in from there clear of the other covers.
+ * for the fight, once the samurai has run on, and runs in from there clear of the other covers.
  * One that comes from behind the camera, or for which no cover will do, has none and runs in from
  * farther along the path; one from straight ahead picks a side by its `id`.
  */
-export function coverOf(start: { x: number; z: number }, id: number, frame: ViewFrame, then: ViewFrame, covers: readonly CoverSpot[]): CoverSpot | undefined {
+export function coverOf(start: { x: number; z: number }, id: number, frame: ViewFrame, covers: readonly CoverSpot[]): CoverSpot | undefined {
 	if (start.z >= 0) return undefined
 	const side = fleeSideOf(start.x, id)
 	const sin = Math.sin(frame.heading)
 	const cos = Math.cos(frame.heading)
 	// Round the samurai: how far to his right, and how far ahead ({@link beside} undone).
-	const roundHim = (point: { x: number; z: number }) => {
-		const dx = point.x - frame.x
-		const dz = point.z - frame.z
-		return { x: dx * cos - dz * sin, z: -dx * sin - dz * cos }
-	}
 	const around = covers.map((cover) => {
-		const { x: right, z: ahead } = roundHim(cover)
-		return { cover, right, ahead }
+		const dx = cover.x - frame.x
+		const dz = cover.z - frame.z
+		return { cover, right: dx * cos - dz * sin, ahead: -dx * sin - dz * cos }
 	})
-	// Where he and it will stand once it is in.
-	const him = roundHim(then)
-	const to = roundHim(beside(then, start.x, -start.z))
+	// Where it will stand, once the samurai has run on as far as an ambush lets him.
+	const stands = { right: start.x, ahead: -start.z + runConfig.ambushRunOn }
 	const fits = around.filter(({ cover, right, ahead }) => {
 		if (Math.sign(right) !== side || ahead <= 0) return false
 		const away = Math.hypot(right, ahead)
 		const landed = { x: right * (1 - leapConfig.ahead / away), z: ahead * (1 - leapConfig.ahead / away) }
-		// Running in from where it lands to where it stands, it only ever comes nearer to him.
-		if ((landed.x - to.x) * (him.x - to.x) + (landed.z - to.z) * (him.z - to.z) > 0) return false
+		if (landed.z < stands.ahead) return false
+		const to = { x: stands.right, z: stands.ahead }
 		return around.every((other) => other.cover === cover || offLine({ x: other.right, z: other.ahead }, landed, to) > coverReach + 0.3)
 	})
 	return fits.toSorted((one, other) => one.ahead - other.ahead)[0]?.cover
@@ -333,7 +324,7 @@ export function createNinjasView(parent: Group, make: () => Body): NinjasView {
 	}
 
 	return {
-		draw(active, options, kind, frame, delta, worldDelta, secondsLeft, covers = [], then = frame) {
+		draw(active, options, kind, frame, delta, worldDelta, secondsLeft, covers = []) {
 			const charging = chargeOrder(active).map((ninja) => ninja.id)
 
 			for (const ninja of active) {
@@ -347,7 +338,7 @@ export function createNinjasView(parent: Group, make: () => Body): NinjasView {
 				if (entry === undefined) {
 					const mark = markOf(ninja, options, kind) ?? (kind === 'yes-no' ? yesNoSpotOf(ninja.id) : markById(ninja.id))
 					// Ninjas behind one cover take turns: each one waits for the ones before it to leap.
-					const behind = coverOf(spotOf(mark, ninja.wave, 0), ninja.id, frame, then, covers)
+					const behind = coverOf(spotOf(mark, ninja.wave, standReach), ninja.id, frame, covers)
 					const sharing = behind === undefined ? 0 : [...shown.values()].filter((other) => other.entrance < 1 && other.cover !== undefined && sameCover(other.cover, behind)).length
 					const cover = sharing < shareConfig.most ? behind : undefined
 					entry = {
@@ -356,8 +347,6 @@ export function createNinjasView(parent: Group, make: () => Body): NinjasView {
 						mark,
 						sequence: ninja.sequence,
 						time: 0,
-						approach: ninja.approach,
-						targetApproach: ninja.approach,
 						entrance: cover === undefined ? 0 : -sharing * shareConfig.stagger,
 						cover,
 						// The first one behind its middle, the others either side.
@@ -372,16 +361,6 @@ export function createNinjasView(parent: Group, make: () => Body): NinjasView {
 					shown.set(ninja.id, entry)
 					parent.add(entry.body.root)
 				}
-				// The ambush timer runs in real time, while the world is slowed down. Apply only the
-				// change since the previous state update in world time, so the ninja visibly runs in.
-				const approachDelta = ninja.approach - entry.targetApproach
-				if (approachDelta !== 0) {
-					// `approach` is already the visual position reported by the store. Only the
-					// running cycle is slowed down; scaling this delta makes a striking ninja
-					// jump when the store advances in real time but the world is in slow motion.
-					entry.approach = Math.min(1, Math.max(0, entry.approach + approachDelta))
-					entry.targetApproach = ninja.approach
-				}
 				entry.entrance = Math.min(1, entry.entrance + delta / entranceSeconds)
 				if (entry.sequence === ninja.sequence) {
 					entry.time += delta
@@ -392,9 +371,8 @@ export function createNinjasView(parent: Group, make: () => Body): NinjasView {
 				entry.pose = ninja.pose
 
 				entry.mark = markOf(ninja, options, kind) ?? entry.mark
-				// They keep their distance while the time runs, and charge in from there.
-				const crept = entry.approach * creepReach
-				const motion = motionOf(ninja.pose, ninja.slicer, crept, entry.time)
+				// They stand still at their distance while the time runs, and charge in from there.
+				const motion = motionOf(ninja.pose, ninja.slicer, standReach, entry.time)
 
 				if (!beaten.has(ninja.pose) && motion.pose !== 'fleeing') entry.beatenAt = undefined
 				else entry.beatenAt ??= frame
