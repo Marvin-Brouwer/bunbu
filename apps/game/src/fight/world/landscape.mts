@@ -293,7 +293,7 @@ export function stamp(template: Object3D, plantings: readonly Planting[], height
 }
 
 /** The least of `material` that {@link fadeNear} leaves showing, right in front of the camera. */
-const fadedLeast = 0.3
+const fadedLeast = 0.2
 
 /**
  * Fades whatever of `material` is nearer the camera than `fade.value`, in view depth: what the camera
