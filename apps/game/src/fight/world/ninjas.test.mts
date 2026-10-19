@@ -11,7 +11,7 @@ import { townCover } from './castle-town.mts'
 import { coverAhead, coverHeight, coverReach, coverSpotsAt } from './cover.mts'
 import { castleCover, castleRound } from './edo-castle.mts'
 import { mountainCover, mountainRound } from './mountain-temple.mts'
-import { clashSeconds, coverOf, entranceSeconds, fleeSideOf, leapConfig, motionOf, outOf, shareConfig, strikeDelaySeconds } from './ninjas.mts'
+import { clashSeconds, coverOf, entranceSeconds, fleeSideOf, leapConfig, motionOf, outOf, shareConfig, standReach, strikeDelaySeconds } from './ninjas.mts'
 import { beside, createPath, townRound } from './path.mts'
 import { riceCover, riceRound } from './rice-fields.mts'
 import { spotOf } from './placement.mts'
@@ -148,7 +148,7 @@ describe('ninjas coming out from behind the covers of every stage', () => {
 			const ranOn = path.at(distance + runConfig.ambushRunOn)
 			const covers = coverSpotsAt(path, distance, cover.aside)
 			return marks.flatMap((mark) => [0, 1].flatMap((wave) => [0, 1].flatMap((id) => {
-				const start = spotOf(mark, wave, 0)
+				const start = spotOf(mark, wave, standReach)
 				const chosen = coverOf(start, id, from, covers)
 				return chosen === undefined ? [] : [{ from, ranOn, covers, chosen, to: beside(ranOn, start.x, -start.z) }]
 			})))

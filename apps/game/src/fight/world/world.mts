@@ -14,7 +14,7 @@ import { loadModel } from '../../canvas/models.mts'
 import type { View } from '../../canvas/stage.mts'
 import type { Viewport } from '../../canvas/viewport.mts'
 import type { RunGame } from '../state/game.mts'
-import { marksPassed, runInLeft } from '../state/run.mts'
+import { marksPassed, runInLeft, standsInAmbush } from '../state/run.mts'
 import { framedIn, runFraming, viewOnPath } from './camera.mts'
 import { skyRadius } from './landscape.mts'
 import { pictureSettings } from './picture-settings.mts'
@@ -151,6 +151,8 @@ export function createRunWorld(game: RunGame, viewport: Viewport, roomBelow: () 
 
 	let seen = -1
 	let since = 0
+	// World seconds he has stood ready in an ambush, so he stands in slow motion too.
+	let stood = 0
 	// What he shows, and what he showed when the store last changed his pose: hurt, he keeps showing
 	// that while the blade is still on its way.
 	let shown: { pose: FigurePose; time: number } = { pose: 'idle', time: 0 }
@@ -212,8 +214,8 @@ export function createRunWorld(game: RunGame, viewport: Viewport, roomBelow: () 
 			}
 			// Before the run he waits behind the camera, and in the intro he runs in to where the stage starts.
 			const ran = distance - runInLeft(run)
-			// His steps go by the metres his legs have run: in an ambush's slow motion he keeps running,
-			// slower and slower, though he hardly gets anywhere any more. His footsteps are heard by the same.
+			// His steps go by the metres his legs have run: in an ambush's slow motion they slow down with
+			// the ground, until he stands ready for the attack. His footsteps are heard by the same.
 			const cycle = (run.stepped / stepLength) * Math.PI
 			const fallen = shogun.pose === 'fallen'
 			// Falling, the samurai is finished off first and goes down as the blade lands.
@@ -223,20 +225,23 @@ export function createRunWorld(game: RunGame, viewport: Viewport, roomBelow: () 
 			if (finish !== undefined) shown = finish.samurai
 			else if (since < lands) shown = { pose: previous.pose, time: previous.time + since }
 			else shown = { pose: shogun.pose, time: since - lands }
-			samurai.show(shown.pose, shown.time, cycle)
+			const standing = shown.pose === 'run' && standsInAmbush(run)
+			stood = standing ? stood + worldDelta : 0
+			samurai.show(standing ? 'idle' : shown.pose, standing ? stood : shown.time, cycle)
 			samurai.grey(finish?.samurai.pose === 'fallen' ? Math.min(1, finish.samurai.time / poseSeconds.fallen) : 0)
 
-			// During an ambush the fight moves into the room below the scroll, if there is any; when
-			// the scroll rolls up it fills the screen again.
+			// During an ambush the fight moves into the room below the scroll, if there is any, as the
+			// scroll opens once the ninjas are in; when it rolls up it fills the screen again.
 			const { clientWidth: width, clientHeight: height } = renderer.domElement
 			const below = roomBelow()
-			framed = below > 0 ? framed + ((ambush.open ? 1 : 0) - framed) * damp(delta, reframe) : 0
+			const zoomed = ambush.open && (ambush.round > 1 || ambush.openingLeft === 0)
+			framed = below > 0 ? framed + ((zoomed ? 1 : 0) - framed) * damp(delta, reframe) : 0
 			const frame = framedIn(width, height, height - (height - below) * framed, runFraming.fov)
 			const view = viewOnPath(path, distance, frame.aspect, fallen)
 
 			// The ninjas first: they keep the mark each came from after the ambush's options are gone.
-			// They wind up to charge just before the time runs out.
-			ninjas.draw(game.ninjas.value.active, ambush.options, ambush.kind, view.frame, delta, worldDelta, ambush.open && ambush.seconds > 0 ? ambush.secondsLeft : undefined, laid.covers(run.distance - offset))
+			// They wind up to charge as the time runs out.
+			ninjas.draw(game.ninjas.value.active, ambush.options, ambush.kind, view.frame, delta, worldDelta, laid.covers(run.distance - offset))
 
 			// He runs along the path, and turns toward the ninja he strikes, blocks or is hit by, who stands square
 			// to the camera's way ahead.
