@@ -193,7 +193,7 @@ type Clump = Planting & { readonly heading: number }
  * The bamboo of one stretch of path, and every mesh that draws it, each with its copies as they were
  * laid, so a clump can be shoved aside and put back.
  */
-type Thicket = {
+export type Thicket = {
 	readonly clumps: Clump[]
 	readonly meshes: { readonly mesh: InstancedMesh; readonly laid: Float32Array }[]
 }
@@ -217,27 +217,31 @@ const shrineReach = 4
 const bambooSpacing = 2.4
 
 /** How far a clump's stalks reach from its middle, at its largest. */
-const clumpReach = 0.6
+export const clumpReach = 0.6
 
 /**
  * Shoves each clump of `thicket` that stands in one of `covers` out of its way, along the path so it
- * never lands on it, and puts back the ones that no longer do.
+ * never lands on it, and puts back the ones that no longer do. It goes the shortest way that clears
+ * every cover, so two covers close together can't shove it from one into the other.
  */
-function shove(thicket: Thicket, covers: readonly CoverSpot[]): void {
+export function shove(thicket: Thicket, covers: readonly CoverSpot[]): void {
 	const reach = coverReach + clumpReach
 	thicket.clumps.forEach(({ matrix, heading }, index) => {
 		const grew = { x: matrix.elements[12], z: matrix.elements[14] }
-		const at = { ...grew }
 		const ahead = { x: -Math.sin(heading), z: -Math.cos(heading) }
-		for (const cover of covers) {
-			const offset = { x: at.x - cover.x, z: at.z - cover.z }
-			if (Math.hypot(offset.x, offset.z) >= reach) continue
-			const along = offset.x * ahead.x + offset.z * ahead.z
+		// How far along the path each cover keeps the clump from standing, either side of where it grew.
+		const blocked = covers.flatMap((cover) => {
+			const offset = { x: grew.x - cover.x, z: grew.z - cover.z }
 			const across = offset.x * -ahead.z + offset.z * ahead.x
-			const clear = (along < 0 ? -1 : 1) * Math.sqrt(reach * reach - across * across)
-			at.x += (clear - along) * ahead.x
-			at.z += (clear - along) * ahead.z
-		}
+			if (Math.abs(across) >= reach) return []
+			const along = offset.x * ahead.x + offset.z * ahead.z
+			const half = Math.sqrt(reach * reach - across * across)
+			return [{ from: -along - half, to: -along + half }]
+		})
+		const shift = [0, ...blocked.flatMap(({ from, to }) => [from, to])]
+			.filter((candidate) => blocked.every(({ from, to }) => candidate <= from || candidate >= to))
+			.reduce((shortest, candidate) => (Math.abs(candidate) < Math.abs(shortest) ? candidate : shortest), Infinity)
+		const at = { x: grew.x + shift * ahead.x, z: grew.z + shift * ahead.z }
 		for (const { mesh, laid } of thicket.meshes) {
 			const copies = mesh.instanceMatrix.array
 			copies[index * 16 + 12] = (laid[index * 16 + 12] ?? 0) + at.x - grew.x
