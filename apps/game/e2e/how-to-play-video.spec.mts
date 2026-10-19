@@ -24,16 +24,24 @@ import { homedir, platform } from 'node:os'
 import { createRequire } from 'node:module'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { difference } from './difference.mts'
 
 const size = { width: 390, height: 844 }
 /** Frames per second of the video, and its bit rate: small enough for a page. */
 const fps = 25
 const bitRate = '450k'
 const update = process.env.UPDATE_HOW_TO_PLAY_VIDEO !== undefined
-/** How far a frame may be from the same frame of the video in the repository: the mean difference per colour, of 255. */
-const tolerance = 6
-/** Every how many frames one is compared with the video in the repository: one a second. */
+/**
+ * How far a frame may be from the same frame of the video in the repository: the share of its
+ * pixels that may be off by more than {@link changed} in a colour. Encoding blurs a frame
+ * everywhere a little, which a mean over the frame would let a changed line of text hide in.
+ */
+const tolerance = 0.001
+/** How far, of 255, a pixel's colour may be off before it counts as changed. */
+const changed = 96
+/**
+ * Every how many frames one is compared with the video in the repository: one a second. Only those
+ * are drawn, as drawing a frame in software is most of the time it takes.
+ */
 const compareEvery = fps
 
 const videoFile = new URL('../public/guide/how-to-play.webm', import.meta.url)
@@ -59,16 +67,22 @@ const same = (one: string, other: string) => one.toLowerCase() === other.toLower
 
 /**
  * Films `page` one frame at a time: each frame moves the page's clock on by a frame of the video,
- * and the animations of its styles with it, then takes a picture, but only between `start()` and
- * `stop()`. Each stretch is a shot of the video, and the time in between is left out.
+ * and the animations of its styles with it, but only between `start()` and `stop()`. Each stretch
+ * is a shot of the video, and the time in between is left out. The frames `pictured` says are
+ * drawn and taken, by their number in the video; the rest only run (see {@link drawOnlyWhenAsked}).
  */
-function camera(page: Page) {
-	const frames: Buffer[] = []
+function camera(page: Page, pictured: (index: number) => boolean) {
+	const frames = new Map<number, Buffer>()
+	let count = 0
 	let filming = false
 
-	/** Moves the page on by `milliseconds`: its clock, and the animations of its styles, which the clock doesn't move. */
-	const tick = async (milliseconds: number) => {
-		await page.evaluate((step) => {
+	/**
+	 * Moves the page on by `milliseconds`: its clock, and the animations of its styles, which the
+	 * clock doesn't move. The world is drawn when `drawing`.
+	 */
+	const tick = async (milliseconds: number, drawing: boolean) => {
+		await page.evaluate(([step, draw]) => {
+			document.documentElement.dataset.drawing = draw ? 'on' : 'off'
 			for (const animation of document.getAnimations()) {
 				// A new one is held at its start, one held already moves on by a step and is
 				// finished at its end, so its events still come.
@@ -83,25 +97,38 @@ function camera(page: Page) {
 				if (next >= end) animation.finish()
 				else animation.currentTime = next
 			}
-		}, milliseconds)
+		}, [milliseconds, drawing] as const)
 		await page.clock.fastForward(milliseconds)
+	}
+
+	/** The next frame of the video, drawn and taken when `pictured` or `drawn`. */
+	const film = async (drawn: boolean) => {
+		const taken = pictured(count) || drawn
+		await tick(1000 / fps, taken)
+		const frame = taken ? await page.screenshot({ type: 'jpeg', quality: 90 }) : undefined
+		if (frame !== undefined && pictured(count)) frames.set(count, frame)
+		count++
+		return frame
 	}
 
 	return {
 		frames,
+		/** How many frames the video has so far. */
+		count: () => count,
 		/** The next frame: filmed while filming, else a tenth of a second on, the longest a frame of the game loop takes. */
 		async frame() {
-			if (!filming) {
-				await tick(100)
-				return
-			}
-			await tick(1000 / fps)
-			frames.push(await page.screenshot({ type: 'jpeg', quality: 90 }))
+			if (filming) await film(false)
+			else await tick(100, false)
+		},
+		/** The next frame, always drawn, as a picture of its own. */
+		async still() {
+			await film(true)
+			return page.screenshot({ type: 'jpeg', quality: 75 })
 		},
 		/** Frames for `seconds`. */
 		async hold(seconds: number) {
-			const count = Math.round(seconds * (filming ? fps : 10))
-			for (let index = 0; index < count; index++) await this.frame()
+			const steps = Math.round(seconds * (filming ? fps : 10))
+			for (let index = 0; index < steps; index++) await this.frame()
 		},
 		/** Frames until `ready` says so. */
 		async until(ready: () => Promise<boolean>) {
@@ -199,7 +226,7 @@ function ffmpeg(): string {
 }
 
 /** Encodes the `frames` as a VP9 WebM at `fps`. */
-async function encode(frames: readonly Buffer[], file: URL): Promise<void> {
+async function encode(frames: Iterable<Buffer>, file: URL): Promise<void> {
 	const encoder = spawn(ffmpeg(), [
 		'-loglevel', 'error', '-y',
 		'-f', 'image2pipe', '-c:v', 'mjpeg', '-framerate', String(fps), '-i', 'pipe:0',
@@ -214,6 +241,33 @@ async function encode(frames: readonly Buffer[], file: URL): Promise<void> {
 	}
 	encoder.stdin.end()
 	await done
+}
+
+/** The share of pixels, from 0 to 1, that differ by more than {@link changed} in a colour between two JPEGs of the same size, decoded by the browser. */
+async function changedShare(page: Page, one: Buffer, other: Buffer): Promise<number> {
+	return page.evaluate(async ([first, second, most]) => {
+		// In the page, where it runs: a function from outside the callback isn't sent along.
+		// oxlint-disable-next-line unicorn/consistent-function-scoping
+		const pixels = async (data: string) => {
+			const image = new Image()
+			image.src = `data:image/jpeg;base64,${data}`
+			await image.decode()
+			const canvas = new OffscreenCanvas(image.width, image.height)
+			const context = canvas.getContext('2d')
+			context?.drawImage(image, 0, 0)
+			return context?.getImageData(0, 0, image.width, image.height).data ?? new Uint8ClampedArray()
+		}
+		const [a, b] = await Promise.all([pixels(first), pixels(second)])
+		if (a.length !== b.length || a.length === 0) return 1
+		let count = 0
+		for (let index = 0; index < a.length; index += 4) {
+			const red = Math.abs((a[index] ?? 0) - (b[index] ?? 0))
+			const green = Math.abs((a[index + 1] ?? 0) - (b[index + 1] ?? 0))
+			const blue = Math.abs((a[index + 2] ?? 0) - (b[index + 2] ?? 0))
+			if (Math.max(red, green, blue) > most) count++
+		}
+		return count / (a.length / 4)
+	}, [one.toString('base64'), other.toString('base64'), changed] as const)
 }
 
 /**
@@ -244,6 +298,22 @@ async function framesOf(page: Page, video: Buffer, indices: readonly number[]): 
 	return { count, frames: frames.map((frame) => Buffer.from(frame, 'base64')) }
 }
 
+/**
+ * Has the page draw its WebGL only while `data-drawing` on its root isn't `off`. Everything else
+ * runs as before, so the frames that are drawn come out the same as when every frame is.
+ */
+function drawOnlyWhenAsked() {
+	const prototype = WebGL2RenderingContext.prototype as unknown as Record<string, ((...parameters: unknown[]) => unknown) | undefined>
+	for (const name of ['drawArrays', 'drawElements', 'drawArraysInstanced', 'drawElementsInstanced', 'drawRangeElements']) {
+		const draw = prototype[name]
+		if (draw === undefined) continue
+		prototype[name] = function drawWhenAsked(this: unknown, ...parameters: unknown[]) {
+			if (document.documentElement.dataset.drawing === 'off') return undefined
+			return draw.apply(this, parameters)
+		}
+	}
+}
+
 // SwiftShader, the same renderer on every machine and in CI, so the frames come out the same.
 test.use({
 	viewport: size,
@@ -260,6 +330,7 @@ test('the video on How to play is up to date', async ({ page }) => {
 			return (state - 1) / 2_147_483_646
 		}
 	})
+	await page.addInitScript(drawOnlyWhenAsked)
 	await page.clock.install({ time: 0 })
 
 	// The fixture quiz chosen, before the filming starts.
@@ -273,7 +344,7 @@ test('the video on How to play is up to date', async ({ page }) => {
 	await page.waitForLoadState('networkidle')
 	await page.waitForTimeout(3000)
 
-	const film = camera(page)
+	const film = camera(page, (index) => update || index % compareEvery === 0)
 	let poster: Buffer | undefined
 	await film.hold(1)
 	film.start()
@@ -309,7 +380,7 @@ test('the video on How to play is up to date', async ({ page }) => {
 		await seal.click()
 		await film.hold(0.5)
 		await answer(page, film)
-		if (ambush === 0) poster = film.frames.at(-1)
+		if (ambush === 0) poster = await film.still()
 		await caption(page, ambush === right.length - 1 ? undefined : 'Right: the samurai cuts them down, and runs on.')
 		await film.hold(3.5)
 		film.stop()
@@ -324,19 +395,19 @@ test('the video on How to play is up to date', async ({ page }) => {
 
 	if (poster === undefined) throw new Error('no ambush was filmed')
 	if (update) {
-		await encode(film.frames, videoFile)
+		await encode(film.frames.values(), videoFile)
 		await writeFile(posterFile, poster)
 		return
 	}
 	const outOfDate = 'public/guide/how-to-play.webm is out of date: pnpm --filter @bunbu/game how-to-play-video'
-	const indices = film.frames.map((_, index) => index).filter((index) => index % compareEvery === 0)
+	const indices = [...film.frames.keys()]
 	const kept = await framesOf(page, await readFile(videoFile), indices)
-	expect(kept.count, outOfDate).toBe(film.frames.length)
+	expect(kept.count, outOfDate).toBe(film.count())
 	for (const [position, index] of indices.entries()) {
-		const taken = film.frames[index]
+		const taken = film.frames.get(index)
 		const keptFrame = kept.frames[position]
 		if (taken === undefined || keptFrame === undefined) continue
-		expect(await difference(page, taken, keptFrame), `${outOfDate} (frame ${String(index)})`).toBeLessThan(tolerance)
+		expect(await changedShare(page, taken, keptFrame), `${outOfDate} (frame ${String(index)})`).toBeLessThan(tolerance)
 	}
-	expect(await difference(page, poster, await readFile(posterFile)), outOfDate).toBeLessThan(tolerance)
+	expect(await changedShare(page, poster, await readFile(posterFile)), outOfDate).toBeLessThan(tolerance)
 })
