@@ -33,7 +33,7 @@ import {
 import type { GLTF } from 'three/addons/loaders/GLTFLoader.js'
 import { layBlocks } from './blocks.mts'
 import { Batch, chunkOf, placed, scatter, type Cursor } from './kit.mts'
-import { addAll, clearanceOf, facingPath, isFree, passTime, sky, skyRadius, stamp, strip, type Daylight, type Owned, type Planting, type StageView, type Taken } from './landscape.mts'
+import { addAll, castsShadows, followSun, clearanceOf, facingPath, isFree, passTime, sky, skyRadius, stamp, strip, type Daylight, type Owned, type Planting, type StageView, type Taken } from './landscape.mts'
 import type { District } from './backdrop.mts'
 import type { CoverSet } from './cover.mts'
 import { beside, type Leg, type Path } from './path.mts'
@@ -209,13 +209,7 @@ export function createBambooForest(scene: Scene, path: Path, models: Promise<Bam
 	const ambient = new HemisphereLight(first.ambient.sky, first.ambient.ground, first.ambient.intensity)
 	scene.add(ambient)
 	const sun = new DirectionalLight(first.sun.colour, first.sun.intensity)
-	sun.castShadow = true
-	sun.shadow.mapSize.set(1024, 1024)
-	for (const side of ['left', 'bottom'] as const) sun.shadow.camera[side] = -18
-	for (const side of ['right', 'top'] as const) sun.shadow.camera[side] = 18
-	sun.shadow.camera.near = 1
-	sun.shadow.camera.far = 80
-	sun.shadow.bias = -0.0008
+	castsShadows(sun)
 	scene.add(sun, sun.target)
 	const sunFrom = { x: -14, y: 34, z: 8 }
 
@@ -367,8 +361,7 @@ export function createBambooForest(scene: Scene, path: Path, models: Promise<Bam
 			blocks.follow(distance)
 			ground.position.set(x, 0, z)
 			backdrop.position.set(x, 0, z)
-			sun.position.set(x + sunFrom.x, sunFrom.y, z + sunFrom.z)
-			sun.target.position.set(x, 0, z)
+			followSun(sun, sunFrom, path, distance)
 		},
 
 		dispose() {

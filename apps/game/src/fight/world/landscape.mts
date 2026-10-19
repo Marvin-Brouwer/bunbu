@@ -293,21 +293,55 @@ export function stamp(template: Object3D, plantings: readonly Planting[], height
 }
 
 /**
- * Cuts away whatever of `material` is nearer the camera than `cut.value`, in view depth: what the camera
- * passes through or under (a tunnel of torii, a gatehouse) would otherwise fill the screen. Its shadow stays.
+ * How far the sun casts shadows (#134): over a square `half` metres either way of a point `ahead`
+ * metres along the path from the samurai, so a shadow is there long before he comes to what casts
+ * it, and the sun stands `away` metres off that point.
  */
-export function cutAway(material: Material, cut: { value: number }): void {
+export const shadowReach = { half: 36, ahead: 26, away: 90 }
+
+/** Makes `sun` cast shadows over {@link shadowReach}, in as much detail per metre as a 1024 map over 36 m. */
+export function castsShadows(sun: DirectionalLight): void {
+	sun.castShadow = true
+	sun.shadow.mapSize.set(2048, 2048)
+	for (const side of ['left', 'bottom'] as const) sun.shadow.camera[side] = -shadowReach.half
+	for (const side of ['right', 'top'] as const) sun.shadow.camera[side] = shadowReach.half
+	sun.shadow.camera.near = 1
+	sun.shadow.camera.far = shadowReach.away * 2.2
+	sun.shadow.bias = -0.0008
+}
+
+/** Puts `sun` over the samurai `distance` metres along `path`, shining from `from`, its shadows reaching ahead of him. */
+export function followSun(sun: DirectionalLight, from: { x: number; y: number; z: number }, path: Path, distance: number): void {
+	const at = path.at(distance + shadowReach.ahead)
+	const length = Math.hypot(from.x, from.y, from.z) || 1
+	const away = shadowReach.away / length
+	sun.target.position.set(at.x, 0, at.z)
+	sun.position.set(at.x + from.x * away, from.y * away, at.z + from.z * away)
+}
+
+/** How see-through what the camera passes through gets, and over how many metres of view depth it fades. */
+export const nearFade = { least: 0.3, over: 6 }
+
+/**
+ * Fades whatever of `material` is near the camera, in view depth: what the camera passes through or
+ * under (a tunnel of torii, a gatehouse) would otherwise fill the screen. It is whole from
+ * {@link nearFade}`.over / 2` metres beyond `near.value` and fades to {@link nearFade}`.least` as
+ * near as that before it, the nearer the bottom of the screen the fainter, and only goes once it
+ * is out of view. Its shadow stays all the while (#134).
+ */
+export function fadeNear(material: Material, near: { value: number }): void {
+	material.transparent = true
 	material.onBeforeCompile = (shader) => {
-		shader.uniforms.cutDepth = cut
+		shader.uniforms.fadeDepth = near
 		shader.vertexShader = `varying float vViewDepth;\n${shader.vertexShader}`.replace(
 			'#include <project_vertex>',
 			'#include <project_vertex>\n\tvViewDepth = -mvPosition.z;',
 		)
-		shader.fragmentShader = `uniform float cutDepth;\nvarying float vViewDepth;\n${shader.fragmentShader}`.replace(
-			'void main() {',
-			'void main() {\n\tif (vViewDepth < cutDepth) discard;',
+		shader.fragmentShader = `uniform float fadeDepth;\nvarying float vViewDepth;\n${shader.fragmentShader}`.replace(
+			'#include <dithering_fragment>',
+			`#include <dithering_fragment>\n\tgl_FragColor.a *= mix(${nearFade.least.toFixed(2)}, 1.0, clamp((vViewDepth - fadeDepth) / ${nearFade.over.toFixed(1)} + 0.5, 0.0, 1.0));`,
 		)
 	}
-	material.customProgramCacheKey = () => 'cut-away'
+	material.customProgramCacheKey = () => 'fade-near'
 	material.needsUpdate = true
 }

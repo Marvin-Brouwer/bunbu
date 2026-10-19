@@ -29,7 +29,7 @@ import {
 import type { GLTF } from 'three/addons/loaders/GLTFLoader.js'
 import { layBlocks } from './blocks.mts'
 import { Batch, chunkOf, placed, scatter, type Cursor } from './kit.mts'
-import { addAll, clearanceOf, cutAway, facingPath, fogFar, isFree, passTime, sky, skyRadius, stamp, strip, type Daylight, type Owned, type Planting, type StageView, type Taken } from './landscape.mts'
+import { addAll, castsShadows, followSun, clearanceOf, fadeNear, facingPath, fogFar, isFree, passTime, sky, skyRadius, stamp, strip, type Daylight, type Owned, type Planting, type StageView, type Taken } from './landscape.mts'
 import type { District } from './backdrop.mts'
 import type { CoverSet } from './cover.mts'
 import { beside, type Leg, type Path } from './path.mts'
@@ -201,13 +201,7 @@ export function createMountainTemple(scene: Scene, path: Path, models: Promise<M
 	const ambient = new HemisphereLight(first.ambient.sky, first.ambient.ground, first.ambient.intensity)
 	scene.add(ambient)
 	const sun = new DirectionalLight(first.sun.colour, first.sun.intensity)
-	sun.castShadow = true
-	sun.shadow.mapSize.set(1024, 1024)
-	for (const side of ['left', 'bottom'] as const) sun.shadow.camera[side] = -18
-	for (const side of ['right', 'top'] as const) sun.shadow.camera[side] = 18
-	sun.shadow.camera.near = 1
-	sun.shadow.camera.far = 80
-	sun.shadow.bias = -0.0008
+	castsShadows(sun)
 	scene.add(sun, sun.target)
 	const sunFrom = { x: 18, y: 34, z: 16 }
 
@@ -245,8 +239,8 @@ export function createMountainTemple(scene: Scene, path: Path, models: Promise<M
 	}
 	scene.add(peaks)
 
-	// How near the camera the torii are cut away, in view depth; set every frame.
-	const cut = { value: 0 }
+	// Where the torii fade near the camera, in view depth: at the samurai's own, set every frame.
+	const near = { value: 0 }
 	const samurai = new Vector3()
 
 	// Stone steps: the path in bands of stone, each edge darker, a step a metre.
@@ -341,7 +335,7 @@ export function createMountainTemple(scene: Scene, path: Path, models: Promise<M
 		for (const { group, pending } of blocks.laid) {
 			if (gate !== undefined) {
 				const gates = stamp(gate, pending.torii, toriiHeight, true, owned)
-				for (const mesh of gates) cutAway(mesh.material as Material, cut)
+				for (const mesh of gates) fadeNear(mesh.material as Material, near)
 				addAll(group, gates)
 			}
 			if (lantern !== undefined) addAll(group, stamp(lantern, pending.lanterns, heightOf(lantern), true, owned))
@@ -358,7 +352,7 @@ export function createMountainTemple(scene: Scene, path: Path, models: Promise<M
 
 		frame(camera, x, z) {
 			// The samurai's depth in view, less a little, so the gate he is passing under still shows.
-			cut.value = Math.max(0, -samurai.set(x, 1, z).applyMatrix4(camera.matrixWorldInverse).z - 2.5)
+			near.value = Math.max(0, -samurai.set(x, 1, z).applyMatrix4(camera.matrixWorldInverse).z)
 		},
 
 		follow(x, z, distance) {
@@ -366,8 +360,7 @@ export function createMountainTemple(scene: Scene, path: Path, models: Promise<M
 			ground.position.set(x, 0, z)
 			backdrop.position.set(x, 0, z)
 			peaks.position.set(x, 0, z)
-			sun.position.set(x + sunFrom.x, sunFrom.y, z + sunFrom.z)
-			sun.target.position.set(x, 0, z)
+			followSun(sun, sunFrom, path, distance)
 		},
 
 		dispose() {
