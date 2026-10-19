@@ -10,10 +10,14 @@
  * skipped; while the page is hidden the loop stops entirely and the mode is asked to pause, when it can.
  */
 
+import { testHooks } from '../_shared/test-hooks.mts'
 import { drawFrame } from './stage.mts'
 
 /** A delta longer than this is clamped. */
 export const maximumDelta = 0.1
+
+/** The longest a frame may be: a test can let the world keep up with the clock however few frames there are. */
+const longestFrame = () => (testHooks().skipWorld ? 1 : maximumDelta)
 
 /** A game mode the loop drives: the run, or dojo practice. */
 export type Mode = {
@@ -45,7 +49,7 @@ export function startLoop(signal: AbortSignal): void {
 	let last = performance.now()
 
 	const tick = (now: number) => {
-		const delta = Math.min((now - last) / 1000, maximumDelta)
+		const delta = Math.min((now - last) / 1000, longestFrame())
 		last = now
 		if (mode !== undefined && !mode.paused()) mode.update(delta * mode.worldScale(), delta)
 		drawFrame(delta)

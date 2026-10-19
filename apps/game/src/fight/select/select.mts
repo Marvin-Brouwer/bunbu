@@ -21,6 +21,7 @@ import { highScores } from '../state/highscores.mts'
 import { StageLocks } from '../_temp/stage-locks.mts'
 import { keepChosenUnlocked, StagePicker } from './stage-picker.mts'
 import styles from './select.css'
+import { testHooks } from '../../_shared/test-hooks.mts'
 
 export type SelectOptions = {
 	/** Starts a run on the chosen quiz and stage. */
@@ -101,8 +102,8 @@ export const Select = component<SelectOptions>({
 						label: 'Stage',
 						children: [
 							create(StagePicker),
-							// In dev, to try the stages locked and unlocked without playing them.
-							import.meta.env.DEV ? create(StageLocks, { quiz }) : undefined,
+							// In dev, to try the stages locked and unlocked without playing them; not in the video guide.
+							import.meta.env.DEV && !testHooks().players ? create(StageLocks, { quiz }) : undefined,
 						],
 					}),
 					create(MenuSection, {

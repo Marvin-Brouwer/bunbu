@@ -6,6 +6,7 @@
 
 import type { Scene } from 'three'
 import type { Viewport } from './viewport.mts'
+import { testHooks } from '../_shared/test-hooks.mts'
 
 /** A world on the canvas: a scene, and a function that makes it match the state every frame. */
 export type View = {
@@ -62,6 +63,8 @@ export function drawFrame(delta: number): void {
 		return
 	}
 	view.draw(delta)
+	// A test of the screens alone can leave the world undrawn ([test hooks](../_shared/test-hooks.mts)).
+	if (testHooks().skipWorld) return
 	const { renderer, camera } = viewport
 	renderer.render(view.scene, camera)
 	if (view.overlay === undefined) return

@@ -11,8 +11,10 @@ export default defineConfig({
 	// The stage pictures after the rest: rendering them in software takes every core there is, and
 	// the screens' own tests would run out of time beside them.
 	projects: [
-		{ name: 'screens', testMatch: '**/*.spec.mts', testIgnore: '**/stage-pictures.spec.mts' },
+		{ name: 'screens', testMatch: '**/*.spec.mts', testIgnore: ['**/stage-pictures.spec.mts', '**/how-to-play.spec.mts'] },
 		{ name: 'stage pictures', testMatch: '**/stage-pictures.spec.mts', dependencies: ['screens'] },
+		// The video guide plays a whole run in real time: after the stage pictures, on its own.
+		{ name: 'video guide', testMatch: '**/how-to-play.spec.mts', dependencies: ['stage pictures'] },
 	],
 	reporter: ci ? 'github' : 'list',
 	use: {

@@ -25,6 +25,7 @@ import { RunOverlays } from './overlays/overlays.mts'
 import { createRunWorld } from './world/world.mts'
 import { playRunSounds } from './sound.mts'
 import styles from './run.css'
+import { testHooks } from '../_shared/test-hooks.mts'
 
 export type RunScreenOptions = {
 	readonly game: RunGame
@@ -39,7 +40,8 @@ export const RunScreen = component<RunScreenOptions>({
 		const { game } = options
 
 		play({
-			update: (worldDelta, realDelta) => { tickRun(game, worldDelta, realDelta, Math.random) },
+			// A test of the screens alone can ask with no time limit ([test hooks](../_shared/test-hooks.mts)).
+			update: (worldDelta, realDelta) => { tickRun(game, worldDelta, realDelta, Math.random, !testHooks().untimed) },
 			paused: () => game.run.value.phase === 'paused',
 			worldScale: () => game.run.value.worldScale,
 			pause: () => { game.run.value.pause() },

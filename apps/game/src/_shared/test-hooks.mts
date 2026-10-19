@@ -1,6 +1,6 @@
 /**
  * What the app's own tests can switch on, to take pictures and videos of it that come out the same
- * every time (#144): `e2e/stage-pictures.spec.mts`, `scripts/how-to-play-video.mts`.
+ * every time (#144): `e2e/stage-pictures.spec.mts`, the video guide (`scripts/how-to-play-story.mts`).
  *
  * A test sets them before the page loads, `page.addInitScript(() => { window.bunbuTestHooks = { … } })`.
  * They are read in the dev server and in a build made for the tests (`vite build --mode e2e`), and
@@ -16,9 +16,19 @@ export type TestHooks = {
 	 * sound's noise draws as many as its sample rate, which differs between machines).
 	 */
 	readonly seed: number | undefined
+	/** Shows the app as players see it, without the dev server's own tools: for the video guide. */
+	readonly players: boolean
+	/**
+	 * Leaves the world undrawn, and lets a frame be as long as a second rather than a tenth, so the
+	 * world keeps up with the clock: for stills of the screens alone, which without a GPU, as in CI,
+	 * would otherwise take many times as long as the run.
+	 */
+	readonly skipWorld: boolean
+	/** Asks every question with no time limit, so a slow machine never runs out of time: for stills of the screens. */
+	readonly untimed: boolean
 }
 
-const none: TestHooks = { scenery: false, seed: undefined }
+const none: TestHooks = { scenery: false, seed: undefined, players: false, skipWorld: false, untimed: false }
 
 declare global {
 	interface Window {

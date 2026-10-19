@@ -192,9 +192,11 @@ export function endRun(game: RunGame): void {
 /**
  * Ticks the stores that go by time, once per frame while the run is not paused. `worldDelta` is
  * world time, slowed down during an ambush; `realDelta` is the player's time. `random` shuffles
- * the questions when endless goes round again; tests leave it out.
+ * the questions when endless goes round again; tests leave it out. `timed` is whether the ambushes
+ * have their time limit: a test of the screens alone can ask without, so a slow machine never runs
+ * out of time.
  */
-export function tickRun(game: RunGame, worldDelta: number, realDelta: number, random?: Random): void {
+export function tickRun(game: RunGame, worldDelta: number, realDelta: number, random?: Random, timed = true): void {
 	// A frame that ends the resume countdown is still part of the pause, for the ambush too.
 	const counting = game.run.value.countdown > 0
 
@@ -218,7 +220,7 @@ export function tickRun(game: RunGame, worldDelta: number, realDelta: number, ra
 		if (isEndless(game)) keepGoing(game, random)
 	}
 	if (game.quiz.value.current() !== undefined && distance >= ambushAt(questionsAsked(game)) - reached) {
-		openAmbush(game, timeScales[game.run.value.difficulty])
+		openAmbush(game, timed ? timeScales[game.run.value.difficulty] : undefined)
 	}
 }
 
