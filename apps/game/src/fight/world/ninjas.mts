@@ -24,12 +24,6 @@ import { headingOf, lungeOf, spotOf } from './placement.mts'
 import { poseSeconds, type FigurePose } from '../../_shared/world/poses.mts'
 
 /**
- * The back row is drawn faded ([more than 3 options](../../../../../docs/design/gameplay.md#more-than-3-options)),
- * except the ones from below: there they have no row behind the others, and stand right by the camera.
- */
-const backRowOpacity = 0.5
-
-/**
  * Real seconds a ninja takes to come into view when an ambush springs: steady, while the world
  * keeps slowing down, and within the ambush's opening, so they are all in before the scroll opens,
  * the ones that wait their turn behind a shared cover too. As fast as the samurai runs, by the run's `tempo`.
@@ -430,7 +424,7 @@ export function createNinjasView(parent: Group, make: () => Body): NinjasView {
 				entry.stood = standing ? entry.stood + worldDelta : 0
 				const time = windingUp ? windUpTime * ninja.approach : standing ? entry.stood : motion.time
 				// In the air its legs keep the stride it took off with.
-				entry.body.show(pose, time, entry.cycle, ninja.wave > 0 && !entry.mark.startsWith('down') ? backRowOpacity : 1)
+				entry.body.show(pose, time, entry.cycle)
 			}
 
 			for (const [id, entry] of shown) {

@@ -15,7 +15,7 @@ export type NinjaPose = 'approach' | 'strike' | 'slain' | 'blocked' | 'fleeing'
 
 export type Ninja = {
 	readonly id: number
-	/** `0` for the three in front, `1` for the two behind, which are drawn faded. */
+	/** `0` for the three in front, `1` for the two behind. */
 	readonly wave: number
 	/** Indices into the ambush's options; more than one when 6 to 8 options are bundled. */
 	readonly options: readonly number[]
