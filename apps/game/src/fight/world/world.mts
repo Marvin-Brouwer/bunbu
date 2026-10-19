@@ -26,7 +26,6 @@ import { createPetals } from '../../_shared/world/petals.mts'
 import { createCharacter, ninjaLook, placeholderBody, samuraiLook, type Body } from '../../_shared/world/character.mts'
 import { createFigureParts } from '../../_shared/world/figure.mts'
 import { bladeLandsAfter, createNinjasView } from './ninjas.mts'
-import { headingOf } from './placement.mts'
 import { finishingOf, poseSeconds, type FigurePose } from '../../_shared/world/poses.mts'
 
 /** Metres per half a running cycle: one step, matched to the run clip at the run's pace. */
@@ -239,9 +238,9 @@ export function createRunWorld(game: RunGame, viewport: Viewport, roomBelow: () 
 
 			// He runs along the path, and turns toward the ninja he strikes, blocks or is hit by, who stands square
 			// to the camera's way ahead.
-			const aimed = shogun.target === undefined ? undefined : ninjas.markOf(shogun.target)
+			const aimed = shogun.target === undefined ? undefined : ninjas.headingOf(shogun.target)
 			const turnTo = (shogun.pose === 'strike' || shogun.pose === 'block' || shogun.pose === 'hurt') && aimed !== undefined
-				? shortWay(here.heading, view.frame.heading + headingOf(aimed))
+				? shortWay(here.heading, view.frame.heading + aimed)
 				: 0
 			turnedTo += shortWay(turnedTo, turnTo) * damp(delta, 14)
 			const at = ran === distance ? here : path.at(ran)
@@ -288,7 +287,7 @@ export function createRunWorld(game: RunGame, viewport: Viewport, roomBelow: () 
 			stage.frame?.(camera, here.x, here.z)
 
 			// After the camera has turned, so the slash is square to the camera this frame is drawn with.
-			const side = aimed === undefined ? 0 : Math.sign(Math.round(Math.sin(-headingOf(aimed)) * 10))
+			const side = aimed === undefined ? 0 : Math.sign(Math.round(Math.sin(-aimed) * 10))
 			effects.draw({
 				x: here.x,
 				z: here.z,

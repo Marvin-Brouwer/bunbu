@@ -20,7 +20,7 @@ export type Spot = {
 
 const lowSide = Math.sin(Math.PI / 6)
 const lowDown = Math.cos(Math.PI / 6)
-/** ↓ is a little to the right, so that ninja never comes straight at the camera's back over the samurai. */
+/** A ninja from ↓ comes in a little to one side, so it never comes straight up over the samurai's back. */
 const belowSide = Math.sin(Math.PI / 18)
 const belowDown = Math.cos(Math.PI / 18)
 
@@ -31,11 +31,15 @@ const directions: Readonly<Record<Mark, readonly [x: number, z: number]>> = {
 	right: [1, 0],
 	// The lower diagonals are steeper: close to the camera, a wide angle runs off the screen's sides.
 	'down-right': [lowSide, lowDown],
-	down: [belowSide, belowDown],
+	down: [0, 1],
 	'down-left': [-lowSide, lowDown],
 	left: [-1, 0],
 	'up-left': [-Math.SQRT1_2, -Math.SQRT1_2],
 }
+
+/** The direction of `mark` on the ground; `below` is the side a ninja from ↓ comes in on. */
+const directionOf = (mark: Mark, below: 1 | -1): readonly [x: number, z: number] =>
+	mark === 'down' ? [belowSide * below, belowDown] : directions[mark]
 
 /** Defaults to tune with the real models. Metres. */
 export const placementConfig = {
@@ -54,12 +58,14 @@ export const placementConfig = {
 
 /**
  * Where a ninja with `mark` in `wave` stands, at `approach` from `0` (far away) to `1` (in reach).
+ * One from ↓ comes in a little to the right of straight behind the samurai, or with `below` at `-1`
+ * to the left.
  *
  * They start in a fan ahead of the samurai, where the camera sees them coming even on a narrow
  * phone, and close in on the side their mark points to.
  */
-export function spotOf(mark: Mark, wave: number, approach: number, config = placementConfig): Spot {
-	const [x, z] = directions[mark]
+export function spotOf(mark: Mark, wave: number, approach: number, below: 1 | -1 = 1, config = placementConfig): Spot {
+	const [x, z] = directionOf(mark, below)
 	const near = Math.min(1, Math.max(0, approach))
 	// The back row stands farther out, except from below: there farther out is off the screen's bottom.
 	const back = z > 0 ? 0 : wave * config.backRow
@@ -90,8 +96,8 @@ export function lungeOf(approach: number, time: number, seconds: number): number
 	return approach + (1 - approach) * (1 - (1 - done) ** 2)
 }
 
-/** The heading from the samurai toward a mark, for turning to strike or block. */
-export function headingOf(mark: Mark): number {
-	const [x, z] = directions[mark]
+/** The heading from the samurai toward the ninja at a mark, for turning to strike or block. */
+export function headingOf(mark: Mark, below: 1 | -1 = 1): number {
+	const [x, z] = directionOf(mark, below)
 	return Math.atan2(-x, -z)
 }
