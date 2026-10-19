@@ -5,7 +5,7 @@
 import { describe, expect, it } from 'vitest'
 import { marks, openingSeconds } from '../../_shared/state/ambush.mts'
 import { metresPerAmbush } from '../flows/run.mts'
-import { runConfig } from '../state/run.mts'
+import { ranInAmbushOf } from '../state/run.mts'
 import { bambooCover, bambooRound } from './bamboo-forest.mts'
 import { townCover } from './castle-town.mts'
 import { coverAhead, coverHeight, coverReach, coverSpotsAt } from './cover.mts'
@@ -78,22 +78,24 @@ describe('a ninja coming in', () => {
 	const path = createPath(townRound)
 	// Half way down the first street, facing -z: right is +x, ahead is -z.
 	const frame = { ...path.at(30), heading: 0 }
+	// Where he has run on to once it is in.
+	const then = { ...path.at(30 + ranInAmbushOf(entranceSeconds)), heading: 0 }
 	const covers = coverSpotsAt(path, 30, 3.3)
 
 	it('runs out from behind the cover on its side, the nearest', () => {
-		expect(coverOf(spotOf('left', 0, 0), 1, frame, covers)).toMatchObject({ x: expect.closeTo(-3.3) as number, z: expect.closeTo(frame.z - coverAhead[0]) as number })
-		expect(coverOf(spotOf('up-right', 1, 0), 1, frame, covers)?.x).toBeCloseTo(3.3)
+		expect(coverOf(spotOf('left', 0, 0), 1, frame, then, covers)).toMatchObject({ x: expect.closeTo(-3.3) as number, z: expect.closeTo(frame.z - coverAhead[0]) as number })
+		expect(coverOf(spotOf('up-right', 1, 0), 1, frame, then, covers)?.x).toBeCloseTo(3.3)
 	})
 
 	it('picks a side by its id when it comes from straight ahead', () => {
-		expect(coverOf(spotOf('up', 0, 0), 0, frame, covers)?.x).toBeCloseTo(3.3)
-		expect(coverOf(spotOf('up', 0, 0), 1, frame, covers)?.x).toBeCloseTo(-3.3)
+		expect(coverOf(spotOf('up', 0, 0), 0, frame, then, covers)?.x).toBeCloseTo(3.3)
+		expect(coverOf(spotOf('up', 0, 0), 1, frame, then, covers)?.x).toBeCloseTo(-3.3)
 	})
 
 	it('has no cover when it creeps up from behind, or when there is none', () => {
-		expect(coverOf(spotOf('down', 0, 0), 0, frame, covers)).toBeUndefined()
-		expect(coverOf(spotOf('down-left', 0, 0), 0, frame, covers)).toBeUndefined()
-		expect(coverOf(spotOf('left', 0, 0), 0, frame, [])).toBeUndefined()
+		expect(coverOf(spotOf('down', 0, 0), 0, frame, then, covers)).toBeUndefined()
+		expect(coverOf(spotOf('down-left', 0, 0), 0, frame, then, covers)).toBeUndefined()
+		expect(coverOf(spotOf('left', 0, 0), 0, frame, then, [])).toBeUndefined()
 	})
 })
 
@@ -144,12 +146,12 @@ describe('ninjas coming out from behind the covers of every stage', () => {
 		const path = createPath(round)
 		return Array.from({ length: 12 }, (_, at) => (at + 1) * metresPerAmbush).flatMap((distance) => {
 			const from = path.at(distance)
-			// Where the samurai is once he has run on as far as an ambush lets him.
-			const ranOn = path.at(distance + runConfig.ambushRunOn)
+			// Where the samurai is once the ninjas are in, having run on in slow motion meanwhile.
+			const ranOn = path.at(distance + ranInAmbushOf(entranceSeconds))
 			const covers = coverSpotsAt(path, distance, cover.aside)
 			return marks.flatMap((mark) => [0, 1].flatMap((wave) => [0, 1].flatMap((id) => {
 				const start = spotOf(mark, wave, 0)
-				const chosen = coverOf(start, id, from, covers)
+				const chosen = coverOf(start, id, from, ranOn, covers)
 				return chosen === undefined ? [] : [{ from, ranOn, covers, chosen, to: beside(ranOn, start.x, -start.z) }]
 			})))
 		})
