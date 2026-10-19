@@ -60,8 +60,12 @@ export const Page = component<PageOptions>({
 				create(MenuButton, {
 					label: 'Back to top',
 					action() {
-						// The menu screen's section is what scrolls.
-						screen.firstElementChild?.scrollTo({ top: 0, behavior: 'smooth' })
+						// The menu screen's section is what scrolls. No glide for a player who asked for less motion.
+						const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches
+						screen.firstElementChild?.scrollTo({
+							top: 0,
+							behavior: reduceMotion ? 'instant' : 'smooth',
+						})
 					},
 				}),
 			],
