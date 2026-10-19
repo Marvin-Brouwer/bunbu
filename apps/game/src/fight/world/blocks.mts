@@ -81,8 +81,12 @@ export type Blocks<Pending> = {
 	dispose: () => void
 }
 
-/** Lays out `variants` blocks of `path` with `lay`, a round each, all hidden until `follow` shows them. */
-export function layBlocks<Pending>(path: Path, lay: Lay<Pending>, variants = blockVariants): Blocks<Pending> {
+/**
+ * Lays out `variants` blocks of `path` with `lay`, a round each, all hidden until `follow` shows them.
+ * `onShown` hears of each block put in a new place: the distance along the path its round starts at
+ * there, and how far it was moved from where it was laid.
+ */
+export function layBlocks<Pending>(path: Path, lay: Lay<Pending>, variants = blockVariants, onShown?: (block: Laid<Pending>, from: number, offset: Vector3) => void): Blocks<Pending> {
 	const order = blockOrder(variants)
 	const length = path.round
 	// How far each round moves the next one on: from the start of the path to the end of its first round.
@@ -100,6 +104,8 @@ export function layBlocks<Pending>(path: Path, lay: Lay<Pending>, variants = blo
 	}
 
 	let at: number | undefined
+	// The round each block was last shown on.
+	const shownOn: (number | undefined)[] = []
 	return {
 		group,
 		laid,
@@ -116,6 +122,8 @@ export function layBlocks<Pending>(path: Path, lay: Lay<Pending>, variants = blo
 				// Laid on round `variant`, shown on round `each`.
 				block.group.position.copy(across).multiplyScalar(each - variant)
 				block.group.visible = true
+				if (shownOn[variant] !== each) onShown?.(block, each * length, block.group.position)
+				shownOn[variant] = each
 			}
 		},
 

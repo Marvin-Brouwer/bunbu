@@ -395,6 +395,8 @@ export type Cover = {
 	readonly group: Group
 	/** Lays out the covers round the samurai `distance` metres along the path. */
 	follow: (distance: number) => void
+	/** Where every cover stands from `from` to `to` metres along the path, laid out or not yet. */
+	spotsBetween: (from: number, to: number) => CoverSpot[]
 	dispose: () => void
 }
 
@@ -542,6 +544,15 @@ export function createCover(path: Path, set: CoverSet, every: number, seed: numb
 			for (const tile of laid.keys()) if (tile < first || tile > last) laid.delete(tile)
 			for (let tile = first; tile <= last; tile++) if (!laid.has(tile)) laid.set(tile, layTile(tile))
 			show()
+		},
+
+		spotsBetween(from, to) {
+			const spots: CoverSpot[] = []
+			for (let ambush = Math.ceil((from - coverAhead[1] - phase) / every) * every + phase; ambush <= to; ambush += every) {
+				if (ambush > 0) spots.push(...coverSpotsAt(path, ambush, set.aside))
+			}
+			for (let tile = Math.floor(from / tileLength); tile <= Math.floor(to / tileLength); tile++) spots.push(...decoysOf(path, set, tile, every, seed, phase))
+			return spots
 		},
 
 		dispose() {

@@ -9,6 +9,7 @@
 
 import { component } from '@rooted/components'
 import { resizeObserver } from '@rooted/observers'
+import { createStore } from '@rooted/store'
 import { tickRun } from './flows/run.mts'
 import { commitAmbush } from './flows/ambush.mts'
 import { play } from '../canvas/loop.mts'
@@ -50,10 +51,13 @@ export const RunScreen = component<RunScreenOptions>({
 			pausable: () => pausable.has(game.run.value.phase),
 		}, signal)
 		let wasPaused = false
+		// The scroll stays rolled up through the pause and the 3-2-1 after it.
+		const scrollClosed = createStore(false)
 		game.run.on('change', signal, ({ detail }) => {
 			const paused = detail.state.phase === 'paused'
 			if (wasPaused && !paused) guard.resumed()
 			wasPaused = paused
+			scrollClosed.update(() => paused || detail.state.countdown > 0)
 		})
 
 		// The run's layers over the canvas, back to front. The tracks mount here, one line each,
@@ -88,6 +92,7 @@ export const RunScreen = component<RunScreenOptions>({
 								label: 'AMBUSH',
 								commit: () => { commitAmbush(game) },
 								held: () => game.run.value.phase !== 'ambush' || game.run.value.countdown > 0 || game.ambush.value.openingLeft > 0,
+								closed: scrollClosed,
 							}),
 						],
 					}),

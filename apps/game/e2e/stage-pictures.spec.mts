@@ -5,9 +5,9 @@
  * `pnpm --filter @bunbu/game stage-pictures`.
  *
  * A picture is a stage seven seconds into a run, without the samurai, the ninjas or the HUD
- * (`?scenery`, dev only). Time and chance are fixed, so a run looks the same every time:
- * Playwright's clock moves the frames on, `Math.random` is seeded, and the stage is laid out from a
- * seed of its own (`?seed`, dev only), whatever else drew on `Math.random` first. What still differs between
+ * (`scenery`, src/fight/world/picture-settings.mts). Time and chance are fixed, so a run looks the
+ * same every time: Playwright's clock moves the frames on, `Math.random` is seeded, and the stage is
+ * laid out from a seed of its own (`seed`), whatever else drew on `Math.random` first. What still differs between
  * machines, as the GPU's own rounding, is under {@link tolerance}.
  */
 
@@ -75,6 +75,8 @@ for (const [stage, name] of Object.entries(stages)) {
 				state = (state * 16_807) % 2_147_483_647
 				return (state - 1) / 2_147_483_646
 			}
+			// The stage alone, laid out the same every run (src/fight/world/picture-settings.mts).
+			Object.defineProperty(window, 'pictureSettings', { value: () => ({ scenery: true, seed: 7 }) })
 		})
 		await page.clock.install({ time: 0 })
 
@@ -82,7 +84,7 @@ for (const [stage, name] of Object.entries(stages)) {
 		await page.goto('./')
 		await page.getByRole('link', { name: 'Select quiz' }).click()
 		await page.getByText('Fixture quiz').click()
-		await page.goto('fight/?scenery&seed=7')
+		await page.goto('fight/')
 		await page.getByRole('button', { name: 'Start run' }).waitFor()
 		const unlock = page.getByRole('button', { name: /Unlock all stages/ })
 		if (await unlock.isVisible()) await unlock.click()
