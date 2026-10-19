@@ -20,6 +20,9 @@ export type Spot = {
 
 const lowSide = Math.sin(Math.PI / 6)
 const lowDown = Math.cos(Math.PI / 6)
+/** Straight from below is a little to the side, so that ninja never comes in right behind the samurai's back (#133). */
+const belowSide = Math.sin(Math.PI / 14)
+const belowDown = Math.cos(Math.PI / 14)
 
 /** The direction of each mark on the ground, as the camera sees it. */
 const directions: Readonly<Record<Mark, readonly [x: number, z: number]>> = {
@@ -28,7 +31,7 @@ const directions: Readonly<Record<Mark, readonly [x: number, z: number]>> = {
 	right: [1, 0],
 	// The lower diagonals are steeper: close to the camera, a wide angle runs off the screen's sides.
 	'down-right': [lowSide, lowDown],
-	down: [0, 1],
+	down: [belowSide, belowDown],
 	'down-left': [-lowSide, lowDown],
 	left: [-1, 0],
 	'up-left': [-Math.SQRT1_2, -Math.SQRT1_2],

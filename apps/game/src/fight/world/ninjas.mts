@@ -23,8 +23,16 @@ import { beside } from './path.mts'
 import { lungeOf, spotOf } from './placement.mts'
 import { poseSeconds, type FigurePose } from '../../_shared/world/poses.mts'
 
-/** The back row is drawn faded ([more than 3 options](../../../../../docs/design/gameplay.md#more-than-3-options)). */
+/**
+ * The back row is drawn faded ([more than 3 options](../../../../../docs/design/gameplay.md#more-than-3-options)),
+ * but not a ninja that comes from below: there is no back row behind the camera, and a see-through
+ * figure right in front of it only looks odd (#133).
+ */
 const backRowOpacity = 0.5
+
+/** How see-through a ninja of `wave` coming from `mark` is drawn: `1` not at all. */
+export const opacityOf = (wave: number, mark: Mark): number => (wave > 0 && !fromBelow.has(mark) ? backRowOpacity : 1)
+const fromBelow: ReadonlySet<Mark> = new Set(['down-left', 'down', 'down-right'])
 
 /**
  * Real seconds a ninja takes to come into view when an ambush springs: steady, while the world
@@ -443,7 +451,7 @@ export function createNinjasView(parent: Group, make: () => Body): NinjasView {
 				const pose = windingUp ? 'strike' : standing ? 'idle' : motion.pose
 				const time = windingUp ? windUpTime : standing ? entry.time : motion.time
 				// In the air its legs keep the stride it took off with.
-				entry.body.show(pose, time, entry.cycle, ninja.wave > 0 ? backRowOpacity : 1)
+				entry.body.show(pose, time, entry.cycle, opacityOf(ninja.wave, entry.mark))
 			}
 
 			for (const [id, entry] of shown) {

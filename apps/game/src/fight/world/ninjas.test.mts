@@ -11,7 +11,7 @@ import { townCover } from './castle-town.mts'
 import { coverAhead, coverHeight, coverReach, coverSpotsAt } from './cover.mts'
 import { castleCover, castleRound } from './edo-castle.mts'
 import { mountainCover, mountainRound } from './mountain-temple.mts'
-import { clashSeconds, coverOf, entranceSeconds, fleeSideOf, leapConfig, motionOf, outOf, shareConfig, strikeDelaySeconds } from './ninjas.mts'
+import { clashSeconds, coverOf, entranceSeconds, fleeSideOf, opacityOf, leapConfig, motionOf, outOf, shareConfig, strikeDelaySeconds } from './ninjas.mts'
 import { beside, createPath, townRound } from './path.mts'
 import { riceCover, riceRound } from './rice-fields.mts'
 import { spotOf } from './placement.mts'
@@ -193,5 +193,18 @@ describe('ninjas sharing a cover', () => {
 
 	it('are all in before the scroll opens', () => {
 		expect((1 + (shareConfig.most - 1) * shareConfig.stagger) * entranceSeconds).toBeLessThanOrEqual(openingSeconds)
+	})
+})
+
+describe('a ninja coming from below (#133)', () => {
+	it('is never drawn see-through, even in the back row', () => {
+		expect(opacityOf(1, 'down')).toBe(1)
+		expect(opacityOf(1, 'down-left')).toBe(1)
+		expect(opacityOf(1, 'up')).toBeLessThan(1)
+		expect(opacityOf(0, 'up')).toBe(1)
+	})
+
+	it('comes in a little to the side, never right behind the samurai', () => {
+		for (const approach of [0, 0.5, 1]) expect(Math.abs(spotOf('down', 0, approach).x)).toBeGreaterThan(0.3)
 	})
 })
