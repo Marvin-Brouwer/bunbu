@@ -7,8 +7,9 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createLife, shareOfOnePoint, type Life } from './life.mts'
 import { createRunGame } from './game.mts'
-import { createRun, marksPassed, runConfig, runInLeft, runOnOf, slowMotionOf, stageDistanceOf, type Run } from './run.mts'
+import { createRun, marksPassed, runConfig, runInLeft, runOnOf, slowMotionOf, stageDistanceOf, standsInAmbush, type Run } from './run.mts'
 import { beats, createScore, pointsPerCorrect, type HighScore, type Score } from './score.mts'
+import { openingSeconds } from '../../_shared/state/ambush.mts'
 
 // Every test gets its own stores: a game mode creates them per run, so tests do the same.
 let run: Run
@@ -58,21 +59,28 @@ describe('run', () => {
 		run.value.tick(runConfig.introSeconds, runConfig.introSeconds)
 		run.value.beginAmbush()
 		const { distance } = run.value
-		run.value.tick(0.1, 1)
-		expect(run.value.worldScale).toBeCloseTo(slowMotionOf(1))
+		// At full speed while the ninjas come in, slowing down once the scroll opens.
+		run.value.tick(0.1, openingSeconds)
+		expect(run.value.worldScale).toBe(1)
 		expect(run.value.distance).toBeCloseTo(distance + runOnOf(runConfig.pace * 0.1))
+		run.value.tick(0.01, 1)
+		expect(run.value.worldScale).toBeCloseTo(slowMotionOf(1))
 		run.value.tick(0.01, 1)
 		expect(run.value.worldScale).toBeLessThan(slowMotionOf(1))
 	})
 
-	it('runs on only a few steps in an ambush, so the ninjas close in on him', () => {
+	it('runs on only a few steps in an ambush, then stands still', () => {
 		run.value.start(600)
 		run.value.tick(runConfig.introSeconds, runConfig.introSeconds)
 		run.value.beginAmbush()
-		const { distance } = run.value
+		expect(standsInAmbush(run.value)).toBe(false)
+		const { distance, stepped } = run.value
 		for (let second = 0; second < 120; second++) run.value.tick(run.value.worldScale, 1)
 		expect(run.value.distance - distance).toBeGreaterThan(runConfig.ambushRunOn * 0.9)
 		expect(run.value.distance - distance).toBeLessThanOrEqual(runConfig.ambushRunOn)
+		// His legs went by the ground he covered, and he stands ready for the attack.
+		expect(run.value.stepped - stepped).toBeCloseTo(run.value.distance - distance)
+		expect(standsInAmbush(run.value)).toBe(true)
 		run.value.endAmbush()
 		run.value.tick(1, 1)
 		expect(run.value.distance).toBeCloseTo(distance + runOnOf(run.value.ranOn) + runConfig.pace)
