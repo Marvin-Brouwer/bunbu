@@ -237,7 +237,7 @@ export function offRoof(roof: Box, to: Spot, wished: Spot, solids: readonly Soli
  * springs out onto the bank and how far past the edge it lands, and its timing; how near where it
  * will stand the water has to be, and how often one comes that way where there is some.
  */
-export const waterConfig = { inset: 1.5, sunk: 1.9, height: 1.4, ahead: 0.8, waits: 0.1, lands: 0.45, reach: 12, chance: 0.4 }
+export const waterConfig = { inset: 2.5, sunk: 1.9, height: 3.4, ahead: 1, waits: 0.1, lands: 0.45, reach: 12, chance: 0.4 }
 
 /**
  * The leap up out of `water` toward `to`, where it stands for the fight: from under the water
