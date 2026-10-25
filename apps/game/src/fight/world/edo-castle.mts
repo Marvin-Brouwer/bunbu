@@ -30,7 +30,7 @@ import {
 import type { GLTF } from 'three/addons/loaders/GLTFLoader.js'
 import { blockVariants, layBlocks } from './blocks.mts'
 import { districtAt } from './districts.mts'
-import { Batch, chunkOf, placed, scatter, type Cursor } from './kit.mts'
+import { Batch, bridgeAt, chunkOf, placed, scatter, type Cursor } from './kit.mts'
 import { addAll, castShadows, clearanceOf, facingPath, fading, followSun, fogFar, isFree, passTime, sky, skyRadius, stamp, strip, type Daylight, type Owned, type Planting, type StageView, type Taken } from './landscape.mts'
 import type { District } from './backdrop.mts'
 import { nearAmbushCover, type CoverSet } from './cover.mts'
@@ -112,12 +112,12 @@ const kerbHeight = 0.25
 /**
  * The moat across the way in front of every gatehouse, at the end of the round before it: how far
  * before the round's end its middle is, how wide it is along the way and how far it reaches either
- * side, and how wide the wooden bridge over it is, room for the covers on it too.
+ * side, and how wide castle town's wooden bridge ([`bridgeAt`](./kit.mts)) over it is.
  */
 const ditchBack = 3.4
 const ditchWidth = 4.4
 const ditchReach = 21
-const bridgeHalfWidth = 6
+const bridgeHalfWidth = pathHalfWidth + 0.3
 /**
  * How far into a round the gatehouse stands; where a round starts with a square gate court
  * (masugata), how far in its first gate stands, and the gatehouse at the end of the court.
@@ -492,16 +492,8 @@ export function createEdoCastle(scene: Scene, path: Path, models: Promise<Castle
 				const far = beside(ditch, side * off, ditchWidth / 2 + wallFront)
 				pending.walls.push({ matrix: placed(far.x, 0, far.z, ditch.heading), chunk: cursor.chunk })
 			}
-			// The bridge's railings: posts, a rail on top and one halfway.
-			const rail = beside(ditch, side * (bridgeHalfWidth - 0.15))
-			bridge.add(placed(rail.x, 0.95, rail.z, ditch.heading, 0.14, 0.12, ditchWidth + 1.2), palette.timber)
-			bridge.add(placed(rail.x, 0.5, rail.z, ditch.heading, 0.1, 0.1, ditchWidth + 1.2), palette.timber)
-			for (const along of [-1, 0, 1]) {
-				const post = beside(ditch, side * (bridgeHalfWidth - 0.15), along * (ditchWidth + 1) / 2)
-				bridge.add(placed(post.x, 0.55, post.z, ditch.heading, 0.2, 1.1, 0.2), palette.timber)
-			}
 		}
-		bridge.add(placed(ditch.x, 0.05, ditch.z, ditch.heading, bridgeHalfWidth * 2, 0.1, ditchWidth + 1.4), palette.timber)
+		bridgeAt(bridge, placed(ditch.x, 0, ditch.z, ditch.heading), bridgeHalfWidth)
 
 		addAll(group, bridge.build())
 		addAll(group, moat.build())

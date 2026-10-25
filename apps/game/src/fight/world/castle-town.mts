@@ -37,7 +37,7 @@ import {
 } from 'three'
 import type { GLTF } from 'three/addons/loaders/GLTFLoader.js'
 import { layBlocks } from './blocks.mts'
-import { Batch, chunkOf, gableGeometry, glowTexture, partOf, placed, scatter, slatsTexture, within, type Cursor } from './kit.mts'
+import { Batch, bridgeAt, chunkOf, gableGeometry, glowTexture, partOf, placed, scatter, slatsTexture, within, type Cursor } from './kit.mts'
 import { beside, type Path, type PathPoint } from './path.mts'
 import { addAll, castShadows, clearanceOf, facingPath, fading, followSun, fogFar, isFree, passTime, sky, skyRadius, stamp, strip, type Daylight, type Owned, type Planting, type StageView, type Taken } from './landscape.mts'
 import type { District } from './backdrop.mts'
@@ -577,11 +577,7 @@ function lay(path: Path, from: number, to: number, base: number, shapes: Shapes)
 		}
 		const deck = placed(crossing.x, 0, crossing.z, crossing.heading)
 		town.water.add(within(deck, placed(0, 0.025, 0, 0, 3.4, 1, 3.4)), palette.water)
-		town.bridge.add(within(deck, placed(0, 0.12, 0, 0, gardenHalfWidth * 2 + 0.4, 0.16, 6.5)), 0x6b4a32)
-		for (const side of [-1, 1]) {
-			town.bridge.add(within(deck, placed(side * (gardenHalfWidth + 0.15), 0.95, 0, 0, 0.14, 0.12, 6.5)), palette.bridge)
-			for (const post of [-3, -1, 1, 3]) town.bridge.add(within(deck, placed(side * (gardenHalfWidth + 0.15), 0.55, post, 0, 0.16, 0.85, 0.16)), palette.bridge)
-		}
+		bridgeAt(town.bridge, deck, gardenHalfWidth)
 	}
 
 	// Then what grows around them: maples, bamboo, rocks, and stone lanterns along the path, all
