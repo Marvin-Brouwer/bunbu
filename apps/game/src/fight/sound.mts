@@ -1,7 +1,7 @@
 /**
  * The run's sounds ([sound](../_shared/sound/sound.mts)): the samurai's steps, the ninjas rushing in
  * as an ambush springs and the scroll unrolling once they are in, his sword cutting the air, the ninjas cut down,
- * blades meeting on a block, and the thud of a hit.
+ * blades meeting on a block, and the thud of a hit. A short buzz goes with each scroll unrolling.
  *
  * Like the renderer, it only listens to the run's stores and never changes them
  * ([rendering is read-only](../../../../docs/architecture/rendering.md#rendering-is-read-only)), and
@@ -9,6 +9,7 @@
  */
 
 import { maximumDelta } from '../canvas/loop.mts'
+import { buzz, buzzes } from '../_shared/haptics.mts'
 import { play } from '../_shared/sound/sound.mts'
 import { finishingLands } from '../_shared/world/poses.mts'
 import type { RunGame } from './state/game.mts'
@@ -52,6 +53,7 @@ export function playRunSounds(game: RunGame, signal: AbortSignal): void {
 			unrolled = false
 		}
 		if (state.open && !unrolled && (state.round > 1 || state.openingLeft === 0)) {
+			buzz(buzzes.scroll)
 			play('unroll')
 			unrolled = true
 		}
