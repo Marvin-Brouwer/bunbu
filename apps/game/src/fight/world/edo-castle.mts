@@ -26,7 +26,8 @@ import {
 	type Scene,
 } from 'three'
 import type { GLTF } from 'three/addons/loaders/GLTFLoader.js'
-import { layBlocks } from './blocks.mts'
+import { blockVariants, layBlocks } from './blocks.mts'
+import { districtAt } from './districts.mts'
 import { Batch, chunkOf, placed, scatter, type Cursor } from './kit.mts'
 import { addAll, castShadows, clearanceOf, facingPath, fading, followSun, fogFar, isFree, passTime, sky, skyRadius, stamp, strip, type Daylight, type Owned, type Planting, type StageView, type Taken } from './landscape.mts'
 import type { District } from './backdrop.mts'
@@ -39,6 +40,8 @@ const palette = {
 	gravel: 0xb8ad98,
 	water: 0x4f7a8a,
 	kerb: 0x8d877b,
+	plaster: 0xeae4d4,
+	tiles: 0x2e3036,
 }
 
 /** From sunset to a moonlit night. One light per quarter of the stage ({@link passTime}). */
@@ -151,13 +154,32 @@ export const castleDistricts: readonly District[] = [
 		name: "Keep's approach",
 		cover: [{ kind: 'guard', ambush: 0.3, decoy: 1.5 }, { kind: 'palanquin' }, { kind: 'rock' }],
 		rows: [
-			{ shape: 'pine', from: 22, to: 32, perTile: 2.5, colours: [[0x3a2e26], [0x2a3e2a, 0x30482e]] },
-			{ shape: 'wall', from: 32, to: 48, perTile: 1.4, colours: [[0x8d877b, 0x7a756c], [0xeae4d4, 0xddd5c2], [0x2e3036, 0x34404f]] },
-			{ shape: 'pagoda', from: 60, to: 130, perTile: 0.2, colours: [[0xeae4d4], [0x2e3036, 0x34404f]] },
+			// In front of the keep that stands close by here, and the inner walls beyond it.
+			{ shape: 'pine', from: 16, to: 22, perTile: 2.5, colours: [[0x3a2e26], [0x2a3e2a, 0x30482e]] },
+			{ shape: 'wall', from: 56, to: 72, perTile: 1.4, colours: [[0x8d877b, 0x7a756c], [0xeae4d4, 0xddd5c2], [0x2e3036, 0x34404f]] },
+			{ shape: 'pagoda', from: 75, to: 130, perTile: 0.2, colours: [[0xeae4d4], [0x2e3036, 0x34404f]] },
 			{ shape: 'pine', from: 48, to: 120, perTile: 2, colours: [[0x3a2e26], [0x2a3e2a, 0x30482e]] },
 		],
 	},
 ]
+
+/** How the way is walled on one side: high stone walls, a low plastered garden wall, or not at all. */
+export type Way = 'high' | 'low' | 'open'
+
+/**
+ * How {@link castleDistricts}' district `district` walls the way on `side`, with the keep on
+ * `keepSide`: high walls round the retainers' quarter, low garden walls through the gardens, none on
+ * the pine walk, and on the keep's approach a low wall on the keep's side, so it rises close by.
+ */
+export function wayOf(district: number, side: number, keepSide: number): Way {
+	if (district === 1) return 'low'
+	if (district === 2) return 'open'
+	if (district === 3 && side === keepSide) return 'low'
+	return 'high'
+}
+
+/** How far off the way the keep stands, in each district: close by on the keep's approach. */
+const keepOff = [48, 48, 48, 36] as const
 
 /** Which side the moat is on at `distance`: `1` right, `-1` left, `0` none. Down two straights a round. */
 export function moatSide(distance: number): -1 | 0 | 1 {
@@ -181,20 +203,40 @@ function heightOf(model: Object3D): number {
 	return bounds.max.y - bounds.min.y
 }
 
-/** What an Edo-castle block places once the models are in. */
+/** What an Edo-castle block places in one district only, shown while it is run through that district. */
+type DistrictPending = {
+	readonly group: Group
+	readonly walls: Planting[]
+	readonly keeps: Planting[]
+}
+
+/** What an Edo-castle block places once the models are in: in every district, and in each its own. */
 type CastlePending = {
 	readonly gates: Planting[]
 	readonly walls: Planting[]
-	readonly keeps: Planting[]
+	readonly districts: readonly DistrictPending[]
 	readonly turrets: Planting[]
 	readonly pines: Planting[]
 	readonly lanterns: Planting[]
 }
 
+/** A low garden wall (tsuiji-bei) a wall piece long at `at`, along `heading`: a stone footing, a white wall, tiles on top. */
+function lowWallAt(walls: Batch | undefined, at: { x: number; z: number }, heading: number): void {
+	const length = wallEvery + 0.1
+	walls?.add(placed(at.x, 0.2, at.z, heading, 0.8, 0.4, length), palette.kerb)
+	walls?.add(placed(at.x, 1, at.z, heading, 0.5, 1.2, length), palette.plaster)
+	walls?.add(placed(at.x, 1.69, at.z, heading, 0.9, 0.18, length), palette.tiles)
+}
+
 /** Metres a pine reaches along the path from where it stands. */
 const pineReach = 2
 
-export function createEdoCastle(scene: Scene, path: Path, models: Promise<CastleModels>): StageView {
+/**
+ * Lays out Edo castle along `path`, district after district along a stage of `stageLength()` metres
+ * ([districts](./districts.mts)): a block takes the walls of the district its round is mostly in, so
+ * the way changes at a gatehouse.
+ */
+export function createEdoCastle(scene: Scene, path: Path, models: Promise<CastleModels>, stageLength: () => number): StageView {
 	const [first] = daylight
 	const fog = new Fog(first.fog, 30, fogFar)
 	scene.fog = fog
@@ -223,8 +265,10 @@ export function createEdoCastle(scene: Scene, path: Path, models: Promise<Castle
 	// Not metal: with nothing around to reflect, metal water only comes out black.
 	const waterMaterial = new MeshStandardMaterial({ color: palette.water, roughness: 0.2 })
 	const kerbMaterial = new MeshStandardMaterial({ color: palette.kerb, roughness: 1 })
+	// Coloured per part: the stone footing, the white wall, the tiles on top.
+	const lowWallMaterial = new MeshStandardMaterial({ roughness: 0.95 })
 	owned.geometries.push(box)
-	owned.materials.push(waterMaterial, kerbMaterial)
+	owned.materials.push(waterMaterial, kerbMaterial, lowWallMaterial)
 
 	// The grounds, a round of the path at a time ([blocks](./blocks.mts)).
 	const blocks = layBlocks<CastlePending>(path, (from, to, base) => {
@@ -234,7 +278,15 @@ export function createEdoCastle(scene: Scene, path: Path, models: Promise<Castle
 		const cursor: Cursor = { chunk: 0 }
 		const clear = clearanceOf(path, from - 60, to + 60)
 		const taken: Taken = []
-		const pending: CastlePending = { gates: [], walls: [], keeps: [], turrets: [], pines: [], lanterns: [] }
+		const districts = castleDistricts.map((_, index): DistrictPending => {
+			const shown = new Group()
+			shown.visible = index === 0
+			group.add(shown)
+			return { group: shown, walls: [], keeps: [] }
+		})
+		const pending: CastlePending = { gates: [], walls: [], districts, turrets: [], pines: [], lanterns: [] }
+		const lowWalls = districts.map(() => new Batch(box, lowWallMaterial, cursor, { cast: true, receive: true }))
+		const keepSide = scatter(base) > 0.5 ? 1 : -1
 
 		// A gatehouse across the way at the start of every round: this block's, and the next one's
 		// just past its end, which the walls keep clear of too.
@@ -242,8 +294,8 @@ export function createEdoCastle(scene: Scene, path: Path, models: Promise<Castle
 		pending.gates.push({ matrix: placed(gatehouse.x, 0, gatehouse.z, gatehouse.heading), chunk: chunkOf(from + gateAt) })
 		const nearGate = (distance: number) => [from + gateAt, to + gateAt].some((entrance) => Math.abs(entrance - distance) < 7)
 
-		// Walls either side, but along a moat the near wall gives way to water, with a wall beyond it,
-		// and a stone kerb along the way.
+		// Walls either side as each district has them, but along a moat the near wall gives way to
+		// water, with a wall beyond it in every district, and a stone kerb along the way.
 		const moat = new Batch(box, waterMaterial, cursor, { receive: true })
 		const kerbs = new Batch(box, kerbMaterial, cursor, { cast: true, receive: true })
 		for (let distance = from; distance < to; distance += wallEvery) {
@@ -255,8 +307,15 @@ export function createEdoCastle(scene: Scene, path: Path, models: Promise<Castle
 				const foot = side === moatOn ? wallFoot + 9 : wallFoot
 				const at = beside(point, side * (foot + wallFront))
 				if (!clear(at.x, at.z, distance, foot + wallFront - 0.5, 20)) continue
-				pending.walls.push({ matrix: placed(at.x, 0, at.z, facingPath(point, side)), chunk: cursor.chunk })
+				if (side !== moatOn) {
+					districts.forEach((district, index) => {
+						const way = wayOf(index, side, keepSide)
+						if (way === 'high') district.walls.push({ matrix: placed(at.x, 0, at.z, facingPath(point, side)), chunk: cursor.chunk })
+						if (way === 'low') lowWallAt(lowWalls[index], beside(point, side * (wallFoot + 0.3)), point.heading)
+					})
+				}
 				if (side === moatOn) {
+					pending.walls.push({ matrix: placed(at.x, 0, at.z, facingPath(point, side)), chunk: cursor.chunk })
 					const middle = beside(point, side * (wallFoot + 4))
 					moat.add(placed(middle.x, 0.02, middle.z, point.heading, moatWidth, 0.05, wallEvery + 0.4))
 					const edge = beside(point, side * (wallFoot - 0.3))
@@ -276,10 +335,12 @@ export function createEdoCastle(scene: Scene, path: Path, models: Promise<Castle
 		// The keep, rising over the walls off to one side ahead; pines behind the walls.
 		const keepAt = from + 75
 		const keepBy = path.at(keepAt)
-		const keepSide = scatter(base) > 0.5 ? 1 : -1
-		const keep = beside(keepBy, keepSide * 48)
-		if (clear(keep.x, keep.z, keepAt, 30, 80)) {
-			pending.keeps.push({ matrix: placed(keep.x, 0, keep.z, facingPath(keepBy, keepSide)), chunk: chunkOf(keepAt) })
+		for (const off of new Set(keepOff)) {
+			const keep = beside(keepBy, keepSide * off)
+			if (!clear(keep.x, keep.z, keepAt, off - 18, 80)) continue
+			districts.forEach((district, index) => {
+				if (keepOff[index] === off) district.keeps.push({ matrix: placed(keep.x, 0, keep.z, facingPath(keepBy, keepSide)), chunk: chunkOf(keepAt) })
+			})
 			taken.push({ x: keep.x, z: keep.z, radius: 22 })
 		}
 		for (let distance = from, index = base; distance < to; distance += 9, index++) {
@@ -310,7 +371,17 @@ export function createEdoCastle(scene: Scene, path: Path, models: Promise<Castle
 
 		addAll(group, moat.build())
 		addAll(group, kerbs.build())
+		districts.forEach((district, index) => {
+			addAll(district.group, lowWalls[index]?.build() ?? [])
+		})
 		return { group, pending }
+	}, blockVariants, ({ pending }, from) => {
+		// The district the round is mostly in.
+		const { from: leaving, to: coming, mix } = districtAt(from + roundLength / 2, stageLength())
+		const shown = mix < 0.5 ? leaving : coming
+		pending.districts.forEach((district, index) => {
+			district.group.visible = index === shown
+		})
 	})
 	scene.add(blocks.group)
 
@@ -326,8 +397,11 @@ export function createEdoCastle(scene: Scene, path: Path, models: Promise<Castle
 		const lantern = loaded.temple?.scene.getObjectByName('StoneLantern')
 		for (const { group, pending } of blocks.laid) {
 			if (wall !== undefined) addAll(group, stamp(wall, pending.walls, heightOf(wall), true, owned))
+			for (const district of pending.districts) {
+				if (wall !== undefined) addAll(district.group, stamp(wall, district.walls, heightOf(wall), true, owned))
+				if (keep !== undefined) addAll(district.group, stamp(keep, district.keeps, heightOf(keep), false, owned))
+			}
 			if (gate !== undefined) addAll(group, fading(stamp(gate, pending.gates, heightOf(gate), true, owned)))
-			if (keep !== undefined) addAll(group, stamp(keep, pending.keeps, heightOf(keep), false, owned))
 			if (turret !== undefined) addAll(group, stamp(turret, pending.turrets, heightOf(turret), true, owned))
 			if (pine !== undefined) addAll(group, stamp(pine, pending.pines, heightOf(pine), true, owned))
 			if (lantern !== undefined) addAll(group, stamp(lantern, pending.lanterns, heightOf(lantern), true, owned))

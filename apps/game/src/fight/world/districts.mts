@@ -4,7 +4,8 @@
  * through the shop street and past the pond and the red bridge to the castle approach.
  *
  * A district is the stage's backdrop and what stands by the way ([backdrop](./backdrop.mts)); the
- * stage's own blocks stay the same throughout. One district fades into the next over a stretch of
+ * stage's own blocks stay the same throughout, but for Edo castle's walls, which change with the
+ * district at the gatehouse that starts a round ([Edo castle](./edo-castle.mts)). One district fades into the next over a stretch of
  * path rather than at the mark. A short test doesn't get all four: each district has at least
  * {@link districtConfig}`.minQuestions` questions, so ten questions make two districts, the first
  * and the last. Plain numbers, so it can be tested.
