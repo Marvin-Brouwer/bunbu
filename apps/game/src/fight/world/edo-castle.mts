@@ -42,6 +42,7 @@ const palette = {
 	kerb: 0x8d877b,
 	plaster: 0xeae4d4,
 	tiles: 0x2e3036,
+	timber: 0x5a4030,
 }
 
 /** From sunset to a moonlit night. One light per quarter of the stage ({@link passTime}). */
@@ -104,6 +105,15 @@ const wallEvery = 5.8
 const moatWidth = 8.6
 const kerbWidth = 0.4
 const kerbHeight = 0.25
+/**
+ * The moat across the way in front of every gatehouse, at the end of the round before it: how far
+ * before the round's end its middle is, how wide it is along the way and how far it reaches either
+ * side, and how wide the wooden bridge over it is, room for the covers on it too.
+ */
+const ditchBack = 3.4
+const ditchWidth = 4.4
+const ditchReach = 21
+const bridgeHalfWidth = 6
 /** How far into a round the gatehouse stands. */
 const gateAt = 6
 
@@ -293,13 +303,17 @@ export function createEdoCastle(scene: Scene, path: Path, models: Promise<Castle
 		const gatehouse = path.at(from + gateAt)
 		pending.gates.push({ matrix: placed(gatehouse.x, 0, gatehouse.z, gatehouse.heading), chunk: chunkOf(from + gateAt) })
 		const nearGate = (distance: number) => [from + gateAt, to + gateAt].some((entrance) => Math.abs(entrance - distance) < 7)
+		// The walls along the way stop well short of the moat before the next gatehouse, so it shows
+		// running off either side, and nothing stands in it.
+		const nearDitch = (distance: number) => distance > to - ditchBack - ditchWidth / 2 - 14
+		const inDitch = (distance: number) => Math.abs(distance - (to - ditchBack)) < ditchWidth / 2 + 1
 
 		// Walls either side as each district has them, but along a moat the near wall gives way to
 		// water, with a wall beyond it in every district, and a stone kerb along the way.
 		const moat = new Batch(box, waterMaterial, cursor, { receive: true })
 		const kerbs = new Batch(box, kerbMaterial, cursor, { cast: true, receive: true })
 		for (let distance = from; distance < to; distance += wallEvery) {
-			if (nearGate(distance)) continue
+			if (nearGate(distance) || nearDitch(distance)) continue
 			const point = path.at(distance)
 			cursor.chunk = chunkOf(distance)
 			const moatOn = moatSide(distance)
@@ -351,7 +365,7 @@ export function createEdoCastle(scene: Scene, path: Path, models: Promise<Castle
 				const out = (side === moatSide(distance) ? wallFoot + 14 : wallFoot + 5) + scatter(seed + 1) * 10
 				const along = (scatter(seed + 2) - 0.5) * 5
 				// Within the block, with room for the pine.
-				if (distance + along - pineReach < from || distance + along + pineReach > to) continue
+				if (distance + along - pineReach < from || distance + along + pineReach > to || inDitch(distance + along)) continue
 				const at = beside(point, side * out, along)
 				if (!clear(at.x, at.z, distance, wallFoot + 4, 24) || !isFree(taken, at.x, at.z, 2)) continue
 				pending.pines.push({ matrix: placed(at.x, 0, at.z, scatter(seed + 3) * 6.28, 0.9 + scatter(seed + 4) * 0.5), chunk: chunkOf(distance) })
@@ -369,6 +383,36 @@ export function createEdoCastle(scene: Scene, path: Path, models: Promise<Castle
 			}
 		}
 
+		// A moat across the way in front of the next gatehouse, walled on its far side, with a wooden
+		// bridge over it.
+		const ditchAt = to - ditchBack
+		const ditch = path.at(ditchAt)
+		cursor.chunk = chunkOf(ditchAt)
+		moat.add(placed(ditch.x, 0.02, ditch.z, ditch.heading, ditchReach * 2, 0.05, ditchWidth))
+		const bridge = new Batch(box, lowWallMaterial, cursor, { cast: true, receive: true })
+		for (const side of [-1, 1]) {
+			for (const edge of [-1, 1]) {
+				const kerb = beside(ditch, side * (bridgeHalfWidth + ditchReach) / 2, edge * (ditchWidth + kerbWidth) / 2)
+				kerbs.add(placed(kerb.x, 0, kerb.z, ditch.heading, ditchReach - bridgeHalfWidth, kerbHeight * 2, kerbWidth))
+			}
+			const end = beside(ditch, side * (ditchReach + kerbWidth / 2))
+			kerbs.add(placed(end.x, 0, end.z, ditch.heading, kerbWidth, kerbHeight * 2, ditchWidth + kerbWidth * 2))
+			for (const off of [12, 18]) {
+				const far = beside(ditch, side * off, ditchWidth / 2 + wallFront)
+				pending.walls.push({ matrix: placed(far.x, 0, far.z, ditch.heading), chunk: cursor.chunk })
+			}
+			// The bridge's railings: posts, a rail on top and one halfway.
+			const rail = beside(ditch, side * (bridgeHalfWidth - 0.15))
+			bridge.add(placed(rail.x, 0.95, rail.z, ditch.heading, 0.14, 0.12, ditchWidth + 1.2), palette.timber)
+			bridge.add(placed(rail.x, 0.5, rail.z, ditch.heading, 0.1, 0.1, ditchWidth + 1.2), palette.timber)
+			for (const along of [-1, 0, 1]) {
+				const post = beside(ditch, side * (bridgeHalfWidth - 0.15), along * (ditchWidth + 1) / 2)
+				bridge.add(placed(post.x, 0.55, post.z, ditch.heading, 0.2, 1.1, 0.2), palette.timber)
+			}
+		}
+		bridge.add(placed(ditch.x, 0.05, ditch.z, ditch.heading, bridgeHalfWidth * 2, 0.1, ditchWidth + 1.4), palette.timber)
+
+		addAll(group, bridge.build())
 		addAll(group, moat.build())
 		addAll(group, kerbs.build())
 		districts.forEach((district, index) => {
