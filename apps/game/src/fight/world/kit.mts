@@ -20,7 +20,6 @@ import {
 	type Material,
 	type Object3D,
 } from 'three'
-import { fadeNear } from './landscape.mts'
 
 /**
  * Which stretch of the path the copies being added belong to. Each stretch becomes its own
@@ -44,9 +43,7 @@ export class Batch {
 		private readonly material: Material,
 		private readonly cursor: Cursor,
 		private readonly shadows: { cast?: boolean; receive?: boolean } = {},
-	) {
-		fadeNear(material)
-	}
+	) {}
 
 	add(matrix: Matrix4, colour?: number | Color): void {
 		let chunk = this.chunks.get(this.cursor.chunk)

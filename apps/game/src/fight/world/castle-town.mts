@@ -39,7 +39,7 @@ import type { GLTF } from 'three/addons/loaders/GLTFLoader.js'
 import { layBlocks } from './blocks.mts'
 import { Batch, chunkOf, gableGeometry, glowTexture, partOf, placed, scatter, slatsTexture, within, type Cursor } from './kit.mts'
 import { beside, type Path, type PathPoint } from './path.mts'
-import { addAll, castShadows, clearanceOf, facingPath, followSun, fogFar, isFree, passTime, sky, skyRadius, stamp, strip, type Daylight, type Owned, type Planting, type StageView, type Taken } from './landscape.mts'
+import { addAll, castShadows, clearanceOf, facingPath, fading, followSun, fogFar, isFree, passTime, sky, skyRadius, stamp, strip, type Daylight, type Owned, type Planting, type StageView, type Taken } from './landscape.mts'
 import type { District } from './backdrop.mts'
 import type { CoverSet } from './cover.mts'
 
@@ -717,7 +717,7 @@ export function createCastleTown(scene: Scene, path: Path, models: Promise<TownM
 				addAll(group, stamp(variant, mine, 7, true, owned))
 			})
 			if (loaded.bamboo !== undefined) addAll(group, stamp(loaded.bamboo.scene, pending.bamboo, 7, false, owned))
-			if (loaded.torii !== undefined) addAll(group, stamp(loaded.torii.scene, pending.torii, 6.2, true, owned))
+			if (loaded.torii !== undefined) addAll(group, fading(stamp(loaded.torii.scene, pending.torii, 6.2, true, owned)))
 			for (const { shape, geometry } of parts) pending.town[shape].reshape(geometry)
 		}
 	}).catch((error: unknown) => {

@@ -66,8 +66,8 @@ function newSeed(use: number): number {
  * Puts the backdrop of a stage's `districts` behind its own scenery ([backdrop](./backdrop.mts)),
  * district after district along a stage of `stageLength()` metres ([districts](./districts.mts)),
  * and `cover` by its path for the ninjas to hide behind ([cover](./cover.mts)), laid out
- * differently every run. Whatever of it comes between the camera and the samurai fades
- * ([`fadeNear`](./landscape.mts)), on every stage alike.
+ * differently every run. What goes over the way, torii and gatehouses, fades as the camera passes
+ * under it ([`fadeNear`](./landscape.mts)), on every stage alike.
  */
 function around(scene: Scene, path: Path, ownView: OwnView, districts: readonly District[], cover: CoverSet, stageLength: () => number, phase: number): StageWorld {
 	const owned: Owned = { geometries: [], materials: [], textures: [] }
