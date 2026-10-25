@@ -136,6 +136,14 @@ describe('a ninja without a cover', () => {
 		expect(leap?.landed.z).toBeLessThan(0)
 	})
 
+	it('leaps off the houses on the street, not off a row behind them', () => {
+		const behind = (z: number): Solid => ({ x: 17.4, z, width: 10, depth: 7, heading: Math.PI / 2, height: 7.5 })
+		const { leap } = wayIn('right', 0, 1, frame, around([...row, behind(7.5), behind(-2.5), behind(-12.5), behind(-22.5)]))
+		expect(leap?.hidden.x).toBeGreaterThan(8.7 + 3.5)
+		expect(leap?.hidden.x).toBeLessThan(17.4 - 3.5)
+		expect(leap?.landed.x).toBeLessThan(5.2)
+	})
+
 	it('leaps off the wall beyond a moat clear over the water', () => {
 		const wall = (z: number): Solid => ({ x: 16.6, z, width: 10, depth: 4, heading: Math.PI / 2, height: 6.8 })
 		const moat: Solid = { x: 10, z: -10, width: 40, depth: 8.6, heading: Math.PI / 2 }
