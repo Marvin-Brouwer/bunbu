@@ -8,11 +8,12 @@
 /**
  * The ground a solid thing stands on: round, or a box `width` by `depth` turned `heading` about
  * `y`, and its `height` when it is taller than a ninja, as a house or a wall: then it hides what
- * stands behind it from the camera, and a ninja can leap down off it.
+ * stands behind it from the camera, and a ninja can leap down off it. Deep `water`, as a moat, a
+ * ninja can't run through either, but it can rise out of it.
  */
 export type Solid = Round | Box
-type Round = { readonly x: number; readonly z: number; readonly radius: number; readonly height?: number }
-export type Box = { readonly x: number; readonly z: number; readonly width: number; readonly depth: number; readonly heading: number; readonly height?: number }
+type Round = { readonly x: number; readonly z: number; readonly radius: number; readonly height?: number; readonly water?: boolean }
+export type Box = { readonly x: number; readonly z: number; readonly width: number; readonly depth: number; readonly heading: number; readonly height?: number; readonly water?: boolean }
 
 /** How tall a ninja is, in metres: what is taller hides it. */
 export const ninjaHeight = 1.8
@@ -73,6 +74,19 @@ export function nearestTallBox(solids: readonly Solid[], spot: Spot, reach: numb
 		}
 	}
 	return nearest
+}
+
+/** The spot in `solid` nearest to `spot`, at least `inset` in from its edge where it is that big. */
+export function nearestWithin(solid: Solid, spot: Spot, inset: number): Spot {
+	if ('radius' in solid) {
+		const away = Math.hypot(spot.x - solid.x, spot.z - solid.z)
+		const most = Math.max(0, solid.radius - inset)
+		if (away <= most) return spot
+		return { x: solid.x + (spot.x - solid.x) * (most / away), z: solid.z + (spot.z - solid.z) * (most / away) }
+	}
+	const { across, along } = intoBox(solid, spot.x, spot.z)
+	const clamp = (value: number, half: number) => Math.min(Math.max(0, half - inset), Math.max(-Math.max(0, half - inset), value))
+	return outOfBox(solid, clamp(across, solid.width / 2), clamp(along, solid.depth / 2))
 }
 
 /** Whether `x, z` is within `margin` of `solid`. */

@@ -21,8 +21,8 @@ import { coverReach, type CoverSpot } from './cover.mts'
 import type { ClashSpot, SlainSpot } from './effects.mts'
 import { beside } from './path.mts'
 import { headingOf, lungeOf, spotOf } from './placement.mts'
-import { partWay, routeConfig, routeTo } from './routes.mts'
-import { inside, intoBox, nearestTallBox, outOfBox, reachOf, tallBoxBetween, type Box, type Solid, type Spot } from './solids.mts'
+import { clearBetween, partWay, routeConfig, routeTo } from './routes.mts'
+import { inside, intoBox, nearestTallBox, nearestWithin, outOfBox, reachOf, tallBoxBetween, type Box, type Solid, type Spot } from './solids.mts'
 import { poseSeconds, type FigurePose } from '../../_shared/world/poses.mts'
 
 /**
@@ -180,9 +180,10 @@ export function outOf(cover: CoverSpot, from: { x: number; z: number }, to: { x:
 
 /**
  * A leap a ninja comes in by: where it waits, out of sight, and lands, how high it goes on the way,
- * and how far into its entrance it waits and lands, of the whole entrance.
+ * and how far into its entrance it waits and lands, of the whole entrance; and how deep under water
+ * it waits, when it rises out of it.
  */
-export type Leap = { readonly hidden: Spot; readonly landed: Spot; readonly height: number; readonly waits: number; readonly lands: number }
+export type Leap = { readonly hidden: Spot; readonly landed: Spot; readonly height: number; readonly waits: number; readonly lands: number; readonly sunk?: number }
 
 /** The leap over `cover`, with the samurai at `from` when it came, for the `lane` of one that shares it. */
 function overCover(cover: CoverSpot, from: Spot, lane: number): Leap {
@@ -232,16 +233,44 @@ export function offRoof(roof: Box, to: Spot, wished: Spot, solids: readonly Soli
 }
 
 /**
+ * How a ninja rises out of deep water: how far in from its edge and how deep it waits, how high it
+ * springs out onto the bank and how far past the edge it lands, and its timing; how near where it
+ * will stand the water has to be, and how often one comes that way where there is some.
+ */
+export const waterConfig = { inset: 1.5, sunk: 1.9, height: 1.4, ahead: 0.8, waits: 0.1, lands: 0.45, reach: 12, chance: 0.4 }
+
+/**
+ * The leap up out of `water` toward `to`, where it stands for the fight: from under the water
+ * nearest `wished`, where it would have come from on open ground, if `toward` allows, out onto the
+ * bank and on from there clear of `solids`.
+ */
+function outOfWater(water: Solid, to: Spot, wished: Spot, toward: (spot: Spot) => boolean, solids: readonly Solid[]): Leap | undefined {
+	const { inset, sunk, height, ahead, waits, lands, reach } = waterConfig
+	const hidden = nearestWithin(water, wished, inset)
+	const length = Math.hypot(to.x - hidden.x, to.z - hidden.z)
+	if (length > reach || length === 0 || !toward(hidden)) return undefined
+	const at = (out: number): Spot => ({ x: hidden.x + (to.x - hidden.x) * (out / length), z: hidden.z + (to.z - hidden.z) * (out / length) })
+	// Out to the edge on the way to `to`, then a little past it.
+	let out = 0
+	while (out < length && inside(water, at(out).x, at(out).z, routeConfig.clearance)) out += routeConfig.cell / 2
+	out += ahead
+	const landed = at(out)
+	if (out >= length || !clearBetween(landed, to, solids, routeConfig.clearance)) return undefined
+	return { hidden, landed, height, waits, lands, sunk }
+}
+
+/**
  * Where a ninja coming in by `leap` is, `amount` (`0` to `1`) into its entrance: waiting out of
  * sight, then leaping, then running on to `to`, where it stands for the fight.
  */
 function leapIn(leap: Leap, to: Spot, amount: number): OutOf {
-	const { hidden, landed, height, waits, lands } = leap
-	if (amount <= waits) return { ...hidden, hop: 0, doing: 'hiding' }
+	const { hidden, landed, height, waits, lands, sunk } = leap
+	if (amount <= waits) return { ...hidden, hop: sunk === undefined ? 0 : -sunk, doing: 'hiding' }
 	if (amount < lands) {
 		const flown = (amount - waits) / (lands - waits)
-		// Flat over the top and steep at either end: 1 - u⁴, with u from -1 through 0 to 1.
-		const hop = height * (1 - (2 * flown - 1) ** 4)
+		// Flat over the top and steep at either end: 1 - u⁴, with u from -1 through 0 to 1. Out of
+		// water, up from under it.
+		const hop = height * (1 - (2 * flown - 1) ** 4) - (sunk ?? 0) * (1 - flown)
 		return { x: hidden.x + (landed.x - hidden.x) * flown, z: hidden.z + (landed.z - hidden.z) * flown, hop, doing: 'leaping' }
 	}
 	const run = (amount - lands) / (1 - lands)
@@ -394,9 +423,11 @@ function farOut(far: Spot): Spot {
  * running in around what is solid ([routes](./routes.mts)) from where the camera can't see it,
  * toward the samurai and as near as it can to where it would come from on open ground. Where there
  * is no such way, it leaps down off a roof: of the building or wall in the way of that, or else the
- * nearest one on its side of the way. Neither, where there is nothing to come from behind.
+ * nearest one on its side of the way. Neither, where there is nothing to come from behind. One that
+ * `rises` comes up out of deep water near where it will stand instead, where there is any, as near
+ * as it can to where it would come from.
  */
-export function wayIn(mark: Mark, wave: number, below: 1 | -1, frame: ViewFrame, around: Surroundings): { leap: Leap | undefined; route: Spot[] | undefined } {
+export function wayIn(mark: Mark, wave: number, below: 1 | -1, frame: ViewFrame, around: Surroundings, rises = false): { leap: Leap | undefined; route: Spot[] | undefined } {
 	const stand = spotOf(mark, wave, standReach, below)
 	const far = farOut(spotOf(mark, wave, 0, below))
 	// Where it and the samurai will stand, once he has run on as far as an ambush lets him.
@@ -410,6 +441,15 @@ export function wayIn(mark: Mark, wave: number, below: 1 | -1, frame: ViewFrame,
 	const ahead = (spot: Spot) => -(spot.x - samurai.x) * Math.sin(frame.heading) - (spot.z - samurai.z) * Math.cos(frame.heading)
 	const toward = (spot: Spot) => Math.sign(ahead(spot)) === Math.sign(ahead(to))
 		&& Math.hypot(spot.x - samurai.x, spot.z - samurai.z) > Math.hypot(to.x - samurai.x, to.z - samurai.z) + 1
+	if (rises) {
+		const waters = solids.filter((solid) => solid.water === true)
+		const nearest = (water: Solid) => {
+			const under = nearestWithin(water, wished, waterConfig.inset)
+			return Math.hypot(under.x - wished.x, under.z - wished.z)
+		}
+		const leap = waters.toSorted((one, other) => nearest(one) - nearest(other)).map((water) => outOfWater(water, to, wished, toward, solids)).find((found) => found !== undefined)
+		if (leap !== undefined) return { leap, route: undefined }
+	}
 	const route = routeTo(to, wished, solids, (spot) => toward(spot) && around.hidden(spot, solids))
 	if (route !== undefined) return { leap: undefined, route }
 	// Off a roof on its own side of the way, rather than across it, where there is one.
@@ -459,7 +499,7 @@ export function createNinjasView(parent: Group, make: () => Body): NinjasView {
 						entrance: cover === undefined ? 0 : -sharing * shareConfig.stagger,
 						cover,
 						// Behind a cover, the first one behind its middle, the others either side.
-						...cover === undefined ? wayIn(mark, ninja.wave, below, frame, around) : { leap: overCover(cover, frame, [0, 1, -1][sharing] ?? 0), route: undefined },
+						...cover === undefined ? wayIn(mark, ninja.wave, below, frame, around, Math.random() < waterConfig.chance) : { leap: overCover(cover, frame, [0, 1, -1][sharing] ?? 0), route: undefined },
 						below,
 						cycle: ninja.id * 1.7,
 						last: undefined,

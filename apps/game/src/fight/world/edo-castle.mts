@@ -443,7 +443,7 @@ export function createEdoCastle(scene: Scene, path: Path, models: Promise<Castle
 					solids.push(wallGround(at, facingPath(point, side)))
 					const middle = beside(point, side * (wallFoot + 4))
 					moat.add(placed(middle.x, 0.02, middle.z, point.heading, moatWidth, 0.05, wallEvery + 0.4))
-					solids.push({ ...middle, width: moatWidth, depth: wallEvery + 0.4, heading: point.heading })
+					solids.push({ ...middle, width: moatWidth, depth: wallEvery + 0.4, heading: point.heading, water: true })
 					const edge = beside(point, side * (wallFoot - 0.3))
 					kerbs.add(placed(edge.x, 0, edge.z, point.heading, kerbWidth, kerbHeight * 2, wallEvery + 0.4))
 					// Where the moat ends, a wall across it from the near wall to a corner turret on the far one.
@@ -526,7 +526,7 @@ export function createEdoCastle(scene: Scene, path: Path, models: Promise<Castle
 				const kerb = beside(ditch, side * (bridgeHalfWidth + ditchReach) / 2, edge * (ditchWidth + kerbWidth) / 2)
 				kerbs.add(placed(kerb.x, 0, kerb.z, ditch.heading, ditchReach - bridgeHalfWidth, kerbHeight * 2, kerbWidth))
 			}
-			solids.push({ ...beside(ditch, side * (bridgeHalfWidth + ditchReach) / 2), width: ditchReach - bridgeHalfWidth, depth: ditchWidth, heading: ditch.heading })
+			solids.push({ ...beside(ditch, side * (bridgeHalfWidth + ditchReach) / 2), width: ditchReach - bridgeHalfWidth, depth: ditchWidth, heading: ditch.heading, water: true })
 			const end = beside(ditch, side * (ditchReach + kerbWidth / 2))
 			kerbs.add(placed(end.x, 0, end.z, ditch.heading, kerbWidth, kerbHeight * 2, ditchWidth + kerbWidth * 2))
 			for (const off of [12, 18]) {

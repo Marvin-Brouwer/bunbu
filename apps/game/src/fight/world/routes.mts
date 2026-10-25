@@ -113,7 +113,7 @@ export function routeTo(to: Spot, wished: Spot, solids: readonly Solid[], starts
 }
 
 /** Whether the way from `one` to `other` keeps `clearance` from every one of `solids`. */
-function clearBetween(one: Spot, other: Spot, solids: readonly Solid[], clearance: number): boolean {
+export function clearBetween(one: Spot, other: Spot, solids: readonly Solid[], clearance: number): boolean {
 	const steps = Math.ceil(Math.hypot(other.x - one.x, other.z - one.z) / 0.2)
 	for (let step = 0; step <= steps; step++) {
 		const along = steps === 0 ? 0 : step / steps

@@ -581,7 +581,7 @@ function lay(path: Path, from: number, to: number, base: number, shapes: Shapes)
 			const pond = beside(crossing, side * 9, 0)
 			town.water.add(placed(pond.x, 0.03, pond.z, 0, 6.5), palette.water)
 			taken.push({ x: pond.x, z: pond.z, radius: 7.2 })
-			solids.push({ x: pond.x, z: pond.z, radius: 6.9 })
+			solids.push({ x: pond.x, z: pond.z, radius: 6.9, water: true })
 			for (let stone = 0; stone < 8; stone++) {
 				const angle = (stone / 8) * Math.PI * 2
 				town.rocks.add(placed(pond.x + Math.cos(angle) * 6.7, 0.25, pond.z + Math.sin(angle) * 6.7, angle, 0.6, 0.45, 0.6), 0x6f6a60)

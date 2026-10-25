@@ -145,6 +145,18 @@ describe('a ninja without a cover', () => {
 		expect(leap?.landed.x).toBeLessThan(10)
 	})
 
+	it('now and then rises out of deep water near where it will stand, onto the bank and on toward the samurai', () => {
+		const moat: Solid = { x: 10, z: -10, width: 40, depth: 8.6, heading: Math.PI / 2, water: true }
+		const { leap, route } = wayIn('right', 0, 1, frame, around([moat]), true)
+		expect(route).toBeUndefined()
+		expect(leap?.sunk).toBeGreaterThan(1.8)
+		expect(inside(moat, leap?.hidden.x ?? 0, leap?.hidden.z ?? 0)).toBe(true)
+		expect(inside(moat, leap?.landed.x ?? 10, leap?.landed.z ?? -10)).toBe(false)
+		expect(leap?.landed.x).toBeLessThan(leap?.hidden.x ?? 0)
+		// One that doesn't rise runs around the water, as any other solid.
+		expect(wayIn('right', 0, 1, frame, around([moat])).leap?.sunk).toBeUndefined()
+	})
+
 	it('comes in as it always did where nothing stands in the way', () => {
 		expect(wayIn('right', 0, 1, frame, around([]))).toEqual({ route: undefined, leap: undefined })
 	})
