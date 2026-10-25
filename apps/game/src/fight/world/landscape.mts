@@ -27,6 +27,7 @@ import {
 	type Texture,
 } from 'three'
 import { beside, type Path, type PathPoint } from './path.mts'
+import type { Solid } from './solids.mts'
 
 /** Where the fog has hidden everything; the camera need not see farther. */
 export const fogFar = 150
@@ -44,6 +45,8 @@ export type StageView = {
 	frame?: (camera: Camera, x: number, z: number) => void
 	/** Moves the light on toward the time of day after `marksPassed` quarter marks ({@link Daylight}). */
 	passTime: (marksPassed: number, delta: number) => void
+	/** What is solid round the samurai, for the ninjas to run around ([solids](./solids.mts)). */
+	solids?: () => readonly Solid[]
 	dispose: () => void
 }
 

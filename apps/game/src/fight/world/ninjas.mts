@@ -21,6 +21,8 @@ import { coverReach, type CoverSpot } from './cover.mts'
 import type { ClashSpot, SlainSpot } from './effects.mts'
 import { beside } from './path.mts'
 import { headingOf, lungeOf, spotOf } from './placement.mts'
+import { partWay, routeTo } from './routes.mts'
+import { reachOf, type Solid, type Spot } from './solids.mts'
 import { poseSeconds, type FigurePose } from '../../_shared/world/poses.mts'
 
 /**
@@ -95,6 +97,12 @@ type Shown = {
 	/** The cover it leaps out from behind, in the world, if there is one on its side ahead, and its place among the ninjas behind it. */
 	cover: CoverSpot | undefined
 	lane: number
+	/**
+	 * Without a cover, the way it runs in, in the world, around what is solid, from where the camera
+	 * can't see it, to where it stands for the fight ([routes](./routes.mts)). `undefined` when
+	 * there is none: then it comes in from farther out the way its mark points.
+	 */
+	route: Spot[] | undefined
 	/** The side it comes in on from ↓, picked at random: `1` right, `-1` left. */
 	below: 1 | -1
 	/** Where the samurai was when it came. */
@@ -245,13 +253,25 @@ export function motionOf(pose: NinjaPose, slicer: boolean | undefined, approach:
 	return { approach, pose, time, hop: 0 }
 }
 
+/** What is round an ambush, that the ninjas come in by. */
+export type Surroundings = {
+	/** The ambush's covers ([cover](./cover.mts)), to leap out from behind. */
+	readonly covers: readonly CoverSpot[]
+	/** What is solid round it, to run around ([solids](./solids.mts)): only asked for when a ninja comes in without a cover. */
+	readonly solids: () => readonly Solid[]
+	/** Whether the camera can't see a ninja standing at `spot`, with `solids` round it. */
+	readonly hidden: (spot: Spot, solids: readonly Solid[]) => boolean
+}
+
+const nothingAround: Surroundings = { covers: [], solids: () => [], hidden: () => false }
+
 export type NinjasView = {
 	/**
 	 * Makes the figures match `active`. `delta` is real time, `worldDelta` slowed down, `frame`
-	 * where the samurai is and the way ahead. A ninja that comes in runs out from behind one of
-	 * `covers`, the ambush's ([cover](./cover.mts)).
+	 * where the samurai is and the way ahead. A ninja that comes in runs out from behind one of the
+	 * ambush's covers, or else in around what is solid from where the camera can't see it.
 	 */
-	draw: (active: readonly Ninja[], options: readonly AmbushOption[], kind: AmbushKind, frame: ViewFrame, delta: number, worldDelta: number, covers?: readonly CoverSpot[]) => void
+	draw: (active: readonly Ninja[], options: readonly AmbushOption[], kind: AmbushKind, frame: ViewFrame, delta: number, worldDelta: number, around?: Surroundings) => void
 	/** Swaps every figure's body for one made by `make`, for when the real model has loaded. */
 	remake: (make: () => Body) => void
 	/** The heading from the samurai toward where the ninja with `id` was last drawn, for him to turn toward. */
@@ -262,14 +282,6 @@ export type NinjasView = {
 	clashes: () => ClashSpot[]
 	dispose: () => void
 }
-
-/**
- * Where a ninja without a cover comes in from, round the samurai as {@link spotOf} is: `far`, where
- * it starts for the fight, moved on along the path, ahead or behind, so it runs in down the way
- * rather than out of the houses by its side.
- */
-export const entranceOf = (far: { x: number; z: number }): { x: number; z: number } =>
-	({ x: far.x, z: far.z + Math.sign(far.z) * entranceDistance })
 
 /** How far `point` is from the line from `from` to `to`, flat. */
 function offLine(point: { x: number; z: number }, from: { x: number; z: number }, to: { x: number; z: number }): number {
@@ -315,6 +327,29 @@ export function coverOf(start: { x: number; z: number }, id: number, frame: View
 	return fits.toSorted((one, other) => one.ahead - other.ahead)[0]?.cover
 }
 
+/** Metres from the samurai that what is solid is looked at for a ninja's way in: past the camera and the farthest it starts from. */
+const nearSolids = 50
+
+/** The entrance a ninja without a cover makes on open ground: from farther out the same way it comes from. */
+function farOut(far: Spot): Spot {
+	const length = Math.hypot(far.x, far.z)
+	return length > 0 ? { x: far.x * (1 + entranceDistance / length), z: far.z * (1 + entranceDistance / length) } : far
+}
+
+/**
+ * The way a ninja without a cover runs in to where it stands for the fight, from where the camera
+ * can't see it and around what is solid ([routes](./routes.mts)), in the world: toward where it
+ * would come from on open ground. With the samurai at `frame` when it comes, and where he will
+ * be once he has run on as far as an ambush lets him.
+ */
+function routeIn(mark: Mark, wave: number, below: 1 | -1, frame: ViewFrame, around: Surroundings): Spot[] | undefined {
+	const stand = spotOf(mark, wave, standReach, below)
+	const wished = farOut(spotOf(mark, wave, 0, below))
+	// What is near enough to stand in its way, or between it and the camera.
+	const solids = around.solids().filter((solid) => Math.hypot(solid.x - frame.x, solid.z - frame.z) < nearSolids + reachOf(solid))
+	return routeTo(beside(frame, stand.x, -stand.z + runConfig.ambushRunOn), beside(frame, wished.x, -wished.z), solids, (spot) => around.hidden(spot, solids))
+}
+
 /** `parent` is in world space, and `make` makes a ninja's body. */
 export function createNinjasView(parent: Group, make: () => Body): NinjasView {
 	// Ninja id to its figure.
@@ -328,7 +363,7 @@ export function createNinjasView(parent: Group, make: () => Body): NinjasView {
 	}
 
 	return {
-		draw(active, options, kind, frame, delta, worldDelta, covers = []) {
+		draw(active, options, kind, frame, delta, worldDelta, around = nothingAround) {
 
 			for (const ninja of active) {
 				let entry = shown.get(ninja.id)
@@ -341,9 +376,10 @@ export function createNinjasView(parent: Group, make: () => Body): NinjasView {
 				if (entry === undefined) {
 					const mark = markOf(ninja, options, kind) ?? (kind === 'yes-no' ? yesNoSpotOf(ninja.id) : markById(ninja.id))
 					// Ninjas behind one cover take turns: each one waits for the ones before it to leap.
-					const behind = coverOf(spotOf(mark, ninja.wave, standReach), ninja.id, frame, covers)
+					const behind = coverOf(spotOf(mark, ninja.wave, standReach), ninja.id, frame, around.covers)
 					const sharing = behind === undefined ? 0 : [...shown.values()].filter((other) => other.entrance < 1 && other.cover !== undefined && sameCover(other.cover, behind)).length
 					const cover = sharing < shareConfig.most ? behind : undefined
+					const below = Math.random() < 0.5 ? 1 : -1
 					entry = {
 						body: maker(),
 						pose: ninja.pose,
@@ -355,7 +391,8 @@ export function createNinjasView(parent: Group, make: () => Body): NinjasView {
 						cover,
 						// The first one behind its middle, the others either side.
 						lane: [0, 1, -1][sharing] ?? 0,
-						below: Math.random() < 0.5 ? 1 : -1,
+						route: cover === undefined ? routeIn(mark, ninja.wave, below, frame, around) : undefined,
+						below,
 						came: { x: frame.x, z: frame.z },
 						cycle: ninja.id * 1.7,
 						last: undefined,
@@ -382,8 +419,9 @@ export function createNinjasView(parent: Group, make: () => Body): NinjasView {
 				if (!beaten.has(ninja.pose) && motion.pose !== 'fleeing') entry.beatenAt = undefined
 				else entry.beatenAt ??= frame
 				const spot = spotOf(entry.mark, ninja.wave, motion.approach, entry.below)
-				// Enter from farther along the path, or from behind its cover.
-				const entrance = entranceOf(spotOf(entry.mark, ninja.wave, 0, entry.below))
+				// Enter from behind its cover, around what is solid from where the camera can't see it, or
+				// else from farther out the same way.
+				const entrance = farOut(spotOf(entry.mark, ninja.wave, 0, entry.below))
 				const visible = {
 					x: entrance.x + (spot.x - entrance.x) * entry.entrance,
 					z: entrance.z + (spot.z - entrance.z) * entry.entrance,
@@ -391,9 +429,11 @@ export function createNinjasView(parent: Group, make: () => Body): NinjasView {
 				// Around the samurai where he is, or where he was when this ninja was beaten: it stays on
 				// that spot as he runs on.
 				const samurai = entry.beatenAt ?? frame
-				const at: OutOf = entry.cover === undefined || entry.entrance >= 1
+				const at: OutOf = entry.entrance >= 1 || (entry.cover === undefined && entry.route === undefined)
 					? { ...beside(samurai, visible.x, -visible.z), hop: 0, doing: 'running' }
-					: outOf(entry.cover, entry.came, beside(samurai, spot.x, -spot.z), entry.entrance, entry.lane)
+					: entry.cover === undefined
+						? { ...partWay([...(entry.route ?? []).slice(0, -1), beside(samurai, spot.x, -spot.z)], entry.entrance), hop: 0, doing: 'running' }
+						: outOf(entry.cover, entry.came, beside(samurai, spot.x, -spot.z), entry.entrance, entry.lane)
 				const { root } = entry.body
 				root.position.set(at.x, motion.hop + at.hop, at.z)
 				// Its legs go by the ground it covers, so it never slides, and it stands still when it

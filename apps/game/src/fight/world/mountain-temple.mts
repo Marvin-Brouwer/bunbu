@@ -25,12 +25,13 @@ import {
 	type Scene,
 } from 'three'
 import type { GLTF } from 'three/addons/loaders/GLTFLoader.js'
-import { layBlocks } from './blocks.mts'
+import { layBlocks, solidsShown } from './blocks.mts'
 import { Batch, chunkOf, placed, scatter, type Cursor } from './kit.mts'
 import { addAll, castShadows, clearanceOf, facingPath, fading, followSun, fogFar, isFree, passTime, sky, skyRadius, stamp, strip, type Daylight, type Owned, type Planting, type StageView, type Taken } from './landscape.mts'
 import type { District } from './backdrop.mts'
 import type { CoverSet } from './cover.mts'
 import { beside, type Leg, type Path } from './path.mts'
+import type { Solid } from './solids.mts'
 
 const palette = {
 	ground: 0x6a6f4c,
@@ -155,6 +156,8 @@ export const mountainDistricts: readonly District[] = [
 /** The torii of a tunnel: how far apart, and how tall, so their posts stand just off the steps. */
 const toriiEvery = 2.4
 const toriiHeight = 3.9
+/** How far either side of the middle of the steps a torii's posts stand, at that height. */
+const toriiPost = 1.45
 
 /** Whether `distance` is in one of a round's torii tunnels: down its first long straight, and its last. */
 export function inTunnel(distance: number): boolean {
@@ -183,6 +186,8 @@ type MountainPending = {
 	readonly halls: Planting[]
 	readonly pagodas: Planting[]
 	readonly pines: Planting[]
+	/** What a ninja can't run through ([solids](./solids.mts)). */
+	readonly solids: Solid[]
 }
 
 /** Metres a pine, or the biggest rock, reaches along the path from where it stands. */
@@ -253,18 +258,23 @@ export function createMountainTemple(scene: Scene, path: Path, models: Promise<M
 		const cursor: Cursor = { chunk: 0 }
 		const clear = clearanceOf(path, from - 60, to + 60)
 		const taken: Taken = []
-		const pending: MountainPending = { torii: [], lanterns: [], halls: [], pagodas: [], pines: [] }
+		const pending: MountainPending = { torii: [], lanterns: [], halls: [], pagodas: [], pines: [], solids: [] }
+		const { solids } = pending
 
 		// The torii tunnels, square across the steps, and a pair of lanterns where each one begins.
 		let wasTunnel = false
 		for (let distance = from; distance < to; distance += toriiEvery) {
 			const tunnel = inTunnel(distance)
 			const point = path.at(distance)
-			if (tunnel) pending.torii.push({ matrix: placed(point.x, 0, point.z, point.heading), chunk: chunkOf(distance) })
+			if (tunnel) {
+				pending.torii.push({ matrix: placed(point.x, 0, point.z, point.heading), chunk: chunkOf(distance) })
+				for (const side of [-1, 1]) solids.push({ ...beside(point, side * toriiPost), radius: 0.25 })
+			}
 			if (tunnel && !wasTunnel) {
 				for (const side of [-1, 1]) {
 					const at = beside(point, side * (pathHalfWidth + 1.4), 2)
 					pending.lanterns.push({ matrix: placed(at.x, 0, at.z, facingPath(point, side)), chunk: chunkOf(distance) })
+					solids.push({ x: at.x, z: at.z, radius: 0.5 })
 				}
 			}
 			wasTunnel = tunnel
@@ -278,11 +288,13 @@ export function createMountainTemple(scene: Scene, path: Path, models: Promise<M
 		if (clear(hall.x, hall.z, templeAt, 26, 60)) {
 			pending.halls.push({ matrix: placed(hall.x, 0, hall.z, facingPath(temple, templeSide)), chunk: chunkOf(templeAt) })
 			taken.push({ x: hall.x, z: hall.z, radius: 20 })
+			solids.push({ x: hall.x, z: hall.z, radius: 14, hides: true })
 		}
 		const pagoda = beside(temple, templeSide * 38, 34)
 		if (clear(pagoda.x, pagoda.z, templeAt + 34, 14, 60) && isFree(taken, pagoda.x, pagoda.z, 7)) {
 			pending.pagodas.push({ matrix: placed(pagoda.x, 0, pagoda.z, facingPath(temple, templeSide)), chunk: chunkOf(templeAt) })
 			taken.push({ x: pagoda.x, z: pagoda.z, radius: 8 })
+			solids.push({ x: pagoda.x, z: pagoda.z, radius: 5, hides: true })
 		}
 
 		// Pines and rocks on the slopes either side, thinner inside the tunnels, where the torii crowd in.
@@ -304,10 +316,13 @@ export function createMountainTemple(scene: Scene, path: Path, models: Promise<M
 					if (scatter(seed + 3) > 0.3) {
 						pending.pines.push({ matrix: placed(at.x, 0, at.z, scatter(seed + 4) * 6.28, 0.7 + scatter(seed + 5) * 0.5), chunk: cursor.chunk })
 						taken.push({ x: at.x, z: at.z, radius: 1.8 })
+						// The trunk; its needles a ninja brushes through.
+						solids.push({ x: at.x, z: at.z, radius: 0.45 })
 					} else {
 						const size = 0.5 + scatter(seed + 6) * 1.4
 						rockShade.setHex(palette.rock).multiplyScalar(0.8 + scatter(seed + 7) * 0.35)
 						rocks.add(placed(at.x, size * 0.35, at.z, scatter(seed + 8) * 6.28, size * 1.3, size * 0.8, size), rockShade.clone())
+						solids.push({ x: at.x, z: at.z, radius: size * 1.15 })
 					}
 				}
 			}
@@ -339,6 +354,7 @@ export function createMountainTemple(scene: Scene, path: Path, models: Promise<M
 
 	return {
 		passTime: passTime({ scene, fog, backdrop, ambient, sun }, daylight),
+		solids: () => solidsShown(blocks),
 
 		follow(x, z, distance) {
 			blocks.follow(distance)

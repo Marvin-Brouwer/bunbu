@@ -7,11 +7,11 @@ import { marks, openingSeconds } from '../../_shared/state/ambush.mts'
 import { metresPerAmbush } from '../flows/run.mts'
 import { runConfig } from '../state/run.mts'
 import { bambooCover, bambooRound } from './bamboo-forest.mts'
-import { streetHalfWidth, townCover } from './castle-town.mts'
+import { townCover } from './castle-town.mts'
 import { coverAhead, coverHeight, coverReach, coverSpotsAt } from './cover.mts'
 import { castleCover, castleRound } from './edo-castle.mts'
 import { mountainCover, mountainRound } from './mountain-temple.mts'
-import { clashSeconds, coverOf, entranceOf, entranceSeconds, fleeSideOf, leapConfig, motionOf, outOf, shareConfig, standReach, strikeDelaySeconds } from './ninjas.mts'
+import { clashSeconds, coverOf, entranceSeconds, fleeSideOf, leapConfig, motionOf, outOf, shareConfig, standReach, strikeDelaySeconds } from './ninjas.mts'
 import { beside, createPath, townRound } from './path.mts'
 import { riceCover, riceRound } from './rice-fields.mts'
 import { spotOf } from './placement.mts'
@@ -94,16 +94,6 @@ describe('a ninja coming in', () => {
 		expect(coverOf(spotOf('down', 0, 0), 0, frame, covers)).toBeUndefined()
 		expect(coverOf(spotOf('down-left', 0, 0), 0, frame, covers)).toBeUndefined()
 		expect(coverOf(spotOf('left', 0, 0), 0, frame, [])).toBeUndefined()
-	})
-
-	it('without a cover, runs in along the way, never out of the houses by its side', () => {
-		for (const mark of marks) for (const wave of [0, 1]) {
-			const far = spotOf(mark, wave, 0)
-			const entrance = entranceOf(far)
-			expect(Math.abs(entrance.x)).toBeLessThanOrEqual(streetHalfWidth)
-			expect(entrance.x).toBe(far.x)
-			expect(Math.abs(entrance.z)).toBeGreaterThan(Math.abs(far.z))
-		}
 	})
 })
 
