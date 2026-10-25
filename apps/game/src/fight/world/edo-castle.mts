@@ -114,8 +114,13 @@ const ditchBack = 3.4
 const ditchWidth = 4.4
 const ditchReach = 21
 const bridgeHalfWidth = 6
-/** How far into a round the gatehouse stands. */
+/**
+ * How far into a round the gatehouse stands; where a round starts with a square gate court
+ * (masugata), how far in its first gate stands, and the gatehouse at the end of the court.
+ */
 const gateAt = 6
+const outerGateAt = 2.5
+const courtEnd = 28
 
 /** What ninjas hide behind in the castle grounds: supplies by the way, and boulders ([cover](./cover.mts)). */
 export const castleCover: CoverSet = {
@@ -200,7 +205,7 @@ export function moatSide(distance: number): -1 | 0 | 1 {
 }
 
 export type CastleModels = Partial<{
-	/** Our stage kit: `CastleWall`, `CastleGate`, `CastleKeep`, `CastleTurret`, `Pine`. */
+	/** Our stage kit: `CastleWall`, `CastleGate`, `CastleOuterGate`, `CastleKeep`, `CastleTurret`, `Pine`. */
 	readonly kit: GLTF
 	/** The temple kit: `StoneLantern`. */
 	readonly temple: GLTF
@@ -223,6 +228,7 @@ type DistrictPending = {
 /** What an Edo-castle block places once the models are in: in every district, and in each its own. */
 type CastlePending = {
 	readonly gates: Planting[]
+	readonly outerGates: Planting[]
 	readonly walls: Planting[]
 	readonly districts: readonly DistrictPending[]
 	readonly turrets: Planting[]
@@ -294,15 +300,32 @@ export function createEdoCastle(scene: Scene, path: Path, models: Promise<Castle
 			group.add(shown)
 			return { group: shown, walls: [], keeps: [] }
 		})
-		const pending: CastlePending = { gates: [], walls: [], districts, turrets: [], pines: [], lanterns: [] }
+		const pending: CastlePending = { gates: [], outerGates: [], walls: [], districts, turrets: [], pines: [], lanterns: [] }
 		const lowWalls = districts.map(() => new Batch(box, lowWallMaterial, cursor, { cast: true, receive: true }))
 		const keepSide = scatter(base) > 0.5 ? 1 : -1
 
 		// A gatehouse across the way at the start of every round: this block's, and the next one's
-		// just past its end, which the walls keep clear of too.
-		const gatehouse = path.at(from + gateAt)
-		pending.gates.push({ matrix: placed(gatehouse.x, 0, gatehouse.z, gatehouse.heading), chunk: chunkOf(from + gateAt) })
-		const nearGate = (distance: number) => [from + gateAt, to + gateAt].some((entrance) => Math.abs(entrance - distance) < 7)
+		// just past its end, which the walls keep clear of too. Now and then a round starts with a
+		// square gate court instead: a plain first gate, a court walled all round, then the gatehouse.
+		const court = scatter(base + 11) < 0.5
+		const entrance = from + (court ? courtEnd : gateAt)
+		const gatehouse = path.at(entrance)
+		pending.gates.push({ matrix: placed(gatehouse.x, 0, gatehouse.z, gatehouse.heading), chunk: chunkOf(entrance) })
+		const nearGate = (distance: number) => [entrance, to + gateAt].some((gate) => Math.abs(gate - distance) < 7) || (court && distance < entrance)
+		if (court) {
+			const outer = path.at(from + outerGateAt)
+			cursor.chunk = chunkOf(from + outerGateAt)
+			pending.outerGates.push({ matrix: placed(outer.x, 0, outer.z, outer.heading), chunk: cursor.chunk })
+			for (const side of [-1, 1]) {
+				const flank = beside(outer, side * 7.6)
+				pending.walls.push({ matrix: placed(flank.x, 0, flank.z, outer.heading), chunk: cursor.chunk })
+				for (let distance = from + outerGateAt + wallEvery / 2; distance < entrance - 3.8; distance += wallEvery) {
+					const point = path.at(distance)
+					const at = beside(point, side * (wallFoot + wallFront))
+					pending.walls.push({ matrix: placed(at.x, 0, at.z, facingPath(point, side)), chunk: chunkOf(distance) })
+				}
+			}
+		}
 		// The walls along the way stop well short of the moat before the next gatehouse, so it shows
 		// running off either side, and nothing stands in it.
 		const nearDitch = (distance: number) => distance > to - ditchBack - ditchWidth / 2 - 14
@@ -435,6 +458,7 @@ export function createEdoCastle(scene: Scene, path: Path, models: Promise<Castle
 		const kit = loaded.kit?.scene
 		const wall = kit?.getObjectByName('CastleWall')
 		const gate = kit?.getObjectByName('CastleGate')
+		const outerGate = kit?.getObjectByName('CastleOuterGate')
 		const keep = kit?.getObjectByName('CastleKeep')
 		const turret = kit?.getObjectByName('CastleTurret')
 		const pine = kit?.getObjectByName('Pine')
@@ -446,6 +470,7 @@ export function createEdoCastle(scene: Scene, path: Path, models: Promise<Castle
 				if (keep !== undefined) addAll(district.group, stamp(keep, district.keeps, heightOf(keep), false, owned))
 			}
 			if (gate !== undefined) addAll(group, fading(stamp(gate, pending.gates, heightOf(gate), true, owned)))
+			if (outerGate !== undefined) addAll(group, fading(stamp(outerGate, pending.outerGates, heightOf(outerGate), true, owned)))
 			if (turret !== undefined) addAll(group, stamp(turret, pending.turrets, heightOf(turret), true, owned))
 			if (pine !== undefined) addAll(group, stamp(pine, pending.pines, heightOf(pine), true, owned))
 			if (lantern !== undefined) addAll(group, stamp(lantern, pending.lanterns, heightOf(lantern), true, owned))

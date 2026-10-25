@@ -17,7 +17,9 @@ the stages share one style with the temple. Each piece is a root named for it, i
   with a tiled cap, its face toward +z; `CastleGate`, a gatehouse (yaguramon) over an eight-metre
   passage; and `CastleKeep`, the keep (tenshu): five storeys of white walls under curved roofs on a
   sloping stone base, with gilt fish-tigers (shachihoko) on the top ridge; and `CastleTurret`, a
-  corner turret (sumi-yagura): two white storeys on a stone base as high as the walls.
+  corner turret (sumi-yagura): two white storeys on a stone base as high as the walls; and
+  `CastleOuterGate`, the plain first gate (kōraimon) of a square gate court (masugata): two posts
+  under a small roof over an eight-metre passage, with a little roof over each post behind.
 """
 
 import math
@@ -308,6 +310,32 @@ def castle_turret():
     return turret
 
 
+def castle_outer_gate():
+    """A kōraimon: two posts under a beam and a small gable roof, a post behind each with a roof of its own, doors swung open."""
+    gate = root('CastleOuterGate')
+    passage = 8.0
+    def gable(centre, length, depth, lift=0.4):
+        x, y, z = centre
+        for side in (-1, 1):
+            board = box(gate, 'RoofTile', (0, 0, 0), (length, 0.12, depth / 2 + 0.1))
+            board.location = kit.at(x, y, z + side * depth / 4)
+            board.rotation_euler = (side * lift, 0, 0)
+        box(gate, 'RoofEdge', (x, y + depth / 4 * math.sin(lift) + 0.1, z), (length + 0.04, 0.16, 0.22))
+    for side in (-1, 1):
+        x = side * (passage / 2 + 0.3)
+        box(gate, 'Timber', (x, 2.5, 0), (0.6, 5.0, 0.6))
+        box(gate, 'Timber', (x, 1.8, -2.2), (0.35, 3.6, 0.35))
+        box(gate, 'Timber', (x, 3.2, -1.1), (0.25, 0.25, 2.2))
+        gable((x, 3.9, -2.2), 1.2, 1.4)
+        # The door swung open, back against the post behind.
+        box(gate, 'Timber', (side * (passage / 2 - 0.15), 2.1, -1.1), (0.15, 4.0, 2.0))
+        for row in range(3):
+            box(gate, 'Iron', (side * (passage / 2 - 0.25), 0.9 + row * 1.3, -1.1), (0.04, 0.1, 1.8))
+    box(gate, 'Timber', (0, 4.7, 0), (passage + 2.4, 0.5, 0.6))
+    gable((0, 5.25, 0), passage + 3.2, 2.0)
+    return gate
+
+
 def main():
     argv = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else []
     out = argv[0] if argv else 'stage-kit.glb'
@@ -315,7 +343,7 @@ def main():
 
     bpy.ops.wm.read_factory_settings(use_empty=True)
     stage_materials()
-    pieces = [farmhouse(), scarecrow(), bamboo_clump(), shrine(), jizo(), pine(), castle_wall(), castle_gate(), castle_keep(), castle_turret()]
+    pieces = [farmhouse(), scarecrow(), bamboo_clump(), shrine(), jizo(), pine(), castle_wall(), castle_gate(), castle_keep(), castle_turret(), castle_outer_gate()]
     for piece in pieces:
         kit.join_children(piece)
     bpy.ops.export_scene.gltf(filepath=out, export_format='GLB', export_apply=True, export_yup=True,
