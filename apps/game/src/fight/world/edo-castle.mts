@@ -236,7 +236,7 @@ export function createEdoCastle(scene: Scene, path: Path, models: Promise<Castle
 		const gatehouse = path.at(from + gateAt)
 		pending.gates.push({ matrix: placed(gatehouse.x, 0, gatehouse.z, gatehouse.heading), chunk: chunkOf(from + gateAt) })
 		// The gatehouse's stone footings either side of its passage.
-		for (const side of [-1, 1]) solids.push({ ...beside(gatehouse, side * 6.5), width: 5, depth: 6.4, heading: gatehouse.heading, hides: true })
+		for (const side of [-1, 1]) solids.push({ ...beside(gatehouse, side * 6.5), width: 5, depth: 6.4, heading: gatehouse.heading, height: 11 })
 		const nearGate = (distance: number) => [from + gateAt, to + gateAt].some((entrance) => Math.abs(entrance - distance) < 7)
 
 		// Walls either side, but along a moat the near wall gives way to water, with a wall beyond it.
@@ -251,7 +251,7 @@ export function createEdoCastle(scene: Scene, path: Path, models: Promise<Castle
 				const at = beside(point, side * (foot + wallFront))
 				if (!clear(at.x, at.z, distance, foot + wallFront - 0.5, 20)) continue
 				pending.walls.push({ matrix: placed(at.x, 0, at.z, facingPath(point, side)), chunk: cursor.chunk })
-				solids.push({ x: at.x, z: at.z, width: wallEvery + 0.4, depth: 4, heading: facingPath(point, side), hides: true })
+				solids.push({ x: at.x, z: at.z, width: wallEvery + 0.4, depth: 4, heading: facingPath(point, side), height: 6.8 })
 				if (side === moatOn) {
 					const middle = beside(point, side * (wallFoot + 4))
 					moat.add(placed(middle.x, 0.02, middle.z, point.heading, 8.6, 0.05, wallEvery + 0.4))
@@ -268,7 +268,7 @@ export function createEdoCastle(scene: Scene, path: Path, models: Promise<Castle
 		if (clear(keep.x, keep.z, keepAt, 30, 80)) {
 			pending.keeps.push({ matrix: placed(keep.x, 0, keep.z, facingPath(keepBy, keepSide)), chunk: chunkOf(keepAt) })
 			taken.push({ x: keep.x, z: keep.z, radius: 22 })
-			solids.push({ x: keep.x, z: keep.z, radius: 16, hides: true })
+			solids.push({ x: keep.x, z: keep.z, radius: 16, height: 30 })
 		}
 		for (let distance = from, index = base; distance < to; distance += 9, index++) {
 			const point = path.at(distance)

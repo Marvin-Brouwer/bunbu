@@ -8,11 +8,11 @@ import { hiddenBehind, inside, type Solid, type Spot } from './solids.mts'
 
 /**
  * A street along `z`, the samurai at the origin, with a row of houses 7 deep along its right side,
- * their fronts 5.2 m out, and an alley 2.5 m wide between two of them, 12 m ahead.
+ * their fronts 5.2 m out, and an alley under 2 m wide between two of them, 12 m ahead.
  */
 const houses: Solid[] = [
-	{ x: 8.7, z: -4, width: 15, depth: 7, heading: Math.PI / 2, hides: true },
-	{ x: 8.7, z: -21.75, width: 17, depth: 7, heading: Math.PI / 2, hides: true },
+	{ x: 8.7, z: -4, width: 15, depth: 7, heading: Math.PI / 2, height: 7.5 },
+	{ x: 8.7, z: -21.75, width: 17, depth: 7, heading: Math.PI / 2, height: 7.5 },
 ]
 const camera = { x: 0, z: 9 }
 /** Out of sight only behind the houses: the camera sees the whole street. */

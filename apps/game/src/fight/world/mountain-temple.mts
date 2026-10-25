@@ -288,13 +288,13 @@ export function createMountainTemple(scene: Scene, path: Path, models: Promise<M
 		if (clear(hall.x, hall.z, templeAt, 26, 60)) {
 			pending.halls.push({ matrix: placed(hall.x, 0, hall.z, facingPath(temple, templeSide)), chunk: chunkOf(templeAt) })
 			taken.push({ x: hall.x, z: hall.z, radius: 20 })
-			solids.push({ x: hall.x, z: hall.z, radius: 14, hides: true })
+			solids.push({ x: hall.x, z: hall.z, radius: 14, height: 12 })
 		}
 		const pagoda = beside(temple, templeSide * 38, 34)
 		if (clear(pagoda.x, pagoda.z, templeAt + 34, 14, 60) && isFree(taken, pagoda.x, pagoda.z, 7)) {
 			pending.pagodas.push({ matrix: placed(pagoda.x, 0, pagoda.z, facingPath(temple, templeSide)), chunk: chunkOf(templeAt) })
 			taken.push({ x: pagoda.x, z: pagoda.z, radius: 8 })
-			solids.push({ x: pagoda.x, z: pagoda.z, radius: 5, hides: true })
+			solids.push({ x: pagoda.x, z: pagoda.z, radius: 5, height: 20 })
 		}
 
 		// Pines and rocks on the slopes either side, thinner inside the tunnels, where the torii crowd in.

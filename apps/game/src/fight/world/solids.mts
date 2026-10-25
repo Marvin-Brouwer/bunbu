@@ -7,11 +7,15 @@
 
 /**
  * The ground a solid thing stands on: round, or a box `width` by `depth` turned `heading` about
- * `y`. A tall one, a house or a wall, `hides` what stands behind it from the camera.
+ * `y`, and its `height` when it is taller than a ninja, as a house or a wall: then it hides what
+ * stands behind it from the camera, and a ninja can leap down off it.
  */
-export type Solid =
-	| { readonly x: number; readonly z: number; readonly radius: number; readonly hides?: boolean }
-	| { readonly x: number; readonly z: number; readonly width: number; readonly depth: number; readonly heading: number; readonly hides?: boolean }
+export type Solid = Round | Box
+type Round = { readonly x: number; readonly z: number; readonly radius: number; readonly height?: number }
+export type Box = { readonly x: number; readonly z: number; readonly width: number; readonly depth: number; readonly heading: number; readonly height?: number }
+
+/** How tall a ninja is, in metres: what is taller hides it. */
+export const ninjaHeight = 1.8
 
 /** A point on the ground. */
 export type Spot = { readonly x: number; readonly z: number }
@@ -21,12 +25,54 @@ function depthIn(solid: Solid, x: number, z: number, margin: number): number {
 	const dx = x - solid.x
 	const dz = z - solid.z
 	if ('radius' in solid) return solid.radius + margin - Math.hypot(dx, dz)
-	// Into the box's own frame: `x` across its width, `z` along its depth.
-	const cos = Math.cos(solid.heading)
-	const sin = Math.sin(solid.heading)
-	const across = dx * cos - dz * sin
-	const along = dx * sin + dz * cos
+	const { across, along } = intoBox(solid, x, z)
 	return Math.min(solid.width / 2 + margin - Math.abs(across), solid.depth / 2 + margin - Math.abs(along))
+}
+
+/** `x, z` in the box's own frame: `across` its width, `along` its depth, from its middle. */
+export function intoBox(box: Box, x: number, z: number): { across: number; along: number } {
+	const dx = x - box.x
+	const dz = z - box.z
+	const cos = Math.cos(box.heading)
+	const sin = Math.sin(box.heading)
+	return { across: dx * cos - dz * sin, along: dx * sin + dz * cos }
+}
+
+/** The spot `across` and `along` the box's own frame, in the world: {@link intoBox} undone. */
+export function outOfBox(box: Box, across: number, along: number): Spot {
+	const cos = Math.cos(box.heading)
+	const sin = Math.sin(box.heading)
+	return { x: box.x + across * cos + along * sin, z: box.z - across * sin + along * cos }
+}
+
+/** The first of `solids` that is a box taller than a ninja on the way from `from` to `to`, nearest `from`. */
+export function tallBoxBetween(solids: readonly Solid[], from: Spot, to: Spot): Box | undefined {
+	const steps = Math.ceil(Math.hypot(to.x - from.x, to.z - from.z) / 0.25)
+	for (let step = 0; step <= steps; step++) {
+		const along = steps === 0 ? 0 : step / steps
+		const x = from.x + (to.x - from.x) * along
+		const z = from.z + (to.z - from.z) * along
+		const found = solids.find((solid): solid is Box => !('radius' in solid) && (solid.height ?? 0) > ninjaHeight && inside(solid, x, z))
+		if (found !== undefined) return found
+	}
+	return undefined
+}
+
+/** Of `solids`, the box taller than a ninja nearest to `spot`, within `reach` of it. */
+export function nearestTallBox(solids: readonly Solid[], spot: Spot, reach: number): Box | undefined {
+	let nearest: Box | undefined
+	let nearestAway = reach
+	for (const solid of solids) {
+		if ('radius' in solid || (solid.height ?? 0) <= ninjaHeight) continue
+		// How far `spot` is outside it.
+		const { across, along } = intoBox(solid, spot.x, spot.z)
+		const away = Math.hypot(Math.max(0, Math.abs(across) - solid.width / 2), Math.max(0, Math.abs(along) - solid.depth / 2))
+		if (away < nearestAway) {
+			nearest = solid
+			nearestAway = away
+		}
+	}
+	return nearest
 }
 
 /** Whether `x, z` is within `margin` of `solid`. */
@@ -38,12 +84,12 @@ export const reachOf = (solid: Solid): number => ('radius' in solid ? solid.radi
 /** `solid` moved by `offset`, as a block is when it is shown on another round of the path. */
 export const moved = (solid: Solid, offset: Spot): Solid => ({ ...solid, x: solid.x + offset.x, z: solid.z + offset.z })
 
-/** Whether one of `solids` that hides stands between `eye` and `spot`, on the ground. */
+/** Whether one of `solids` taller than a ninja stands between `eye` and `spot`, on the ground. */
 export function hiddenBehind(solids: readonly Solid[], eye: Spot, spot: Spot): boolean {
 	const length = Math.hypot(spot.x - eye.x, spot.z - eye.z)
 	const steps = Math.ceil(length / 0.5)
 	return solids.some((solid) => {
-		if (solid.hides !== true) return false
+		if ((solid.height ?? 0) <= ninjaHeight) return false
 		// Only the ones near the line are worth stepping along it for.
 		const reach = reachOf(solid)
 		if (Math.hypot(solid.x - spot.x, solid.z - spot.z) > length + reach) return false

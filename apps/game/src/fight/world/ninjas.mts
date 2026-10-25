@@ -22,7 +22,7 @@ import type { ClashSpot, SlainSpot } from './effects.mts'
 import { beside } from './path.mts'
 import { headingOf, lungeOf, spotOf } from './placement.mts'
 import { partWay, routeTo } from './routes.mts'
-import { reachOf, type Solid, type Spot } from './solids.mts'
+import { intoBox, nearestTallBox, outOfBox, reachOf, tallBoxBetween, type Box, type Solid, type Spot } from './solids.mts'
 import { poseSeconds, type FigurePose } from '../../_shared/world/poses.mts'
 
 /**
@@ -94,19 +94,17 @@ type Shown = {
 	sequence: number
 	/** `0` while entering from farther along the path, `1` once at the normal starting spot. */
 	entrance: number
-	/** The cover it leaps out from behind, in the world, if there is one on its side ahead, and its place among the ninjas behind it. */
+	/** The cover it leaps out from behind, in the world, if there is one on its side ahead. */
 	cover: CoverSpot | undefined
-	lane: number
 	/**
-	 * Without a cover, the way it runs in, in the world, around what is solid, from where the camera
-	 * can't see it, to where it stands for the fight ([routes](./routes.mts)). `undefined` when
-	 * there is none: then it comes in from farther out the way its mark points.
+	 * How it comes in, in the world: by a leap, over its cover or down off a roof, or by the way it
+	 * runs in around what is solid from where the camera can't see it ([routes](./routes.mts)).
+	 * Neither when there is none: then it comes in from farther out the way its mark points.
 	 */
+	leap: Leap | undefined
 	route: Spot[] | undefined
 	/** The side it comes in on from ↓, picked at random: `1` right, `-1` left. */
 	below: 1 | -1
-	/** Where the samurai was when it came. */
-	came: { x: number; z: number }
 	/** How far through its running cycle it is, where it was last drawn, and how fast it went, smoothed. */
 	cycle: number
 	last: { x: number; z: number } | undefined
@@ -177,19 +175,68 @@ export type OutOf = { x: number; z: number; hop: number; doing: 'hiding' | 'leap
  * it, so it clears the whole cover ({@link coverReach} round its middle, {@link coverHeight} high).
  */
 export function outOf(cover: CoverSpot, from: { x: number; z: number }, to: { x: number; z: number }, amount: number, lane = 0): OutOf {
+	return leapIn(overCover(cover, from, lane), to, amount)
+}
+
+/**
+ * A leap a ninja comes in by: where it waits, out of sight, and lands, how high it goes on the way,
+ * and how far into its entrance it waits and lands, of the whole entrance.
+ */
+export type Leap = { readonly hidden: Spot; readonly landed: Spot; readonly height: number; readonly waits: number; readonly lands: number }
+
+/** The leap over `cover`, with the samurai at `from` when it came, for the `lane` of one that shares it. */
+function overCover(cover: CoverSpot, from: Spot, lane: number): Leap {
 	const { behind, ahead, height, waits, lands } = leapConfig
 	// The way from the samurai to the cover, flat, and across it for the `lane` of one that shares it.
 	const away = Math.hypot(cover.x - from.x, cover.z - from.z) || 1
 	const out = { x: (cover.x - from.x) / away, z: (cover.z - from.z) / away }
 	const aside = { x: -out.z * lane * shareConfig.lane, z: out.x * lane * shareConfig.lane }
-	const hidden = { x: cover.x + out.x * behind + aside.x, z: cover.z + out.z * behind + aside.z }
-	const landed = { x: cover.x - out.x * ahead + aside.x, z: cover.z - out.z * ahead + aside.z }
+	return {
+		hidden: { x: cover.x + out.x * behind + aside.x, z: cover.z + out.z * behind + aside.z },
+		landed: { x: cover.x - out.x * ahead + aside.x, z: cover.z - out.z * ahead + aside.z },
+		height,
+		waits,
+		lands,
+	}
+}
+
+/** Metres from where it would come from on open ground that a ninja looks for a roof to leap down off, when nothing stands in its way. */
+const roofReach = 12
+
+/** How a ninja leaps down off a roof: how far behind the back wall it waits, and before the front it lands, how far over the ridge it goes, and its timing. */
+export const roofConfig = { behind: 1, ahead: 1.2, over: 1, waits: 0.05, lands: 0.6 }
+
+/**
+ * The leap over `roof`, a building or a wall, toward `to`, where it stands for the fight: from
+ * behind it, where the camera can't see it, across it in line with `wished`, where it would have
+ * come from on open ground, down in front of it.
+ */
+export function offRoof(roof: Box, to: Spot, wished: Spot): Leap {
+	const { behind, ahead, over, waits, lands } = roofConfig
+	// Its front is the side toward where it will stand.
+	const front = intoBox(roof, to.x, to.z).along > 0 ? 1 : -1
+	const across = Math.min(roof.width / 2 - 0.5, Math.max(-roof.width / 2 + 0.5, intoBox(roof, wished.x, wished.z).across))
+	return {
+		hidden: outOfBox(roof, across, -front * (roof.depth / 2 + behind)),
+		landed: outOfBox(roof, across, front * (roof.depth / 2 + ahead)),
+		height: (roof.height ?? 0) + over,
+		waits,
+		lands,
+	}
+}
+
+/**
+ * Where a ninja coming in by `leap` is, `amount` (`0` to `1`) into its entrance: waiting out of
+ * sight, then leaping, then running on to `to`, where it stands for the fight.
+ */
+function leapIn(leap: Leap, to: Spot, amount: number): OutOf {
+	const { hidden, landed, height, waits, lands } = leap
 	if (amount <= waits) return { ...hidden, hop: 0, doing: 'hiding' }
 	if (amount < lands) {
-		const leap = (amount - waits) / (lands - waits)
+		const flown = (amount - waits) / (lands - waits)
 		// Flat over the top and steep at either end: 1 - u⁴, with u from -1 through 0 to 1.
-		const hop = height * (1 - (2 * leap - 1) ** 4)
-		return { x: hidden.x + (landed.x - hidden.x) * leap, z: hidden.z + (landed.z - hidden.z) * leap, hop, doing: 'leaping' }
+		const hop = height * (1 - (2 * flown - 1) ** 4)
+		return { x: hidden.x + (landed.x - hidden.x) * flown, z: hidden.z + (landed.z - hidden.z) * flown, hop, doing: 'leaping' }
 	}
 	const run = (amount - lands) / (1 - lands)
 	return { x: landed.x + (to.x - landed.x) * run, z: landed.z + (to.z - landed.z) * run, hop: 0, doing: 'running' }
@@ -337,17 +384,30 @@ function farOut(far: Spot): Spot {
 }
 
 /**
- * The way a ninja without a cover runs in to where it stands for the fight, from where the camera
- * can't see it and around what is solid ([routes](./routes.mts)), in the world: toward where it
- * would come from on open ground. With the samurai at `frame` when it comes, and where he will
- * be once he has run on as far as an ambush lets him.
+ * How a ninja without a cover comes in, in the world, with the samurai at `frame` when it comes:
+ * running in around what is solid ([routes](./routes.mts)) from where the camera can't see it,
+ * toward the samurai and as near as it can to where it would come from on open ground. Where there
+ * is no such way, it leaps down off a roof: of the building or wall in the way of that, or else the
+ * nearest one. Neither, where there is nothing to come from behind.
  */
-function routeIn(mark: Mark, wave: number, below: 1 | -1, frame: ViewFrame, around: Surroundings): Spot[] | undefined {
+export function wayIn(mark: Mark, wave: number, below: 1 | -1, frame: ViewFrame, around: Surroundings): { leap: Leap | undefined; route: Spot[] | undefined } {
 	const stand = spotOf(mark, wave, standReach, below)
-	const wished = farOut(spotOf(mark, wave, 0, below))
+	const far = farOut(spotOf(mark, wave, 0, below))
+	// Where it and the samurai will stand, once he has run on as far as an ambush lets him.
+	const to = beside(frame, stand.x, -stand.z + runConfig.ambushRunOn)
+	const samurai = beside(frame, 0, runConfig.ambushRunOn)
+	const wished = beside(frame, far.x, -far.z)
 	// What is near enough to stand in its way, or between it and the camera.
 	const solids = around.solids().filter((solid) => Math.hypot(solid.x - frame.x, solid.z - frame.z) < nearSolids + reachOf(solid))
-	return routeTo(beside(frame, stand.x, -stand.z + runConfig.ambushRunOn), beside(frame, wished.x, -wished.z), solids, (spot) => around.hidden(spot, solids))
+	// From farther from the samurai than where it will stand, on the same side of him along the way,
+	// so it runs in toward him, never away from him or past him.
+	const ahead = (spot: Spot) => -(spot.x - samurai.x) * Math.sin(frame.heading) - (spot.z - samurai.z) * Math.cos(frame.heading)
+	const toward = (spot: Spot) => Math.sign(ahead(spot)) === Math.sign(ahead(to))
+		&& Math.hypot(spot.x - samurai.x, spot.z - samurai.z) > Math.hypot(to.x - samurai.x, to.z - samurai.z) + 1
+	const route = routeTo(to, wished, solids, (spot) => toward(spot) && around.hidden(spot, solids))
+	if (route !== undefined) return { leap: undefined, route }
+	const roof = tallBoxBetween(solids, to, wished) ?? nearestTallBox(solids, wished, roofReach)
+	return { leap: roof === undefined ? undefined : offRoof(roof, to, wished), route: undefined }
 }
 
 /** `parent` is in world space, and `make` makes a ninja's body. */
@@ -389,11 +449,9 @@ export function createNinjasView(parent: Group, make: () => Body): NinjasView {
 						stood: 0,
 						entrance: cover === undefined ? 0 : -sharing * shareConfig.stagger,
 						cover,
-						// The first one behind its middle, the others either side.
-						lane: [0, 1, -1][sharing] ?? 0,
-						route: cover === undefined ? routeIn(mark, ninja.wave, below, frame, around) : undefined,
+						// Behind a cover, the first one behind its middle, the others either side.
+						...cover === undefined ? wayIn(mark, ninja.wave, below, frame, around) : { leap: overCover(cover, frame, [0, 1, -1][sharing] ?? 0), route: undefined },
 						below,
-						came: { x: frame.x, z: frame.z },
 						cycle: ninja.id * 1.7,
 						last: undefined,
 						speed: 0,
@@ -429,11 +487,12 @@ export function createNinjasView(parent: Group, make: () => Body): NinjasView {
 				// Around the samurai where he is, or where he was when this ninja was beaten: it stays on
 				// that spot as he runs on.
 				const samurai = entry.beatenAt ?? frame
-				const at: OutOf = entry.entrance >= 1 || (entry.cover === undefined && entry.route === undefined)
-					? { ...beside(samurai, visible.x, -visible.z), hop: 0, doing: 'running' }
-					: entry.cover === undefined
-						? { ...partWay([...(entry.route ?? []).slice(0, -1), beside(samurai, spot.x, -spot.z)], entry.entrance), hop: 0, doing: 'running' }
-						: outOf(entry.cover, entry.came, beside(samurai, spot.x, -spot.z), entry.entrance, entry.lane)
+				const standsAt = beside(samurai, spot.x, -spot.z)
+				const at: OutOf = entry.entrance < 1 && entry.leap !== undefined
+					? leapIn(entry.leap, standsAt, entry.entrance)
+					: entry.entrance < 1 && entry.route !== undefined
+						? { ...partWay([...entry.route.slice(0, -1), standsAt], entry.entrance), hop: 0, doing: 'running' }
+						: { ...beside(samurai, visible.x, -visible.z), hop: 0, doing: 'running' }
 				const { root } = entry.body
 				root.position.set(at.x, motion.hop + at.hop, at.z)
 				// Its legs go by the ground it covers, so it never slides, and it stands still when it

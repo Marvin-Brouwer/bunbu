@@ -49,6 +49,8 @@ export { fogFar, skyRadius, type StageView }
 /** Half the width of the street, and of the garden path, in metres. */
 export const streetHalfWidth = 4.6
 export const gardenHalfWidth = 1.8
+/** How tall the town's buildings stand to the ridge, at most: a ninja leaps down off the roof from there. */
+const houseHeight = 7.5
 
 
 const palette = {
@@ -541,7 +543,7 @@ function lay(path: Path, from: number, to: number, base: number, shapes: Shapes)
 			if (free) {
 				building(town, frame, width - 0.15, index)
 				taken.push({ x: centre.x, z: centre.z, radius: Math.hypot(width, 7) / 2 })
-				solids.push({ x: centre.x, z: centre.z, width, depth: 7, heading: facingPath(point, side), hides: true })
+				solids.push({ x: centre.x, z: centre.z, width, depth: 7, heading: facingPath(point, side), height: houseHeight })
 			}
 			distance += width
 		}
@@ -561,14 +563,14 @@ function lay(path: Path, from: number, to: number, base: number, shapes: Shapes)
 			cursor.chunk = landmarkChunks + which * 2
 			pagoda(town, placed(skyline.x, 0, skyline.z, scatter(landmark + 1) * Math.PI))
 			taken.push({ x: skyline.x, z: skyline.z, radius: 6 })
-			solids.push({ x: skyline.x, z: skyline.z, radius: 6, hides: true })
+			solids.push({ x: skyline.x, z: skyline.z, radius: 6, height: 18 })
 		}
 		const keep = beside(gate, (scatter(landmark + 2) > 0.5 ? 1 : -1) * 70, 160)
 		if (clear(keep.x, keep.z, garden.start + 164, 30, 400) && isFree(taken, keep.x, keep.z, 18)) {
 			cursor.chunk = landmarkChunks + which * 2 + 1
 			castle(town, placed(keep.x, 0, keep.z, gate.heading))
 			taken.push({ x: keep.x, z: keep.z, radius: 18 })
-			solids.push({ x: keep.x, z: keep.z, radius: 18, hides: true })
+			solids.push({ x: keep.x, z: keep.z, radius: 18, height: 30 })
 		}
 
 		const middle = Math.min(garden.start + 37, garden.end - 10)

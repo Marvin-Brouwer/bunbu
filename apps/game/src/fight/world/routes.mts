@@ -2,7 +2,8 @@
  * The way a ninja that has no cover to leap out from runs in to where it stands for the fight: from
  * somewhere the camera can't see it, behind a house or off the screen, around whatever is solid
  * ([solids](./solids.mts)), through an alley between the houses if that is the way. So it never
- * shows up out of nowhere, and never runs through a wall or a tree.
+ * shows up out of nowhere, and never runs through a wall or a tree. Where there is no such way, it
+ * leaps down off a roof instead ([ninjas](./ninjas.mts)).
  *
  * The ground round where it will stand is cut into a grid, and the ways out from there are walked
  * cell by cell, the shortest first. Of the cells it can't be seen in, it starts from the one nearest
@@ -25,11 +26,11 @@ export const routeConfig = {
 }
 
 /**
- * The way in to `to`, from the start to `to`, around `solids`: from where `hidden` says the camera
- * can't see it, nearest to `wished`. `undefined` when there is no such way, or `to` itself is in
- * something solid.
+ * The way in to `to`, from the start to `to`, around `solids`: from a spot that `startsFrom` allows,
+ * as one the camera can't see, nearest to `wished`. `undefined` when there is no such way, or `to`
+ * itself is in something solid.
  */
-export function routeTo(to: Spot, wished: Spot, solids: readonly Solid[], hidden: (spot: Spot) => boolean, config = routeConfig): Spot[] | undefined {
+export function routeTo(to: Spot, wished: Spot, solids: readonly Solid[], startsFrom: (spot: Spot) => boolean, config = routeConfig): Spot[] | undefined {
 	const { cell, reach, clearance, longest, shortest } = config
 	const size = Math.round((reach * 2) / cell) + 1
 	const middle = (size - 1) / 2
@@ -52,7 +53,7 @@ export function routeTo(to: Spot, wished: Spot, solids: readonly Solid[], hidden
 	if (blocked[start] === 1) return undefined
 
 	// The shortest way from `to` to every cell within `longest`, step by step.
-	const distances = new Float32Array(size * size).fill(Infinity)
+	const distances = new Float64Array(size * size).fill(Infinity)
 	const previous = new Int32Array(size * size).fill(-1)
 	distances[start] = 0
 	const queue = new Queue()
@@ -78,7 +79,7 @@ export function routeTo(to: Spot, wished: Spot, solids: readonly Solid[], hidden
 		}
 	}
 
-	// Of the cells it can get to from far enough, the one nearest to where it wished to start, that the camera can't see.
+	// Of the cells it can get to from far enough, the one nearest to where it wished to start that it may start from.
 	const candidates: { index: number; away: number }[] = []
 	distances.forEach((distance, index) => {
 		if (distance < shortest || distance === Infinity) return
@@ -86,7 +87,7 @@ export function routeTo(to: Spot, wished: Spot, solids: readonly Solid[], hidden
 		candidates.push({ index, away: Math.hypot(x - wished.x, z - wished.z) })
 	})
 	candidates.sort((one, other) => one.away - other.away)
-	const from = candidates.find(({ index }) => hidden(spotOf(index)))
+	const from = candidates.find(({ index }) => startsFrom(spotOf(index)))
 	if (from === undefined) return undefined
 
 	const cells: number[] = []

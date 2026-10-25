@@ -304,7 +304,7 @@ export function createRiceFields(scene: Scene, path: Path, models: Promise<RiceM
 			const heading = facingPath(point, side) + (scatter(index + 9) - 0.5) * 0.4
 			pending.farmhouses.push({ matrix: placed(at.x, 0, at.z, heading), chunk })
 			taken.push({ x: at.x, z: at.z, radius: 11 })
-			pending.solids.push({ x: at.x, z: at.z, width: 11.6, depth: 8.1, heading, hides: true })
+			pending.solids.push({ x: at.x, z: at.z, width: 11.6, depth: 8.1, heading, height: 7 })
 			for (const [aside, ahead] of [[6, 7], [-7, 5]] as const) {
 				const tree = beside(point, side * (out + aside * 0.6), ahead)
 				pending.maples.push({ matrix: placed(tree.x, 0, tree.z, scatter(index + aside) * 6.28, 0.8 + scatter(index + ahead) * 0.3), chunk })
