@@ -23,7 +23,7 @@ import {
 } from 'three'
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js'
 import { gableGeometry, placed, within } from './kit.mts'
-import type { Owned } from './landscape.mts'
+import { fadeNear, type Owned } from './landscape.mts'
 import { beside, type Path, type Zone } from './path.mts'
 import { districtAt } from './districts.mts'
 import type { CoverChoice } from './cover.mts'
@@ -298,6 +298,7 @@ export function createBackdrop(path: Path, districts: readonly District[], seed:
 	const rows = districts.flatMap((district) => district.rows)
 	const geometries = geometriesOf()
 	const material = new MeshStandardMaterial({ roughness: 1, flatShading: true })
+	fadeNear(material)
 	owned.materials.push(material)
 	for (const parts of Object.values(geometries)) owned.geometries.push(...parts)
 

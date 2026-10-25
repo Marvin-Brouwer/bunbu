@@ -4,7 +4,7 @@
  * other falls back to castle town.
  */
 
-import type { Scene } from 'three'
+import { Vector3, type Scene } from 'three'
 import type { GLTF } from 'three/addons/loaders/GLTFLoader.js'
 import { loadModel } from '../../canvas/models.mts'
 import type { Stage } from '../../_shared/state/selection.mts'
@@ -12,7 +12,7 @@ import { metresPerAmbush } from '../flows/run.mts'
 import { createBackdrop, type District } from './backdrop.mts'
 import { ambushNear, coverSpotsAt, createCover, type Cover, type CoverSet, type CoverSpot } from './cover.mts'
 import { createCastleTown, townDistricts, townCover } from './castle-town.mts'
-import type { Owned, StageView } from './landscape.mts'
+import { nearFade, type Owned, type StageView } from './landscape.mts'
 import { createPath, townRound, type Path } from './path.mts'
 import { pictureSettings } from './picture-settings.mts'
 import { bambooDistricts, bambooCover, bambooRound, createBambooForest } from './bamboo-forest.mts'
@@ -66,7 +66,8 @@ function newSeed(use: number): number {
  * Puts the backdrop of a stage's `districts` behind its own scenery ([backdrop](./backdrop.mts)),
  * district after district along a stage of `stageLength()` metres ([districts](./districts.mts)),
  * and `cover` by its path for the ninjas to hide behind ([cover](./cover.mts)), laid out
- * differently every run.
+ * differently every run. Whatever of it comes between the camera and the samurai fades
+ * ([`fadeNear`](./landscape.mts)), on every stage alike.
  */
 function around(scene: Scene, path: Path, ownView: OwnView, districts: readonly District[], cover: CoverSet, stageLength: () => number, phase: number): StageWorld {
 	const owned: Owned = { geometries: [], materials: [], textures: [] }
@@ -74,10 +75,14 @@ function around(scene: Scene, path: Path, ownView: OwnView, districts: readonly 
 	const covers = createCover(path, cover, metresPerAmbush, newSeed(1), owned, districts, stageLength, phase)
 	const view = ownView(covers)
 	scene.add(backdrop.group, covers.group)
+	const samurai = new Vector3()
 	return {
 		path,
 		view: {
 			...view,
+			frame(camera, x, z) {
+				nearFade.value = -samurai.set(x, 1, z).applyMatrix4(camera.matrixWorldInverse).z
+			},
 			follow(x, z, distance) {
 				view.follow(x, z, distance)
 				backdrop.follow(distance)

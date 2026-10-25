@@ -279,6 +279,7 @@ export function stamp(template: Object3D, plantings: readonly Planting[], height
 			own.alphaTest = 0.5
 			own.depthWrite = true
 		}
+		fadeNear(own)
 		owned.materials.push(own)
 		for (const matrices of chunks.values()) {
 			const mesh = new InstancedMesh(object.geometry as BufferGeometry, own, matrices.length)
@@ -294,25 +295,45 @@ export function stamp(template: Object3D, plantings: readonly Planting[], height
 
 /** The least of `material` that {@link fadeNear} leaves showing, right in front of the camera. */
 const fadedLeast = 0.2
+/** Below this height, in metres, nothing fades: the ground, the water and the stones laid on it. */
+const groundHeight = 0.2
 
 /**
- * Fades whatever of `material` is nearer the camera than `fade.value`, in view depth: what the camera
- * passes through or under (a tunnel of torii, a gatehouse) would otherwise fill the screen. It shows
- * whole at that depth and fades the nearer the camera it comes, to {@link fadedLeast}; its shadow stays.
- * Drawn as a fine scatter of dropped pixels, so copies behind it still show through it in any order.
+ * The samurai's depth in view, where the scenery begins to fade ({@link fadeNear}). One run's
+ * world is drawn at a time, so every stage shares it; the stage's world sets it every frame
+ * ([stages](./stages.mts)).
  */
-export function fadeNear(material: Material, fade: { value: number }): void {
+export const nearFade = { value: 0 }
+
+/**
+ * Fades whatever of `material` is nearer the camera than {@link nearFade}, in view depth: what the
+ * camera passes through or under (a torii, a gatehouse, the eaves of a house) would otherwise fill
+ * the screen. It shows whole at that depth and fades the nearer the camera it comes, to
+ * {@link fadedLeast}; its shadow stays. The ground under it stays whole ({@link groundHeight}).
+ * Drawn as a fine scatter of dropped pixels, so copies behind it still show through it in any order.
+ * Every stage's scenery fades this way: whatever is stamped, built as a `Batch` ([kit](./kit.mts)), or
+ * put in the backdrop or the covers.
+ */
+export function fadeNear(material: Material): void {
 	material.onBeforeCompile = (shader) => {
-		shader.uniforms.fadeDepth = fade
-		shader.vertexShader = `varying float vViewDepth;\n${shader.vertexShader}`.replace(
+		shader.uniforms.fadeDepth = nearFade
+		shader.vertexShader = `varying float vViewDepth;\nvarying float vHeight;\n${shader.vertexShader}`.replace(
 			'#include <project_vertex>',
-			'#include <project_vertex>\n\tvViewDepth = -mvPosition.z;',
+			[
+				'#include <project_vertex>',
+				'\tvViewDepth = -mvPosition.z;',
+				'\tvec4 placedAt = vec4(transformed, 1.0);',
+				'\t#ifdef USE_INSTANCING',
+				'\t\tplacedAt = instanceMatrix * placedAt;',
+				'\t#endif',
+				'\tvHeight = (modelMatrix * placedAt).y;',
+			].join('\n'),
 		)
-		shader.fragmentShader = `uniform float fadeDepth;\nvarying float vViewDepth;\n${shader.fragmentShader}`.replace(
+		shader.fragmentShader = `uniform float fadeDepth;\nvarying float vViewDepth;\nvarying float vHeight;\n${shader.fragmentShader}`.replace(
 			'void main() {',
 			[
 				'void main() {',
-				`\tfloat shown = mix(${fadedLeast.toFixed(2)}, 1.0, clamp(vViewDepth / max(fadeDepth, 0.001), 0.0, 1.0));`,
+				`\tfloat shown = vHeight < ${groundHeight.toFixed(2)} ? 1.0 : mix(${fadedLeast.toFixed(2)}, 1.0, clamp(vViewDepth / max(fadeDepth, 0.001), 0.0, 1.0));`,
 				'\tif (shown < fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715))))) discard;',
 			].join('\n'),
 		)

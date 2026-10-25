@@ -21,15 +21,13 @@ import {
 	HemisphereLight,
 	Mesh,
 	MeshStandardMaterial,
-	Vector3,
-	type Material,
 	type Object3D,
 	type Scene,
 } from 'three'
 import type { GLTF } from 'three/addons/loaders/GLTFLoader.js'
 import { layBlocks } from './blocks.mts'
 import { Batch, chunkOf, placed, scatter, type Cursor } from './kit.mts'
-import { addAll, castShadows, clearanceOf, facingPath, fadeNear, followSun, fogFar, isFree, passTime, sky, skyRadius, stamp, strip, type Daylight, type Owned, type Planting, type StageView, type Taken } from './landscape.mts'
+import { addAll, castShadows, clearanceOf, facingPath, followSun, fogFar, isFree, passTime, sky, skyRadius, stamp, strip, type Daylight, type Owned, type Planting, type StageView, type Taken } from './landscape.mts'
 import type { District } from './backdrop.mts'
 import { nearAmbushCover, type CoverSet } from './cover.mts'
 import { metresPerAmbush } from '../flows/run.mts'
@@ -294,10 +292,6 @@ export function createEdoCastle(scene: Scene, path: Path, models: Promise<Castle
 	})
 	scene.add(blocks.group)
 
-	// The samurai's depth in view, where the gatehouses begin to fade; set every frame.
-	const fade = { value: 0 }
-	const samurai = new Vector3()
-
 	let disposed = false
 	void models.then((loaded) => {
 		if (disposed) return
@@ -309,11 +303,7 @@ export function createEdoCastle(scene: Scene, path: Path, models: Promise<Castle
 		const lantern = loaded.temple?.scene.getObjectByName('StoneLantern')
 		for (const { group, pending } of blocks.laid) {
 			if (wall !== undefined) addAll(group, stamp(wall, pending.walls, heightOf(wall), true, owned))
-			if (gate !== undefined) {
-				const made = stamp(gate, pending.gates, heightOf(gate), true, owned)
-				for (const mesh of made) fadeNear(mesh.material as Material, fade)
-				addAll(group, made)
-			}
+			if (gate !== undefined) addAll(group, stamp(gate, pending.gates, heightOf(gate), true, owned))
 			if (keep !== undefined) addAll(group, stamp(keep, pending.keeps, heightOf(keep), false, owned))
 			if (pine !== undefined) addAll(group, stamp(pine, pending.pines, heightOf(pine), true, owned))
 			if (lantern !== undefined) addAll(group, stamp(lantern, pending.lanterns, heightOf(lantern), true, owned))
@@ -324,10 +314,6 @@ export function createEdoCastle(scene: Scene, path: Path, models: Promise<Castle
 
 	return {
 		passTime: passTime({ scene, fog, backdrop, ambient, sun }, daylight),
-
-		frame(camera, x, z) {
-			fade.value = -samurai.set(x, 1, z).applyMatrix4(camera.matrixWorldInverse).z
-		},
 
 		follow(x, z, distance) {
 			blocks.follow(distance)

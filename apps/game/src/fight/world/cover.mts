@@ -28,7 +28,7 @@ import {
 import { randomOf, type District } from './backdrop.mts'
 import { districtAt } from './districts.mts'
 import { placed, within } from './kit.mts'
-import type { Owned } from './landscape.mts'
+import { fadeNear, type Owned } from './landscape.mts'
 import { beside, type Path } from './path.mts'
 
 /** The things a ninja hides behind. */
@@ -477,6 +477,7 @@ export function createCover(path: Path, set: CoverSet, every: number, seed: numb
 	const shapes = shapesOf()
 	owned.geometries.push(...Object.values(shapes))
 	const material = new MeshStandardMaterial({ roughness: 0.95, flatShading: true })
+	fadeNear(material)
 	owned.materials.push(material)
 
 	/** The covers round one point: their parts, turned to face the path, each of a kind picked at random. */
