@@ -16,7 +16,8 @@ the stages share one style with the temple. Each piece is a root named for it, i
 - Edo castle: `CastleWall`, six metres of curving stone wall (ishigaki) under a white plastered wall
   with a tiled cap, its face toward +z; `CastleGate`, a gatehouse (yaguramon) over an eight-metre
   passage; and `CastleKeep`, the keep (tenshu): five storeys of white walls under curved roofs on a
-  sloping stone base, with gilt fish-tigers (shachihoko) on the top ridge.
+  sloping stone base, with gilt fish-tigers (shachihoko) on the top ridge; and `CastleTurret`, a
+  corner turret (sumi-yagura): two white storeys on a stone base as high as the walls.
 """
 
 import math
@@ -286,6 +287,27 @@ def castle_keep():
     return keep
 
 
+def castle_turret():
+    """A corner turret (sumi-yagura): a sloping stone base as high as the walls, then two white storeys under curved roofs."""
+    turret = root('CastleTurret')
+    base = cylinder(turret, 'WallStone', (0, 0, 0), 4.6, 4.8, sides=4, top_radius=3.6)
+    base.rotation_euler = (0, 0, math.pi / 4)
+    y = 4.8
+    for storey, (width, tall) in enumerate([(5.0, 2.8), (3.6, 2.4)]):
+        box(turret, 'Plaster', (0, y + tall / 2, 0), (width, tall, width))
+        box(turret, 'Black', (0, y + 0.2, 0), (width + 0.1, 0.4, width + 0.1))
+        # Two windows on each side.
+        for offset in (-width / 4, width / 4):
+            for z in (width / 2 + 0.02, -width / 2 - 0.02):
+                box(turret, 'Black', (offset, y + tall * 0.55, z), (0.8, 0.8, 0.04))
+                box(turret, 'Black', (z, y + tall * 0.55, offset), (0.04, 0.8, 0.8))
+        roof_y = y + tall - 0.1
+        curved_roof(turret, (0, roof_y, 0), width + 2.4, width + 2.4, 1.6 if storey == 0 else 2.6, 0.6, steps=4, run=8)
+        y += tall + (1.0 if storey == 0 else 0)
+    ridge_cap(turret, (0, y + 2.3, 0), 0)
+    return turret
+
+
 def main():
     argv = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else []
     out = argv[0] if argv else 'stage-kit.glb'
@@ -293,7 +315,7 @@ def main():
 
     bpy.ops.wm.read_factory_settings(use_empty=True)
     stage_materials()
-    pieces = [farmhouse(), scarecrow(), bamboo_clump(), shrine(), jizo(), pine(), castle_wall(), castle_gate(), castle_keep()]
+    pieces = [farmhouse(), scarecrow(), bamboo_clump(), shrine(), jizo(), pine(), castle_wall(), castle_gate(), castle_keep(), castle_turret()]
     for piece in pieces:
         kit.join_children(piece)
     bpy.ops.export_scene.gltf(filepath=out, export_format='GLB', export_apply=True, export_yup=True,

@@ -1,13 +1,14 @@
 /**
  * Edo castle ([stages](../../../../../docs/design/screens.md#2-fight-setup)) at sunset: a gravel way
- * between curving stone walls under white plastered walls, through gatehouses, along a moat, with
- * pines behind the walls and the keep rising over everything. The last stage, and the grandest.
+ * between curving stone walls under white plastered walls, through gatehouses, along a moat with a
+ * turret on its far corners, with pines behind the walls and the keep rising over everything. The
+ * last stage, and the grandest.
  *
  * Laid out when the run starts as a few blocks of a round of the path each, stitched together
  * ahead of the samurai for as long as the run goes ([blocks](./blocks.mts)), in stretches of path
- * that are each their own `InstancedMesh`. The walls, gates, keep and pines are from our stage kit
- * (`assets/blender/stage_kit.py`), the lanterns from the temple kit; the grounds stand without
- * them until they are in.
+ * that are each their own `InstancedMesh`. The walls, gates, turrets, keep and pines are from our
+ * stage kit (`assets/blender/stage_kit.py`), the lanterns from the temple kit; the grounds stand
+ * without them until they are in.
  */
 
 import {
@@ -167,7 +168,7 @@ export function moatSide(distance: number): -1 | 0 | 1 {
 }
 
 export type CastleModels = Partial<{
-	/** Our stage kit: `CastleWall`, `CastleGate`, `CastleKeep`, `Pine`. */
+	/** Our stage kit: `CastleWall`, `CastleGate`, `CastleKeep`, `CastleTurret`, `Pine`. */
 	readonly kit: GLTF
 	/** The temple kit: `StoneLantern`. */
 	readonly temple: GLTF
@@ -185,6 +186,7 @@ type CastlePending = {
 	readonly gates: Planting[]
 	readonly walls: Planting[]
 	readonly keeps: Planting[]
+	readonly turrets: Planting[]
 	readonly pines: Planting[]
 	readonly lanterns: Planting[]
 }
@@ -232,7 +234,7 @@ export function createEdoCastle(scene: Scene, path: Path, models: Promise<Castle
 		const cursor: Cursor = { chunk: 0 }
 		const clear = clearanceOf(path, from - 60, to + 60)
 		const taken: Taken = []
-		const pending: CastlePending = { gates: [], walls: [], keeps: [], pines: [], lanterns: [] }
+		const pending: CastlePending = { gates: [], walls: [], keeps: [], turrets: [], pines: [], lanterns: [] }
 
 		// A gatehouse across the way at the start of every round: this block's, and the next one's
 		// just past its end, which the walls keep clear of too.
@@ -241,7 +243,7 @@ export function createEdoCastle(scene: Scene, path: Path, models: Promise<Castle
 		const nearGate = (distance: number) => [from + gateAt, to + gateAt].some((entrance) => Math.abs(entrance - distance) < 7)
 
 		// Walls either side, but along a moat the near wall gives way to water, with a wall beyond it,
-		// and a stone kerb along the way and across both ends.
+		// and a stone kerb along the way.
 		const moat = new Batch(box, waterMaterial, cursor, { receive: true })
 		const kerbs = new Batch(box, kerbMaterial, cursor, { cast: true, receive: true })
 		for (let distance = from; distance < to; distance += wallEvery) {
@@ -259,10 +261,13 @@ export function createEdoCastle(scene: Scene, path: Path, models: Promise<Castle
 					moat.add(placed(middle.x, 0.02, middle.z, point.heading, moatWidth, 0.05, wallEvery + 0.4))
 					const edge = beside(point, side * (wallFoot - 0.3))
 					kerbs.add(placed(edge.x, 0, edge.z, point.heading, kerbWidth, kerbHeight * 2, wallEvery + 0.4))
+					// Where the moat ends, a wall across it from the near wall to a corner turret on the far one.
 					for (const end of [-1, 1]) {
 						if (moatSide(distance + end * wallEvery) === moatOn) continue
-						const across = beside(point, side * (wallFoot + 4), end * (wallEvery + 0.4) / 2)
-						kerbs.add(placed(across.x, 0, across.z, point.heading, moatWidth, kerbHeight * 2, kerbWidth))
+						const across = beside(point, side * (wallFoot + 3.5), end * ((wallEvery + 0.4) / 2 + wallFront))
+						pending.walls.push({ matrix: placed(across.x, 0, across.z, point.heading + (end < 0 ? Math.PI : 0)), chunk: cursor.chunk })
+						const corner = beside(point, side * (foot + 1), end * (wallEvery + 0.4) / 2)
+						pending.turrets.push({ matrix: placed(corner.x, 0, corner.z, point.heading), chunk: cursor.chunk })
 					}
 				}
 			}
@@ -316,12 +321,14 @@ export function createEdoCastle(scene: Scene, path: Path, models: Promise<Castle
 		const wall = kit?.getObjectByName('CastleWall')
 		const gate = kit?.getObjectByName('CastleGate')
 		const keep = kit?.getObjectByName('CastleKeep')
+		const turret = kit?.getObjectByName('CastleTurret')
 		const pine = kit?.getObjectByName('Pine')
 		const lantern = loaded.temple?.scene.getObjectByName('StoneLantern')
 		for (const { group, pending } of blocks.laid) {
 			if (wall !== undefined) addAll(group, stamp(wall, pending.walls, heightOf(wall), true, owned))
 			if (gate !== undefined) addAll(group, fading(stamp(gate, pending.gates, heightOf(gate), true, owned)))
 			if (keep !== undefined) addAll(group, stamp(keep, pending.keeps, heightOf(keep), false, owned))
+			if (turret !== undefined) addAll(group, stamp(turret, pending.turrets, heightOf(turret), true, owned))
 			if (pine !== undefined) addAll(group, stamp(pine, pending.pines, heightOf(pine), true, owned))
 			if (lantern !== undefined) addAll(group, stamp(lantern, pending.lanterns, heightOf(lantern), true, owned))
 		}
