@@ -16,7 +16,12 @@ the stages share one style with the temple. Each piece is a root named for it, i
 - Edo castle: `CastleWall`, six metres of curving stone wall (ishigaki) under a white plastered wall
   with a tiled cap, its face toward +z; `CastleGate`, a gatehouse (yaguramon) over an eight-metre
   passage; and `CastleKeep`, the keep (tenshu): five storeys of white walls under curved roofs on a
-  sloping stone base, with gilt fish-tigers (shachihoko) on the top ridge.
+  sloping stone base, with gilt fish-tigers (shachihoko) on the top ridge; and `CastleTurret`, a
+  corner turret (sumi-yagura): two white storeys on a stone base as high as the walls; and
+  `CastleOuterGate`, the plain first gate (kōraimon) of a square gate court (masugata): two posts
+  under a small roof over an eight-metre passage, with a little roof over each post behind.
+  `CastleTamon`, a long storehouse along the top of the wall (tamon-yagura): six metres of the same
+  stone wall, under a white storey with barred windows and a tiled roof, to stand in a row of walls.
 """
 
 import math
@@ -286,6 +291,79 @@ def castle_keep():
     return keep
 
 
+def castle_turret():
+    """A corner turret (sumi-yagura): a sloping stone base as high as the walls, then two white storeys under curved roofs."""
+    turret = root('CastleTurret')
+    base = cylinder(turret, 'WallStone', (0, 0, 0), 4.6, 4.8, sides=4, top_radius=3.6)
+    base.rotation_euler = (0, 0, math.pi / 4)
+    y = 4.8
+    for storey, (width, tall) in enumerate([(5.0, 2.8), (3.6, 2.4)]):
+        box(turret, 'Plaster', (0, y + tall / 2, 0), (width, tall, width))
+        box(turret, 'Black', (0, y + 0.2, 0), (width + 0.1, 0.4, width + 0.1))
+        # Two windows on each side.
+        for offset in (-width / 4, width / 4):
+            for z in (width / 2 + 0.02, -width / 2 - 0.02):
+                box(turret, 'Black', (offset, y + tall * 0.55, z), (0.8, 0.8, 0.04))
+                box(turret, 'Black', (z, y + tall * 0.55, offset), (0.04, 0.8, 0.8))
+        roof_y = y + tall - 0.1
+        curved_roof(turret, (0, roof_y, 0), width + 2.4, width + 2.4, 1.6 if storey == 0 else 2.6, 0.6, steps=4, run=8)
+        y += tall + (1.0 if storey == 0 else 0)
+    ridge_cap(turret, (0, y + 2.3, 0), 0)
+    return turret
+
+
+def castle_outer_gate():
+    """A kōraimon: two posts under a beam and a small gable roof, a post behind each with a roof of its own, doors swung open."""
+    gate = root('CastleOuterGate')
+    passage = 8.0
+    def gable(centre, length, depth, lift=0.4):
+        x, y, z = centre
+        for side in (-1, 1):
+            board = box(gate, 'RoofTile', (0, 0, 0), (length, 0.12, depth / 2 + 0.1))
+            board.location = kit.at(x, y, z + side * depth / 4)
+            board.rotation_euler = (side * lift, 0, 0)
+        box(gate, 'RoofEdge', (x, y + depth / 4 * math.sin(lift) + 0.1, z), (length + 0.04, 0.16, 0.22))
+    for side in (-1, 1):
+        x = side * (passage / 2 + 0.3)
+        box(gate, 'Timber', (x, 2.5, 0), (0.6, 5.0, 0.6))
+        box(gate, 'Timber', (x, 1.8, -2.2), (0.35, 3.6, 0.35))
+        box(gate, 'Timber', (x, 3.2, -1.1), (0.25, 0.25, 2.2))
+        gable((x, 3.9, -2.2), 1.2, 1.4)
+        # The door swung open, back against the post behind.
+        box(gate, 'Timber', (side * (passage / 2 - 0.15), 2.1, -1.1), (0.15, 4.0, 2.0))
+        for row in range(3):
+            box(gate, 'Iron', (side * (passage / 2 - 0.25), 0.9 + row * 1.3, -1.1), (0.04, 0.1, 1.8))
+    box(gate, 'Timber', (0, 4.7, 0), (passage + 2.4, 0.5, 0.6))
+    gable((0, 5.25, 0), passage + 3.2, 2.0)
+    return gate
+
+
+def castle_tamon():
+    """Six metres of the stone wall with a long white storey on it (tamon-yagura), its windows toward +z."""
+    tamon = root('CastleTamon')
+    length = 6.0
+    depth = 3.4
+    _extrude(tamon, 'WallStone', WALL_FACE + [(-depth + 0.2, 4.8), (-depth + 0.2, 0.0)], length)
+    for z, y in WALL_FACE[1:-1]:
+        _extrude(tamon, 'StoneDark', [(z + 0.06, y - 0.06), (z + 0.06, y + 0.06), (z - 0.1, y + 0.06), (z - 0.1, y - 0.06)], length + 0.02)
+    middle = 0.2 - depth / 2
+    box(tamon, 'Timber', (0, 4.95, middle), (length + 0.03, 0.3, depth + 0.1))
+    box(tamon, 'Plaster', (0, 6.4, middle), (length + 0.02, 2.6, depth))
+    box(tamon, 'Black', (0, 5.25, middle), (length + 0.04, 0.3, depth + 0.04))
+    # Two barred windows toward the way.
+    for x in (-1.5, 1.5):
+        box(tamon, 'Black', (x, 6.6, middle + depth / 2 + 0.01), (1.3, 0.8, 0.04))
+        for bar in range(-2, 3):
+            box(tamon, 'Timber', (x + bar * 0.25, 6.6, middle + depth / 2 + 0.04), (0.05, 0.8, 0.04))
+    # A tiled roof of two slopes meeting over the middle, overhanging the walls.
+    for side in (-1, 1):
+        board = box(tamon, 'RoofTile', (0, 0, 0), (length + 0.04, 0.14, depth / 2 + 0.9))
+        board.location = kit.at(0, 8.1, middle + side * (depth / 4 + 0.3))
+        board.rotation_euler = (side * 0.5, 0, 0)
+    box(tamon, 'RoofEdge', (0, 8.55, middle), (length + 0.06, 0.18, 0.24))
+    return tamon
+
+
 def main():
     argv = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else []
     out = argv[0] if argv else 'stage-kit.glb'
@@ -293,7 +371,7 @@ def main():
 
     bpy.ops.wm.read_factory_settings(use_empty=True)
     stage_materials()
-    pieces = [farmhouse(), scarecrow(), bamboo_clump(), shrine(), jizo(), pine(), castle_wall(), castle_gate(), castle_keep()]
+    pieces = [farmhouse(), scarecrow(), bamboo_clump(), shrine(), jizo(), pine(), castle_wall(), castle_gate(), castle_keep(), castle_turret(), castle_outer_gate(), castle_tamon()]
     for piece in pieces:
         kit.join_children(piece)
     bpy.ops.export_scene.gltf(filepath=out, export_format='GLB', export_apply=True, export_yup=True,

@@ -123,7 +123,7 @@ export function createStageWorld(stage: Stage, scene: Scene, stageLength: () => 
 	}
 	if (stage === 'edo-castle') {
 		const path = createPath(castleRound)
-		return around(scene, path, () => createEdoCastle(scene, path, stageModels(stage)), castleDistricts, castleCover, stageLength, phase)
+		return around(scene, path, () => createEdoCastle(scene, path, stageModels(stage), stageLength), castleDistricts, castleCover, stageLength, phase)
 	}
 	const path = createPath(townRound)
 	return around(scene, path, () => createCastleTown(scene, path, stageModels(stage)), townDistricts, townCover, stageLength, phase)

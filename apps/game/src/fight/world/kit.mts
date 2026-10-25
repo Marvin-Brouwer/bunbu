@@ -134,6 +134,19 @@ export function placed(x: number, y: number, z: number, yaw = 0, sx = 1, sy = sx
 export const within = (parent: Matrix4, child: Matrix4): Matrix4 => new Matrix4().multiplyMatrices(parent, child)
 
 /**
+ * A wooden bridge carrying the way over water, as on castle town's garden streams and Edo castle's
+ * moats: a plank deck `halfWidth` metres either side of the middle at `deck`, its length along `z`,
+ * and a red rail on four posts along each edge. Copies of a unit box in `boxes`, coloured per part.
+ */
+export function bridgeAt(boxes: Batch, deck: Matrix4, halfWidth: number): void {
+	boxes.add(within(deck, placed(0, 0.12, 0, 0, halfWidth * 2 + 0.4, 0.16, 6.5)), 0x6b4a32)
+	for (const side of [-1, 1]) {
+		boxes.add(within(deck, placed(side * (halfWidth + 0.15), 0.95, 0, 0, 0.14, 0.12, 6.5)), 0xa8261c)
+		for (const post of [-3, -1, 1, 3]) boxes.add(within(deck, placed(side * (halfWidth + 0.15), 0.55, post, 0, 0.16, 0.85, 0.16)), 0xa8261c)
+	}
+}
+
+/**
  * A gable roof one unit wide, deep and high: the ridge runs along `x` at the top, the eaves at
  * `z = ±0.5` at the bottom.
  */
