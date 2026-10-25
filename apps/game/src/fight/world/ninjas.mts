@@ -263,6 +263,14 @@ export type NinjasView = {
 	dispose: () => void
 }
 
+/**
+ * Where a ninja without a cover comes in from, round the samurai as {@link spotOf} is: `far`, where
+ * it starts for the fight, moved on along the path, ahead or behind, so it runs in down the way
+ * rather than out of the houses by its side.
+ */
+export const entranceOf = (far: { x: number; z: number }): { x: number; z: number } =>
+	({ x: far.x, z: far.z + Math.sign(far.z) * entranceDistance })
+
 /** How far `point` is from the line from `from` to `to`, flat. */
 function offLine(point: { x: number; z: number }, from: { x: number; z: number }, to: { x: number; z: number }): number {
 	const dx = to.x - from.x
@@ -374,14 +382,8 @@ export function createNinjasView(parent: Group, make: () => Body): NinjasView {
 				if (!beaten.has(ninja.pose) && motion.pose !== 'fleeing') entry.beatenAt = undefined
 				else entry.beatenAt ??= frame
 				const spot = spotOf(entry.mark, ninja.wave, motion.approach, entry.below)
-				// Enter from farther out the same way, or from behind its cover. From farther out it can
-				// disappear behind a tree or house and then run out into view, instead of appearing at
-				// the ambush's first visible position.
-				const far = spotOf(entry.mark, ninja.wave, 0, entry.below)
-				const length = Math.hypot(far.x, far.z)
-				const entrance = length > 0
-					? { x: far.x * (1 + entranceDistance / length), z: far.z * (1 + entranceDistance / length) }
-					: far
+				// Enter from farther along the path, or from behind its cover.
+				const entrance = entranceOf(spotOf(entry.mark, ninja.wave, 0, entry.below))
 				const visible = {
 					x: entrance.x + (spot.x - entrance.x) * entry.entrance,
 					z: entrance.z + (spot.z - entrance.z) * entry.entrance,
