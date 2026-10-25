@@ -58,6 +58,9 @@ const houseHeight = 7.5
 const rowsOff = [streetHalfWidth + 4.1, streetHalfWidth + 12.8, streetHalfWidth + 21.5] as const
 /** How far the back rows keep from the gardens, so they stay open, with room for the ponds and the trees. */
 const gardenRoom = 17
+/** The grid the open ground left near the streets is filled on, and how far off the street it reaches, in metres. */
+const fillCell = 7.5
+const fillReach = rowsOff[2] + 3.5
 
 
 const palette = {
@@ -604,6 +607,44 @@ function lay(path: Path, from: number, to: number, base: number, shapes: Shapes)
 				solids.push({ x: centre.x, z: centre.z, width, depth: 7, heading: facingPath(point, side), height: houseHeight })
 			}
 		}
+	}
+
+	// Then whatever ground near the streets is still open, mostly at their corners, where the rows
+	// along the path leave a wedge: a house on every free spot of a grid, facing the nearest street.
+	const streetPoints: { point: PathPoint; distance: number }[] = []
+	for (let distance = from; distance <= to; distance++) {
+		const point = path.at(distance)
+		if (point.zone === 'street') streetPoints.push({ point, distance })
+	}
+	const spots = new Set<string>()
+	for (const { point } of streetPoints.filter((_, which) => which % 4 === 0)) {
+		for (let x = Math.round((point.x - fillReach) / fillCell); x <= Math.round((point.x + fillReach) / fillCell); x++) {
+			for (let z = Math.round((point.z - fillReach) / fillCell); z <= Math.round((point.z + fillReach) / fillCell); z++) spots.add(`${x},${z}`)
+		}
+	}
+	for (const spot of spots) {
+		const [x = 0, z = 0] = spot.split(',').map((value) => Number(value) * fillCell)
+		let nearest = streetPoints[0]
+		let away = Infinity
+		for (const each of streetPoints) {
+			const apart = Math.hypot(each.point.x - x, each.point.z - z)
+			if (apart < away) {
+				nearest = each
+				away = apart
+			}
+		}
+		if (nearest === undefined || away > fillReach || !isFree(taken, x, z, fillCell / 2)) continue
+		const width = 5 + scatter(index * 3) * 2
+		index++
+		const heading = Math.atan2(nearest.point.x - x, nearest.point.z - z)
+		const frame = placed(x, 0, z, heading)
+		if (!fits(frame, width, (cornerX, cornerZ) => clear(cornerX, cornerZ, nearest.distance, streetHalfWidth + 0.4, 60) && offGardens(cornerX, cornerZ))) continue
+		cursor.chunk = chunkOf(nearest.distance)
+		if (away < rowsOff[1] - 3.5) building(town, frame, width - 0.15, index)
+		else if (away < rowsOff[2] - 3.5) backHouse(town, frame, width - 0.15, index)
+		else farHouse(town, frame, width - 0.15, index)
+		taken.push({ x, z, radius: fillCell / 2 })
+		solids.push({ x, z, width, depth: 7, heading, height: houseHeight })
 	}
 
 	// The gardens, first what is fixed in them: the torii at the gate, landmarks on the skyline, and
