@@ -37,7 +37,7 @@ import {
 } from 'three'
 import type { GLTF } from 'three/addons/loaders/GLTFLoader.js'
 import { layBlocks, solidsShown } from './blocks.mts'
-import { Batch, chunkOf, gableGeometry, glowTexture, partOf, placed, scatter, slatsTexture, within, type Cursor } from './kit.mts'
+import { Batch, bridgeAt, chunkOf, gableGeometry, glowTexture, partOf, placed, scatter, slatsTexture, within, type Cursor } from './kit.mts'
 import { beside, type Path, type PathPoint } from './path.mts'
 import { addAll, castShadows, clearanceOf, facingPath, fading, followSun, fogFar, isFree, passTime, sky, skyRadius, stamp, strip, type Daylight, type Owned, type Planting, type StageView, type Taken } from './landscape.mts'
 import type { District } from './backdrop.mts'
@@ -468,7 +468,7 @@ function shapesOf(owned: Owned): { shapes: Shapes; shopLight: MeshStandardMateri
 		stone: { geometry: box, material: lit(1), shadows: { cast: true } },
 		lanternLight: { geometry: box, material: material(new MeshBasicMaterial()) },
 		barrels: { geometry: geometry(new CylinderGeometry(0.45, 0.4, 1, 10)), material: lit(0.9), shadows: { cast: true } },
-		water: { geometry: geometry(new CircleGeometry(1, 28).rotateX(-Math.PI / 2)), material: material(new MeshStandardMaterial({ roughness: 0.15, metalness: 0.4 })) },
+		water: { geometry: geometry(new CircleGeometry(1, 28).rotateX(-Math.PI / 2)), material: material(new MeshStandardMaterial({ roughness: 0.2 })) },
 		bridge: { geometry: box, material: lit(0.6), shadows: { cast: true } },
 		rocks: { geometry: geometry(new DodecahedronGeometry(1, 0)), material: lit(1), shadows: { cast: true } },
 		cloth: { geometry: box, material: lit(0.9), shadows: { cast: true } },
@@ -589,11 +589,7 @@ function lay(path: Path, from: number, to: number, base: number, shapes: Shapes)
 		}
 		const deck = placed(crossing.x, 0, crossing.z, crossing.heading)
 		town.water.add(within(deck, placed(0, 0.025, 0, 0, 3.4, 1, 3.4)), palette.water)
-		town.bridge.add(within(deck, placed(0, 0.12, 0, 0, gardenHalfWidth * 2 + 0.4, 0.16, 6.5)), 0x6b4a32)
-		for (const side of [-1, 1]) {
-			town.bridge.add(within(deck, placed(side * (gardenHalfWidth + 0.15), 0.95, 0, 0, 0.14, 0.12, 6.5)), palette.bridge)
-			for (const post of [-3, -1, 1, 3]) town.bridge.add(within(deck, placed(side * (gardenHalfWidth + 0.15), 0.55, post, 0, 0.16, 0.85, 0.16)), palette.bridge)
-		}
+		bridgeAt(town.bridge, deck, gardenHalfWidth)
 	}
 
 	// Then what grows around them: maples, bamboo, rocks, and stone lanterns along the path, all
@@ -744,7 +740,7 @@ export function createCastleTown(scene: Scene, path: Path, models: Promise<TownM
 
 	return {
 		passTime: passTime({ scene, fog, backdrop, ambient, sun, lamps }, daylight),
-		solids: () => solidsShown(blocks),
+		solids: () => solidsShown(blocks, ({ solids }) => solids),
 
 		follow(x, z, distance) {
 			blocks.follow(distance)

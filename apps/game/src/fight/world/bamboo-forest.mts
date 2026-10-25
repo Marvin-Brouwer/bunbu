@@ -468,7 +468,7 @@ export function createBambooForest(scene: Scene, path: Path, models: Promise<Bam
 
 	return {
 		passTime: passTime({ scene, fog, backdrop, ambient, sun }, daylight),
-		solids: () => solidsShown(blocks),
+		solids: () => solidsShown(blocks, ({ solids }) => solids),
 
 		follow(x, z, distance) {
 			blocks.follow(distance)

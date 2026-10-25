@@ -136,6 +136,7 @@ export function layBlocks<Pending>(path: Path, lay: Lay<Pending>, variants = blo
 	}
 }
 
-/** What is solid in the blocks shown round the samurai, where they are shown ([solids](./solids.mts)). */
-export const solidsShown = (blocks: Blocks<{ readonly solids: readonly Solid[] }>): Solid[] =>
-	blocks.laid.filter((block) => block.group.visible).flatMap((block) => block.pending.solids.map((solid) => moved(solid, block.group.position)))
+/** What `solidsOf` says is solid in the blocks shown round the samurai, where they are shown ([solids](./solids.mts)). */
+export function solidsShown<Pending>(blocks: Blocks<Pending>, solidsOf: (pending: Pending) => readonly Solid[]): Solid[] {
+	return blocks.laid.filter((block) => block.group.visible).flatMap((block) => solidsOf(block.pending).map((solid) => moved(solid, block.group.position)))
+}

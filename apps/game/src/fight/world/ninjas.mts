@@ -21,8 +21,8 @@ import { coverReach, type CoverSpot } from './cover.mts'
 import type { ClashSpot, SlainSpot } from './effects.mts'
 import { beside } from './path.mts'
 import { headingOf, lungeOf, spotOf } from './placement.mts'
-import { partWay, routeTo } from './routes.mts'
-import { intoBox, nearestTallBox, outOfBox, reachOf, tallBoxBetween, type Box, type Solid, type Spot } from './solids.mts'
+import { partWay, routeConfig, routeTo } from './routes.mts'
+import { inside, intoBox, nearestTallBox, outOfBox, reachOf, tallBoxBetween, type Box, type Solid, type Spot } from './solids.mts'
 import { poseSeconds, type FigurePose } from '../../_shared/world/poses.mts'
 
 /**
@@ -201,7 +201,7 @@ function overCover(cover: CoverSpot, from: Spot, lane: number): Leap {
 }
 
 /** Metres from where it would come from on open ground that a ninja looks for a roof to leap down off, when nothing stands in its way. */
-const roofReach = 12
+const roofReach = 16
 
 /** How a ninja leaps down off a roof: how far behind the back wall it waits, and before the front it lands, how far over the ridge it goes, and its timing. */
 export const roofConfig = { behind: 1, ahead: 1.2, over: 1, waits: 0.05, lands: 0.6 }
@@ -209,16 +209,22 @@ export const roofConfig = { behind: 1, ahead: 1.2, over: 1, waits: 0.05, lands: 
 /**
  * The leap over `roof`, a building or a wall, toward `to`, where it stands for the fight: from
  * behind it, where the camera can't see it, across it in line with `wished`, where it would have
- * come from on open ground, down in front of it.
+ * come from on open ground, down in front of it, clear of what is solid there, as a moat.
  */
-export function offRoof(roof: Box, to: Spot, wished: Spot): Leap {
+export function offRoof(roof: Box, to: Spot, wished: Spot, solids: readonly Solid[] = []): Leap {
 	const { behind, ahead, over, waits, lands } = roofConfig
 	// Its front is the side toward where it will stand.
 	const front = intoBox(roof, to.x, to.z).along > 0 ? 1 : -1
 	const across = Math.min(roof.width / 2 - 0.5, Math.max(-roof.width / 2 + 0.5, intoBox(roof, wished.x, wished.z).across))
+	let out = roof.depth / 2 + ahead
+	const landsIn = () => {
+		const { x, z } = outOfBox(roof, across, front * out)
+		return solids.some((solid) => inside(solid, x, z, routeConfig.clearance))
+	}
+	while (landsIn() && out < roof.depth / 2 + roofReach) out += routeConfig.cell
 	return {
 		hidden: outOfBox(roof, across, -front * (roof.depth / 2 + behind)),
-		landed: outOfBox(roof, across, front * (roof.depth / 2 + ahead)),
+		landed: outOfBox(roof, across, front * out),
 		height: (roof.height ?? 0) + over,
 		waits,
 		lands,
@@ -388,7 +394,7 @@ function farOut(far: Spot): Spot {
  * running in around what is solid ([routes](./routes.mts)) from where the camera can't see it,
  * toward the samurai and as near as it can to where it would come from on open ground. Where there
  * is no such way, it leaps down off a roof: of the building or wall in the way of that, or else the
- * nearest one. Neither, where there is nothing to come from behind.
+ * nearest one on its side of the way. Neither, where there is nothing to come from behind.
  */
 export function wayIn(mark: Mark, wave: number, below: 1 | -1, frame: ViewFrame, around: Surroundings): { leap: Leap | undefined; route: Spot[] | undefined } {
 	const stand = spotOf(mark, wave, standReach, below)
@@ -406,8 +412,11 @@ export function wayIn(mark: Mark, wave: number, below: 1 | -1, frame: ViewFrame,
 		&& Math.hypot(spot.x - samurai.x, spot.z - samurai.z) > Math.hypot(to.x - samurai.x, to.z - samurai.z) + 1
 	const route = routeTo(to, wished, solids, (spot) => toward(spot) && around.hidden(spot, solids))
 	if (route !== undefined) return { leap: undefined, route }
-	const roof = tallBoxBetween(solids, to, wished) ?? nearestTallBox(solids, wished, roofReach)
-	return { leap: roof === undefined ? undefined : offRoof(roof, to, wished), route: undefined }
+	// Off a roof on its own side of the way, rather than across it, where there is one.
+	const right = (spot: Spot) => (spot.x - samurai.x) * Math.cos(frame.heading) - (spot.z - samurai.z) * Math.sin(frame.heading)
+	const ownSide = solids.filter((solid) => Math.sign(right(solid)) === Math.sign(right(to)))
+	const roof = tallBoxBetween(solids, to, wished) ?? nearestTallBox(ownSide, wished, roofReach) ?? nearestTallBox(solids, wished, roofReach)
+	return { leap: roof === undefined ? undefined : offRoof(roof, to, wished, solids), route: undefined }
 }
 
 /** `parent` is in world space, and `make` makes a ninja's body. */

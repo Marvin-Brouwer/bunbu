@@ -136,6 +136,15 @@ describe('a ninja without a cover', () => {
 		expect(leap?.landed.z).toBeLessThan(0)
 	})
 
+	it('leaps off the wall beyond a moat clear over the water', () => {
+		const wall = (z: number): Solid => ({ x: 16.6, z, width: 10, depth: 4, heading: Math.PI / 2, height: 6.8 })
+		const moat: Solid = { x: 10, z: -10, width: 40, depth: 8.6, heading: Math.PI / 2 }
+		const { leap } = wayIn('right', 0, 1, frame, around([wall(5), wall(-5), wall(-15), wall(-25), moat]))
+		expect(leap?.hidden.x).toBeGreaterThan(16.6 + 2)
+		expect(inside(moat, leap?.landed.x ?? 10, leap?.landed.z ?? -10)).toBe(false)
+		expect(leap?.landed.x).toBeLessThan(10)
+	})
+
 	it('comes in as it always did where nothing stands in the way', () => {
 		expect(wayIn('right', 0, 1, frame, around([]))).toEqual({ route: undefined, leap: undefined })
 	})

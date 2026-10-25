@@ -354,7 +354,7 @@ export function createMountainTemple(scene: Scene, path: Path, models: Promise<M
 
 	return {
 		passTime: passTime({ scene, fog, backdrop, ambient, sun }, daylight),
-		solids: () => solidsShown(blocks),
+		solids: () => solidsShown(blocks, ({ solids }) => solids),
 
 		follow(x, z, distance) {
 			blocks.follow(distance)
