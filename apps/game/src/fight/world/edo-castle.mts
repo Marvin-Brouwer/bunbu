@@ -46,7 +46,7 @@ const palette = {
 	tiles: 0x2e3036,
 	timber: 0x5a4030,
 	straw: 0xc9a85e,
-	banners: [0x2f4a7a, 0xeae4d4, 0x8a1e16],
+	crest: 0xf2ead8,
 }
 
 /** From sunset to a moonlit night. One light per quarter of the stage ({@link passTime}). */
@@ -253,18 +253,21 @@ function lowWallAt(walls: Batch | undefined, at: { x: number; z: number }, headi
 /** Whether the high wall `along` metres into a round carries a long storehouse: on the first straight, past the gates. */
 const tamonAt = (along: number) => along > courtEnd + 7 && along < 60
 
-/** A clan banner (nobori) on its pole on `side` of the way at `point`, in a colour picked by `pick`. */
-function bannerAt(props: Batch | undefined, point: PathPoint, side: number, pick: number): void {
+/**
+ * A clan banner (nobori) on its pole on `side` of the way at `point`: in a colour of the weapon
+ * racks' cloths, picked by `pick`, with their crest, a pale disc, in `discs`.
+ */
+function bannerAt(props: Batch | undefined, discs: Batch | undefined, point: PathPoint, side: number, pick: number): void {
 	const pole = beside(point, side * (wallFoot - 0.6))
 	// Hung from the pole toward the way, its face to those coming along it.
 	const cloth = beside(point, side * (wallFoot - 1.05))
 	const crest = beside(point, side * (wallFoot - 1.05), -0.03)
-	const colour = palette.banners[Math.floor(pick * palette.banners.length)] ?? palette.plaster
+	const cloths = castleCover.colours['weapon-rack'] ?? [palette.timber]
+	const colour = cloths[Math.floor(pick * cloths.length)] ?? palette.timber
 	props?.add(placed(pole.x, 2.4, pole.z, point.heading, 0.09, 4.8, 0.09), palette.timber)
 	props?.add(placed(cloth.x, 4.6, cloth.z, point.heading, 0.9, 0.06, 0.06), palette.timber)
 	props?.add(placed(cloth.x, 3.05, cloth.z, point.heading, 0.75, 3.1, 0.03), colour)
-	// The clan's crest near the top, in white, or in indigo on a white banner.
-	props?.add(placed(crest.x, 3.95, crest.z, point.heading, 0.4, 0.4, 0.05), colour === palette.plaster ? palette.banners[0] : palette.plaster)
+	discs?.add(placed(crest.x, 3.95, crest.z, point.heading, 0.5, 0.5, 0.02).multiply(new Matrix4().makeRotationX(Math.PI / 2)), palette.crest)
 }
 
 /** Rice bales (tawara) stacked three, two and one, lying along the way on `side` of it at `point`. */
@@ -405,7 +408,7 @@ export function createEdoCastle(scene: Scene, path: Path, models: Promise<Castle
 						if (way === 'low') lowWallAt(lowWalls[index], beside(point, side * (wallFoot + 0.3)), point.heading)
 						// Clan banners (nobori) in front of every third high wall, clear of the lanterns and covers.
 						const banner = Math.round((distance - from) / wallEvery) % 3 === 1 && !nearLantern(distance) && !nearAmbushCover(distance, metresPerAmbush)
-						if (way === 'high' && banner) bannerAt(lowWalls[index], point, side, scatter(base + distance))
+						if (way === 'high' && banner) bannerAt(lowWalls[index], bales[index], point, side, scatter(base + distance))
 					})
 				}
 				if (side === moatOn) {
