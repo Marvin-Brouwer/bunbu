@@ -9,8 +9,10 @@ import { settings } from '../settings/state/settings.mts'
 export const buzzes = {
 	/** A swipe picked a mark. */
 	pick: 12,
+	/** A scroll is about to unroll. */
+	scroll: 150,
 	/** The samurai is hit. */
-	hit: 150,
+	hit: 600,
 }
 
 /**
