@@ -49,6 +49,13 @@ describe('a ninja running in without a cover', () => {
 		expect(routeTo({ x: 8.7, z: -4 }, wished, houses, () => true)).toBeUndefined()
 	})
 
+	it('still comes in where it stands right by a post, around it and then the last step in', () => {
+		const post: Solid = { x: to.x + 0.3, z: to.z, radius: 0.25 }
+		const way = routeTo(to, { x: 8, z: -10 }, [post], () => true)
+		expect(way?.at(-1)).toEqual(to)
+		expect(way?.slice(0, -1).every((spot) => !inside(post, spot.x, spot.z, routeConfig.clearance))).toBe(true)
+	})
+
 	it('starts nearest to where it would have come from, when it is out of sight anywhere', () => {
 		const start = routeTo(to, { x: -6, z: -10 }, [], () => true)?.[0]
 		expect(Math.hypot((start?.x ?? 0) + 6, (start?.z ?? 0) + 10)).toBeLessThan(1)

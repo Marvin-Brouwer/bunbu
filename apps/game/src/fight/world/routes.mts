@@ -23,15 +23,17 @@ export const routeConfig = {
 	longest: 18,
 	/** The shortest: it doesn't step out from right beside where it will stand. */
 	shortest: 4,
+	/** How far off where it will stand its way may end, where that is too near something solid, as a post. */
+	nudge: 1,
 }
 
 /**
  * The way in to `to`, from the start to `to`, around `solids`: from a spot that `startsFrom` allows,
  * as one the camera can't see, nearest to `wished`. `undefined` when there is no such way, or `to`
- * itself is in something solid.
+ * itself is in something solid, further than `nudge` from open ground.
  */
 export function routeTo(to: Spot, wished: Spot, solids: readonly Solid[], startsFrom: (spot: Spot) => boolean, config = routeConfig): Spot[] | undefined {
-	const { cell, reach, clearance, longest, shortest } = config
+	const { cell, reach, clearance, longest, shortest, nudge } = config
 	const size = Math.round((reach * 2) / cell) + 1
 	const middle = (size - 1) / 2
 	const spotOf = (index: number): Spot => ({ x: to.x + ((index % size) - middle) * cell, z: to.z + (Math.floor(index / size) - middle) * cell })
@@ -49,8 +51,21 @@ export function routeTo(to: Spot, wished: Spot, solids: readonly Solid[], starts
 			}
 		}
 	}
-	const start = Math.round(middle) * size + Math.round(middle)
-	if (blocked[start] === 1) return undefined
+	// Where it will stand, or the open cell nearest it, where it stands too near something solid.
+	const centre = Math.round(middle) * size + Math.round(middle)
+	let start = -1
+	let nearest = Infinity
+	const nudging = Math.round(nudge / cell)
+	for (let row = -nudging; row <= nudging; row++) {
+		for (let column = -nudging; column <= nudging; column++) {
+			const away = Math.hypot(row, column) * cell
+			if (away <= nudge && away < nearest && blocked[centre + row * size + column] === 0) {
+				start = centre + row * size + column
+				nearest = away
+			}
+		}
+	}
+	if (start === -1) return undefined
 
 	// The shortest way from `to` to every cell within `longest`, step by step.
 	const distances = new Float64Array(size * size).fill(Infinity)
@@ -92,7 +107,9 @@ export function routeTo(to: Spot, wished: Spot, solids: readonly Solid[], starts
 
 	const cells: number[] = []
 	for (let index = from.index; index !== -1; index = previous[index] ?? -1) cells.push(index)
-	return straightened(cells.map(spotOf), (one, other) => clearBetween(one, other, near, clearance))
+	const way = straightened(cells.map(spotOf), (one, other) => clearBetween(one, other, near, clearance))
+	// The last step in to where it stands, from the open cell beside it.
+	return start === centre ? way : [...way, to]
 }
 
 /** Whether the way from `one` to `other` keeps `clearance` from every one of `solids`. */
