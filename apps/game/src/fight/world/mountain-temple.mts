@@ -21,15 +21,13 @@ import {
 	HemisphereLight,
 	Mesh,
 	MeshStandardMaterial,
-	Vector3,
-	type Material,
 	type Object3D,
 	type Scene,
 } from 'three'
 import type { GLTF } from 'three/addons/loaders/GLTFLoader.js'
 import { layBlocks } from './blocks.mts'
 import { Batch, chunkOf, placed, scatter, type Cursor } from './kit.mts'
-import { addAll, castShadows, clearanceOf, facingPath, fadeNear, followSun, fogFar, isFree, passTime, sky, skyRadius, stamp, strip, type Daylight, type Owned, type Planting, type StageView, type Taken } from './landscape.mts'
+import { addAll, castShadows, clearanceOf, facingPath, fading, followSun, fogFar, isFree, passTime, sky, skyRadius, stamp, strip, type Daylight, type Owned, type Planting, type StageView, type Taken } from './landscape.mts'
 import type { District } from './backdrop.mts'
 import type { CoverSet } from './cover.mts'
 import { beside, type Leg, type Path } from './path.mts'
@@ -239,10 +237,6 @@ export function createMountainTemple(scene: Scene, path: Path, models: Promise<M
 	}
 	scene.add(peaks)
 
-	// The samurai's depth in view, where the torii begin to fade; set every frame.
-	const fade = { value: 0 }
-	const samurai = new Vector3()
-
 	// Stone steps: the path in bands of stone, each edge darker, a step a metre.
 	const step = new Color(palette.step)
 	const edge = new Color(palette.stepEdge)
@@ -333,11 +327,7 @@ export function createMountainTemple(scene: Scene, path: Path, models: Promise<M
 		const pagoda = temple?.getObjectByName('Pagoda')
 		const pine = loaded.kit?.scene.getObjectByName('Pine')
 		for (const { group, pending } of blocks.laid) {
-			if (gate !== undefined) {
-				const gates = stamp(gate, pending.torii, toriiHeight, true, owned)
-				for (const mesh of gates) fadeNear(mesh.material as Material, fade)
-				addAll(group, gates)
-			}
+			if (gate !== undefined) addAll(group, fading(stamp(gate, pending.torii, toriiHeight, true, owned)))
 			if (lantern !== undefined) addAll(group, stamp(lantern, pending.lanterns, heightOf(lantern), true, owned))
 			if (hall !== undefined) addAll(group, stamp(hall, pending.halls, heightOf(hall), false, owned))
 			if (pagoda !== undefined) addAll(group, stamp(pagoda, pending.pagodas, heightOf(pagoda), false, owned))
@@ -349,10 +339,6 @@ export function createMountainTemple(scene: Scene, path: Path, models: Promise<M
 
 	return {
 		passTime: passTime({ scene, fog, backdrop, ambient, sun }, daylight),
-
-		frame(camera, x, z) {
-			fade.value = -samurai.set(x, 1, z).applyMatrix4(camera.matrixWorldInverse).z
-		},
 
 		follow(x, z, distance) {
 			blocks.follow(distance)

@@ -23,7 +23,7 @@ import {
 } from 'three'
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js'
 import { gableGeometry, placed, within } from './kit.mts'
-import type { Owned } from './landscape.mts'
+import { fadeNear, type Owned } from './landscape.mts'
 import { beside, type Path, type Zone } from './path.mts'
 import { districtAt } from './districts.mts'
 import type { CoverChoice } from './cover.mts'
@@ -291,14 +291,17 @@ export type Backdrop = {
 /**
  * The backdrop of a stage's `districts` along `path`, laid out at random from `seed`: a new one
  * every run. Which district is where goes by the length of the stage, `stageLength()` metres, read
- * as each stretch is laid out. One flat-shaded material shades it all, fog included; each part
- * gets its own colour.
+ * as each stretch is laid out. One flat-shaded material shades it all, fog included, and a copy of
+ * it that fades the torii; each part gets its own colour.
  */
 export function createBackdrop(path: Path, districts: readonly District[], seed: number, owned: Owned, stageLength: () => number): Backdrop {
 	const rows = districts.flatMap((district) => district.rows)
 	const geometries = geometriesOf()
 	const material = new MeshStandardMaterial({ roughness: 1, flatShading: true })
-	owned.materials.push(material)
+	// The torii go over the way, so they fade as the camera passes under them.
+	const overhead = material.clone()
+	fadeNear(overhead)
+	owned.materials.push(material, overhead)
 	for (const parts of Object.values(geometries)) owned.geometries.push(...parts)
 
 	// As many as a window of tiles can hold, at the most a row can crowd together.
@@ -309,7 +312,7 @@ export function createBackdrop(path: Path, districts: readonly District[], seed:
 		// Two districts can meet in a tile: room for all of their rows.
 		const most = rows.filter((row) => row.shape === shape).reduce((sum, row) => sum + Math.ceil(row.perTile * 1.6 + 1) * 2, 0) * tiles
 		const parts = geometries[shape].map((geometry) => {
-			const mesh = new InstancedMesh(geometry, material, most)
+			const mesh = new InstancedMesh(geometry, shape === 'torii' ? overhead : material, most)
 			mesh.count = 0
 			// One mesh round the samurai, always in view somewhere: culling it would only cost.
 			mesh.frustumCulled = false

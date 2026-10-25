@@ -296,14 +296,23 @@ export function stamp(template: Object3D, plantings: readonly Planting[], height
 const fadedLeast = 0.2
 
 /**
- * Fades whatever of `material` is nearer the camera than `fade.value`, in view depth: what the camera
- * passes through or under (a tunnel of torii, a gatehouse) would otherwise fill the screen. It shows
- * whole at that depth and fades the nearer the camera it comes, to {@link fadedLeast}; its shadow stays.
- * Drawn as a fine scatter of dropped pixels, so copies behind it still show through it in any order.
+ * The samurai's depth in view, where the scenery begins to fade ({@link fadeNear}). One run's
+ * world is drawn at a time, so every stage shares it; the stage's world sets it every frame
+ * ([stages](./stages.mts)).
  */
-export function fadeNear(material: Material, fade: { value: number }): void {
+export const nearFade = { value: 0 }
+
+/**
+ * Fades whatever of `material` is nearer the camera than {@link nearFade}, in view depth: what the
+ * camera passes through or under (a torii, a gatehouse) would otherwise fill the screen. It shows
+ * whole at that depth and fades the nearer the camera it comes, to {@link fadedLeast}; its shadow
+ * stays. Drawn as a fine scatter of dropped pixels, so copies behind it still show through it in
+ * any order. Only what goes over the way fades ({@link fading}); houses, stands and villagers the
+ * camera clips round a corner stay whole.
+ */
+export function fadeNear(material: Material): void {
 	material.onBeforeCompile = (shader) => {
-		shader.uniforms.fadeDepth = fade
+		shader.uniforms.fadeDepth = nearFade
 		shader.vertexShader = `varying float vViewDepth;\n${shader.vertexShader}`.replace(
 			'#include <project_vertex>',
 			'#include <project_vertex>\n\tvViewDepth = -mvPosition.z;',
@@ -319,6 +328,12 @@ export function fadeNear(material: Material, fade: { value: number }): void {
 	}
 	material.customProgramCacheKey = () => 'fade-near'
 	material.needsUpdate = true
+}
+
+/** Lets `meshes`, stamped out over the way (a torii, a gatehouse), fade near the camera ({@link fadeNear}). */
+export function fading<Faded extends Mesh>(meshes: Faded[]): Faded[] {
+	for (const mesh of meshes) fadeNear(mesh.material as Material)
+	return meshes
 }
 
 /** How far ahead of the samurai the sun's shadows are centred, and how far round that they reach, in metres. */
