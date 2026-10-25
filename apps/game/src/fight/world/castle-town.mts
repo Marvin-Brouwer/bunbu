@@ -462,7 +462,7 @@ function shapesOf(owned: Owned): { shapes: Shapes; shopLight: MeshStandardMateri
 		stone: { geometry: box, material: lit(1), shadows: { cast: true } },
 		lanternLight: { geometry: box, material: material(new MeshBasicMaterial()) },
 		barrels: { geometry: geometry(new CylinderGeometry(0.45, 0.4, 1, 10)), material: lit(0.9), shadows: { cast: true } },
-		water: { geometry: geometry(new CircleGeometry(1, 28).rotateX(-Math.PI / 2)), material: material(new MeshStandardMaterial({ roughness: 0.15, metalness: 0.4 })) },
+		water: { geometry: geometry(new CircleGeometry(1, 28).rotateX(-Math.PI / 2)), material: material(new MeshStandardMaterial({ roughness: 0.2 })) },
 		bridge: { geometry: box, material: lit(0.6), shadows: { cast: true } },
 		rocks: { geometry: geometry(new DodecahedronGeometry(1, 0)), material: lit(1), shadows: { cast: true } },
 		cloth: { geometry: box, material: lit(0.9), shadows: { cast: true } },

@@ -36,7 +36,8 @@ import { beside, type Leg, type Path } from './path.mts'
 const palette = {
 	lawn: 0x56603a,
 	gravel: 0xb8ad98,
-	water: 0x2d4a5a,
+	water: 0x4f7a8a,
+	kerb: 0x8d877b,
 }
 
 /** From sunset to a moonlit night. One light per quarter of the stage ({@link passTime}). */
@@ -95,6 +96,10 @@ const wallFoot = 6
 const wallFront = 1.6
 /** How long one wall piece is, and how far apart they are laid, a little less so they overlap. */
 const wallEvery = 5.8
+/** How wide the moat is, and how wide and high the stone kerb around it. */
+const moatWidth = 8.6
+const kerbWidth = 0.4
+const kerbHeight = 0.25
 /** How far into a round the gatehouse stands. */
 const gateAt = 6
 
@@ -212,10 +217,12 @@ export function createEdoCastle(scene: Scene, path: Path, models: Promise<Castle
 	scene.add(ground)
 
 	const gravel = new Color(palette.gravel)
-	const water = new BoxGeometry(1, 1, 1)
-	const waterMaterial = new MeshStandardMaterial({ color: palette.water, roughness: 0.15, metalness: 0.4 })
-	owned.geometries.push(water)
-	owned.materials.push(waterMaterial)
+	const box = new BoxGeometry(1, 1, 1)
+	// Not metal: with nothing around to reflect, metal water only comes out black.
+	const waterMaterial = new MeshStandardMaterial({ color: palette.water, roughness: 0.2 })
+	const kerbMaterial = new MeshStandardMaterial({ color: palette.kerb, roughness: 1 })
+	owned.geometries.push(box)
+	owned.materials.push(waterMaterial, kerbMaterial)
 
 	// The grounds, a round of the path at a time ([blocks](./blocks.mts)).
 	const blocks = layBlocks<CastlePending>(path, (from, to, base) => {
@@ -233,8 +240,10 @@ export function createEdoCastle(scene: Scene, path: Path, models: Promise<Castle
 		pending.gates.push({ matrix: placed(gatehouse.x, 0, gatehouse.z, gatehouse.heading), chunk: chunkOf(from + gateAt) })
 		const nearGate = (distance: number) => [from + gateAt, to + gateAt].some((entrance) => Math.abs(entrance - distance) < 7)
 
-		// Walls either side, but along a moat the near wall gives way to water, with a wall beyond it.
-		const moat = new Batch(water, waterMaterial, cursor, { receive: true })
+		// Walls either side, but along a moat the near wall gives way to water, with a wall beyond it,
+		// and a stone kerb along the way and across both ends.
+		const moat = new Batch(box, waterMaterial, cursor, { receive: true })
+		const kerbs = new Batch(box, kerbMaterial, cursor, { cast: true, receive: true })
 		for (let distance = from; distance < to; distance += wallEvery) {
 			if (nearGate(distance)) continue
 			const point = path.at(distance)
@@ -247,7 +256,14 @@ export function createEdoCastle(scene: Scene, path: Path, models: Promise<Castle
 				pending.walls.push({ matrix: placed(at.x, 0, at.z, facingPath(point, side)), chunk: cursor.chunk })
 				if (side === moatOn) {
 					const middle = beside(point, side * (wallFoot + 4))
-					moat.add(placed(middle.x, 0.02, middle.z, point.heading, 8.6, 0.05, wallEvery + 0.4))
+					moat.add(placed(middle.x, 0.02, middle.z, point.heading, moatWidth, 0.05, wallEvery + 0.4))
+					const edge = beside(point, side * (wallFoot - 0.3))
+					kerbs.add(placed(edge.x, 0, edge.z, point.heading, kerbWidth, kerbHeight * 2, wallEvery + 0.4))
+					for (const end of [-1, 1]) {
+						if (moatSide(distance + end * wallEvery) === moatOn) continue
+						const across = beside(point, side * (wallFoot + 4), end * (wallEvery + 0.4) / 2)
+						kerbs.add(placed(across.x, 0, across.z, point.heading, moatWidth, kerbHeight * 2, kerbWidth))
+					}
 				}
 			}
 		}
@@ -288,6 +304,7 @@ export function createEdoCastle(scene: Scene, path: Path, models: Promise<Castle
 		}
 
 		addAll(group, moat.build())
+		addAll(group, kerbs.build())
 		return { group, pending }
 	})
 	scene.add(blocks.group)
