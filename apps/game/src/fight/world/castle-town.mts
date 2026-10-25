@@ -51,6 +51,16 @@ export const streetHalfWidth = 4.6
 export const gardenHalfWidth = 1.8
 /** How tall the town's buildings stand to the ridge, at most: a ninja leaps down off the roof from there. */
 const houseHeight = 7.5
+/**
+ * How far the middles of the rows of houses stand off the path: the row on the street, and two rows
+ * behind it, each with a lane behind it that a ninja can come in by.
+ */
+const rowsOff = [streetHalfWidth + 4.1, streetHalfWidth + 12.8, streetHalfWidth + 21.5] as const
+/** How far the back rows keep from the gardens, so they stay open, with room for the ponds and the trees. */
+const gardenRoom = 17
+/** The grid the open ground left near the streets is filled on, and how far off the street it reaches, in metres. */
+const fillCell = 7.5
+const fillReach = rowsOff[2] + 3.5
 
 
 const palette = {
@@ -365,6 +375,22 @@ function house(town: Town, frame: Matrix4, width: number, index: number): void {
 	}
 }
 
+/** A house in the second row, behind the street: its walls, an upper storey and the roof. Its front is out of sight. */
+function backHouse(town: Town, frame: Matrix4, width: number, index: number): void {
+	const depth = 7
+	const timber = palette.timber[Math.floor(scatter(index + 12) * palette.timber.length)] ?? palette.timber[0]
+	const plaster = palette.plaster[Math.floor(scatter(index + 13) * palette.plaster.length)] ?? palette.plaster[0]
+	town.walls.add(within(frame, placed(0, 1.5, 0, 0, width, 3, depth)), timber)
+	town.plaster.add(within(frame, placed(0, 4.1, -0.3, 0, width - 0.2, 2.2, depth - 0.6)), plaster)
+	roof(town, frame, width, depth - 0.6, 5.2, -0.3, roofOf(index))
+}
+
+/** A house in the third row, only seen between and over the others: a block under a roof. */
+function farHouse(town: Town, frame: Matrix4, width: number, index: number): void {
+	town.walls.add(within(frame, placed(0, 2.6, 0, 0, width, 5.2, 7)), palette.timber[Math.floor(scatter(index + 12) * palette.timber.length)] ?? palette.timber[0])
+	town.roofs.add(within(frame, placed(0, 5.2, 0, 0, width + 0.5, 1.5, 8)), roofOf(index))
+}
+
 /** A stone lantern (tōrō): base, post, the lit firebox, roof and knob. */
 function stoneLantern(town: Town, frame: Matrix4): void {
 	town.stone.add(within(frame, placed(0, 0.15, 0, 0, 0.7, 0.3, 0.7)), palette.stone)
@@ -408,6 +434,14 @@ type Pending = {
 	readonly torii: Planting[]
 	/** What a ninja can't run through ([solids](./solids.mts)). */
 	readonly solids: Solid[]
+}
+
+/** Whether a house `width` wide at `frame` has room: whether `free` allows each of its corners and its middle. */
+function fits(frame: Matrix4, width: number, free: (x: number, z: number) => boolean): boolean {
+	return ([[-width / 2, -3.5], [width / 2, -3.5], [-width / 2, 3.5], [width / 2, 3.5], [0, 0]] as const).every(([x, z]) => {
+		const corner = new Vector3(x, 0, z).applyMatrix4(frame)
+		return free(corner.x, corner.z)
+	})
 }
 
 /** Stretches of their own for landmarks far off the path, so each is culled on its own. */
@@ -533,20 +567,84 @@ function lay(path: Path, from: number, to: number, base: number, shapes: Shapes)
 			cursor.chunk = chunkOf(middle)
 			const point = path.at(middle)
 			// The front a little back from the street's edge; only the eaves reach out over it.
-			const centre = beside(point, side * (streetHalfWidth + 4.1), 0)
+			const centre = beside(point, side * rowsOff[0], 0)
 			const frame = placed(centre.x, 0, centre.z, facingPath(point, side))
-			const corners = [[-width / 2, -3.5], [width / 2, -3.5], [-width / 2, 3.5], [width / 2, 3.5], [0, 0]] as const
-			const free = corners.every(([x, z]) => {
-				const corner = new Vector3(x, 0, z).applyMatrix4(frame)
-				return clear(corner.x, corner.z, middle, streetHalfWidth + 0.4)
-			})
-			if (free) {
+			if (fits(frame, width, (x, z) => clear(x, z, middle, streetHalfWidth + 0.4))) {
 				building(town, frame, width - 0.15, index)
 				taken.push({ x: centre.x, z: centre.z, radius: Math.hypot(width, 7) / 2 })
 				solids.push({ x: centre.x, z: centre.z, width, depth: 7, heading: facingPath(point, side), height: houseHeight })
 			}
 			distance += width
 		}
+	}
+
+	// Behind them two more rows, each staggered against the one in front, the last plainer, so the
+	// sky never shows between the houses. They keep off the path at the corners and clear of the gardens.
+	const gardenPoints: PathPoint[] = []
+	for (let distance = from - 40; distance <= to + 40; distance++) {
+		const point = path.at(distance)
+		if (point.zone === 'garden') gardenPoints.push(point)
+	}
+	const offGardens = (x: number, z: number) => gardenPoints.every((point) => Math.hypot(point.x - x, point.z - z) >= gardenRoom)
+	for (const row of [1, 2] as const) {
+		for (const side of [-1, 1]) {
+			let distance = from + row * 2.6
+			while (distance < to) {
+				const width = 5 + scatter(index * 3 + side + row) * 2.5
+				index++
+				const middle = distance + width / 2
+				const street = distance + width <= to && path.at(distance).zone === 'street' && path.at(distance + width).zone === 'street'
+				distance += width
+				if (!street) continue
+				cursor.chunk = chunkOf(middle)
+				const point = path.at(middle)
+				const centre = beside(point, side * rowsOff[row], 0)
+				const frame = placed(centre.x, 0, centre.z, facingPath(point, side))
+				if (!fits(frame, width, (x, z) => clear(x, z, middle, rowsOff[row] - 4) && offGardens(x, z))) continue
+				if (row === 1) backHouse(town, frame, width - 0.15, index)
+				else farHouse(town, frame, width - 0.15, index)
+				taken.push({ x: centre.x, z: centre.z, radius: Math.hypot(width, 7) / 2 })
+				solids.push({ x: centre.x, z: centre.z, width, depth: 7, heading: facingPath(point, side), height: houseHeight })
+			}
+		}
+	}
+
+	// Then whatever ground near the streets is still open, mostly at their corners, where the rows
+	// along the path leave a wedge: a house on every free spot of a grid, facing the nearest street.
+	const streetPoints: { point: PathPoint; distance: number }[] = []
+	for (let distance = from; distance <= to; distance++) {
+		const point = path.at(distance)
+		if (point.zone === 'street') streetPoints.push({ point, distance })
+	}
+	const spots = new Set<string>()
+	for (const { point } of streetPoints.filter((_, which) => which % 4 === 0)) {
+		for (let x = Math.round((point.x - fillReach) / fillCell); x <= Math.round((point.x + fillReach) / fillCell); x++) {
+			for (let z = Math.round((point.z - fillReach) / fillCell); z <= Math.round((point.z + fillReach) / fillCell); z++) spots.add(`${x},${z}`)
+		}
+	}
+	for (const spot of spots) {
+		const [x = 0, z = 0] = spot.split(',').map((value) => Number(value) * fillCell)
+		let nearest = streetPoints[0]
+		let away = Infinity
+		for (const each of streetPoints) {
+			const apart = Math.hypot(each.point.x - x, each.point.z - z)
+			if (apart < away) {
+				nearest = each
+				away = apart
+			}
+		}
+		if (nearest === undefined || away > fillReach || !isFree(taken, x, z, fillCell / 2)) continue
+		const width = 5 + scatter(index * 3) * 2
+		index++
+		const heading = Math.atan2(nearest.point.x - x, nearest.point.z - z)
+		const frame = placed(x, 0, z, heading)
+		if (!fits(frame, width, (cornerX, cornerZ) => clear(cornerX, cornerZ, nearest.distance, streetHalfWidth + 0.4, 60) && offGardens(cornerX, cornerZ))) continue
+		cursor.chunk = chunkOf(nearest.distance)
+		if (away < rowsOff[1] - 3.5) building(town, frame, width - 0.15, index)
+		else if (away < rowsOff[2] - 3.5) backHouse(town, frame, width - 0.15, index)
+		else farHouse(town, frame, width - 0.15, index)
+		taken.push({ x, z, radius: fillCell / 2 })
+		solids.push({ x, z, width, depth: 7, heading, height: houseHeight })
 	}
 
 	// The gardens, first what is fixed in them: the torii at the gate, landmarks on the skyline, and
