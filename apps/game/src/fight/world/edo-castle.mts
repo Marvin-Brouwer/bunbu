@@ -16,10 +16,12 @@ import {
 	BoxGeometry,
 	CircleGeometry,
 	Color,
+	CylinderGeometry,
 	DirectionalLight,
 	Fog,
 	Group,
 	HemisphereLight,
+	Matrix4,
 	Mesh,
 	MeshStandardMaterial,
 	type Object3D,
@@ -33,7 +35,7 @@ import { addAll, castShadows, clearanceOf, facingPath, fading, followSun, fogFar
 import type { District } from './backdrop.mts'
 import { nearAmbushCover, type CoverSet } from './cover.mts'
 import { metresPerAmbush } from '../flows/run.mts'
-import { beside, type Leg, type Path } from './path.mts'
+import { beside, type Leg, type Path, type PathPoint } from './path.mts'
 
 const palette = {
 	lawn: 0x56603a,
@@ -43,6 +45,8 @@ const palette = {
 	plaster: 0xeae4d4,
 	tiles: 0x2e3036,
 	timber: 0x5a4030,
+	straw: 0xc9a85e,
+	banners: [0x2f4a7a, 0xeae4d4, 0x8a1e16],
 }
 
 /** From sunset to a moonlit night. One light per quarter of the stage ({@link passTime}). */
@@ -205,7 +209,7 @@ export function moatSide(distance: number): -1 | 0 | 1 {
 }
 
 export type CastleModels = Partial<{
-	/** Our stage kit: `CastleWall`, `CastleGate`, `CastleOuterGate`, `CastleKeep`, `CastleTurret`, `Pine`. */
+	/** Our stage kit: `CastleWall`, `CastleTamon`, `CastleGate`, `CastleOuterGate`, `CastleKeep`, `CastleTurret`, `Pine`. */
 	readonly kit: GLTF
 	/** The temple kit: `StoneLantern`. */
 	readonly temple: GLTF
@@ -222,6 +226,8 @@ function heightOf(model: Object3D): number {
 type DistrictPending = {
 	readonly group: Group
 	readonly walls: Planting[]
+	/** Long storehouses on the wall (tamon-yagura), in place of a wall piece. */
+	readonly tamons: Planting[]
 	readonly keeps: Planting[]
 }
 
@@ -242,6 +248,48 @@ function lowWallAt(walls: Batch | undefined, at: { x: number; z: number }, headi
 	walls?.add(placed(at.x, 0.2, at.z, heading, 0.8, 0.4, length), palette.kerb)
 	walls?.add(placed(at.x, 1, at.z, heading, 0.5, 1.2, length), palette.plaster)
 	walls?.add(placed(at.x, 1.69, at.z, heading, 0.9, 0.18, length), palette.tiles)
+}
+
+/** Whether the high wall `along` metres into a round carries a long storehouse: on the first straight, past the gates. */
+const tamonAt = (along: number) => along > courtEnd + 7 && along < 60
+
+/** A clan banner (nobori) on its pole on `side` of the way at `point`, in a colour picked by `pick`. */
+function bannerAt(props: Batch | undefined, point: PathPoint, side: number, pick: number): void {
+	const pole = beside(point, side * (wallFoot - 0.6))
+	// Hung from the pole toward the way, its face to those coming along it.
+	const cloth = beside(point, side * (wallFoot - 1.05))
+	const crest = beside(point, side * (wallFoot - 1.05), -0.03)
+	const colour = palette.banners[Math.floor(pick * palette.banners.length)] ?? palette.plaster
+	props?.add(placed(pole.x, 2.4, pole.z, point.heading, 0.09, 4.8, 0.09), palette.timber)
+	props?.add(placed(cloth.x, 4.6, cloth.z, point.heading, 0.9, 0.06, 0.06), palette.timber)
+	props?.add(placed(cloth.x, 3.05, cloth.z, point.heading, 0.75, 3.1, 0.03), colour)
+	// The clan's crest near the top, in white, or in indigo on a white banner.
+	props?.add(placed(crest.x, 3.95, crest.z, point.heading, 0.4, 0.4, 0.05), colour === palette.plaster ? palette.banners[0] : palette.plaster)
+}
+
+/** Rice bales (tawara) stacked three, two and one, lying along the way on `side` of it at `point`. */
+function balesAt(bales: Batch | undefined, point: PathPoint, side: number): void {
+	const lying = new Matrix4().makeRotationX(Math.PI / 2)
+	for (const [across, y] of [[-0.62, 0.3], [0, 0.3], [0.62, 0.3], [-0.31, 0.83], [0.31, 0.83], [0, 1.36]] as const) {
+		const at = beside(point, side * (wallFoot - 1 + across))
+		bales?.add(placed(at.x, y, at.z, point.heading, 0.6, 0.6, 0.85).multiply(lying), palette.straw)
+	}
+}
+
+/** A well (ido) on `side` of the way at `point`: a stone ring, two posts and a little roof over it. */
+function wellAt(props: Batch | undefined, rings: Batch | undefined, point: PathPoint, side: number): void {
+	const at = beside(point, side * (wallFoot - 1))
+	rings?.add(placed(at.x, 0.35, at.z, point.heading, 1.5, 0.7, 1.5), palette.kerb)
+	rings?.add(placed(at.x, 0.36, at.z, point.heading, 1.2, 0.7, 1.2), 0x1e2a30)
+	for (const end of [-1, 1]) {
+		const post = beside(point, side * (wallFoot - 1), end * 0.85)
+		props?.add(placed(post.x, 1.1, post.z, point.heading, 0.12, 2.2, 0.12), palette.timber)
+	}
+	props?.add(placed(at.x, 2.05, at.z, point.heading, 0.1, 0.1, 1.9), palette.timber)
+	for (const slope of [-1, 1]) {
+		const board = beside(point, side * (wallFoot - 1 + slope * 0.4))
+		props?.add(placed(board.x, 2.35, board.z, point.heading, 0.95, 0.06, 2.1).multiply(new Matrix4().makeRotationZ(-side * slope * 0.5)), palette.tiles)
+	}
 }
 
 /** Metres a pine reaches along the path from where it stands. */
@@ -283,7 +331,9 @@ export function createEdoCastle(scene: Scene, path: Path, models: Promise<Castle
 	const kerbMaterial = new MeshStandardMaterial({ color: palette.kerb, roughness: 1 })
 	// Coloured per part: the stone footing, the white wall, the tiles on top.
 	const lowWallMaterial = new MeshStandardMaterial({ roughness: 0.95 })
-	owned.geometries.push(box)
+	// Lying on its side along `z`, for rice bales; standing, for the well.
+	const cylinder = new CylinderGeometry(0.5, 0.5, 1, 10)
+	owned.geometries.push(box, cylinder)
 	owned.materials.push(waterMaterial, kerbMaterial, lowWallMaterial)
 
 	// The grounds, a round of the path at a time ([blocks](./blocks.mts)).
@@ -298,10 +348,11 @@ export function createEdoCastle(scene: Scene, path: Path, models: Promise<Castle
 			const shown = new Group()
 			shown.visible = index === 0
 			group.add(shown)
-			return { group: shown, walls: [], keeps: [] }
+			return { group: shown, walls: [], tamons: [], keeps: [] }
 		})
 		const pending: CastlePending = { gates: [], outerGates: [], walls: [], districts, turrets: [], pines: [], lanterns: [] }
 		const lowWalls = districts.map(() => new Batch(box, lowWallMaterial, cursor, { cast: true, receive: true }))
+		const bales = districts.map(() => new Batch(cylinder, lowWallMaterial, cursor, { cast: true, receive: true }))
 		const keepSide = scatter(base) > 0.5 ? 1 : -1
 
 		// A gatehouse across the way at the start of every round: this block's, and the next one's
@@ -326,6 +377,8 @@ export function createEdoCastle(scene: Scene, path: Path, models: Promise<Castle
 				}
 			}
 		}
+		// The stone lanterns stand every 45 metres from 30 metres into the round (below).
+		const nearLantern = (distance: number) => Math.abs(((distance - from - 30) % 45 + 45) % 45 - 22.5) > 20.5
 		// The walls along the way stop well short of the moat before the next gatehouse, so it shows
 		// running off either side, and nothing stands in it.
 		const nearDitch = (distance: number) => distance > to - ditchBack - ditchWidth / 2 - 14
@@ -347,8 +400,12 @@ export function createEdoCastle(scene: Scene, path: Path, models: Promise<Castle
 				if (side !== moatOn) {
 					districts.forEach((district, index) => {
 						const way = wayOf(index, side, keepSide)
-						if (way === 'high') district.walls.push({ matrix: placed(at.x, 0, at.z, facingPath(point, side)), chunk: cursor.chunk })
+						const piece = { matrix: placed(at.x, 0, at.z, facingPath(point, side)), chunk: cursor.chunk }
+						if (way === 'high') (tamonAt(distance - from) ? district.tamons : district.walls).push(piece)
 						if (way === 'low') lowWallAt(lowWalls[index], beside(point, side * (wallFoot + 0.3)), point.heading)
+						// Clan banners (nobori) in front of every third high wall, clear of the lanterns and covers.
+						const banner = Math.round((distance - from) / wallEvery) % 3 === 1 && !nearLantern(distance) && !nearAmbushCover(distance, metresPerAmbush)
+						if (way === 'high' && banner) bannerAt(lowWalls[index], point, side, scatter(base + distance))
 					})
 				}
 				if (side === moatOn) {
@@ -396,6 +453,17 @@ export function createEdoCastle(scene: Scene, path: Path, models: Promise<Castle
 			}
 		}
 
+		// Rice bales and a well by the way in the retainers' quarter, away from the moat.
+		for (let distance = from + 50, index = base; distance + 2 <= to; distance += 38, index++) {
+			if (nearGate(distance) || nearDitch(distance) || nearLantern(distance) || nearAmbushCover(distance, metresPerAmbush, 3)) continue
+			const side = scatter(index * 5 + 1) < 0.5 ? -1 : 1
+			if (moatSide(distance) === side) continue
+			const point = path.at(distance)
+			cursor.chunk = chunkOf(distance)
+			if (index % 3 === 0) wellAt(lowWalls[0], bales[0], point, side)
+			else balesAt(bales[0], point, side)
+		}
+
 		// Stone lanterns in pairs along the way, now and then, but not where an ambush's covers stand.
 		for (let distance = from + 30; distance + 1.2 <= to; distance += 45) {
 			if (nearGate(distance) || nearAmbushCover(distance, metresPerAmbush)) continue
@@ -439,7 +507,7 @@ export function createEdoCastle(scene: Scene, path: Path, models: Promise<Castle
 		addAll(group, moat.build())
 		addAll(group, kerbs.build())
 		districts.forEach((district, index) => {
-			addAll(district.group, lowWalls[index]?.build() ?? [])
+			addAll(district.group, [...(lowWalls[index]?.build() ?? []), ...(bales[index]?.build() ?? [])])
 		})
 		return { group, pending }
 	}, blockVariants, ({ pending }, from) => {
@@ -461,6 +529,7 @@ export function createEdoCastle(scene: Scene, path: Path, models: Promise<Castle
 		const outerGate = kit?.getObjectByName('CastleOuterGate')
 		const keep = kit?.getObjectByName('CastleKeep')
 		const turret = kit?.getObjectByName('CastleTurret')
+		const tamon = kit?.getObjectByName('CastleTamon')
 		const pine = kit?.getObjectByName('Pine')
 		const lantern = loaded.temple?.scene.getObjectByName('StoneLantern')
 		for (const { group, pending } of blocks.laid) {
@@ -468,6 +537,7 @@ export function createEdoCastle(scene: Scene, path: Path, models: Promise<Castle
 			for (const district of pending.districts) {
 				if (wall !== undefined) addAll(district.group, stamp(wall, district.walls, heightOf(wall), true, owned))
 				if (keep !== undefined) addAll(district.group, stamp(keep, district.keeps, heightOf(keep), false, owned))
+				if (tamon !== undefined) addAll(district.group, stamp(tamon, district.tamons, heightOf(tamon), true, owned))
 			}
 			if (gate !== undefined) addAll(group, fading(stamp(gate, pending.gates, heightOf(gate), true, owned)))
 			if (outerGate !== undefined) addAll(group, fading(stamp(outerGate, pending.outerGates, heightOf(outerGate), true, owned)))

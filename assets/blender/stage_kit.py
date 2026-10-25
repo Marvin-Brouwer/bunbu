@@ -20,6 +20,8 @@ the stages share one style with the temple. Each piece is a root named for it, i
   corner turret (sumi-yagura): two white storeys on a stone base as high as the walls; and
   `CastleOuterGate`, the plain first gate (kōraimon) of a square gate court (masugata): two posts
   under a small roof over an eight-metre passage, with a little roof over each post behind.
+  `CastleTamon`, a long storehouse along the top of the wall (tamon-yagura): six metres of the same
+  stone wall, under a white storey with barred windows and a tiled roof, to stand in a row of walls.
 """
 
 import math
@@ -336,6 +338,32 @@ def castle_outer_gate():
     return gate
 
 
+def castle_tamon():
+    """Six metres of the stone wall with a long white storey on it (tamon-yagura), its windows toward +z."""
+    tamon = root('CastleTamon')
+    length = 6.0
+    depth = 3.4
+    _extrude(tamon, 'WallStone', WALL_FACE + [(-depth + 0.2, 4.8), (-depth + 0.2, 0.0)], length)
+    for z, y in WALL_FACE[1:-1]:
+        _extrude(tamon, 'StoneDark', [(z + 0.06, y - 0.06), (z + 0.06, y + 0.06), (z - 0.1, y + 0.06), (z - 0.1, y - 0.06)], length + 0.02)
+    middle = 0.2 - depth / 2
+    box(tamon, 'Timber', (0, 4.95, middle), (length + 0.03, 0.3, depth + 0.1))
+    box(tamon, 'Plaster', (0, 6.4, middle), (length + 0.02, 2.6, depth))
+    box(tamon, 'Black', (0, 5.25, middle), (length + 0.04, 0.3, depth + 0.04))
+    # Two barred windows toward the way.
+    for x in (-1.5, 1.5):
+        box(tamon, 'Black', (x, 6.6, middle + depth / 2 + 0.01), (1.3, 0.8, 0.04))
+        for bar in range(-2, 3):
+            box(tamon, 'Timber', (x + bar * 0.25, 6.6, middle + depth / 2 + 0.04), (0.05, 0.8, 0.04))
+    # A tiled roof of two slopes meeting over the middle, overhanging the walls.
+    for side in (-1, 1):
+        board = box(tamon, 'RoofTile', (0, 0, 0), (length + 0.04, 0.14, depth / 2 + 0.9))
+        board.location = kit.at(0, 8.1, middle + side * (depth / 4 + 0.3))
+        board.rotation_euler = (side * 0.5, 0, 0)
+    box(tamon, 'RoofEdge', (0, 8.55, middle), (length + 0.06, 0.18, 0.24))
+    return tamon
+
+
 def main():
     argv = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else []
     out = argv[0] if argv else 'stage-kit.glb'
@@ -343,7 +371,7 @@ def main():
 
     bpy.ops.wm.read_factory_settings(use_empty=True)
     stage_materials()
-    pieces = [farmhouse(), scarecrow(), bamboo_clump(), shrine(), jizo(), pine(), castle_wall(), castle_gate(), castle_keep(), castle_turret(), castle_outer_gate()]
+    pieces = [farmhouse(), scarecrow(), bamboo_clump(), shrine(), jizo(), pine(), castle_wall(), castle_gate(), castle_keep(), castle_turret(), castle_outer_gate(), castle_tamon()]
     for piece in pieces:
         kit.join_children(piece)
     bpy.ops.export_scene.gltf(filepath=out, export_format='GLB', export_apply=True, export_yup=True,
