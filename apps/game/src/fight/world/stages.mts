@@ -15,6 +15,7 @@ import { createCastleTown, townDistricts, townCover } from './castle-town.mts'
 import { nearFade, type Owned, type StageView } from './landscape.mts'
 import { createPath, townRound, type Path } from './path.mts'
 import { pictureSettings } from './picture-settings.mts'
+import type { Solid } from './solids.mts'
 import { bambooDistricts, bambooCover, bambooRound, createBambooForest } from './bamboo-forest.mts'
 import { castleDistricts, castleCover, castleRound, createEdoCastle } from './edo-castle.mts'
 import { createMountainTemple, mountainDistricts, mountainCover, mountainRound } from './mountain-temple.mts'
@@ -25,7 +26,13 @@ export type StageWorld = {
 	readonly view: StageView
 	/** Where the covers of the ambush nearest `distance` stand, for its ninjas to run out from behind. */
 	readonly covers: (distance: number) => readonly CoverSpot[]
+	/** What is solid round the samurai `distance` metres along, the covers too, for the ninjas to run around ([solids](./solids.mts)). */
+	readonly solids: (distance: number) => readonly Solid[]
 }
+
+/** Metres along the path either side of the samurai that the covers count as solid for the ninjas, and how far round each it is. */
+const coverRange = 50
+const coverFootprint = 0.9
 
 /** A stage's own scenery along its path, which may make way for the covers put beside it. */
 type OwnView = (cover: Cover) => StageView
@@ -100,6 +107,10 @@ function around(scene: Scene, path: Path, ownView: OwnView, districts: readonly 
 			const ambush = ambushNear(distance, metresPerAmbush, phase)
 			return coverSpotsAt(path, ambush > 0 ? ambush : ambush + metresPerAmbush, cover.aside)
 		},
+		solids: (distance) => [
+			...view.solids?.() ?? [],
+			...covers.spotsBetween(distance - coverRange, distance + coverRange).map((spot) => ({ ...spot, radius: coverFootprint })),
+		],
 	}
 }
 

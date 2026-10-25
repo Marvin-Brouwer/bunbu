@@ -36,18 +36,21 @@ import {
 	type Scene,
 } from 'three'
 import type { GLTF } from 'three/addons/loaders/GLTFLoader.js'
-import { layBlocks } from './blocks.mts'
+import { layBlocks, solidsShown } from './blocks.mts'
 import { Batch, bridgeAt, chunkOf, gableGeometry, glowTexture, partOf, placed, scatter, slatsTexture, within, type Cursor } from './kit.mts'
 import { beside, type Path, type PathPoint } from './path.mts'
 import { addAll, castShadows, clearanceOf, facingPath, fading, followSun, fogFar, isFree, passTime, sky, skyRadius, stamp, strip, type Daylight, type Owned, type Planting, type StageView, type Taken } from './landscape.mts'
 import type { District } from './backdrop.mts'
 import type { CoverSet } from './cover.mts'
+import type { Solid } from './solids.mts'
 
 export { fogFar, skyRadius, type StageView }
 
 /** Half the width of the street, and of the garden path, in metres. */
 export const streetHalfWidth = 4.6
 export const gardenHalfWidth = 1.8
+/** How tall the town's buildings stand to the ridge, at most: a ninja leaps down off the roof from there. */
+const houseHeight = 7.5
 
 
 const palette = {
@@ -296,27 +299,28 @@ function teahouse(town: Town, frame: Matrix4, width: number, index: number): voi
 	roof(town, frame, width, depth - 0.6, 5.6, -0.3, roofOf(index))
 }
 
-/** Street furniture between the houses: a banner on a pole (nobori), or a handcart. */
-function streetThing(town: Town, point: PathPoint, side: number, index: number): void {
+/** Street furniture between the houses: a banner on a pole (nobori), or a handcart, which is solid. */
+function streetThing(town: Town, point: PathPoint, side: number, index: number): Solid | undefined {
 	if (scatter(index + 70) > 0.4) {
 		const at = beside(point, side * (streetHalfWidth - 0.4), 0)
 		const frame = placed(at.x, 0, at.z, facingPath(point, side))
 		town.bamboo.add(within(frame, placed(0, 2.2, 0, 0, 0.08, 4.4, 0.08)), 0x6a5a3a)
 		town.cloth.add(within(frame, placed(0.32, 2.6, 0, 0, 0.55, 2.6, 0.02)), palette.flags[Math.floor(scatter(index + 71) * palette.flags.length)] ?? palette.flags[0])
-	} else {
-		// Parked along the street at its edge, out of the way, the handle along the street too.
-		const at = beside(point, side * (streetHalfWidth + 0.1), 0)
-		const frame = placed(at.x, 0, at.z, facingPath(point, side))
-		const cart = within(frame, placed(0, 0, 0, (scatter(index + 72) - 0.5) * 0.3))
-		town.bamboo.add(within(cart, placed(0, 0.75, 0, 0, 1.8, 0.12, 1)), 0x7a5a3a)
-		town.barrels.add(within(cart, placed(0, 1.05, 0, 0, 0.7, 0.6, 0.7)), 0xb89a6a)
-		for (const wheel of [-1, 1]) {
-			const turned = within(cart, placed(0, 0.45, wheel * 0.55))
-			turned.multiply(new Matrix4().makeRotationX(Math.PI / 2)).multiply(placed(0, 0, 0, 0, 0.9, 0.08, 0.9))
-			town.barrels.add(turned, 0x4a3324)
-		}
-		town.bamboo.add(within(cart, placed(-1.4, 0.75, 0, 0, 1.2, 0.06, 0.06)), 0x7a5a3a)
+		return undefined
 	}
+	// Parked along the street at its edge, out of the way, the handle along the street too.
+	const at = beside(point, side * (streetHalfWidth + 0.1), 0)
+	const frame = placed(at.x, 0, at.z, facingPath(point, side))
+	const cart = within(frame, placed(0, 0, 0, (scatter(index + 72) - 0.5) * 0.3))
+	town.bamboo.add(within(cart, placed(0, 0.75, 0, 0, 1.8, 0.12, 1)), 0x7a5a3a)
+	town.barrels.add(within(cart, placed(0, 1.05, 0, 0, 0.7, 0.6, 0.7)), 0xb89a6a)
+	for (const wheel of [-1, 1]) {
+		const turned = within(cart, placed(0, 0.45, wheel * 0.55))
+		turned.multiply(new Matrix4().makeRotationX(Math.PI / 2)).multiply(placed(0, 0, 0, 0, 0.9, 0.08, 0.9))
+		town.barrels.add(turned, 0x4a3324)
+	}
+	town.bamboo.add(within(cart, placed(-1.4, 0.75, 0, 0, 1.2, 0.06, 0.06)), 0x7a5a3a)
+	return { x: at.x, z: at.z, radius: 1.1 }
 }
 
 /** A town house (machiya) `width` wide, its front on the street. */
@@ -402,6 +406,8 @@ type Pending = {
 	readonly maples: Planting[]
 	readonly bamboo: Planting[]
 	readonly torii: Planting[]
+	/** What a ninja can't run through ([solids](./solids.mts)). */
+	readonly solids: Solid[]
 }
 
 /** Stretches of their own for landmarks far off the path, so each is culled on its own. */
@@ -497,7 +503,8 @@ function lay(path: Path, from: number, to: number, base: number, shapes: Shapes)
 		bamboo: batch('bamboo'),
 		glows: [],
 	}
-	const pending: Pending = { town, maples: [], bamboo: [], torii: [] }
+	const pending: Pending = { town, maples: [], bamboo: [], torii: [], solids: [] }
+	const { solids } = pending
 	// The landmarks look far along the path, into the next round too.
 	const clear = clearanceOf(path, from - 400, to + 400)
 	const taken: Taken = []
@@ -517,7 +524,8 @@ function lay(path: Path, from: number, to: number, base: number, shapes: Shapes)
 				// A garden, or an alley between houses, with a banner or a cart at the street's edge.
 				if (street) {
 					cursor.chunk = chunkOf(distance + 1.25)
-					streetThing(town, path.at(distance + 1.25), side, index)
+					const thing = streetThing(town, path.at(distance + 1.25), side, index)
+					if (thing !== undefined) solids.push(thing)
 				}
 				distance += street ? 2.5 : 4
 				continue
@@ -535,6 +543,7 @@ function lay(path: Path, from: number, to: number, base: number, shapes: Shapes)
 			if (free) {
 				building(town, frame, width - 0.15, index)
 				taken.push({ x: centre.x, z: centre.z, radius: Math.hypot(width, 7) / 2 })
+				solids.push({ x: centre.x, z: centre.z, width, depth: 7, heading: facingPath(point, side), height: houseHeight })
 			}
 			distance += width
 		}
@@ -554,12 +563,14 @@ function lay(path: Path, from: number, to: number, base: number, shapes: Shapes)
 			cursor.chunk = landmarkChunks + which * 2
 			pagoda(town, placed(skyline.x, 0, skyline.z, scatter(landmark + 1) * Math.PI))
 			taken.push({ x: skyline.x, z: skyline.z, radius: 6 })
+			solids.push({ x: skyline.x, z: skyline.z, radius: 6, height: 18 })
 		}
 		const keep = beside(gate, (scatter(landmark + 2) > 0.5 ? 1 : -1) * 70, 160)
 		if (clear(keep.x, keep.z, garden.start + 164, 30, 400) && isFree(taken, keep.x, keep.z, 18)) {
 			cursor.chunk = landmarkChunks + which * 2 + 1
 			castle(town, placed(keep.x, 0, keep.z, gate.heading))
 			taken.push({ x: keep.x, z: keep.z, radius: 18 })
+			solids.push({ x: keep.x, z: keep.z, radius: 18, height: 30 })
 		}
 
 		const middle = Math.min(garden.start + 37, garden.end - 10)
@@ -570,6 +581,7 @@ function lay(path: Path, from: number, to: number, base: number, shapes: Shapes)
 			const pond = beside(crossing, side * 9, 0)
 			town.water.add(placed(pond.x, 0.03, pond.z, 0, 6.5), palette.water)
 			taken.push({ x: pond.x, z: pond.z, radius: 7.2 })
+			solids.push({ x: pond.x, z: pond.z, radius: 6.9, water: true })
 			for (let stone = 0; stone < 8; stone++) {
 				const angle = (stone / 8) * Math.PI * 2
 				town.rocks.add(placed(pond.x + Math.cos(angle) * 6.7, 0.25, pond.z + Math.sin(angle) * 6.7, angle, 0.6, 0.45, 0.6), 0x6f6a60)
@@ -595,6 +607,8 @@ function lay(path: Path, from: number, to: number, base: number, shapes: Shapes)
 					if (clear(at.x, at.z, distance, gardenHalfWidth + 2.5) && isFree(taken, at.x, at.z, 2.5)) {
 						plant(pending.maples, placed(at.x, 0, at.z, scatter(seed + 2) * 6.28, 0.9 + scatter(seed + 3) * 0.4))
 						taken.push({ x: at.x, z: at.z, radius: 1.5 })
+						// The trunk; its leaves a ninja brushes through.
+						solids.push({ x: at.x, z: at.z, radius: 0.4 })
 					}
 				}
 				if (step % 3 === 0 && scatter(seed + 4) > 0.35) {
@@ -605,13 +619,17 @@ function lay(path: Path, from: number, to: number, base: number, shapes: Shapes)
 				}
 				if (step % 15 === 0 && (step / 15 + (side > 0 ? 1 : 0)) % 2 === 0) {
 					const at = beside(point, side * (gardenHalfWidth + 0.9), 0)
-					if (isFree(taken, at.x, at.z, 0.5)) stoneLantern(town, placed(at.x, 0, at.z, point.heading))
+					if (isFree(taken, at.x, at.z, 0.5)) {
+						stoneLantern(town, placed(at.x, 0, at.z, point.heading))
+						solids.push({ x: at.x, z: at.z, radius: 0.5 })
+					}
 				}
 				if (scatter(seed + 8) > 0.8) {
 					const at = beside(point, side * (gardenHalfWidth + 1.5 + scatter(seed + 9) * 8), 0)
 					const size = 0.3 + scatter(seed + 10) * 0.6
 					if (clear(at.x, at.z, distance, gardenHalfWidth + 0.8) && isFree(taken, at.x, at.z, size)) {
 						town.rocks.add(placed(at.x, size * 0.3, at.z, scatter(seed + 11) * 6, size, size * 0.7, size), 0x7d786d)
+						solids.push({ x: at.x, z: at.z, radius: size })
 					}
 				}
 			}
@@ -722,6 +740,7 @@ export function createCastleTown(scene: Scene, path: Path, models: Promise<TownM
 
 	return {
 		passTime: passTime({ scene, fog, backdrop, ambient, sun, lamps }, daylight),
+		solids: () => solidsShown(blocks, ({ solids }) => solids),
 
 		follow(x, z, distance) {
 			blocks.follow(distance)

@@ -28,7 +28,7 @@ import {
 	type Scene,
 } from 'three'
 import type { GLTF } from 'three/addons/loaders/GLTFLoader.js'
-import { blockVariants, layBlocks } from './blocks.mts'
+import { blockVariants, layBlocks, solidsShown } from './blocks.mts'
 import { districtAt } from './districts.mts'
 import { Batch, bridgeAt, chunkOf, placed, scatter, type Cursor } from './kit.mts'
 import { addAll, castShadows, clearanceOf, facingPath, fading, followSun, fogFar, isFree, passTime, sky, skyRadius, stamp, strip, type Daylight, type Owned, type Planting, type StageView, type Taken } from './landscape.mts'
@@ -36,6 +36,7 @@ import type { District } from './backdrop.mts'
 import { nearAmbushCover, type CoverSet } from './cover.mts'
 import { metresPerAmbush } from '../flows/run.mts'
 import { beside, type Leg, type Path, type PathPoint } from './path.mts'
+import type { Solid } from './solids.mts'
 
 const palette = {
 	lawn: 0x56603a,
@@ -229,6 +230,8 @@ type DistrictPending = {
 	/** Long storehouses on the wall (tamon-yagura), in place of a wall piece. */
 	readonly tamons: Planting[]
 	readonly keeps: Planting[]
+	/** What a ninja can't run through ([solids](./solids.mts)) in this district only. */
+	readonly solids: Solid[]
 }
 
 /** What an Edo-castle block places once the models are in: in every district, and in each its own. */
@@ -240,6 +243,8 @@ type CastlePending = {
 	readonly turrets: Planting[]
 	readonly pines: Planting[]
 	readonly lanterns: Planting[]
+	/** What a ninja can't run through ([solids](./solids.mts)) in every district. */
+	readonly solids: Solid[]
 }
 
 /** A low garden wall (tsuiji-bei) a wall piece long at `at`, along `heading`: a stone footing, a white wall, tiles on top. */
@@ -249,6 +254,9 @@ function lowWallAt(walls: Batch | undefined, at: { x: number; z: number }, headi
 	walls?.add(placed(at.x, 1, at.z, heading, 0.5, 1.2, length), palette.plaster)
 	walls?.add(placed(at.x, 1.69, at.z, heading, 0.9, 0.18, length), palette.tiles)
 }
+
+/** A wall piece's ground with its root at `at`, turned `heading`: its stone face in front, the white wall on top. */
+const wallGround = (at: { x: number; z: number }, heading: number): Solid => ({ ...at, width: wallEvery + 0.4, depth: 4, heading, height: 6.8 })
 
 /** Whether the high wall `along` metres into a round carries a long storehouse: on the first straight, past the gates. */
 const tamonAt = (along: number) => along > courtEnd + 7 && along < 60
@@ -351,9 +359,10 @@ export function createEdoCastle(scene: Scene, path: Path, models: Promise<Castle
 			const shown = new Group()
 			shown.visible = index === 0
 			group.add(shown)
-			return { group: shown, walls: [], tamons: [], keeps: [] }
+			return { group: shown, walls: [], tamons: [], keeps: [], solids: [] }
 		})
-		const pending: CastlePending = { gates: [], outerGates: [], walls: [], districts, turrets: [], pines: [], lanterns: [] }
+		const pending: CastlePending = { gates: [], outerGates: [], walls: [], districts, turrets: [], pines: [], lanterns: [], solids: [] }
+		const { solids } = pending
 		const lowWalls = districts.map(() => new Batch(box, lowWallMaterial, cursor, { cast: true, receive: true }))
 		const bales = districts.map(() => new Batch(cylinder, lowWallMaterial, cursor, { cast: true, receive: true }))
 		const keepSide = scatter(base) > 0.5 ? 1 : -1
@@ -365,6 +374,8 @@ export function createEdoCastle(scene: Scene, path: Path, models: Promise<Castle
 		const entrance = from + (court ? courtEnd : gateAt)
 		const gatehouse = path.at(entrance)
 		pending.gates.push({ matrix: placed(gatehouse.x, 0, gatehouse.z, gatehouse.heading), chunk: chunkOf(entrance) })
+		// Its stone footings either side of the passage, and the storey over it.
+		for (const side of [-1, 1]) solids.push({ ...beside(gatehouse, side * 6.5), width: 5, depth: 7.6, heading: gatehouse.heading, height: 11 })
 		const nearGate = (distance: number) => [entrance, to + gateAt].some((gate) => Math.abs(gate - distance) < 7) || (court && distance < entrance)
 		if (court) {
 			const outer = path.at(from + outerGateAt)
@@ -373,10 +384,14 @@ export function createEdoCastle(scene: Scene, path: Path, models: Promise<Castle
 			for (const side of [-1, 1]) {
 				const flank = beside(outer, side * 7.6)
 				pending.walls.push({ matrix: placed(flank.x, 0, flank.z, outer.heading), chunk: cursor.chunk })
+				solids.push(wallGround(flank, outer.heading))
+				// The gate's posts, the main one and the one behind it.
+				for (const ahead of [0, 2.2]) solids.push({ ...beside(outer, side * 4.3, ahead), radius: 0.4 })
 				for (let distance = from + outerGateAt + wallEvery / 2; distance < entrance - 3.8; distance += wallEvery) {
 					const point = path.at(distance)
 					const at = beside(point, side * (wallFoot + wallFront))
 					pending.walls.push({ matrix: placed(at.x, 0, at.z, facingPath(point, side)), chunk: chunkOf(distance) })
+					solids.push(wallGround(at, facingPath(point, side)))
 				}
 			}
 		}
@@ -404,17 +419,31 @@ export function createEdoCastle(scene: Scene, path: Path, models: Promise<Castle
 					districts.forEach((district, index) => {
 						const way = wayOf(index, side, keepSide)
 						const piece = { matrix: placed(at.x, 0, at.z, facingPath(point, side)), chunk: cursor.chunk }
-						if (way === 'high') (tamonAt(distance - from) ? district.tamons : district.walls).push(piece)
-						if (way === 'low') lowWallAt(lowWalls[index], beside(point, side * (wallFoot + 0.3)), point.heading)
+						if (way === 'high') {
+							const tamon = tamonAt(distance - from)
+							;(tamon ? district.tamons : district.walls).push(piece)
+							// A storehouse reaches further back than the plain wall.
+							district.solids.push(tamon ? { ...beside(point, side * (foot + wallFront + 0.8)), width: wallEvery + 0.4, depth: 5, heading: facingPath(point, side), height: 8.6 } : wallGround(at, facingPath(point, side)))
+						}
+						if (way === 'low') {
+							const low = beside(point, side * (wallFoot + 0.3))
+							lowWallAt(lowWalls[index], low, point.heading)
+							district.solids.push({ ...low, width: 0.9, depth: wallEvery + 0.1, heading: point.heading, height: 1.8 })
+						}
 						// Clan banners (nobori) in front of every third high wall, clear of the lanterns and covers.
 						const banner = Math.round((distance - from) / wallEvery) % 3 === 1 && !nearLantern(distance) && !nearAmbushCover(distance, metresPerAmbush)
-						if (way === 'high' && banner) bannerAt(lowWalls[index], bales[index], point, side, scatter(base + distance))
+						if (way === 'high' && banner) {
+							bannerAt(lowWalls[index], bales[index], point, side, scatter(base + distance))
+							district.solids.push({ ...beside(point, side * (wallFoot - 0.6)), radius: 0.15 })
+						}
 					})
 				}
 				if (side === moatOn) {
 					pending.walls.push({ matrix: placed(at.x, 0, at.z, facingPath(point, side)), chunk: cursor.chunk })
+					solids.push(wallGround(at, facingPath(point, side)))
 					const middle = beside(point, side * (wallFoot + 4))
 					moat.add(placed(middle.x, 0.02, middle.z, point.heading, moatWidth, 0.05, wallEvery + 0.4))
+					solids.push({ ...middle, width: moatWidth, depth: wallEvery + 0.4, heading: point.heading, water: true })
 					const edge = beside(point, side * (wallFoot - 0.3))
 					kerbs.add(placed(edge.x, 0, edge.z, point.heading, kerbWidth, kerbHeight * 2, wallEvery + 0.4))
 					// Where the moat ends, a wall across it from the near wall to a corner turret on the far one.
@@ -422,8 +451,10 @@ export function createEdoCastle(scene: Scene, path: Path, models: Promise<Castle
 						if (moatSide(distance + end * wallEvery) === moatOn) continue
 						const across = beside(point, side * (wallFoot + 3.5), end * ((wallEvery + 0.4) / 2 + wallFront))
 						pending.walls.push({ matrix: placed(across.x, 0, across.z, point.heading + (end < 0 ? Math.PI : 0)), chunk: cursor.chunk })
+						solids.push(wallGround(across, point.heading))
 						const corner = beside(point, side * (foot + 1), end * (wallEvery + 0.4) / 2)
 						pending.turrets.push({ matrix: placed(corner.x, 0, corner.z, point.heading), chunk: cursor.chunk })
+						solids.push({ ...corner, radius: 3.5, height: 12 })
 					}
 				}
 			}
@@ -436,7 +467,9 @@ export function createEdoCastle(scene: Scene, path: Path, models: Promise<Castle
 			const keep = beside(keepBy, keepSide * off)
 			if (!clear(keep.x, keep.z, keepAt, off - 18, 80)) continue
 			districts.forEach((district, index) => {
-				if (keepOff[index] === off) district.keeps.push({ matrix: placed(keep.x, 0, keep.z, facingPath(keepBy, keepSide)), chunk: chunkOf(keepAt) })
+				if (keepOff[index] !== off) return
+				district.keeps.push({ matrix: placed(keep.x, 0, keep.z, facingPath(keepBy, keepSide)), chunk: chunkOf(keepAt) })
+				district.solids.push({ ...keep, radius: 16, height: 30 })
 			})
 			taken.push({ x: keep.x, z: keep.z, radius: 22 })
 		}
@@ -453,6 +486,8 @@ export function createEdoCastle(scene: Scene, path: Path, models: Promise<Castle
 				if (!clear(at.x, at.z, distance, wallFoot + 4, 24) || !isFree(taken, at.x, at.z, 2)) continue
 				pending.pines.push({ matrix: placed(at.x, 0, at.z, scatter(seed + 3) * 6.28, 0.9 + scatter(seed + 4) * 0.5), chunk: chunkOf(distance) })
 				taken.push({ x: at.x, z: at.z, radius: 2 })
+				// The trunk; its needles a ninja brushes through.
+				solids.push({ ...at, radius: 0.45 })
 			}
 		}
 
@@ -465,6 +500,7 @@ export function createEdoCastle(scene: Scene, path: Path, models: Promise<Castle
 			cursor.chunk = chunkOf(distance)
 			if (index % 3 === 0) wellAt(lowWalls[0], bales[0], point, side)
 			else balesAt(bales[0], point, side)
+			districts[0]?.solids.push({ ...beside(point, side * (wallFoot - 1)), radius: index % 3 === 0 ? 1 : 1.1 })
 		}
 
 		// Stone lanterns in pairs along the way, now and then, but not where an ambush's covers stand.
@@ -474,6 +510,7 @@ export function createEdoCastle(scene: Scene, path: Path, models: Promise<Castle
 			for (const side of [-1, 1]) {
 				const at = beside(point, side * (pathHalfWidth + 1.2))
 				pending.lanterns.push({ matrix: placed(at.x, 0, at.z, facingPath(point, side)), chunk: chunkOf(distance) })
+				solids.push({ ...at, radius: 0.5 })
 			}
 		}
 
@@ -489,11 +526,13 @@ export function createEdoCastle(scene: Scene, path: Path, models: Promise<Castle
 				const kerb = beside(ditch, side * (bridgeHalfWidth + ditchReach) / 2, edge * (ditchWidth + kerbWidth) / 2)
 				kerbs.add(placed(kerb.x, 0, kerb.z, ditch.heading, ditchReach - bridgeHalfWidth, kerbHeight * 2, kerbWidth))
 			}
+			solids.push({ ...beside(ditch, side * (bridgeHalfWidth + ditchReach) / 2), width: ditchReach - bridgeHalfWidth, depth: ditchWidth, heading: ditch.heading, water: true })
 			const end = beside(ditch, side * (ditchReach + kerbWidth / 2))
 			kerbs.add(placed(end.x, 0, end.z, ditch.heading, kerbWidth, kerbHeight * 2, ditchWidth + kerbWidth * 2))
 			for (const off of [12, 18]) {
 				const far = beside(ditch, side * off, ditchWidth / 2 + wallFront)
 				pending.walls.push({ matrix: placed(far.x, 0, far.z, ditch.heading), chunk: cursor.chunk })
+				solids.push(wallGround(far, ditch.heading))
 			}
 		}
 		bridgeAt(bridge, placed(ditch.x, 0, ditch.z, ditch.heading), bridgeHalfWidth)
@@ -546,6 +585,8 @@ export function createEdoCastle(scene: Scene, path: Path, models: Promise<Castle
 
 	return {
 		passTime: passTime({ scene, fog, backdrop, ambient, sun }, daylight),
+
+		solids: () => solidsShown(blocks, ({ solids, districts }) => [...solids, ...districts.filter((district) => district.group.visible).flatMap((district) => district.solids)]),
 
 		follow(x, z, distance) {
 			blocks.follow(distance)

@@ -27,6 +27,7 @@ import { createPetals } from '../../_shared/world/petals.mts'
 import { createCharacter, ninjaLook, placeholderBody, samuraiLook, type Body } from '../../_shared/world/character.mts'
 import { createFigureParts } from '../../_shared/world/figure.mts'
 import { bladeLandsAfter, createNinjasView } from './ninjas.mts'
+import { hiddenBehind, type Solid, type Spot } from './solids.mts'
 import { finishingOf, poseSeconds, type FigurePose } from '../../_shared/world/poses.mts'
 
 /** Metres per half a running cycle: one step, matched to the run clip at the run's pace. */
@@ -160,6 +161,19 @@ export function createRunWorld(game: RunGame, viewport: Viewport, roomBelow: () 
 	let first = true
 	// From 0, the whole screen, to 1, the fight framed in the room below the scroll.
 	let framed = 0
+	// Whether the camera, as it was last drawn, can't see a ninja at `spot`: no part of it on the
+	// screen, from its feet to its head and a metre round for its arms and blade, or something solid
+	// that hides it between ([solids](./solids.mts)).
+	const onScreen = new Vector3()
+	const onCamera = (x: number, y: number, z: number) => {
+		onScreen.set(x, y, z).project(camera)
+		return Math.abs(onScreen.x) <= 1 && Math.abs(onScreen.y) <= 1 && onScreen.z <= 1
+	}
+	const outline = [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]] as const
+	const hidden = (spot: Spot, solids: readonly Solid[]) =>
+		outline.every(([x, z]) => !onCamera(spot.x + x, 0, spot.z + z) && !onCamera(spot.x + x, 1.8, spot.z + z))
+		|| hiddenBehind(solids, { x: camera.position.x, z: camera.position.z }, spot)
+
 	const position = new Vector3()
 	const target = new Vector3()
 	const look = new Vector3()
@@ -240,7 +254,11 @@ export function createRunWorld(game: RunGame, viewport: Viewport, roomBelow: () 
 
 			// The ninjas first: they keep the mark each came from after the ambush's options are gone.
 			// They wind up to charge as the time runs out.
-			ninjas.draw(game.ninjas.value.active, ambush.options, ambush.kind, view.frame, delta, worldDelta, laid.covers(run.distance - offset))
+			ninjas.draw(game.ninjas.value.active, ambush.options, ambush.kind, view.frame, delta, worldDelta, {
+				covers: laid.covers(run.distance - offset),
+				solids: () => laid.solids(distance),
+				hidden,
+			})
 
 			// He runs along the path, and turns toward the ninja he strikes, blocks or is hit by, who stands square
 			// to the camera's way ahead.

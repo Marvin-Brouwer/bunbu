@@ -31,12 +31,13 @@ import {
 	Vector3,
 } from 'three'
 import type { GLTF } from 'three/addons/loaders/GLTFLoader.js'
-import { blockVariants, layBlocks } from './blocks.mts'
+import { blockVariants, layBlocks, solidsShown } from './blocks.mts'
 import { Batch, chunkOf, placed, scatter, type Cursor } from './kit.mts'
 import { addAll, castShadows, facingPath, followSun, isFree, passTime, sky, skyRadius, stamp, strip, type Daylight, type Owned, type Planting, type StageView, type Taken } from './landscape.mts'
 import type { District } from './backdrop.mts'
 import { coverReach, type Cover, type CoverSet, type CoverSpot } from './cover.mts'
 import { beside, type Leg, type Path } from './path.mts'
+import type { Solid } from './solids.mts'
 
 const palette = {
 	moss: 0x55663a,
@@ -227,6 +228,8 @@ type BambooPending = {
 	readonly placeholders: Group
 	/** The covers round the block where it is shown now, in the place it was laid in. */
 	covers: readonly CoverSpot[]
+	/** What a ninja can't run through ([solids](./solids.mts)). */
+	readonly solids: Solid[]
 }
 
 /** Metres a shrine and the Jizō beside it reach along the path from where it stands. */
@@ -330,6 +333,8 @@ export function createBambooForest(scene: Scene, path: Path, models: Promise<Bam
 
 		const cursor: Cursor = { chunk: 0 }
 		const taken: Taken = []
+		// What a ninja can't run through: the shrines, Jizō and lanterns, not the bamboo.
+		const solids: Solid[] = []
 
 		// Stepping stones down the middle of the path, a stride apart.
 		const stones = new Batch(stoneGeometry, stoneMaterial, cursor, { receive: true })
@@ -353,11 +358,13 @@ export function createBambooForest(scene: Scene, path: Path, models: Promise<Bam
 			const at = beside(point, side * (pathHalfWidth + 2.2))
 			shrines.push({ matrix: placed(at.x, 0, at.z, facingPath(point, side)), chunk })
 			taken.push({ x: at.x, z: at.z, radius: 3.2 })
+			solids.push({ x: at.x, z: at.z, radius: 0.8 })
 			// A stride apart, each on its own base, rather than in a huddle.
 			const figures = 1 + Math.floor(scatter(index + 13) * 3)
 			for (let figure = 0; figure < figures; figure++) {
 				const spot = beside(point, side * (pathHalfWidth + 1.4), 1.5 + figure * 0.95)
 				jizos.push({ matrix: placed(spot.x, 0, spot.z, facingPath(point, side), 0.9 + scatter(index + figure) * 0.2), chunk })
+				solids.push({ x: spot.x, z: spot.z, radius: 0.35 })
 			}
 		}
 		for (let distance = from + 50; distance + 1.2 <= to; distance += 60) {
@@ -367,6 +374,7 @@ export function createBambooForest(scene: Scene, path: Path, models: Promise<Bam
 				if (!isFree(taken, at.x, at.z, 0.6)) continue
 				lanterns.push({ matrix: placed(at.x, 0, at.z, facingPath(point, side)), chunk: chunkOf(distance) })
 				taken.push({ x: at.x, z: at.z, radius: 1.2 })
+				solids.push({ x: at.x, z: at.z, radius: 0.5 })
 			}
 		}
 
@@ -426,7 +434,7 @@ export function createBambooForest(scene: Scene, path: Path, models: Promise<Bam
 		}
 
 		addAll(group, [...stones.build(), placeholders])
-		return { group, pending: { shrines, jizos, lanterns, bamboo, placeholders, covers: [] } }
+		return { group, pending: { shrines, jizos, lanterns, bamboo, placeholders, covers: [], solids } }
 	}, blockVariants, (block, from, offset) => {
 		// The covers of the stretch it is shown on, moved back to where the block was laid.
 		block.pending.covers = cover.spotsBetween(from - clumpReach - coverReach, from + path.round + clumpReach + coverReach)
@@ -460,6 +468,7 @@ export function createBambooForest(scene: Scene, path: Path, models: Promise<Bam
 
 	return {
 		passTime: passTime({ scene, fog, backdrop, ambient, sun }, daylight),
+		solids: () => solidsShown(blocks, ({ solids }) => solids),
 
 		follow(x, z, distance) {
 			blocks.follow(distance)

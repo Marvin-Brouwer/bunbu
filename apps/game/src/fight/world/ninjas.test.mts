@@ -11,7 +11,9 @@ import { townCover } from './castle-town.mts'
 import { coverAhead, coverHeight, coverReach, coverSpotsAt } from './cover.mts'
 import { castleCover, castleRound } from './edo-castle.mts'
 import { mountainCover, mountainRound } from './mountain-temple.mts'
-import { clashSeconds, coverOf, entranceSeconds, fleeSideOf, leapConfig, motionOf, outOf, shareConfig, standReach, strikeDelaySeconds } from './ninjas.mts'
+import { clashSeconds, coverOf, entranceSeconds, fleeSideOf, leapConfig, motionOf, outOf, shareConfig, standReach, strikeDelaySeconds, wayIn, type Surroundings } from './ninjas.mts'
+import { hiddenBehind, inside, type Solid, type Spot } from './solids.mts'
+import { partWay } from './routes.mts'
 import { beside, createPath, townRound } from './path.mts'
 import { riceCover, riceRound } from './rice-fields.mts'
 import { spotOf } from './placement.mts'
@@ -94,6 +96,69 @@ describe('a ninja coming in', () => {
 		expect(coverOf(spotOf('down', 0, 0), 0, frame, covers)).toBeUndefined()
 		expect(coverOf(spotOf('down-left', 0, 0), 0, frame, covers)).toBeUndefined()
 		expect(coverOf(spotOf('left', 0, 0), 0, frame, [])).toBeUndefined()
+	})
+})
+
+describe('a ninja without a cover', () => {
+	// Down a street along -z, the camera behind the samurai, a row of houses on his right.
+	const frame = { x: 0, z: 0, heading: 0 }
+	const camera = { x: 0, z: 9 }
+	const house = (z: number, width: number): Solid => ({ x: 8.7, z, width, depth: 7, heading: Math.PI / 2, height: 7.5 })
+	const around = (solids: readonly Solid[]): Surroundings => ({
+		covers: [],
+		solids: () => solids,
+		hidden: (spot: Spot, all: readonly Solid[]) => spot.z > camera.z || hiddenBehind(all, camera, spot),
+	})
+	const row = [house(5, 10), house(-5, 10), house(-15, 10), house(-25, 10)]
+	const withAlley = [house(5, 10), house(-5, 10), house(-16, 8), house(-25, 10)]
+
+	it('runs out through an alley between the houses, toward the samurai', () => {
+		const { route, leap } = wayIn('right', 0, 1, frame, around(withAlley))
+		expect(leap).toBeUndefined()
+		const way = route ?? []
+		const start = way[0] ?? { x: 0, z: 0 }
+		expect(start.x).toBeGreaterThan(5.2)
+		for (let step = 0; step <= 100; step++) {
+			const at = partWay(way, step / 100)
+			expect(withAlley.some((solid) => inside(solid, at.x, at.z))).toBe(false)
+		}
+		const end = way.at(-1) ?? start
+		expect(Math.hypot(start.x, start.z)).toBeGreaterThan(Math.hypot(end.x, end.z))
+	})
+
+	it('leaps down off the roof where the houses stand wall to wall', () => {
+		const { route, leap } = wayIn('right', 0, 1, frame, around(row))
+		expect(route).toBeUndefined()
+		expect(leap?.height).toBeGreaterThan(7.5)
+		// From behind the houses, out of sight, down in front of them on the street.
+		expect(leap?.hidden.x).toBeGreaterThan(8.7 + 3.5)
+		expect(leap?.landed.x).toBeLessThan(5.2)
+		expect(leap?.landed.z).toBeLessThan(0)
+	})
+
+	it('leaps off the wall beyond a moat clear over the water', () => {
+		const wall = (z: number): Solid => ({ x: 16.6, z, width: 10, depth: 4, heading: Math.PI / 2, height: 6.8 })
+		const moat: Solid = { x: 10, z: -10, width: 40, depth: 8.6, heading: Math.PI / 2 }
+		const { leap } = wayIn('right', 0, 1, frame, around([wall(5), wall(-5), wall(-15), wall(-25), moat]))
+		expect(leap?.hidden.x).toBeGreaterThan(16.6 + 2)
+		expect(inside(moat, leap?.landed.x ?? 10, leap?.landed.z ?? -10)).toBe(false)
+		expect(leap?.landed.x).toBeLessThan(10)
+	})
+
+	it('now and then rises out of deep water near where it will stand, onto the bank and on toward the samurai', () => {
+		const moat: Solid = { x: 10, z: -10, width: 40, depth: 8.6, heading: Math.PI / 2, water: true }
+		const { leap, route } = wayIn('right', 0, 1, frame, around([moat]), true)
+		expect(route).toBeUndefined()
+		expect(leap?.sunk).toBeGreaterThan(1.8)
+		expect(inside(moat, leap?.hidden.x ?? 0, leap?.hidden.z ?? 0)).toBe(true)
+		expect(inside(moat, leap?.landed.x ?? 10, leap?.landed.z ?? -10)).toBe(false)
+		expect(leap?.landed.x).toBeLessThan(leap?.hidden.x ?? 0)
+		// One that doesn't rise runs around the water, as any other solid.
+		expect(wayIn('right', 0, 1, frame, around([moat])).leap?.sunk).toBeUndefined()
+	})
+
+	it('comes in as it always did where nothing stands in the way', () => {
+		expect(wayIn('right', 0, 1, frame, around([]))).toEqual({ route: undefined, leap: undefined })
 	})
 })
 

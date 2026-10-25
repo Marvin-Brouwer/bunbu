@@ -12,6 +12,7 @@
 import { Group, InstancedMesh, Vector3 } from 'three'
 import { scatter } from './kit.mts'
 import type { Path } from './path.mts'
+import { moved, type Solid } from './solids.mts'
 
 /** How many blocks a stage lays out. One more than are shown at once, so which comes next is a choice. */
 export const blockVariants = 5
@@ -133,4 +134,9 @@ export function layBlocks<Pending>(path: Path, lay: Lay<Pending>, variants = blo
 			})
 		},
 	}
+}
+
+/** What `solidsOf` says is solid in the blocks shown round the samurai, where they are shown ([solids](./solids.mts)). */
+export function solidsShown<Pending>(blocks: Blocks<Pending>, solidsOf: (pending: Pending) => readonly Solid[]): Solid[] {
+	return blocks.laid.filter((block) => block.group.visible).flatMap((block) => solidsOf(block.pending).map((solid) => moved(solid, block.group.position)))
 }

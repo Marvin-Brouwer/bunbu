@@ -32,12 +32,13 @@ import {
 	type Scene,
 } from 'three'
 import type { GLTF } from 'three/addons/loaders/GLTFLoader.js'
-import { layBlocks } from './blocks.mts'
+import { layBlocks, solidsShown } from './blocks.mts'
 import { Batch, chunkOf, placed, scatter, type Cursor } from './kit.mts'
 import { addAll, castShadows, clearanceOf, facingPath, followSun, fogFar, isFree, passTime, sky, skyRadius, stamp, strip, type Daylight, type Owned, type Planting, type StageView, type Taken } from './landscape.mts'
 import type { District } from './backdrop.mts'
 import type { CoverSet } from './cover.mts'
 import { beside, type Leg, type Path } from './path.mts'
+import type { Solid } from './solids.mts'
 
 const palette = {
 	grass: 0x6f8f3e,
@@ -223,6 +224,8 @@ type RicePending = {
 	readonly farmhouses: Planting[]
 	readonly maples: Planting[]
 	readonly scarecrows: Planting[]
+	/** What a ninja can't run through ([solids](./solids.mts)). */
+	readonly solids: Solid[]
 }
 
 /** Metres a farmhouse, its maples and their leaves reach along the path either side of where it stands. */
@@ -290,7 +293,7 @@ export function createRiceFields(scene: Scene, path: Path, models: Promise<RiceM
 		const cursor: Cursor = { chunk: 0 }
 		const clear = clearanceOf(path, from - 60, to + 60)
 		const taken: Taken = []
-		const pending: RicePending = { farmhouses: [], maples: [], scarecrows: [] }
+		const pending: RicePending = { farmhouses: [], maples: [], scarecrows: [], solids: [] }
 		for (let distance = from + 20, index = base; distance + farmReach <= to; distance += 95 + scatter(index * 7) * 40, index++) {
 			const point = path.at(distance)
 			const side = scatter(index + 3) > 0.5 ? 1 : -1
@@ -298,12 +301,16 @@ export function createRiceFields(scene: Scene, path: Path, models: Promise<RiceM
 			const at = beside(point, side * out)
 			if (!clear(at.x, at.z, distance, 14)) continue
 			const chunk = chunkOf(distance)
-			pending.farmhouses.push({ matrix: placed(at.x, 0, at.z, facingPath(point, side) + (scatter(index + 9) - 0.5) * 0.4), chunk })
+			const heading = facingPath(point, side) + (scatter(index + 9) - 0.5) * 0.4
+			pending.farmhouses.push({ matrix: placed(at.x, 0, at.z, heading), chunk })
 			taken.push({ x: at.x, z: at.z, radius: 11 })
+			pending.solids.push({ x: at.x, z: at.z, width: 11.6, depth: 8.1, heading, height: 7 })
 			for (const [aside, ahead] of [[6, 7], [-7, 5]] as const) {
 				const tree = beside(point, side * (out + aside * 0.6), ahead)
 				pending.maples.push({ matrix: placed(tree.x, 0, tree.z, scatter(index + aside) * 6.28, 0.8 + scatter(index + ahead) * 0.3), chunk })
 				taken.push({ x: tree.x, z: tree.z, radius: 4 })
+				// The trunk; its leaves a ninja brushes through.
+				pending.solids.push({ x: tree.x, z: tree.z, radius: 0.4 })
 			}
 		}
 
@@ -334,6 +341,7 @@ export function createRiceFields(scene: Scene, path: Path, models: Promise<RiceM
 					}
 					if (row === 1 && scatter(distance + side * 5) > 0.82) {
 						pending.scarecrows.push({ matrix: placed(at.x, 0, at.z, facingPath(point, side) + (scatter(distance) - 0.5)), chunk: cursor.chunk })
+						pending.solids.push({ x: at.x, z: at.z, radius: 0.45 })
 					}
 				}
 			}
@@ -359,6 +367,7 @@ export function createRiceFields(scene: Scene, path: Path, models: Promise<RiceM
 
 	return {
 		passTime: passTime({ scene, fog, backdrop, ambient, sun }, daylight),
+		solids: () => solidsShown(blocks, ({ solids }) => solids),
 
 		follow(x, z, distance) {
 			blocks.follow(distance)
