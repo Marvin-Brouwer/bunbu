@@ -235,9 +235,10 @@ export function offRoof(roof: Box, to: Spot, wished: Spot, solids: readonly Soli
 /**
  * How a ninja rises out of deep water: how far in from its edge and how deep it waits, how high it
  * springs out onto the bank and how far past the edge it lands, and its timing; how near where it
- * will stand the water has to be, and how often one comes that way where there is some.
+ * will stand the water has to be, how often one comes that way where there is some, and how far
+ * apart two rise.
  */
-export const waterConfig = { inset: 2.5, sunk: 1.9, height: 3.4, ahead: 1, waits: 0.1, lands: 0.45, reach: 12, chance: 0.4 }
+export const waterConfig = { inset: 2.5, sunk: 1.9, height: 3.4, ahead: 1, waits: 0.1, lands: 0.45, reach: 12, chance: 0.4, apart: 1.5 }
 
 /**
  * The leap up out of `water` toward `to`, where it stands for the fight: from under the water
@@ -269,8 +270,10 @@ function leapIn(leap: Leap, to: Spot, amount: number): OutOf {
 	if (amount < lands) {
 		const flown = (amount - waits) / (lands - waits)
 		// Flat over the top and steep at either end: 1 - u⁴, with u from -1 through 0 to 1. Out of
-		// water, up from under it.
-		const hop = height * (1 - (2 * flown - 1) ** 4) - (sunk ?? 0) * (1 - flown)
+		// water a spring instead, up from under it and straight down again, so it doesn't hang there.
+		const hop = sunk === undefined
+			? height * (1 - (2 * flown - 1) ** 4)
+			: height * 4 * flown * (1 - flown) - sunk * (1 - flown)
 		return { x: hidden.x + (landed.x - hidden.x) * flown, z: hidden.z + (landed.z - hidden.z) * flown, hop, doing: 'leaping' }
 	}
 	const run = (amount - lands) / (1 - lands)
@@ -489,6 +492,18 @@ export function createNinjasView(parent: Group, make: () => Body): NinjasView {
 					const sharing = behind === undefined ? 0 : [...shown.values()].filter((other) => other.entrance < 1 && other.cover !== undefined && sameCover(other.cover, behind)).length
 					const cover = sharing < shareConfig.most ? behind : undefined
 					const below = Math.random() < 0.5 ? 1 : -1
+					// Out of the water where it can, but not from right where another one rises.
+					const rising = (coming: { leap: Leap | undefined }) => coming.leap?.sunk === undefined ? undefined : coming.leap.hidden
+					const risen = cover === undefined ? wayIn(mark, ninja.wave, below, frame, around, Math.random() < waterConfig.chance) : undefined
+					const under = risen === undefined ? undefined : rising(risen)
+					const crowded = under !== undefined && [...shown.values()].some((other) => {
+						const theirs = rising(other)
+						return theirs !== undefined && Math.hypot(theirs.x - under.x, theirs.z - under.z) < waterConfig.apart
+					})
+					// Behind a cover, the first one behind its middle, the others either side.
+					const way = cover !== undefined
+						? { leap: overCover(cover, frame, [0, 1, -1][sharing] ?? 0), route: undefined }
+						: crowded || risen === undefined ? wayIn(mark, ninja.wave, below, frame, around) : risen
 					entry = {
 						body: maker(),
 						pose: ninja.pose,
@@ -498,8 +513,7 @@ export function createNinjasView(parent: Group, make: () => Body): NinjasView {
 						stood: 0,
 						entrance: cover === undefined ? 0 : -sharing * shareConfig.stagger,
 						cover,
-						// Behind a cover, the first one behind its middle, the others either side.
-						...cover === undefined ? wayIn(mark, ninja.wave, below, frame, around, Math.random() < waterConfig.chance) : { leap: overCover(cover, frame, [0, 1, -1][sharing] ?? 0), route: undefined },
+						...way,
 						below,
 						cycle: ninja.id * 1.7,
 						last: undefined,
