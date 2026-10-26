@@ -136,16 +136,24 @@ export function coverSpotsAt(path: Path, distance: number, aside: number): Cover
 /**
  * How far a cover's ground reaches from its middle, along the path and across it, and the room it
  * keeps round that from what is solid: less than {@link coverReach}, which a leap clears, so a
- * cover still fits between the way and the walls beside it. From what stands by the way on its
- * own, round, as a lantern or a banner, it keeps well away, so the covers and it don't crowd together.
+ * cover still fits between the way and the walls beside it. From something small and round in a
+ * row with it along the way, as a lantern or a banner, it keeps `apart`, so the two don't crowd
+ * together; a torii's post in from it, or a tree's trunk out past it, only needs the room.
  */
-const footprint = { along: 1.1, across: 0.7, room: 0.15, apart: 2.5 }
+const footprint = { along: 1.1, across: 0.7, room: 0.15, apart: 2.5, small: 1.2 }
 
 /** Whether a cover with its middle `off` metres beside `point` stands clear of every one of `solids`. */
 function standsClear(point: PathPoint, off: number, solids: readonly Solid[]): boolean {
+	const middle = beside(point, off)
+	const inRow = (solid: Solid) => {
+		if (!('radius' in solid) || solid.radius > footprint.small) return false
+		// How far it is across the way from the cover's middle ({@link beside} undone).
+		const across = (solid.x - middle.x) * Math.cos(point.heading) - (solid.z - middle.z) * Math.sin(point.heading)
+		return Math.abs(across) < footprint.across + solid.radius + footprint.room
+	}
 	return [-footprint.along, 0, footprint.along].every((along) => [-footprint.across, 0, footprint.across].every((across) => {
 		const at = beside(point, off + across, along)
-		return solids.every((solid) => !inside(solid, at.x, at.z, 'radius' in solid ? footprint.apart : footprint.room))
+		return solids.every((solid) => !inside(solid, at.x, at.z, inRow(solid) ? footprint.apart : footprint.room))
 	}))
 }
 

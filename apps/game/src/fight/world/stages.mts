@@ -73,15 +73,15 @@ function newSeed(use: number): number {
  * Puts the backdrop of a stage's `districts` behind its own scenery ([backdrop](./backdrop.mts)),
  * district after district along a stage of `stageLength()` metres ([districts](./districts.mts)),
  * and `cover` by its path for the ninjas to hide behind ([cover](./cover.mts)), laid out
- * differently every run: where the stage `keepsClear`, clear of what is solid in its scenery. What goes over the way, torii and gatehouses, fades as the camera passes
+ * differently every run, clear of what is solid in its scenery. What goes over the way, torii and gatehouses, fades as the camera passes
  * under it ([`fadeNear`](./landscape.mts)), on every stage alike.
  */
-function around(scene: Scene, path: Path, ownView: OwnView, districts: readonly District[], cover: CoverSet, stageLength: () => number, phase: number, keepsClear = false): StageWorld {
+function around(scene: Scene, path: Path, ownView: OwnView, districts: readonly District[], cover: CoverSet, stageLength: () => number, phase: number): StageWorld {
 	const owned: Owned = { geometries: [], materials: [], textures: [] }
 	const backdrop = createBackdrop(path, districts, newSeed(0), owned, stageLength)
 	// The scenery is made after the covers, which it may make way for, and is only asked once it is laid.
 	let scenery: StageView | undefined
-	const covers = createCover(path, cover, metresPerAmbush, newSeed(1), owned, districts, stageLength, phase, keepsClear ? () => scenery?.solids?.() ?? [] : undefined)
+	const covers = createCover(path, cover, metresPerAmbush, newSeed(1), owned, districts, stageLength, phase, () => scenery?.solids?.() ?? [])
 	const view = ownView(covers)
 	scenery = view
 	scene.add(backdrop.group, covers.group)
@@ -134,7 +134,7 @@ export function createStageWorld(stage: Stage, scene: Scene, stageLength: () => 
 	}
 	if (stage === 'edo-castle') {
 		const path = createPath(castleRound)
-		return around(scene, path, () => createEdoCastle(scene, path, stageModels(stage), stageLength), castleDistricts, castleCover, stageLength, phase, true)
+		return around(scene, path, () => createEdoCastle(scene, path, stageModels(stage), stageLength), castleDistricts, castleCover, stageLength, phase)
 	}
 	const path = createPath(townRound)
 	return around(scene, path, () => createCastleTown(scene, path, stageModels(stage)), townDistricts, townCover, stageLength, phase)
