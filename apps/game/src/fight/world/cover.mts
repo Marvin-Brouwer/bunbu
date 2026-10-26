@@ -29,7 +29,8 @@ import { randomOf, type District } from './backdrop.mts'
 import { districtAt } from './districts.mts'
 import { placed, within } from './kit.mts'
 import type { Owned } from './landscape.mts'
-import { beside, type Path } from './path.mts'
+import { beside, type Path, type PathPoint } from './path.mts'
+import { inside, type Solid } from './solids.mts'
 
 /** The things a ninja hides behind. */
 export type CoverKind =
@@ -120,13 +121,83 @@ export function nearAmbushCover(distance: number, every: number, margin = 2.5, p
 	return [ambush - every, ambush].some((at) => at > 0 && coverAhead.some((ahead) => Math.abs(distance - (at + ahead)) < margin))
 }
 
-/** Where a cover stands on the ground. */
-export type CoverSpot = { readonly x: number; readonly z: number }
+/**
+ * Where a cover stands on the ground. A `wet` one would stand in deep water, so none stands there:
+ * the ninjas that would have come from behind it rise out of the water instead.
+ */
+export type CoverSpot = { readonly x: number; readonly z: number; readonly wet?: boolean }
 
 /** The spots of the covers of an ambush at `distance`, for `aside` metres off the middle of the path. */
 export function coverSpotsAt(path: Path, distance: number, aside: number): CoverSpot[] {
 	// Along the path itself, so round a bend the covers keep to its side rather than stand on it.
 	return [-1, 1].flatMap((side) => coverAhead.map((ahead) => beside(path.at(distance + ahead), side * aside)))
+}
+
+/**
+ * How far a cover's ground reaches from its middle, along the path and across it, and the room it
+ * keeps round that from what is solid: less than {@link coverReach}, which a leap clears, so a
+ * cover still fits between the way and the walls beside it. From something small and round in a
+ * row with it along the way, as a lantern or a banner, it keeps `apart`, so the two don't crowd
+ * together; a torii's post in from it, or a tree's trunk out past it, only needs the room.
+ */
+const footprint = { along: 1.1, across: 0.7, room: 0.15, apart: 2.5, small: 1.2 }
+
+/** Whether a cover with its middle `off` metres beside `point` stands clear of every one of `solids`. */
+function standsClear(point: PathPoint, off: number, solids: readonly Solid[]): boolean {
+	const middle = beside(point, off)
+	const inRow = (solid: Solid) => {
+		if (!('radius' in solid) || solid.radius > footprint.small) return false
+		// How far it is across the way from the cover's middle ({@link beside} undone).
+		const across = (solid.x - middle.x) * Math.cos(point.heading) - (solid.z - middle.z) * Math.sin(point.heading)
+		return Math.abs(across) < footprint.across + solid.radius + footprint.room
+	}
+	return [-footprint.along, 0, footprint.along].every((along) => [-footprint.across, 0, footprint.across].every((across) => {
+		const at = beside(point, off + across, along)
+		return solids.every((solid) => !inside(solid, at.x, at.z, inRow(solid) ? footprint.apart : footprint.room))
+	}))
+}
+
+/**
+ * Metres a cover moves along the path, nearest first, to find ground clear of what is solid; the
+ * most one side's covers of an ambush stand further on than {@link coverAhead}, so the two sides
+ * don't stand in a block; and the nearest to the samurai one may move, still well past the ninjas.
+ */
+const shifts = [0, 1.5, -1.5, 3, -3, 4.5, -4.5, 6, -6]
+const stagger = 2.5
+const nearestAhead = 16.5
+
+/** Metres round an ambush's covers that what is solid is looked at for them. */
+const nearCovers = 50
+
+/**
+ * The spots of the covers of an ambush at `distance`, as {@link coverSpotsAt}, but kept clear of
+ * `solids`: each side's further on by a little picked with `random`, and each moved along the path
+ * to clear ground where it would stand in something, never in another cover. One whose middle
+ * stands in deep water is `wet`. One with no clear ground near is left out.
+ */
+export function clearSpotsAt(path: Path, distance: number, aside: number, solids: readonly Solid[], random: () => number): CoverSpot[] {
+	const centre = path.at(distance + coverAhead[0])
+	const near = solids.filter((solid) => Math.hypot(solid.x - centre.x, solid.z - centre.z) < nearCovers)
+	const spots: CoverSpot[] = []
+	for (const side of [-1, 1]) {
+		const further = random() * stagger
+		for (const ahead of coverAhead) {
+			const wanted = distance + ahead + further
+			const middle = beside(path.at(wanted), side * aside)
+			if (near.some((solid) => solid.water === true && inside(solid, middle.x, middle.z))) {
+				spots.push({ ...middle, wet: true })
+				continue
+			}
+			const clear = shifts
+				.map((shift) => wanted + shift)
+				.filter((along) => along - distance >= nearestAhead)
+				.map((along) => ({ point: path.at(along), spot: beside(path.at(along), side * aside) }))
+				.find(({ point, spot }) => standsClear(point, side * aside, near)
+					&& spots.every((other) => other.wet === true || Math.hypot(other.x - spot.x, other.z - spot.z) > 2 * coverReach))
+			if (clear !== undefined) spots.push(clear.spot)
+		}
+	}
+	return spots
 }
 
 /** Metres of path per tile of decoys, and how far behind and ahead of the samurai covers stand. */
@@ -137,9 +208,10 @@ const ahead = 140
 /**
  * The decoys of tile `tile` of `path`, laid out from `seed`: none or a few, one side or the other,
  * well away from where an ambush springs, and never on an ambush's own covers, which can stand
- * past that: two covers never stand in each other. With the heading they stand along.
+ * past that: two covers never stand in each other. Only those `fits` lets stand, `off` metres
+ * beside the path `distance` metres along. With the heading they stand along.
  */
-export function decoysOf(path: Path, set: CoverSet, tile: number, every: number, seed: number, phase = 0): (CoverSpot & { heading: number; distance: number })[] {
+export function decoysOf(path: Path, set: CoverSet, tile: number, every: number, seed: number, phase = 0, fits: (distance: number, off: number) => boolean = () => true): (CoverSpot & { heading: number; distance: number })[] {
 	const random = randomOf(seed ^ Math.imul(tile, 0x9e3779b1) ^ 0x5bd1e995)
 	const from = tile * tileLength
 	const count = Math.floor(random() * 2.2)
@@ -151,6 +223,7 @@ export function decoysOf(path: Path, set: CoverSet, tile: number, every: number,
 		if (Math.abs(decoy.distance - ambushNear(decoy.distance, every, phase)) < 22 || nearAmbushCover(decoy.distance, every, apart, phase)) continue
 		if (decoy.distance - from < apart / 2 || from + tileLength - decoy.distance < apart / 2) continue
 		if (kept.some((other) => other.side === decoy.side && Math.abs(other.distance - decoy.distance) < apart)) continue
+		if (!fits(decoy.distance, decoy.side * set.aside)) continue
 		kept.push(decoy)
 	}
 	return kept
@@ -395,7 +468,9 @@ export type Cover = {
 	readonly group: Group
 	/** Lays out the covers round the samurai `distance` metres along the path. */
 	follow: (distance: number) => void
-	/** Where every cover stands from `from` to `to` metres along the path, laid out or not yet. */
+	/** Where the covers of the ambush nearest `distance` stand, the first one's where it is before that, `wet` ones too. */
+	ambushAt: (distance: number) => readonly CoverSpot[]
+	/** Where every cover stands from `from` to `to` metres along the path, laid out or not yet; not the `wet` ones, which don't stand. */
 	spotsBetween: (from: number, to: number) => CoverSpot[]
 	dispose: () => void
 }
@@ -471,9 +546,11 @@ export function coverKindAt(set: CoverSet, districts: readonly District[], dista
 /**
  * The covers of `set` along `path`: at every `every` metres from `phase` on, where an ambush
  * springs, and at random in between from `seed`, a new one every run, each of the kind its district
- * has there (`districts`, along a stage of `stageLength()` metres).
+ * has there (`districts`, along a stage of `stageLength()` metres). Where `clearOf` is given, they
+ * keep clear of what it says is solid by the way there ({@link clearSpotsAt}), and none stands in
+ * deep water.
  */
-export function createCover(path: Path, set: CoverSet, every: number, seed: number, owned: Owned, districts: readonly District[] = [], stageLength: () => number = () => 0, phase = 0): Cover {
+export function createCover(path: Path, set: CoverSet, every: number, seed: number, owned: Owned, districts: readonly District[] = [], stageLength: () => number = () => 0, phase = 0, clearOf?: () => readonly Solid[]): Cover {
 	const shapes = shapesOf()
 	owned.geometries.push(...Object.values(shapes))
 	const material = new MeshStandardMaterial({ roughness: 0.95, flatShading: true })
@@ -486,6 +563,29 @@ export function createCover(path: Path, set: CoverSet, every: number, seed: numb
 		return partsOf(kind, set.colours[kind] ?? [0x7a5a3a], random).map((part) => ({ ...part, matrix: within(where, part.matrix) }))
 	})
 
+	// Kept clear of what is solid, worked out once they are laid: what is solid stays where it is
+	// while they are, and is only all there round the samurai.
+	const ambushes = new Map<number, readonly CoverSpot[]>()
+	const decoys = new Map<number, ReturnType<typeof decoysOf>>()
+	const spotsOf = (ambush: number): readonly CoverSpot[] => {
+		if (clearOf === undefined) return coverSpotsAt(path, ambush, set.aside)
+		return ambushes.get(ambush) ?? clearSpotsAt(path, ambush, set.aside, clearOf(), randomOf(seed ^ Math.imul(Math.round(ambush * 10), 0x2c1b3c6d)))
+	}
+	const decoysAt = (tile: number) => {
+		const known = decoys.get(tile)
+		if (known !== undefined) return known
+		if (clearOf === undefined) return decoysOf(path, set, tile, every, seed, phase)
+		const solids = clearOf()
+		// Clear of what is solid, and of the ambushes' covers wherever they moved to.
+		return decoysOf(path, set, tile, every, seed, phase, (distance, off) => {
+			const point = path.at(distance)
+			const spot = beside(point, off)
+			const ambush = ambushNear(distance, every, phase)
+			return standsClear(point, off, solids.filter((solid) => Math.hypot(solid.x - spot.x, solid.z - spot.z) < nearCovers))
+				&& [ambush - every, ambush].filter((at) => at > 0).flatMap(spotsOf).every((other) => other.wet === true || Math.hypot(other.x - spot.x, other.z - spot.z) > 2 * coverReach + 0.5)
+		})
+	}
+
 	/** The covers of tile `tile`: those of an ambush in it, and a decoy or two. */
 	const layTile = (tile: number): Part[] => {
 		const random = randomOf(seed ^ Math.imul(tile, 0x9e3779b1))
@@ -493,9 +593,13 @@ export function createCover(path: Path, set: CoverSet, every: number, seed: numb
 		const parts: Part[] = []
 		for (let ambush = Math.ceil((from - phase) / every) * every + phase; ambush < from + tileLength; ambush += every) {
 			if (ambush <= 0) continue
-			parts.push(...coversAt(coverSpotsAt(path, ambush, set.aside), ambush, 'ambush', path.at(ambush).heading, random))
+			const spots = spotsOf(ambush)
+			if (clearOf !== undefined) ambushes.set(ambush, spots)
+			parts.push(...coversAt(spots.filter((spot) => spot.wet !== true), ambush, 'ambush', path.at(ambush).heading, random))
 		}
-		for (const decoy of decoysOf(path, set, tile, every, seed, phase)) parts.push(...coversAt([decoy], decoy.distance, 'decoy', decoy.heading, random))
+		const tileDecoys = decoysAt(tile)
+		if (clearOf !== undefined) decoys.set(tile, tileDecoys)
+		for (const decoy of tileDecoys) parts.push(...coversAt([decoy], decoy.distance, 'decoy', decoy.heading, random))
 		return parts
 	}
 
@@ -542,16 +646,24 @@ export function createCover(path: Path, set: CoverSet, every: number, seed: numb
 			if (window?.[0] === first && window[1] === last) return
 			window = [first, last]
 			for (const tile of laid.keys()) if (tile < first || tile > last) laid.delete(tile)
+			for (const tile of decoys.keys()) if (tile < first || tile > last) decoys.delete(tile)
+			for (const ambush of ambushes.keys()) if (ambush < first * tileLength || ambush >= (last + 1) * tileLength) ambushes.delete(ambush)
 			for (let tile = first; tile <= last; tile++) if (!laid.has(tile)) laid.set(tile, layTile(tile))
 			show()
 		},
 
+		ambushAt(distance) {
+			const ambush = ambushNear(distance, every, phase)
+			return spotsOf(ambush > 0 ? ambush : ambush + every)
+		},
+
 		spotsBetween(from, to) {
 			const spots: CoverSpot[] = []
-			for (let ambush = Math.ceil((from - coverAhead[1] - phase) / every) * every + phase; ambush <= to; ambush += every) {
-				if (ambush > 0) spots.push(...coverSpotsAt(path, ambush, set.aside))
+			// Moved on as far as a cover kept clear can be.
+			for (let ambush = Math.ceil((from - coverAhead[1] - stagger - Math.max(...shifts) - phase) / every) * every + phase; ambush <= to; ambush += every) {
+				if (ambush > 0) spots.push(...spotsOf(ambush).filter((spot) => spot.wet !== true))
 			}
-			for (let tile = Math.floor(from / tileLength); tile <= Math.floor(to / tileLength); tile++) spots.push(...decoysOf(path, set, tile, every, seed, phase))
+			for (let tile = Math.floor(from / tileLength); tile <= Math.floor(to / tileLength); tile++) spots.push(...decoysAt(tile))
 			return spots
 		},
 

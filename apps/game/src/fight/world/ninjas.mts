@@ -407,7 +407,7 @@ export function coverOf(start: { x: number; z: number }, id: number, frame: View
 		const landed = { x: right * (1 - leapConfig.ahead / away), z: ahead * (1 - leapConfig.ahead / away) }
 		if (landed.z < stands.ahead) return false
 		const to = { x: stands.right, z: stands.ahead }
-		return around.every((other) => other.cover === cover || offLine({ x: other.right, z: other.ahead }, landed, to) > coverReach + 0.3)
+		return around.every((other) => other.cover === cover || other.cover.wet === true || offLine({ x: other.right, z: other.ahead }, landed, to) > coverReach + 0.3)
 	})
 	return fits.toSorted((one, other) => one.ahead - other.ahead)[0]?.cover
 }
@@ -487,14 +487,17 @@ export function createNinjasView(parent: Group, make: () => Body): NinjasView {
 				}
 				if (entry === undefined) {
 					const mark = markOf(ninja, options, kind) ?? (kind === 'yes-no' ? yesNoSpotOf(ninja.id) : markById(ninja.id))
-					// Ninjas behind one cover take turns: each one waits for the ones before it to leap.
-					const behind = coverOf(spotOf(mark, ninja.wave, standReach), ninja.id, frame, around.covers)
+					// Ninjas behind one cover take turns: each one waits for the ones before it to leap. Where
+					// its cover would stand in deep water, there is none, and it rises out of the water.
+					const chosen = coverOf(spotOf(mark, ninja.wave, standReach), ninja.id, frame, around.covers)
+					const wet = chosen?.wet === true
+					const behind = wet ? undefined : chosen
 					const sharing = behind === undefined ? 0 : [...shown.values()].filter((other) => other.entrance < 1 && other.cover !== undefined && sameCover(other.cover, behind)).length
 					const cover = sharing < shareConfig.most ? behind : undefined
 					const below = Math.random() < 0.5 ? 1 : -1
 					// Out of the water where it can, but not from right where another one rises.
 					const rising = (coming: { leap: Leap | undefined }) => coming.leap?.sunk === undefined ? undefined : coming.leap.hidden
-					const risen = cover === undefined ? wayIn(mark, ninja.wave, below, frame, around, Math.random() < waterConfig.chance) : undefined
+					const risen = cover === undefined ? wayIn(mark, ninja.wave, below, frame, around, wet || Math.random() < waterConfig.chance) : undefined
 					const under = risen === undefined ? undefined : rising(risen)
 					const crowded = under !== undefined && [...shown.values()].some((other) => {
 						const theirs = rising(other)

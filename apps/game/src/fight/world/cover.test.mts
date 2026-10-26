@@ -4,8 +4,10 @@ import { randomOf } from './backdrop.mts'
 import { townCover, townDistricts } from './castle-town.mts'
 import { mountainCover, mountainDistricts } from './mountain-temple.mts'
 import { riceCover, riceDistricts } from './rice-fields.mts'
-import { ambushNear, coverKindAt, coverReach, coverSpotsAt, createCover, decoysOf } from './cover.mts'
-import { createPath, townRound } from './path.mts'
+import { castleCover, castleRound } from './edo-castle.mts'
+import { ambushNear, clearSpotsAt, coverKindAt, coverReach, coverSpotsAt, createCover, decoysOf } from './cover.mts'
+import { beside, createPath, townRound } from './path.mts'
+import { inside, type Solid } from './solids.mts'
 
 describe('the decoys', () => {
 	const path = createPath(townRound)
@@ -43,6 +45,52 @@ describe('where the covers stand', () => {
 
 		expect(decoys.length).toBeGreaterThan(10)
 		for (const { x, z } of [...ambushCovers, ...decoys]) expect(spots).toContainEqual(expect.objectContaining({ x, z }))
+	})
+})
+
+describe('the covers kept clear of what is solid', () => {
+	const path = createPath(castleRound)
+	// Its covers on a straight stretch.
+	const ambush = 2 * metresPerAmbush
+	const [nearest] = coverSpotsAt(path, ambush, castleCover.aside)
+	// A stone lantern right where the first cover would stand, and a moat across the way where the
+	// second ones do, however much further on they stand.
+	const lantern: Solid = { ...nearest!, radius: 0.5 }
+	const second = path.at(ambush + 25)
+	const moat: Solid = { ...second, width: 40, depth: 6, heading: second.heading, water: true }
+
+	it('stand off a lantern in their way, and apart from each other', () => {
+		const spots = clearSpotsAt(path, ambush, castleCover.aside, [lantern], randomOf(5))
+
+		expect(spots).toHaveLength(4)
+		for (const spot of spots) expect(Math.hypot(spot.x - lantern.x, spot.z - lantern.z)).toBeGreaterThan(1.2)
+		expect(Math.min(...spots.flatMap((one, index) => spots.slice(index + 1).map((other) => Math.hypot(one.x - other.x, one.z - other.z))))).toBeGreaterThan(2 * coverReach)
+	})
+
+	it('are wet where they would stand in deep water, so none stands there', () => {
+		const spots = clearSpotsAt(path, ambush, castleCover.aside, [moat], randomOf(5))
+		const wet = spots.filter((spot) => spot.wet === true)
+
+		expect(wet).toHaveLength(2)
+		for (const spot of wet) expect(inside(moat, spot.x, spot.z)).toBe(true)
+		for (const spot of spots.filter((one) => one.wet !== true)) expect(inside(moat, spot.x, spot.z, 0.5)).toBe(false)
+	})
+
+	it('leave the wet ones out of where covers stand, but not out of the ambush\'s', () => {
+		const cover = createCover(path, castleCover, metresPerAmbush, 3137, { geometries: [], materials: [], textures: [] }, [], () => 0, 0, () => [moat])
+
+		expect(cover.ambushAt(ambush).filter((spot) => spot.wet === true)).toHaveLength(2)
+		expect(cover.spotsBetween(ambush, ambush + 40).some((spot) => spot.wet === true)).toBe(false)
+	})
+
+	it('have no decoy stand in what is solid', () => {
+		// Lanterns all along both sides, every 15 m.
+		const lanterns: Solid[] = Array.from({ length: 70 }, (_, index) => [-1, 1].map((side) => ({ ...beside(path.at(index * 15), side * castleCover.aside), radius: 0.5 }))).flat()
+		const cover = createCover(path, castleCover, metresPerAmbush, 3137, { geometries: [], materials: [], textures: [] }, [], () => 0, 0, () => lanterns)
+		const spots = cover.spotsBetween(0, 1000)
+
+		expect(spots.length).toBeGreaterThan(10)
+		for (const spot of spots) for (const one of lanterns) expect(inside(one, spot.x, spot.z, 0.6)).toBe(false)
 	})
 })
 

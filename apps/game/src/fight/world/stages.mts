@@ -10,7 +10,7 @@ import { loadModel } from '../../canvas/models.mts'
 import type { Stage } from '../../_shared/state/selection.mts'
 import { metresPerAmbush } from '../flows/run.mts'
 import { createBackdrop, type District } from './backdrop.mts'
-import { ambushNear, coverSpotsAt, createCover, type Cover, type CoverSet, type CoverSpot } from './cover.mts'
+import { createCover, type Cover, type CoverSet, type CoverSpot } from './cover.mts'
 import { createCastleTown, townDistricts, townCover } from './castle-town.mts'
 import { nearFade, type Owned, type StageView } from './landscape.mts'
 import { createPath, townRound, type Path } from './path.mts'
@@ -73,14 +73,17 @@ function newSeed(use: number): number {
  * Puts the backdrop of a stage's `districts` behind its own scenery ([backdrop](./backdrop.mts)),
  * district after district along a stage of `stageLength()` metres ([districts](./districts.mts)),
  * and `cover` by its path for the ninjas to hide behind ([cover](./cover.mts)), laid out
- * differently every run. What goes over the way, torii and gatehouses, fades as the camera passes
+ * differently every run, clear of what is solid in its scenery. What goes over the way, torii and gatehouses, fades as the camera passes
  * under it ([`fadeNear`](./landscape.mts)), on every stage alike.
  */
 function around(scene: Scene, path: Path, ownView: OwnView, districts: readonly District[], cover: CoverSet, stageLength: () => number, phase: number): StageWorld {
 	const owned: Owned = { geometries: [], materials: [], textures: [] }
 	const backdrop = createBackdrop(path, districts, newSeed(0), owned, stageLength)
-	const covers = createCover(path, cover, metresPerAmbush, newSeed(1), owned, districts, stageLength, phase)
+	// The scenery is made after the covers, which it may make way for, and is only asked once it is laid.
+	let scenery: StageView | undefined
+	const covers = createCover(path, cover, metresPerAmbush, newSeed(1), owned, districts, stageLength, phase, () => scenery?.solids?.() ?? [])
 	const view = ownView(covers)
+	scenery = view
 	scene.add(backdrop.group, covers.group)
 	const samurai = new Vector3()
 	return {
@@ -103,10 +106,7 @@ function around(scene: Scene, path: Path, ownView: OwnView, districts: readonly 
 				for (const made of owned.materials) made.dispose()
 			},
 		},
-		covers: (distance) => {
-			const ambush = ambushNear(distance, metresPerAmbush, phase)
-			return coverSpotsAt(path, ambush > 0 ? ambush : ambush + metresPerAmbush, cover.aside)
-		},
+		covers: (distance) => covers.ambushAt(distance),
 		solids: (distance) => [
 			...view.solids?.() ?? [],
 			...covers.spotsBetween(distance - coverRange, distance + coverRange).map((spot) => ({ ...spot, radius: coverFootprint })),

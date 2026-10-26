@@ -33,8 +33,7 @@ import { districtAt } from './districts.mts'
 import { Batch, bridgeAt, chunkOf, placed, scatter, type Cursor } from './kit.mts'
 import { addAll, castShadows, clearanceOf, facingPath, fading, followSun, fogFar, isFree, passTime, sky, skyRadius, stamp, strip, type Daylight, type Owned, type Planting, type StageView, type Taken } from './landscape.mts'
 import type { District } from './backdrop.mts'
-import { nearAmbushCover, type CoverSet } from './cover.mts'
-import { metresPerAmbush } from '../flows/run.mts'
+import type { CoverSet } from './cover.mts'
 import { beside, type Leg, type Path, type PathPoint } from './path.mts'
 import type { Solid } from './solids.mts'
 
@@ -430,8 +429,8 @@ export function createEdoCastle(scene: Scene, path: Path, models: Promise<Castle
 							lowWallAt(lowWalls[index], low, point.heading)
 							district.solids.push({ ...low, width: 0.9, depth: wallEvery + 0.1, heading: point.heading, height: 1.8 })
 						}
-						// Clan banners (nobori) in front of every third high wall, clear of the lanterns and covers.
-						const banner = Math.round((distance - from) / wallEvery) % 3 === 1 && !nearLantern(distance) && !nearAmbushCover(distance, metresPerAmbush)
+						// Clan banners (nobori) in front of every third high wall, clear of the lanterns; the covers keep clear of them.
+						const banner = Math.round((distance - from) / wallEvery) % 3 === 1 && !nearLantern(distance)
 						if (way === 'high' && banner) {
 							bannerAt(lowWalls[index], bales[index], point, side, scatter(base + distance))
 							district.solids.push({ ...beside(point, side * (wallFoot - 0.6)), radius: 0.15 })
@@ -493,7 +492,7 @@ export function createEdoCastle(scene: Scene, path: Path, models: Promise<Castle
 
 		// Rice bales and a well by the way in the retainers' quarter, away from the moat.
 		for (let distance = from + 50, index = base; distance + 2 <= to; distance += 38, index++) {
-			if (nearGate(distance) || nearDitch(distance) || nearLantern(distance) || nearAmbushCover(distance, metresPerAmbush, 3)) continue
+			if (nearGate(distance) || nearDitch(distance) || nearLantern(distance)) continue
 			const side = scatter(index * 5 + 1) < 0.5 ? -1 : 1
 			if (moatSide(distance) === side) continue
 			const point = path.at(distance)
@@ -503,9 +502,9 @@ export function createEdoCastle(scene: Scene, path: Path, models: Promise<Castle
 			districts[0]?.solids.push({ ...beside(point, side * (wallFoot - 1)), radius: index % 3 === 0 ? 1 : 1.1 })
 		}
 
-		// Stone lanterns in pairs along the way, now and then, but not where an ambush's covers stand.
+		// Stone lanterns in pairs along the way, now and then; the covers keep clear of them.
 		for (let distance = from + 30; distance + 1.2 <= to; distance += 45) {
-			if (nearGate(distance) || nearAmbushCover(distance, metresPerAmbush)) continue
+			if (nearGate(distance)) continue
 			const point = path.at(distance)
 			for (const side of [-1, 1]) {
 				const at = beside(point, side * (pathHalfWidth + 1.2))
