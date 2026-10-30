@@ -1,6 +1,14 @@
 import type { Markdown } from './markdown'
 
-/** A parsed and validated quiz file. Mirrors `schema/v1.json`. */
+/** A JSON-compatible custom value. Metadata is data, never application logic or rendered HTML. */
+export type MetadataValue = string | number | boolean | null | MetadataValue[] | Metadata
+
+/** Application-owned custom fields. A namespace per application avoids name collisions. */
+export interface Metadata {
+	[key: string]: MetadataValue
+}
+
+/** A parsed and validated quiz file. Mirrors `schema/v2.json`; v1 has no metadata. */
 export interface BunbuData {
 	id: string
 	title: string
@@ -17,6 +25,8 @@ export interface BunbuData {
 	/** How many questions one run of the fight asks, picked at random. Without it a run asks every question. */
 	questionsPerTest?: number
 	pronunciations?: Record<string, string>
+	/** Optional custom fields; Bunbu preserves them without interpreting them. */
+	metadata?: Metadata
 	questions: Question[]
 }
 
@@ -39,6 +49,8 @@ interface QuestionBase {
 	/** Where the question comes from: `text: url` entries. */
 	source?: Reference[]
 	references?: Reference[]
+	/** Optional custom fields; the question works without them. */
+	metadata?: Metadata
 }
 
 export interface YesNoQuestion extends QuestionBase {

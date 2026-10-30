@@ -38,6 +38,50 @@ const single = `
 `
 
 describe('validate', () => {
+	it('accepts v2 without requiring custom metadata fields', async () => {
+		const data = await expectValid(quiz(single).replace('/v1.json', '/v2.json'))
+		expect(data.metadata).toBeUndefined()
+		expect(data.questions[0]!.metadata).toBeUndefined()
+	})
+
+	it('preserves arbitrary v2 metadata at quiz and question level', async () => {
+		const text = quiz(single)
+			.replace('/v1.json', '/v2.json')
+			.replace('passingScore: 70', 'passingScore: 70\nmetadata:\n  anotherApp:\n    labels: [one, two]\n    enabled: false\n    value: null')
+			.replace('    options:', '    metadata:\n      anyNamespace:\n        anything: 42\n    options:')
+		const data = await expectValid(text)
+		expect(data.metadata).toEqual({ anotherApp: { labels: ['one', 'two'], enabled: false, value: null } })
+		expect(data.questions[0]!.metadata).toEqual({ anyNamespace: { anything: 42 } })
+	})
+
+	it('keeps the v1 schema unchanged and rejects metadata in v1', async () => {
+		for (const text of [
+			`${quiz(single)}metadata: {}\n`,
+			quiz(single.replace('    options:', '    metadata: {}\n    options:')),
+		]) {
+			const error = await expectIssues(text)
+			expect(error.issues.some((issue) => issue.message.includes("'metadata'"))).toBe(true)
+		}
+	})
+
+	it('requires metadata to be an object without requiring a particular namespace', async () => {
+		await expectValid(`${quiz(single).replace('/v1.json', '/v2.json')}metadata: {}\n`)
+		for (const value of ['null', 'text', '42', '[one, two]']) {
+			const error = await expectIssues(`${quiz(single).replace('/v1.json', '/v2.json')}metadata: ${value}\n`)
+			expect(error.issues).toContainEqual(expect.objectContaining({ path: '/metadata', message: 'must be object' }))
+		}
+	})
+
+	it('still rejects unknown top-level fields in v2', async () => {
+		const error = await expectIssues(`${quiz(single).replace('/v1.json', '/v2.json')}custom: true\n`)
+		expect(error.issues).toContainEqual(expect.objectContaining({ path: '', message: "must not have property 'custom'" }))
+	})
+
+	it('rejects cyclic metadata from YAML aliases without throwing', async () => {
+		const error = await expectIssues(`${quiz(single).replace('/v1.json', '/v2.json')}metadata: &loop\n  self: *loop\n`)
+		expect(error.issues).toContainEqual(expect.objectContaining({ path: '/metadata', message: expect.stringContaining('without cycles') }))
+	})
+
 	it('accepts the full example from the design doc', async () => {
 		const fullExample = yamlBlocks.find((block) => block.startsWith('# yaml-language-server') && block.includes('questions:'))
 		expect(fullExample).toBeDefined()

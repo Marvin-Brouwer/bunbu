@@ -50,6 +50,12 @@ describe('duplicateQuestions', () => {
 		const explained = { ...sky, explanation: 'Mostly.' as Markdown }
 		expect(duplicateQuestions(quizOf(sky, otherAnswer, explained))).toEqual([])
 	})
+
+	it('keeps questions with different application metadata so grouping is not lost on import', () => {
+		const first = { ...sky, metadata: { anotherApp: { group: 'one' } } }
+		const second = { ...sky, metadata: { anotherApp: { group: 'two' } } }
+		expect(withoutDuplicates(quizOf(first, second)).questions).toEqual([first, second])
+	})
 })
 
 describe('withoutDuplicates', () => {

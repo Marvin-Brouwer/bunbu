@@ -2,6 +2,7 @@ import Ajv2020, { type ErrorObject, type ValidateFunction } from 'ajv/dist/2020.
 import addFormats from 'ajv-formats'
 import { isSeq, LineCounter, parseDocument, type Document } from 'yaml'
 import schemaV1 from '../../../schema/v1.json' with { type: 'json' }
+import schemaV2 from '../../../schema/v2.json' with { type: 'json' }
 import { duplicateQuestions } from './duplicates'
 import { isGfmMarkdown } from './markdown'
 import { readSchemaReference } from './modeline'
@@ -30,7 +31,7 @@ export class BunbuValidationError extends Error {
 	}
 }
 
-const schemas: Record<number, object> = { 1: schemaV1 }
+const schemas: Record<number, object> = { 1: schemaV1, 2: schemaV2 }
 const validators = new Map<number, ValidateFunction>()
 
 function getValidator(version: number): ValidateFunction | undefined {
@@ -87,6 +88,12 @@ export async function validate(fileBlob: string): Promise<BunbuData | BunbuValid
 export function checkData(data: unknown, schemaVersion: number, lineOf?: (pointer: string) => number | undefined): ValidationIssue[] {
 	const validator = getValidator(schemaVersion)
 	if (!validator) return [{ path: '', message: `Unknown schema version v${schemaVersion}` }]
+	// YAML aliases and JavaScript callers can supply cycles. Reject them before the recursive
+	// metadata schema runs, rather than overflowing its stack or losing values when sharing.
+	if (schemaVersion === 2) {
+		const issue = metadataIssue(data)
+		if (issue) return [{ ...issue, ...(lineOf ? { line: lineOf(issue.path) } : {}) }]
+	}
 	if (validator(data)) return []
 
 	const seen = new Set<string>()
@@ -101,6 +108,40 @@ export function checkData(data: unknown, schemaVersion: number, lineOf?: (pointe
 		issues.push(issue)
 	}
 	return issues
+}
+
+function metadataIssue(data: unknown): ValidationIssue | undefined {
+	if (data === null || typeof data !== 'object') return undefined
+	const quiz = data as Record<string, unknown>
+	const fields: [string, unknown][] = [['/metadata', quiz.metadata]]
+	if (Array.isArray(quiz.questions)) {
+		quiz.questions.forEach((question: unknown, index) => {
+			if (question !== null && typeof question === 'object') fields.push([`/questions/${index}/metadata`, (question as Record<string, unknown>).metadata])
+		})
+	}
+	for (const [path, value] of fields) {
+		if (value === undefined) continue
+		try {
+			JSON.stringify(value)
+		} catch {
+			return { path, message: 'must contain JSON-compatible values without cycles' }
+		}
+		const pending: unknown[] = [value]
+		const seen = new WeakSet<object>()
+		while (pending.length > 0) {
+			const item = pending.pop()
+			if (item === null) continue
+			if (typeof item === 'string' || typeof item === 'boolean' || (typeof item === 'number' && Number.isFinite(item))) continue
+			if (typeof item !== 'object') return { path, message: 'must contain only JSON-compatible values' }
+			if (seen.has(item)) continue
+			seen.add(item)
+			if (!Array.isArray(item) && Object.prototype.toString.call(item) !== '[object Object]') {
+				return { path, message: 'must contain only JSON-compatible objects and values' }
+			}
+			for (const child of Object.values(item)) pending.push(child)
+		}
+	}
+	return undefined
 }
 
 function describe(error: ErrorObject): string {

@@ -1,32 +1,36 @@
 import type { BunbuData } from '../types'
 import { BunbuValidationError, checkData } from '../validate'
-import { compressBytes, decompressBytes } from './codec'
+import { compressBytes, decompressBytes, readFormatVersion, type ShareFormatVersion } from './codec'
 import { pack, unpack } from './pack'
 import builtInPronunciationsV1 from '../../pronunciations/v1.g.json' with { type: 'json' }
+import builtInPronunciationsV2 from '../../pronunciations/v2.g.json' with { type: 'json' }
 
 /*
- * A quiz is shared as a `.bunbu` file: schema v1, packed by pack.ts, compressed and sealed by
+ * A quiz is shared as a `.bunbu` file: schema v2, packed by pack.ts, compressed and sealed by
  * codec.ts. The container starts with "BUNBU" and a version byte; packing and codec settings are
  * frozen per version, a change gets a new version, and uncompress keeps reading the older ones.
  */
-const schemaVersion = 1
+const schemaVersion = 2
 
 /*
  * Entries that equal the built-in pronunciations are left out of the file and restored on reading.
  * Format v1 uses pronunciations/v1.g.json, compiled from the built-in dictionaries and frozen once
  * released, so an old file always gets back exactly the entries it was compressed against.
  */
-const builtIn: Readonly<Record<string, string>> = builtInPronunciationsV1
+const builtIns: Record<ShareFormatVersion, Readonly<Record<string, string>>> = {
+	1: builtInPronunciationsV1,
+	2: builtInPronunciationsV2,
+}
 
-function withoutBuiltInPronunciations(data: BunbuData): BunbuData {
+function withoutBuiltInPronunciations(data: BunbuData, version: ShareFormatVersion): BunbuData {
 	if (data.pronunciations === undefined) return data
 	const { pronunciations, ...rest } = data
-	const own = Object.entries(pronunciations).filter(([term, spoken]) => builtIn[term] !== spoken)
+	const own = Object.entries(pronunciations).filter(([term, spoken]) => builtIns[version][term] !== spoken)
 	return own.length > 0 ? { ...rest, pronunciations: Object.fromEntries(own) } : rest
 }
 
-function withBuiltInPronunciations(data: BunbuData): BunbuData {
-	return { ...data, pronunciations: { ...builtIn, ...data.pronunciations } }
+function withBuiltInPronunciations(data: BunbuData, version: ShareFormatVersion): BunbuData {
+	return { ...data, pronunciations: { ...builtIns[version], ...data.pronunciations } }
 }
 
 /** File extension for a compressed quiz. */
@@ -41,7 +45,7 @@ export const mimeType = 'application/vnd.bunbu'
 export async function compress(data: BunbuData): Promise<Uint8Array> {
 	const issues = checkData(data, schemaVersion)
 	if (issues.length > 0) throw new BunbuValidationError(issues)
-	return compressBytes(pack(withoutBuiltInPronunciations(data)))
+	return compressBytes(pack(withoutBuiltInPronunciations(data, schemaVersion), schemaVersion), schemaVersion)
 }
 
 /**
@@ -52,8 +56,9 @@ export async function compress(data: BunbuData): Promise<Uint8Array> {
  */
 export async function uncompress(file: Blob | ArrayBuffer | Uint8Array): Promise<BunbuData> {
 	const bytes = file instanceof Uint8Array ? file : new Uint8Array(file instanceof ArrayBuffer ? file : await file.arrayBuffer())
-	const quiz = withBuiltInPronunciations(unpack(await decompressBytes(bytes)))
-	const issues = checkData(quiz, schemaVersion)
+	const version = readFormatVersion(bytes)
+	const quiz = withBuiltInPronunciations(unpack(await decompressBytes(bytes), version), version)
+	const issues = checkData(quiz, version)
 	if (issues.length > 0) throw new BunbuValidationError(issues)
 	return quiz
 }
