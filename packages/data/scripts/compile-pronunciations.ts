@@ -8,7 +8,7 @@
 import { createHash } from 'node:crypto'
 import { readFileSync, writeFileSync } from 'node:fs'
 
-const version = 1
+const version = 2
 const dictionaries = ['technologies', 'languages', 'brands']
 
 // The package root, seen from this script.

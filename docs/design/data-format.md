@@ -12,6 +12,7 @@ A general-purpose, file-based format for quizzes and practice tests.
 - **Versioned.** The format version and the content version are tracked separately.
 - **Speakable.** A pronunciation dictionary helps the browser Speech API read domain terms aloud correctly.
 - **Traceable.** Every question can say where its content and correct answer come from.
+- **Extensible.** Optional application-owned metadata travels with a quiz without changing Bunbu's rules.
 
 ## Non-goals
 
@@ -28,31 +29,39 @@ YAML is widely supported, easy to edit by hand, allows comments and multi-line s
 The schema lives in the top-level `schema/` folder of this repository, with one file per format version (`schema/v1.json`, `schema/v2.json`, …). The site deploy copies that folder to GitHub Pages. Quiz files reference it in their first line. The format version is the file name:
 
 ```yaml
-# yaml-language-server: $schema=https://marvin-brouwer.github.io/bunbu/schema/v1.json
+# yaml-language-server: $schema=https://marvin-brouwer.github.io/bunbu/schema/v2.json
 ```
 
 The raw GitHub URL works just as well:
 
 ```yaml
-# yaml-language-server: $schema=https://raw.githubusercontent.com/Marvin-Brouwer/bunbu/main/schema/v1.json
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Marvin-Brouwer/bunbu/main/schema/v2.json
 ```
 
 The app only reads the version from the end of the URL (`/v<n>.json`), so both URLs are accepted.
 
 ## Versioning
 
-There are two independent versions:
+There are three independent versions:
 
 | Where                    | Meaning                     | Who changes it                              |
 | ------------------------ | --------------------------- | ------------------------------------------- |
 | `v<n>.json` in the URL   | Version of this data format | Bunbu, only for breaking changes.           |
 | `version` field          | Version of the quiz content | The quiz author, whenever questions change. |
+| Version byte in `.bunbu` | Version of the binary share format | Bunbu, when its binary layout changes. |
 
 The schema line is required. The app reads the format version from it before parsing, and rejects files without it or with an unknown version.
 
 - Non-breaking additions, such as a new optional field or a new question type, are added to the existing schema and keep the same URL.
 - Breaking changes add a new `schema/v<n+1>.json`. Older schema files are never removed, so existing quiz files keep validating.
 - `version` is a free string (for example `1`, `2026-10`, `1.4.0`). The app may use it to invalidate stored progress when the content changes.
+
+The reader supports schema v1 and v2. V2 adds optional `metadata` on quizzes and questions;
+v1 stays unchanged. A v2 quiz needs no metadata and works with the same question types and
+rules as v1. Sharing always writes binary v2, including when the input was v1 YAML. The reader
+keeps accepting binary v1 with its original packing and pronunciation dictionary. The file
+extension remains `.bunbu`; older readers report v2 as an unsupported format rather than
+silently losing custom data.
 
 ## Document structure
 
@@ -70,6 +79,7 @@ timePerQuestion: 1m30s    # optional, how long a question may take in a fight
 questionsPerTest: 40      # optional, how many questions one run of the fight asks
 
 pronunciations: {}        # optional, see Pronunciations
+metadata: {}              # optional in v2, application-owned custom fields
 questions: []             # required, at least one question
 ```
 
@@ -78,6 +88,47 @@ questions: []             # required, at least one question
 `timePerQuestion` is how long a question may take in a fight: hours, minutes and seconds, in that order, each optional, such as `45s`, `3m`, `1m30s` or `1h`. A question asked in several rounds (the rows of a `match`, the solutions of a `solutions`) gets that time for all its rounds together. The difficulty scales it, see [time limit](gameplay.md#time-limit). Without it the game works the time out from the length of each question. The dojo has no time limit.
 
 `questionsPerTest` keeps a large quiz fun to fight: each run asks that many of its questions, picked at random, so a run is a test of its own. The pass mark counts the points of the questions asked. Without it, or when the quiz has no more questions than that, a run asks every question. Passing a test unlocks the next stage, see [stages](gameplay.md#stages). The dojo always uses every question.
+
+## Custom metadata (v2)
+
+Quizzes and individual questions may have a `metadata` object. Its values can be any
+JSON-compatible strings, finite numbers, booleans, nulls, arrays or nested objects. Empty
+objects are valid. Metadata is optional: no namespace, domain, group or other custom field
+is required. Unknown fields outside `metadata` are still rejected, so mistakes in Bunbu's
+own fields do not pass unnoticed. Cycles and values that cannot be represented as JSON are
+rejected. The reader accepts at most 64 object or array levels, counting the metadata object
+itself, and rejects deeper metadata before recursive schema validation.
+Each metadata object is also limited to 100,000 JSON values and 16 MiB of UTF-8 JSON,
+counting every occurrence of shared values after expansion. The reader checks these
+budgets iteratively before serialization or recursive validation. Cycles, sparse arrays
+and custom `toJSON` hooks are rejected. Ordinary shared references are valid when their
+expanded content stays within the limits. The existing overall packed-file size limit
+still applies. YAML parsing and conversion failures are returned as validation issues.
+
+Use a namespace per consuming application to avoid name collisions. For example, an exam
+preparation application might put these fields on a question:
+
+```yaml
+metadata:
+  examPrep:
+    domain: containers
+    caseGroup: northwind-research
+```
+
+Those names and their meaning belong to that application; they are not Bunbu fields. The
+application may put a case registry, labels or other shared information in quiz-level
+metadata. Another application may use completely different namespaces and structures.
+
+`validate`, `compress` and `uncompress` preserve metadata. Bunbu does not render it, grade it,
+or use it to group or select questions. Questions must remain understandable from their
+standard fields, because a player or another app may ignore every custom field. An app
+that reads metadata must handle missing fields, recognise only the namespaces it supports,
+and validate those values itself.
+
+The [custom-metadata sample](../testdata/custom-metadata.yaml) has quiz-level custom data,
+a question with custom data and a question without it. Existing v1 samples demonstrate
+that no metadata is required. Duplicate detection still compares every question field
+except `source`, so otherwise identical questions with different metadata remain distinct.
 
 ## Markdown
 
@@ -142,6 +193,7 @@ Questions have no id. They are identified by their position in `questions`. Prog
 | `explanation` | no       | Markdown shown after answering. Explain why the answer is correct and why the alternatives are not. |
 | `source`      | no       | List of `text: url` entries for where the question comes from (origin and attribution). Plain text. |
 | `references`  | no       | List of `text: url` entries where the answer can be verified. Plain text, not Markdown.             |
+| `metadata`    | no (v2)  | Application-owned custom fields; Bunbu preserves them without interpreting them.                    |
 
 A question that repeats an earlier one, field for field apart from `source`, is a duplicate: the same question can come from more than one place. Duplicates are not an error, so `validate` accepts the quiz and only warns in the console. The game leaves them out when it loads a `.yaml` file (`withoutDuplicates`), so its library and the `.bunbu` file it makes keep each question once.
 
@@ -466,6 +518,11 @@ A `.bunbu` file is typically 6–8 times smaller than the YAML it came from.
 
 Packing and compression settings are frozen per format version. A change gets a new version, and `uncompress` keeps reading the older ones.
 
+Binary v2 preserves the v1 layout except for metadata: bit 7 of the quiz and question header
+marks an additional interned JSON string. Quiz metadata follows pronunciations, before the
+question count; question metadata follows its explanation, source and references. With no
+metadata the packed payload is identical to v1, but the container still identifies it as v2.
+
 Entries in `pronunciations` that equal the built-in ones are left out of the file, and restored when it is read. Each format version uses a frozen snapshot of the built-in dictionaries, so an old file always gets back exactly the entries it was made with.
 
 A `.bunbu` file keeps the quiz's content, not its YAML: comments and formatting are lost. Keep the YAML as the source to edit, and treat `.bunbu` as an export. Shared files are untrusted input, so `uncompress` validates the result against the schema and limits how large a quiz may claim to be.
@@ -473,7 +530,7 @@ A `.bunbu` file keeps the quiz's content, not its YAML: comments and formatting 
 ## Full example
 
 ```yaml
-# yaml-language-server: $schema=https://marvin-brouwer.github.io/bunbu/schema/v1.json
+# yaml-language-server: $schema=https://marvin-brouwer.github.io/bunbu/schema/v2.json
 
 id: example
 title: Example quiz

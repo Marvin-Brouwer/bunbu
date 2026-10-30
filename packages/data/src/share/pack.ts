@@ -1,9 +1,11 @@
-import type { BunbuData, MatchRow, Option, Question, QuestionType, Reference } from '../types'
+import type { BunbuData, MatchRow, Metadata, Option, Question, QuestionType, Reference } from '../types'
+import type { ShareFormatVersion } from './codec'
 import type { Markdown } from '../markdown'
 import { BunbuShareError } from './errors'
 
 /*
- * Schema-aware binary packing of a validated quiz (share format v1).
+ * Schema-aware binary packing of a validated quiz. The v1 layout remains unchanged.
+ * V2 uses the unused high header bit to mark metadata, stored as a JSON string.
  *
  * Output: varint(structure length) + structure + text
  * - structure: counts, flags and string references, as LEB128 varints and bit fields.
@@ -16,11 +18,13 @@ import { BunbuShareError } from './errors'
 
 const questionTypes: readonly QuestionType[] = ['yes-no', 'single', 'multiple', 'order', 'match', 'solutions']
 
-// Question header byte: bits 0-2 type, 3 explanation, 4 source, 5 references, 6-7 type-specific.
+// Question header byte: bits 0-2 type, 3 explanation, 4 source, 5 references, 6 type-specific.
+// Bit 7 is reserved in v1 and marks metadata in v2 (also in the quiz header).
 const hasExplanation = 1 << 3
 const hasSource = 1 << 4
 const hasReferences = 1 << 5
 const typeFlag = 6
+const hasMetadata = 1 << 7
 
 // Quiz header byte.
 const hasDescription = 1 << 0
@@ -154,7 +158,7 @@ function corrupt(): Error {
 	return new BunbuShareError('corrupt')
 }
 
-export function pack(data: BunbuData): Uint8Array {
+export function pack(data: BunbuData, version: ShareFormatVersion = 1): Uint8Array {
 	const writer = new Writer()
 	const scoreIsInteger = Number.isInteger(data.passingScore)
 	writer.byte(
@@ -164,7 +168,8 @@ export function pack(data: BunbuData): Uint8Array {
 			(data.pronunciations !== undefined ? hasPronunciations : 0) |
 			(scoreIsInteger ? 0 : fractionalScore) |
 			(data.timePerQuestion !== undefined ? hasTimePerQuestion : 0) |
-			(data.questionsPerTest !== undefined ? hasQuestionsPerTest : 0)
+			(data.questionsPerTest !== undefined ? hasQuestionsPerTest : 0) |
+			(version === 2 && data.metadata !== undefined ? hasMetadata : 0)
 	)
 	writer.string(data.id)
 	writer.string(data.title)
@@ -190,12 +195,13 @@ export function pack(data: BunbuData): Uint8Array {
 			writer.string(spoken)
 		}
 	}
+	if (version === 2 && data.metadata !== undefined) writer.string(JSON.stringify(data.metadata))
 	writer.varint(data.questions.length)
-	for (const question of data.questions) writeQuestion(writer, question)
+	for (const question of data.questions) writeQuestion(writer, question, version)
 	return writer.finish()
 }
 
-export function unpack(bytes: Uint8Array): BunbuData {
+export function unpack(bytes: Uint8Array, version: ShareFormatVersion = 1): BunbuData {
 	const reader = new Reader(bytes)
 	const flags = reader.byte()
 	const data: BunbuData = {
@@ -215,12 +221,13 @@ export function unpack(bytes: Uint8Array): BunbuData {
 		// fromEntries, so a "__proto__" term becomes a normal property.
 		data.pronunciations = Object.fromEntries(Array.from({ length: reader.count() }, () => [reader.string(), reader.string()]))
 	}
-	data.questions = Array.from({ length: reader.count() }, () => readQuestion(reader))
+	if (version === 2 && flags & hasMetadata) data.metadata = readMetadata(reader)
+	data.questions = Array.from({ length: reader.count() }, () => readQuestion(reader, version))
 	reader.finish()
 	return data
 }
 
-function writeQuestion(writer: Writer, question: Question): void {
+function writeQuestion(writer: Writer, question: Question, version: ShareFormatVersion): void {
 	let specific = 0
 	if (question.type === 'yes-no') specific = question.answer === 'yes' ? 1 : 0
 	if (question.type === 'match') specific = question.distractors === undefined ? 0 : 1
@@ -229,7 +236,8 @@ function writeQuestion(writer: Writer, question: Question): void {
 			(question.explanation !== undefined ? hasExplanation : 0) |
 			(question.source !== undefined ? hasSource : 0) |
 			(question.references !== undefined ? hasReferences : 0) |
-			(specific << typeFlag)
+			(specific << typeFlag) |
+			(version === 2 && question.metadata !== undefined ? hasMetadata : 0)
 	)
 	writer.string(question.query)
 
@@ -263,6 +271,16 @@ function writeQuestion(writer: Writer, question: Question): void {
 	if (question.explanation !== undefined) writer.string(question.explanation)
 	if (question.source !== undefined) writeReferences(writer, question.source)
 	if (question.references !== undefined) writeReferences(writer, question.references)
+	if (version === 2 && question.metadata !== undefined) writer.string(JSON.stringify(question.metadata))
+}
+
+function readMetadata(reader: Reader): Metadata {
+	try {
+		// uncompress validates the complete quiz against the versioned schema after unpacking.
+		return JSON.parse(reader.string()) as Metadata
+	} catch {
+		throw corrupt()
+	}
 }
 
 function writeReferences(writer: Writer, references: Reference[]): void {
@@ -278,11 +296,11 @@ function readReferences(reader: Reader): Reference[] {
 	return Array.from({ length: reader.count() }, (): Reference => ({ [reader.string()]: reader.string() }))
 }
 
-function readQuestion(reader: Reader): Question {
+function readQuestion(reader: Reader, version: ShareFormatVersion): Question {
 	const header = reader.byte()
 	const type = questionTypes[header & 0b111]
 	if (type === undefined) throw corrupt()
-	const specific = header >> typeFlag
+	const specific = version === 2 ? (header >> typeFlag) & 1 : header >> typeFlag
 	const query = reader.string<Markdown>()
 
 	let question: Question
@@ -313,6 +331,7 @@ function readQuestion(reader: Reader): Question {
 	if (header & hasExplanation) question.explanation = reader.string<Markdown>()
 	if (header & hasSource) question.source = readReferences(reader)
 	if (header & hasReferences) question.references = readReferences(reader)
+	if (version === 2 && header & hasMetadata) question.metadata = readMetadata(reader)
 	return question
 }
 

@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://marvin-brouwer.github.io/bunbu/schema/v2.json
+
+# These custom fields belong to a consuming application, not to Bunbu's rules.
+# The questions remain self-contained so Bunbu can play them without reading metadata.
+id: custom-metadata
+title: Optional application metadata
+version: '1'
+language: en
+passingScore: 70
+metadata:
+  examPrep:
+    domains:
+      containers: Container applications
+    cases:
+      northwind-research:
+        title: Northwind Research
+        context: >-
+          Northwind Research deploys a containerized API. Its image is stored
+          in a private registry, and the API must scale down when idle.
+  anotherApp:
+    tags: [sample, shared-format]
+
+questions:
+  - type: single
+    query: >-
+      Northwind Research needs to store its container image privately.
+      Which Azure service is a container image registry?
+    options:
+      - answer: >-
+          Azure Container Registry
+        correct: true
+      - answer: >-
+          Azure Key Vault
+        correct: false
+    metadata:
+      examPrep:
+        domain: containers
+        caseGroup: northwind-research
+
+  # No custom fields are required, on either the quiz or an individual question.
+  - type: yes-no
+    query: >-
+      Is a container image used to create a container?
+    answer: 'yes'
