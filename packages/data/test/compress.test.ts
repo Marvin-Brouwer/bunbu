@@ -233,6 +233,18 @@ describe('compress / uncompress', () => {
 		await expect(compress(data)).rejects.toBeInstanceOf(BunbuValidationError)
 	})
 
+	it('round-trips ordinary shared metadata values without treating sharing as a cycle', async () => {
+		const shared = { values: [null, true, 3, '日本語', '\ud800'] }
+		const data = { ...await docExamples(), metadata: { left: shared, right: shared } }
+		expect(await uncompress(await compress(data))).toEqual(restored(data))
+	})
+
+	it('rejects oversized shared graphs through the public compression API', async () => {
+		let metadata: Metadata = { value: 'leaf' }
+		for (let depth = 0; depth < 18; depth++) metadata = { left: metadata, right: metadata }
+		await expect(compress({ ...await docExamples(), metadata })).rejects.toBeInstanceOf(BunbuValidationError)
+	})
+
 	it('rejects malformed metadata JSON in an otherwise sealed v2 file', async () => {
 		const data = { ...await docExamples(), metadata: { custom: true } }
 		const packed = pack(data, 2)

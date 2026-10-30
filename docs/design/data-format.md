@@ -98,6 +98,12 @@ is required. Unknown fields outside `metadata` are still rejected, so mistakes i
 own fields do not pass unnoticed. Cycles and values that cannot be represented as JSON are
 rejected. The reader accepts at most 64 object or array levels, counting the metadata object
 itself, and rejects deeper metadata before recursive schema validation.
+Each metadata object is also limited to 100,000 JSON values and 16 MiB of UTF-8 JSON,
+counting every occurrence of shared values after expansion. The reader checks these
+budgets iteratively before serialization or recursive validation. Cycles, sparse arrays
+and custom `toJSON` hooks are rejected. Ordinary shared references are valid when their
+expanded content stays within the limits. The existing overall packed-file size limit
+still applies. YAML parsing and conversion failures are returned as validation issues.
 
 Use a namespace per consuming application to avoid name collisions. For example, an exam
 preparation application might put these fields on a question:

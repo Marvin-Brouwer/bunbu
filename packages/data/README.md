@@ -63,6 +63,11 @@ interpret them. Validation, `.bunbu` exports and imports preserve all metadata, 
 unknown namespaces. Metadata can be absent or empty; existing quizzes work unchanged.
 The reader limits metadata to 64 object or array levels, counting the metadata object itself,
 so recursive schema validation remains safe for untrusted files.
+Each metadata object may contain at most 100,000 JSON values and 16 MiB of UTF-8 JSON,
+counting repeated shared values as serialization would. The iterative preflight enforces
+these limits before serialization. Cycles, sparse arrays and custom `toJSON` hooks are
+invalid; ordinary shared references within the budgets are supported. YAML conversion
+failures are returned as `BunbuValidationError` rather than rejected promises.
 The consuming application owns validation and any fallback when its custom fields are missing.
 See [the complete sample](../../docs/testdata/custom-metadata.yaml).
 
