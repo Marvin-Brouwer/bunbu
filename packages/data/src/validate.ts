@@ -110,6 +110,8 @@ export function checkData(data: unknown, schemaVersion: number, lineOf?: (pointe
 	return issues
 }
 
+const maxMetadataDepth = 64
+
 function metadataIssue(data: unknown): ValidationIssue | undefined {
 	if (data === null || typeof data !== 'object') return undefined
 	const quiz = data as Record<string, unknown>
@@ -126,19 +128,20 @@ function metadataIssue(data: unknown): ValidationIssue | undefined {
 		} catch {
 			return { path, message: 'must contain JSON-compatible values without cycles' }
 		}
-		const pending: unknown[] = [value]
-		const seen = new WeakSet<object>()
+		const pending: [unknown, number][] = [[value, 1]]
+		const seenDepths = new WeakMap<object, number>()
 		while (pending.length > 0) {
-			const item = pending.pop()
+			const [item, depth] = pending.pop()!
 			if (item === null) continue
 			if (typeof item === 'string' || typeof item === 'boolean' || (typeof item === 'number' && Number.isFinite(item))) continue
 			if (typeof item !== 'object') return { path, message: 'must contain only JSON-compatible values' }
-			if (seen.has(item)) continue
-			seen.add(item)
+			if (depth > maxMetadataDepth) return { path, message: `must not be nested deeper than ${maxMetadataDepth} object or array levels` }
+			if ((seenDepths.get(item) ?? 0) >= depth) continue
+			seenDepths.set(item, depth)
 			if (!Array.isArray(item) && Object.prototype.toString.call(item) !== '[object Object]') {
 				return { path, message: 'must contain only JSON-compatible objects and values' }
 			}
-			for (const child of Object.values(item)) pending.push(child)
+			for (const child of Object.values(item)) pending.push([child, depth + 1])
 		}
 	}
 	return undefined

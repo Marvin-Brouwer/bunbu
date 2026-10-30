@@ -96,7 +96,8 @@ JSON-compatible strings, finite numbers, booleans, nulls, arrays or nested objec
 objects are valid. Metadata is optional: no namespace, domain, group or other custom field
 is required. Unknown fields outside `metadata` are still rejected, so mistakes in Bunbu's
 own fields do not pass unnoticed. Cycles and values that cannot be represented as JSON are
-rejected.
+rejected. The reader accepts at most 64 object or array levels, counting the metadata object
+itself, and rejects deeper metadata before recursive schema validation.
 
 Use a namespace per consuming application to avoid name collisions. For example, an exam
 preparation application might put these fields on a question:

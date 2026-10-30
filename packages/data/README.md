@@ -61,6 +61,8 @@ metadata:
 These are example application fields, not requirements of the format. Bunbu does not
 interpret them. Validation, `.bunbu` exports and imports preserve all metadata, including
 unknown namespaces. Metadata can be absent or empty; existing quizzes work unchanged.
+The reader limits metadata to 64 object or array levels, counting the metadata object itself,
+so recursive schema validation remains safe for untrusted files.
 The consuming application owns validation and any fallback when its custom fields are missing.
 See [the complete sample](../../docs/testdata/custom-metadata.yaml).
 

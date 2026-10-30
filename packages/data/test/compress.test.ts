@@ -10,6 +10,7 @@ import {
 	validate,
 	type BunbuData,
 	type BunbuShareErrorReason,
+	type Metadata,
 	type MetadataValue,
 } from '../src'
 import builtInV1 from '../pronunciations/v1.g.json' with { type: 'json' }
@@ -39,6 +40,12 @@ async function docExamples(): Promise<BunbuData> {
 	const data = await validate(docYaml)
 	if (data instanceof Error) throw data
 	return data
+}
+
+function nestedMetadata(depth: number): Metadata {
+	let value: Metadata = {}
+	for (let level = 1; level < depth; level++) value = { child: value }
+	return value
 }
 
 const smallQuiz: BunbuData = {
@@ -202,6 +209,28 @@ describe('compress / uncompress', () => {
 		expect(Object.hasOwn(result.metadata!, '__proto__')).toBe(true)
 		expect(Object.getPrototypeOf(result.metadata)).toBe(Object.prototype)
 		expect(Object.getPrototypeOf({})).toBe(Object.prototype)
+	})
+
+	it('round-trips metadata at the maximum supported nesting depth', async () => {
+		const data = { ...await docExamples(), metadata: nestedMetadata(64) }
+		expect(await uncompress(await compress(data))).toEqual(restored(data))
+	})
+
+	it.each(['quiz', 'question'] as const)('rejects deeply nested %s metadata with a validation error', async (location) => {
+		const data = await docExamples()
+		if (location === 'quiz') data.metadata = nestedMetadata(2_000)
+		else data.questions[0]!.metadata = nestedMetadata(2_000)
+		const file = await compressBytes(pack(data, 2), 2)
+		await expect(uncompress(file)).rejects.toBeInstanceOf(BunbuValidationError)
+		await expect(compress(data)).rejects.toBeInstanceOf(BunbuValidationError)
+	})
+
+	it('checks every path to shared metadata when applying the nesting limit', async () => {
+		const shared = nestedMetadata(33)
+		let deep: Metadata = shared
+		for (let level = 0; level < 32; level++) deep = { child: deep }
+		const data = { ...await docExamples(), metadata: { deep, shallow: shared } }
+		await expect(compress(data)).rejects.toBeInstanceOf(BunbuValidationError)
 	})
 
 	it('rejects malformed metadata JSON in an otherwise sealed v2 file', async () => {
