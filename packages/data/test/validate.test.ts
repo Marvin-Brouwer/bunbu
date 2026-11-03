@@ -1,6 +1,8 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { BunbuValidationError, validate, type BunbuData } from '../src'
+import { checkData } from '../src/validate'
+import type { Metadata } from '../src'
 
 const modeline = '# yaml-language-server: $schema=https://marvin-brouwer.github.io/bunbu/schema/v1.json'
 const designDoc = readFileSync(new URL('../../../docs/design/data-format.md', import.meta.url), 'utf8')
@@ -38,6 +40,87 @@ const single = `
 `
 
 describe('validate', () => {
+	it('accepts v2 without requiring custom metadata fields', async () => {
+		const data = await expectValid(quiz(single).replace('/v1.json', '/v2.json'))
+		expect(data.metadata).toBeUndefined()
+		expect(data.questions[0]!.metadata).toBeUndefined()
+	})
+
+	it('preserves arbitrary v2 metadata at quiz and question level', async () => {
+		const text = quiz(single)
+			.replace('/v1.json', '/v2.json')
+			.replace('passingScore: 70', 'passingScore: 70\nmetadata:\n  anotherApp:\n    labels: [one, two]\n    enabled: false\n    value: null')
+			.replace('    options:', '    metadata:\n      anyNamespace:\n        anything: 42\n    options:')
+		const data = await expectValid(text)
+		expect(data.metadata).toEqual({ anotherApp: { labels: ['one', 'two'], enabled: false, value: null } })
+		expect(data.questions[0]!.metadata).toEqual({ anyNamespace: { anything: 42 } })
+	})
+
+	it('keeps the v1 schema unchanged and rejects metadata in v1', async () => {
+		for (const text of [
+			`${quiz(single)}metadata: {}\n`,
+			quiz(single.replace('    options:', '    metadata: {}\n    options:')),
+		]) {
+			const error = await expectIssues(text)
+			expect(error.issues.some((issue) => issue.message.includes("'metadata'"))).toBe(true)
+		}
+	})
+
+	it('requires metadata to be an object without requiring a particular namespace', async () => {
+		await expectValid(`${quiz(single).replace('/v1.json', '/v2.json')}metadata: {}\n`)
+		for (const value of ['null', 'text', '42', '[one, two]']) {
+			const error = await expectIssues(`${quiz(single).replace('/v1.json', '/v2.json')}metadata: ${value}\n`)
+			expect(error.issues).toContainEqual(expect.objectContaining({ path: '/metadata', message: 'must be object' }))
+		}
+	})
+
+	it('still rejects unknown top-level fields in v2', async () => {
+		const error = await expectIssues(`${quiz(single).replace('/v1.json', '/v2.json')}custom: true\n`)
+		expect(error.issues).toContainEqual(expect.objectContaining({ path: '', message: "must not have property 'custom'" }))
+	})
+
+	it('rejects cyclic metadata from YAML aliases without throwing', async () => {
+		const error = await expectIssues(`${quiz(single).replace('/v1.json', '/v2.json')}metadata: &loop\n  self: *loop\n`)
+		expect(error.issues).toContainEqual(expect.objectContaining({ path: '/metadata', message: expect.stringContaining('without cycles') }))
+	})
+
+	it.each([1, 2])('returns a validation error when v%s YAML alias conversion exceeds its limit', async (version) => {
+		const text = quiz(single).replace('/v1.json', `/v${version}.json`) + 'metadata:\n' +
+			'  a: &a [x, x]\n  b: &b [*a, *a]\n  c: &c [*b, *b]\n  d: &d [*c, *c]\n  e: &e [*d, *d]\n  f: &f [*e, *e]\n  g: [*f, *f]\n'
+		const error = await expectIssues(text)
+		expect(error.issues[0]!.message).toContain('cannot be converted safely')
+	})
+
+	it('returns a validation error for deeply nested v2 YAML instead of rejecting', async () => {
+		await expectIssues(quiz(single).replace('/v1.json', '/v2.json') + 'metadata: ' + '{child: '.repeat(10_000) + 'null' + '}'.repeat(10_000))
+	})
+
+	it('bounds shared-reference expansion before recursive validation or serialization', () => {
+		let metadata: Metadata = { value: 'leaf' }
+		for (let depth = 0; depth < 18; depth++) metadata = { left: metadata, right: metadata }
+		expect(checkData({ metadata }, 2)).toEqual([{ path: '/metadata', message: expect.stringContaining('100000 JSON values') }])
+	})
+
+	it('counts repeated Unicode text against the JSON byte budget', () => {
+		const shared = { text: '🧭'.repeat(2_100_000) }
+		expect(checkData({ metadata: { left: shared, right: shared } }, 2)).toEqual([{ path: '/metadata', message: expect.stringContaining('16777216 bytes') }])
+	})
+
+	it('rejects sparse metadata arrays without serializing their missing entries', () => {
+		const sparse: null[] = []
+		sparse.length = 1_000_000
+		expect(checkData({ metadata: { values: sparse } }, 2)[0]!.message).toContain('100000 JSON values')
+		sparse.length = 2
+		expect(checkData({ metadata: { values: sparse } }, 2)[0]!.message).toContain('JSON-compatible values')
+	})
+
+	it('rejects inherited serialization hooks without invoking them', () => {
+		let called = false
+		const metadata: unknown = Object.create({ toJSON: () => { called = true; return {} } })
+		expect(checkData({ metadata }, 2)[0]!.message).toContain('without custom serialization')
+		expect(called).toBe(false)
+	})
+
 	it('accepts the full example from the design doc', async () => {
 		const fullExample = yamlBlocks.find((block) => block.startsWith('# yaml-language-server') && block.includes('questions:'))
 		expect(fullExample).toBeDefined()

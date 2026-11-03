@@ -2,6 +2,7 @@ import Ajv2020, { type ErrorObject, type ValidateFunction } from 'ajv/dist/2020.
 import addFormats from 'ajv-formats'
 import { isSeq, LineCounter, parseDocument, type Document } from 'yaml'
 import schemaV1 from '../../../schema/v1.json' with { type: 'json' }
+import schemaV2 from '../../../schema/v2.json' with { type: 'json' }
 import { duplicateQuestions } from './duplicates'
 import { isGfmMarkdown } from './markdown'
 import { readSchemaReference } from './modeline'
@@ -30,7 +31,7 @@ export class BunbuValidationError extends Error {
 	}
 }
 
-const schemas: Record<number, object> = { 1: schemaV1 }
+const schemas: Record<number, object> = { 1: schemaV1, 2: schemaV2 }
 const validators = new Map<number, ValidateFunction>()
 
 function getValidator(version: number): ValidateFunction | undefined {
@@ -65,14 +66,20 @@ export async function validate(fileBlob: string): Promise<BunbuData | BunbuValid
 
 	const issues: ValidationIssue[] = []
 	const lineCounter = new LineCounter()
-	const document = parseDocument(fileBlob, { lineCounter })
-	for (const error of document.errors) {
-		issues.push({ path: '', message: error.message.split('\n')[0]!, line: error.linePos?.[0].line })
+	let document: Document
+	let data: unknown
+	try {
+		document = parseDocument(fileBlob, { lineCounter })
+		for (const error of document.errors) {
+			issues.push({ path: '', message: error.message.split('\n')[0]!, line: error.linePos?.[0].line })
+		}
+
+		if (issues.length > 0) return new BunbuValidationError(issues)
+		data = document.toJS()
+	} catch {
+		return new BunbuValidationError([{ path: '', message: 'YAML data cannot be converted safely; reduce nesting or alias expansion' }])
 	}
 
-	if (issues.length > 0) return new BunbuValidationError(issues)
-
-	const data: unknown = document.toJS()
 	const schemaIssues = checkData(data, reference.version, (pointer) => findLine(document, lineCounter, pointer))
 	if (schemaIssues.length > 0) return new BunbuValidationError(schemaIssues)
 
@@ -87,6 +94,12 @@ export async function validate(fileBlob: string): Promise<BunbuData | BunbuValid
 export function checkData(data: unknown, schemaVersion: number, lineOf?: (pointer: string) => number | undefined): ValidationIssue[] {
 	const validator = getValidator(schemaVersion)
 	if (!validator) return [{ path: '', message: `Unknown schema version v${schemaVersion}` }]
+	// YAML aliases and JavaScript callers can supply cycles. Reject them before the recursive
+	// metadata schema runs, rather than overflowing its stack or losing values when sharing.
+	if (schemaVersion === 2) {
+		const issue = metadataIssue(data)
+		if (issue) return [{ ...issue, ...(lineOf ? { line: lineOf(issue.path) } : {}) }]
+	}
 	if (validator(data)) return []
 
 	const seen = new Set<string>()
@@ -101,6 +114,93 @@ export function checkData(data: unknown, schemaVersion: number, lineOf?: (pointe
 		issues.push(issue)
 	}
 	return issues
+}
+
+const maxMetadataDepth = 64
+const maxMetadataValues = 100_000
+const maxMetadataBytes = 16 * 1024 * 1024
+
+/** UTF-8 size of a JSON string, including quotes and escapes, without allocating that string. */
+function jsonStringBytes(value: string): number {
+	if (value.length > maxMetadataBytes) return maxMetadataBytes + 1
+	let bytes = 2
+	for (let index = 0; index < value.length; index++) {
+		const code = value.charCodeAt(index)
+		if (code === 0x22 || code === 0x5c) bytes += 2
+		else if (code < 0x20) bytes += [8, 9, 10, 12, 13].includes(code) ? 2 : 6
+		else if (code < 0x80) bytes++
+		else if (code < 0x800) bytes += 2
+		else if (code >= 0xd800 && code <= 0xdbff && value.charCodeAt(index + 1) >= 0xdc00 && value.charCodeAt(index + 1) <= 0xdfff) {
+			bytes += 4
+			index++
+		} else bytes += code >= 0xd800 && code <= 0xdfff ? 6 : 3
+		if (bytes > maxMetadataBytes) return bytes
+	}
+	return bytes
+}
+
+function metadataValueIssue(value: unknown): string | undefined {
+	const pending: [unknown, number, boolean][] = [[value, 1, false]]
+	const ancestors = new WeakSet<object>()
+	let scheduled = 1
+	let bytes = 0
+	try {
+		while (pending.length > 0) {
+			const [item, depth, leaving] = pending.pop()!
+			if (leaving) {
+				ancestors.delete(item as object)
+				continue
+			}
+			if (item === null) bytes += 4
+			else if (typeof item === 'string') bytes += jsonStringBytes(item)
+			else if (typeof item === 'boolean') bytes += item ? 4 : 5
+			else if (typeof item === 'number' && Number.isFinite(item)) bytes += String(item).length
+			else if (typeof item !== 'object') return 'must contain only JSON-compatible values'
+			else {
+				if (depth > maxMetadataDepth) return `must not be nested deeper than ${maxMetadataDepth} object or array levels`
+				if (ancestors.has(item)) return 'must contain JSON-compatible values without cycles'
+				if ((!Array.isArray(item) && Object.prototype.toString.call(item) !== '[object Object]') || typeof (item as { toJSON?: unknown }).toJSON === 'function') {
+					return 'must contain only JSON-compatible objects and values without custom serialization'
+				}
+				if (Array.isArray(item) && item.length > maxMetadataValues - scheduled) return `must contain at most ${maxMetadataValues} JSON values after expanding shared references`
+				const keys = Array.isArray(item) ? undefined : Object.keys(item)
+				const count = keys ? keys.length : (item as unknown[]).length
+				scheduled += count
+				if (scheduled > maxMetadataValues) return `must contain at most ${maxMetadataValues} JSON values after expanding shared references`
+				bytes += 2 + Math.max(0, count - 1)
+				if (keys) for (const key of keys) {
+					bytes += jsonStringBytes(key) + 1
+					if (bytes > maxMetadataBytes) return `must fit within ${maxMetadataBytes} bytes of JSON after expanding shared references`
+				}
+				if (bytes > maxMetadataBytes) return `must fit within ${maxMetadataBytes} bytes of JSON after expanding shared references`
+				ancestors.add(item)
+				pending.push([item, depth, true])
+				if (keys) for (const key of keys) pending.push([(item as Record<string, unknown>)[key], depth + 1, false])
+				else for (let index = 0; index < count; index++) pending.push([(item as unknown[])[index], depth + 1, false])
+			}
+			if (bytes > maxMetadataBytes) return `must fit within ${maxMetadataBytes} bytes of JSON after expanding shared references`
+		}
+	} catch {
+		return 'must contain only JSON-compatible objects and values'
+	}
+	return undefined
+}
+
+function metadataIssue(data: unknown): ValidationIssue | undefined {
+	if (data === null || typeof data !== 'object') return undefined
+	const quiz = data as Record<string, unknown>
+	const fields: [string, unknown][] = [['/metadata', quiz.metadata]]
+	if (Array.isArray(quiz.questions)) {
+		quiz.questions.forEach((question: unknown, index) => {
+			if (question !== null && typeof question === 'object') fields.push([`/questions/${index}/metadata`, (question as Record<string, unknown>).metadata])
+		})
+	}
+	for (const [path, value] of fields) {
+		if (value === undefined) continue
+		const message = metadataValueIssue(value)
+		if (message) return { path, message }
+	}
+	return undefined
 }
 
 function describe(error: ErrorObject): string {

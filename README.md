@@ -36,7 +36,7 @@ The format, with an example of every question type, is in
 your editor checks it as you type:
 
 ```yaml
-# yaml-language-server: $schema=https://marvin-brouwer.github.io/bunbu/schema/v1.json
+# yaml-language-server: $schema=https://marvin-brouwer.github.io/bunbu/schema/v2.json
 ```
 
 There are sample quizzes in [docs/testdata/](docs/testdata/).
