@@ -5,6 +5,8 @@ import { describeIssue, fightable, fitNotesOf, readQuiz } from './read-quiz.mts'
 
 const sample = import.meta.glob<string>('../../../../../docs/testdata/every-type.yaml', { query: '?raw', import: 'default', eager: true })
 const everyType = Object.values(sample)[0]!
+const metadataSample = import.meta.glob<string>('../../../../../docs/testdata/custom-metadata.yaml', { query: '?raw', import: 'default', eager: true })
+const customMetadata = Object.values(metadataSample)[0]!
 
 const file = (contents: string | Uint8Array, name: string) => new File([typeof contents === 'string' ? contents : new Uint8Array(contents)], name)
 
@@ -14,6 +16,26 @@ const options = (correct: number, wrong: number) => [
 ]
 
 describe('readQuiz', () => {
+	it('reads a v2 quiz without requiring any application metadata', async () => {
+		const result = await readQuiz(file(everyType.replace('/v1.json', '/v2.json'), 'plain-v2.yaml'))
+		if (!('quiz' in result)) expect.unreachable(result.problems.join('\n'))
+		expect(result.quiz.metadata).toBeUndefined()
+		expect(result.quiz.questions.every((question) => question.metadata === undefined)).toBe(true)
+		expect((await uncompress(result.file.value)).questions).toEqual(result.quiz.questions)
+	})
+
+	it('keeps unknown application metadata through YAML import, storage and shared-file import', async () => {
+		const written = await readQuiz(file(customMetadata, 'custom-metadata.yaml'))
+		if (!('quiz' in written)) expect.unreachable(written.problems.join('\n'))
+		const shared = await readQuiz(file(written.file.value, 'custom-metadata.bunbu'))
+		if (!('quiz' in shared)) expect.unreachable(shared.problems.join('\n'))
+		expect(shared.quiz.metadata).toEqual(written.quiz.metadata)
+		expect(shared.quiz.questions).toEqual(written.quiz.questions)
+		expect(shared.quiz.questions[0]!.metadata).toEqual({ examPrep: { domain: 'containers', caseGroup: 'northwind-research' } })
+		expect(shared.quiz.questions[1]!.metadata).toBeUndefined()
+		expect(fightable(shared.quiz)).toBe(true)
+	})
+
 	it('reads a .yaml quiz and packs it as a .bunbu file', async () => {
 		const result = await readQuiz(file(everyType, 'every-type.yaml'))
 		if (!('quiz' in result)) expect.unreachable(result.problems.join('\n'))

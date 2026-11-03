@@ -25,8 +25,8 @@ const headerLength = 13
 const maxSize = 16 * 1024 * 1024
 
 /*
- * The .bunbu container (share v1):
- *   "BUNBU" + NUL byte + version byte (1)
+ * The .bunbu container (share v1 and v2):
+ *   "BUNBU" + NUL byte + version byte (1 or 2)
  *   varint(packed size) + varint(LZMA body length) + CRC-32 of the packed bytes (4 bytes, LE)
  *   LZMA body: lzma-web's output without its 13-byte header (fixed for v1) and without the
  *   range coder's first byte (always 0)
@@ -35,10 +35,11 @@ const maxSize = 16 * 1024 * 1024
  */
 // "BUNBU" + NUL: the NUL makes editors and other tools recognise the file as binary.
 const signature = [0x42, 0x55, 0x4e, 0x42, 0x55, 0x00]
-const formatVersion = 1
 const prefixLength = signature.length + 1
 
-export async function compressBytes(input: Uint8Array): Promise<Uint8Array> {
+export type ShareFormatVersion = 1 | 2
+
+export async function compressBytes(input: Uint8Array, formatVersion: ShareFormatVersion = 1): Promise<Uint8Array> {
 	const lzma = await compressAsync(input, level)
 	if (lzma[headerLength] !== 0) throw new Error('Unexpected LZMA output')
 	const body = lzma.subarray(headerLength + 1)
@@ -51,14 +52,20 @@ export async function compressBytes(input: Uint8Array): Promise<Uint8Array> {
 	return output
 }
 
-export async function decompressBytes(input: Uint8Array): Promise<Uint8Array> {
+export function readFormatVersion(input: Uint8Array): ShareFormatVersion {
 	if (input.length < prefixLength) {
-		const isStartOfSignature = [...input].every((byte, index) => byte === [...signature, formatVersion][index])
+		const isStartOfSignature = [...input].every((byte, index) => byte === signature[index])
 		throw new BunbuShareError(isStartOfSignature && input.length > 0 ? 'incomplete' : 'unknown-format')
 	}
-	if (signature.some((byte, index) => input[index] !== byte) || input[signature.length] !== formatVersion) {
+	const version = input[signature.length]
+	if (signature.some((byte, index) => input[index] !== byte) || (version !== 1 && version !== 2)) {
 		throw new BunbuShareError('unknown-format')
 	}
+	return version
+}
+
+export async function decompressBytes(input: Uint8Array): Promise<Uint8Array> {
+	readFormatVersion(input)
 
 	const size = readVarint(input, prefixLength)
 	const bodyLength = readVarint(input, size.end)
